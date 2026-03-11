@@ -75,7 +75,8 @@ def _ext(filename: str) -> str:
 
 
 def _callback_url(file_id: str) -> str:
-    return f"{settings.APP_URL}/api/v1/docs/callback?file_id={file_id}"
+    # Must use the internal backend URL so ONLYOFFICE (inside Docker) can POST here
+    return f"{settings.BACKEND_INTERNAL_URL}/api/v1/docs/callback?file_id={file_id}"
 
 
 _MOBILE_UA_KEYWORDS = ("mobile", "android", "iphone", "ipad", "ipod", "webos", "opera mini")
@@ -275,8 +276,9 @@ async def onlyoffice_callback(
     if action == "save":
         url: str | None = result.get("url")
         if url:
-            # Download the new file from ONLYOFFICE and re-upload to MinIO
-            background_tasks.add_task(_persist_saved_doc, db, file_id, url)
+            # Download the new file from ONLYOFFICE and re-upload to MinIO.
+            # Pass only file_id + url — background task creates its own DB session.
+            background_tasks.add_task(_persist_saved_doc, file_id, url)
 
             # Publish doc.saved event for cross-module sync (e.g. project task activity)
             file = await db.get(DriveFile, file_id)
@@ -1018,11 +1020,16 @@ async def link_to_note(
 
 # ── Background helpers ────────────────────────────────────────────────────────
 
-async def _persist_saved_doc(db: Any, file_id: uuid.UUID, url: str) -> None:
-    """Background task: fetch saved document from ONLYOFFICE, update MinIO + DB, and create a version snapshot."""
+async def _persist_saved_doc(file_id: uuid.UUID, url: str) -> None:
+    """Background task: fetch saved document from ONLYOFFICE, update MinIO + DB, and create a version snapshot.
+
+    Creates its own DB session — do NOT pass the request session here because
+    FastAPI closes it before the background task runs.
+    """
     import httpx  # noqa: PLC0415
     import io  # noqa: PLC0415
     from app.integrations.minio_client import _get_client, _ensure_bucket, BUCKET_NAME  # noqa: PLC0415
+    from app.core.database import AsyncSessionLocal  # noqa: PLC0415
     from sqlalchemy import func  # noqa: PLC0415
 
     try:
@@ -1031,63 +1038,64 @@ async def _persist_saved_doc(db: Any, file_id: uuid.UUID, url: str) -> None:
             resp.raise_for_status()
             file_data = resp.content
 
-        file = await db.get(DriveFile, file_id)
-        if not file:
-            return
+        async with AsyncSessionLocal() as db:
+            file = await db.get(DriveFile, file_id)
+            if not file:
+                return
 
-        s3 = _get_client()
-        _ensure_bucket(s3)
+            s3 = _get_client()
+            _ensure_bucket(s3)
 
-        # Create a version snapshot before overwriting
-        count_result = await db.execute(
-            select(func.count()).select_from(DocVersion).where(DocVersion.file_id == file_id)
-        )
-        next_version = (count_result.scalar() or 0) + 1
-        version_key = f"{file.minio_key}.v{next_version}"
+            # Create a version snapshot before overwriting
+            count_result = await db.execute(
+                select(func.count()).select_from(DocVersion).where(DocVersion.file_id == file_id)
+            )
+            next_version = (count_result.scalar() or 0) + 1
+            version_key = f"{file.minio_key}.v{next_version}"
 
-        # Copy current file to version key (if file has content)
-        if file.size > 0:
-            try:
-                s3.copy_object(
-                    Bucket=BUCKET_NAME,
-                    Key=version_key,
-                    CopySource={"Bucket": BUCKET_NAME, "Key": file.minio_key},
-                )
-            except Exception:
-                # If copy fails (e.g., source doesn't exist yet), upload the new data as version instead
+            # Copy current file to version key (if file has content)
+            if file.size > 0:
+                try:
+                    s3.copy_object(
+                        Bucket=BUCKET_NAME,
+                        Key=version_key,
+                        CopySource={"Bucket": BUCKET_NAME, "Key": file.minio_key},
+                    )
+                except Exception:
+                    # If copy fails (e.g., source doesn't exist yet), upload the new data as version instead
+                    s3.put_object(
+                        Bucket=BUCKET_NAME, Key=version_key,
+                        Body=io.BytesIO(file_data), ContentType=file.content_type,
+                        ContentLength=len(file_data),
+                    )
+            else:
+                # First save — snapshot the new data as v1
                 s3.put_object(
                     Bucket=BUCKET_NAME, Key=version_key,
                     Body=io.BytesIO(file_data), ContentType=file.content_type,
                     ContentLength=len(file_data),
                 )
-        else:
-            # First save — snapshot the new data as v1
+
+            version = DocVersion(
+                file_id=file_id,
+                version_number=next_version,
+                minio_key=version_key,
+                size=file.size if file.size > 0 else len(file_data),
+            )
+            db.add(version)
+
+            # Overwrite the current file in MinIO
             s3.put_object(
-                Bucket=BUCKET_NAME, Key=version_key,
-                Body=io.BytesIO(file_data), ContentType=file.content_type,
+                Bucket=BUCKET_NAME,
+                Key=file.minio_key,
+                Body=io.BytesIO(file_data),
+                ContentType=file.content_type,
                 ContentLength=len(file_data),
             )
 
-        version = DocVersion(
-            file_id=file_id,
-            version_number=next_version,
-            minio_key=version_key,
-            size=file.size if file.size > 0 else len(file_data),
-        )
-        db.add(version)
-
-        # Overwrite the current file in MinIO
-        s3.put_object(
-            Bucket=BUCKET_NAME,
-            Key=file.minio_key,
-            Body=io.BytesIO(file_data),
-            ContentType=file.content_type,
-            ContentLength=len(file_data),
-        )
-
-        # Update size in DB
-        file.size = len(file_data)
-        await db.commit()
+            # Update size in DB
+            file.size = len(file_data)
+            await db.commit()
     except Exception as exc:
         import logging  # noqa: PLC0415
         logging.getLogger(__name__).error("_persist_saved_doc failed for %s: %s", file_id, exc)

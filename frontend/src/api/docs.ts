@@ -118,15 +118,16 @@ export interface DocVersion {
 export interface DocLink {
   id: string
   file_id: string
-  entity_type: string
-  entity_id: string
+  task_id: string
+  project_id: string
+  linked_by: string
   created_at: string
 }
 
 export interface DocLinkCreate {
   file_id: string
-  entity_type: string
-  entity_id: string
+  task_id: string
+  project_id: string
 }
 
 // ─── Comment Hooks ───────────────────────────────────────────────────────────
@@ -180,8 +181,8 @@ export function useDocVersions(fileId: string) {
   return useQuery({
     queryKey: ['docs', 'versions', fileId],
     queryFn: async () => {
-      const { data } = await apiClient.get<DocVersion[]>(`/docs/file/${fileId}/versions`)
-      return data
+      const { data } = await apiClient.get<{ total: number; versions: DocVersion[] }>(`/docs/file/${fileId}/versions`)
+      return data.versions
     },
     enabled: !!fileId,
   })
@@ -190,8 +191,8 @@ export function useDocVersions(fileId: string) {
 export function useDownloadVersion() {
   return useMutation({
     mutationFn: async (versionId: string) => {
-      const { data } = await apiClient.get<{ url: string }>(`/docs/version/${versionId}/download`)
-      return data.url
+      const { data } = await apiClient.get<{ download_url: string }>(`/docs/version/${versionId}/download`)
+      return data.download_url
     },
   })
 }
@@ -232,6 +233,7 @@ export function useCreateDocLink() {
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['docs', 'links', vars.file_id] })
+      qc.invalidateQueries({ queryKey: ['docs', 'task-docs', vars.task_id] })
     },
   })
 }
@@ -240,8 +242,8 @@ export function useTaskDocs(taskId: string) {
   return useQuery({
     queryKey: ['docs', 'task-docs', taskId],
     queryFn: async () => {
-      const { data } = await apiClient.get<DocLink[]>(`/docs/task/${taskId}/docs`)
-      return data
+      const { data } = await apiClient.get<{ total: number; documents: DocLink[] }>(`/docs/task/${taskId}/docs`)
+      return data.documents
     },
     enabled: !!taskId,
   })

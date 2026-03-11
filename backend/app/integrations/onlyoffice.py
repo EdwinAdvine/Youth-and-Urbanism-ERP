@@ -137,10 +137,10 @@ def get_editor_config(
                 "macrosMode": macros_mode,
             },
         },
-        "token": "",  # filled below
     }
 
-    # Sign the entire config
+    # Sign the config WITHOUT the token field — ONLYOFFICE validates by decoding
+    # the JWT and comparing it against the config excluding the token field itself.
     config["token"] = _sign(config)
     return config
 
@@ -228,7 +228,8 @@ def get_editor_config_mobile(
         plugins_enabled=plugins_enabled,
     )
     config["type"] = "mobile"
-    # Re-sign the config with the updated type
+    # Re-sign without the token field, then re-attach
+    config.pop("token", None)
     config["token"] = _sign(config)
     return config
 

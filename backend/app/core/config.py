@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     ONLYOFFICE_PUBLIC_URL: str = "http://localhost:8083"  # browser-accessible
     ONLYOFFICE_JWT_SECRET: str = "onlyoffice-jwt-secret-2026-urban-erp"
 
+    # Internal backend URL reachable by other containers (e.g. ONLYOFFICE callback)
+    BACKEND_INTERNAL_URL: str = "http://backend:8000"
+
     # ── Jitsi ─────────────────────────────────────────────────────────────────
     JITSI_PUBLIC_URL: str = "http://localhost:8080"
 

@@ -31,8 +31,8 @@ function LinkedTasksPanel({ fileId }: { fileId: string }) {
   const createLink = useCreateDocLink()
   const deleteLink = useDeleteDocLink()
   const [showForm, setShowForm] = useState(false)
-  const [entityType, setEntityType] = useState('task')
-  const [entityId, setEntityId] = useState('')
+  const [projectId, setProjectId] = useState('')
+  const [taskId, setTaskId] = useState('')
 
   return (
     <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-3 bg-gray-50 dark:bg-gray-950 shrink-0">
@@ -48,26 +48,27 @@ function LinkedTasksPanel({ fileId }: { fileId: string }) {
       {showForm && (
         <div className="flex gap-2 mb-2">
           <input
-            value={entityType}
-            onChange={(e) => setEntityType(e.target.value)}
-            placeholder="Type (e.g. task)"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            placeholder="Project ID"
             className="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-[6px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30"
           />
           <input
-            value={entityId}
-            onChange={(e) => setEntityId(e.target.value)}
-            placeholder="Entity ID"
+            value={taskId}
+            onChange={(e) => setTaskId(e.target.value)}
+            placeholder="Task ID"
             className="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-[6px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30"
           />
           <button
             onClick={async () => {
-              if (!entityId.trim()) return
+              if (!projectId.trim() || !taskId.trim()) return
               await createLink.mutateAsync({
                 file_id: fileId,
-                entity_type: entityType,
-                entity_id: entityId.trim(),
+                project_id: projectId.trim(),
+                task_id: taskId.trim(),
               })
-              setEntityId('')
+              setProjectId('')
+              setTaskId('')
               setShowForm(false)
             }}
             className="px-2 py-1 text-xs bg-[#51459d] text-white rounded-[6px] hover:bg-[#3d3480]"
@@ -80,9 +81,9 @@ function LinkedTasksPanel({ fileId }: { fileId: string }) {
         <p className="text-[10px] text-gray-400">No linked items</p>
       ) : (
         <ul className="space-y-1">
-          {(links ?? []).map((link: { id: string; entity_type: string; entity_id: string }) => (
+          {(links ?? []).map((link: { id: string; task_id: string; project_id: string }) => (
             <li key={link.id} className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-              <span>{link.entity_type}: {link.entity_id.slice(0, 8)}...</span>
+              <span>Task: {link.task_id.slice(0, 8)}…</span>
               <button
                 className="text-[#ff3a6e] hover:underline text-[10px]"
                 onClick={() => deleteLink.mutate(link.id)}

@@ -169,9 +169,10 @@ export function useAccounts(type?: AccountType) {
   return useQuery({
     queryKey: ['finance', 'accounts', type],
     queryFn: async () => {
-      const params = type ? { type } : {}
-      const { data } = await apiClient.get<Account[]>('/finance/accounts', { params })
-      return data
+      const params: Record<string, unknown> = { limit: 200 }
+      if (type) params.account_type = type
+      const { data } = await apiClient.get<{ total: number; accounts: Account[] }>('/finance/accounts', { params })
+      return data.accounts
     },
   })
 }

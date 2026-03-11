@@ -176,12 +176,8 @@ export function useAgentWebSocket(sessionId: string) {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    // Use explicit WS host if set, otherwise derive from VITE_API_TARGET, else fall back to same host.
-    // During local dev the Vite proxy runs on port 3000 (mapped to 3010 externally), so we can't
-    // rely on window.location.host — point directly at the backend instead.
-    const apiTarget = import.meta.env.VITE_API_TARGET || 'http://localhost:8010'
-    const host = import.meta.env.VITE_API_WS_HOST || apiTarget.replace(/^https?:\/\//, '')
-    const url = `${protocol}//${host}/api/v1/agent/ws/${sessionId}?token=${token}`
+    // Always connect through the same origin (Vite proxy forwards /api → backend).
+    const url = `${protocol}//${window.location.host}/api/v1/agent/ws/${sessionId}?token=${token}`
 
     setStatus('connecting')
     const ws = new WebSocket(url)
