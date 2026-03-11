@@ -60,6 +60,10 @@ pgdata/
 # Redis data
 redis-data/
 
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
 # Backup files
 *.bak
 *.backup
