@@ -106,6 +106,10 @@ class Invoice(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     owner_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
+    # Phase 2A additions
+    custom_fields: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    dimension_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    auto_je_posted: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class Payment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -220,6 +224,11 @@ class Expense(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     account_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("finance_accounts.id"), nullable=True
     )
+    # Phase 2A additions
+    custom_fields: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    dimension_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    mileage_km: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    mileage_rate: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True)
 
 
 class VendorBill(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -247,6 +256,9 @@ class VendorBill(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     payment_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("finance_payments.id"), nullable=True
     )
+    # Phase 2A additions
+    custom_fields: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    dimension_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
 
 class FixedAsset(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -276,3 +288,171 @@ class FixedAsset(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     owner_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 2A New Models
+# ─────────────────────────────────────────────────────────────────────────────
+
+class Estimate(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Sales estimate / quote. Can be converted to an Invoice."""
+    __tablename__ = "finance_estimates"
+
+    estimate_number: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20), default="draft"
+    )  # draft, sent, accepted, declined, converted
+    customer_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    customer_email: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    issue_date: Mapped[date] = mapped_column(Date, nullable=False)
+    expiry_date: Mapped[date] = mapped_column(Date, nullable=False)
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+    tax_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+    total: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+    currency: Mapped[str] = mapped_column(String(3), default="USD")
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    terms: Mapped[str | None] = mapped_column(Text, nullable=True)
+    items: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    custom_fields: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    dimension_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    converted_invoice_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("finance_invoices.id"), nullable=True
+    )
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+
+class CustomField(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """User-definable custom fields for finance entities (up to 100 per entity type)."""
+    __tablename__ = "finance_custom_fields"
+
+    entity_type: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # invoice, expense, bill, vendor, estimate
+    field_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    field_label: Mapped[str] = mapped_column(String(200), nullable=False)
+    field_type: Mapped[str] = mapped_column(
+        String(30), nullable=False
+    )  # text, number, date, dropdown, checkbox, multiselect, url
+    options: Mapped[list | None] = mapped_column(JSON, nullable=True)  # for dropdown/multiselect
+    is_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    placeholder: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    default_value: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+
+class Dimension(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Accounting dimension — Class, Location, Department, or custom segment."""
+    __tablename__ = "finance_dimensions"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    dimension_type: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # class, location, department, project, custom
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("finance_dimensions.id"), nullable=True
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    color: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+    parent = relationship("Dimension", remote_side="Dimension.id", lazy="selectin")
+
+
+class RevenueRecognitionSchedule(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """IFRS 15 / ASC 606 deferred revenue recognition schedule."""
+    __tablename__ = "finance_revenue_recognition"
+
+    invoice_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("finance_invoices.id"), nullable=False
+    )
+    total_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    recognized_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=Decimal("0"))
+    deferred_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=Decimal("0"))
+    recognition_method: Mapped[str] = mapped_column(
+        String(40), default="straight_line"
+    )  # straight_line, milestone, percentage_complete
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20), default="active"
+    )  # active, completed, cancelled
+    revenue_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("finance_accounts.id"), nullable=True
+    )
+    deferred_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("finance_accounts.id"), nullable=True
+    )
+    schedule_lines: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # [{period: "2026-01", amount: 500.00, recognized: false, je_id: null}, ...]
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+    invoice = relationship("Invoice", lazy="selectin")
+
+
+class WorkflowRule(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Configurable automation rule: trigger event + conditions + actions."""
+    __tablename__ = "finance_workflow_rules"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    trigger_event: Mapped[str] = mapped_column(
+        String(100), nullable=False
+    )  # expense.submitted, invoice.overdue, bill.received, budget.exceeded
+    conditions: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # [{field: "amount", operator: "gt", value: 1000}, ...]
+    actions: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # [{type: "notify", params: {...}}, {type: "require_approval", ...}, ...]
+    priority: Mapped[int] = mapped_column(Integer, default=10)
+    last_triggered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    trigger_count: Mapped[int] = mapped_column(Integer, default=0)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+
+class WorkflowExecution(UUIDPrimaryKeyMixin, Base):
+    """Audit log of every workflow rule execution."""
+    __tablename__ = "finance_workflow_executions"
+
+    rule_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("finance_workflow_rules.id"), nullable=False
+    )
+    trigger_event: Mapped[str] = mapped_column(String(100), nullable=False)
+    entity_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    entity_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="success")  # success, failed, skipped
+    actions_taken: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    executed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    rule = relationship("WorkflowRule", lazy="selectin")
+
+
+class DunningLog(UUIDPrimaryKeyMixin, Base):
+    """AI smart dunning — tracks payment reminder stages per overdue invoice."""
+    __tablename__ = "finance_dunning_logs"
+
+    invoice_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("finance_invoices.id"), nullable=False
+    )
+    stage: Mapped[int] = mapped_column(Integer, default=1)  # 1=soft, 2=firm, 3=formal, 4=collections
+    sent_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    channel: Mapped[str] = mapped_column(String(20), default="email")
+    message_preview: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_generated: Mapped[bool] = mapped_column(Boolean, default=False)
+    opened: Mapped[bool] = mapped_column(Boolean, default=False)
+    responded: Mapped[bool] = mapped_column(Boolean, default=False)

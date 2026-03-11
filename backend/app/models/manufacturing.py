@@ -1,4 +1,4 @@
-"""Manufacturing models — BOM, Work Orders, Workstations, Quality Checks."""
+"""Manufacturing models — BOM, Work Orders, Workstations, Quality, Traceability, ECOs."""
 from __future__ import annotations
 
 import uuid
@@ -66,11 +66,13 @@ class BOMItem(UUIDPrimaryKeyMixin, Base):
     unit_of_measure: Mapped[str] = mapped_column(String(50), default="unit")
     scrap_percentage: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=0)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_phantom: Mapped[bool] = mapped_column(Boolean, default=False)
     notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     bom = relationship("BillOfMaterials", back_populates="items", foreign_keys=[bom_id])
     item = relationship("InventoryItem", foreign_keys=[item_id])
     child_bom = relationship("BillOfMaterials", foreign_keys=[child_bom_id])
+    substitutions = relationship("MaterialSubstitution", back_populates="bom_item", cascade="all, delete-orphan")
 
 
 # ── WorkStation ──────────────────────────────────────────────────────────────
@@ -129,6 +131,11 @@ class WorkOrder(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     total_material_cost: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0)
     total_labor_cost: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0)
+    total_overhead_cost: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0)
+    consumption_mode: Mapped[str] = mapped_column(String(20), default="manual")  # manual, backflush
+    parent_wo_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("mfg_work_orders.id"), nullable=True
+    )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
@@ -142,8 +149,11 @@ class WorkOrder(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     finished_item = relationship("InventoryItem", foreign_keys=[finished_item_id])
     target_warehouse = relationship("Warehouse", foreign_keys=[target_warehouse_id])
     source_warehouse = relationship("Warehouse", foreign_keys=[source_warehouse_id])
+    parent_wo = relationship("WorkOrder", remote_side="WorkOrder.id", foreign_keys=[parent_wo_id])
     materials = relationship("MaterialConsumption", back_populates="work_order", cascade="all, delete-orphan")
     quality_checks = relationship("QualityCheck", back_populates="work_order", cascade="all, delete-orphan")
+    variances = relationship("WorkOrderVariance", back_populates="work_order", cascade="all, delete-orphan")
+    rework_orders = relationship("ReworkOrder", back_populates="parent_wo", foreign_keys="[ReworkOrder.parent_wo_id]")
 
 
 # ── Material Consumption ─────────────────────────────────────────────────────

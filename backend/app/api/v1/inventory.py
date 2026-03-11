@@ -32,12 +32,18 @@ router = APIRouter()
 class WarehouseCreate(BaseModel):
     name: str
     location: str | None = None
+    address: str | None = None
+    warehouse_type: str = "standard"
+    manager_id: uuid.UUID | None = None
 
 
 class WarehouseUpdate(BaseModel):
     name: str | None = None
     location: str | None = None
     is_active: bool | None = None
+    address: str | None = None
+    warehouse_type: str | None = None
+    manager_id: uuid.UUID | None = None
 
 
 class WarehouseOut(BaseModel):
@@ -45,6 +51,9 @@ class WarehouseOut(BaseModel):
     name: str
     location: str | None
     is_active: bool
+    address: str | None = None
+    warehouse_type: str = "standard"
+    manager_id: uuid.UUID | None = None
     created_at: Any
     updated_at: Any
 
@@ -62,6 +71,16 @@ class ItemCreate(BaseModel):
     cost_price: Decimal = Decimal("0")
     selling_price: Decimal = Decimal("0")
     reorder_level: int = 0
+    item_type: str = "stockable"
+    tracking_type: str = "none"
+    weight: Decimal | None = None
+    dimensions: dict | None = None
+    barcode: str | None = None
+    min_order_qty: int = 1
+    lead_time_days: int = 0
+    preferred_supplier_id: uuid.UUID | None = None
+    custom_fields: dict | None = None
+    max_stock_level: int | None = None
 
 
 class ItemUpdate(BaseModel):
@@ -74,6 +93,16 @@ class ItemUpdate(BaseModel):
     selling_price: Decimal | None = None
     reorder_level: int | None = None
     is_active: bool | None = None
+    item_type: str | None = None
+    tracking_type: str | None = None
+    weight: Decimal | None = None
+    dimensions: dict | None = None
+    barcode: str | None = None
+    min_order_qty: int | None = None
+    lead_time_days: int | None = None
+    preferred_supplier_id: uuid.UUID | None = None
+    custom_fields: dict | None = None
+    max_stock_level: int | None = None
 
 
 class ItemOut(BaseModel):
@@ -88,6 +117,16 @@ class ItemOut(BaseModel):
     reorder_level: int
     is_active: bool
     owner_id: uuid.UUID
+    item_type: str = "stockable"
+    tracking_type: str = "none"
+    weight: Decimal | None = None
+    dimensions: dict | None = None
+    barcode: str | None = None
+    min_order_qty: int = 1
+    lead_time_days: int = 0
+    preferred_supplier_id: uuid.UUID | None = None
+    custom_fields: dict | None = None
+    max_stock_level: int | None = None
     created_at: Any
     updated_at: Any
 
@@ -104,6 +143,10 @@ class StockLevelOut(BaseModel):
     warehouse_name: str | None = None
     quantity_on_hand: int
     quantity_reserved: int
+    quantity_committed: int = 0
+    quantity_incoming: int = 0
+    quantity_available: int = 0
+    bin_location: str | None = None
     created_at: Any
     updated_at: Any
 
@@ -276,6 +319,16 @@ async def create_item(
         selling_price=payload.selling_price,
         reorder_level=payload.reorder_level,
         owner_id=current_user.id,
+        item_type=payload.item_type,
+        tracking_type=payload.tracking_type,
+        weight=payload.weight,
+        dimensions=payload.dimensions,
+        barcode=payload.barcode,
+        min_order_qty=payload.min_order_qty,
+        lead_time_days=payload.lead_time_days,
+        preferred_supplier_id=payload.preferred_supplier_id,
+        custom_fields=payload.custom_fields,
+        max_stock_level=payload.max_stock_level,
     )
     db.add(item)
     await db.commit()
@@ -304,6 +357,11 @@ async def export_items(
             "cost_price": float(i.cost_price),
             "selling_price": float(i.selling_price),
             "reorder_level": i.reorder_level,
+            "max_stock_level": i.max_stock_level or "",
+            "item_type": i.item_type,
+            "tracking_type": i.tracking_type,
+            "barcode": i.barcode or "",
+            "lead_time_days": i.lead_time_days,
             "is_active": i.is_active,
             "created_at": i.created_at.isoformat(),
         }
@@ -311,7 +369,9 @@ async def export_items(
     ]
     columns = [
         "sku", "name", "description", "category", "unit_of_measure",
-        "cost_price", "selling_price", "reorder_level", "is_active", "created_at",
+        "cost_price", "selling_price", "reorder_level", "max_stock_level",
+        "item_type", "tracking_type", "barcode", "lead_time_days",
+        "is_active", "created_at",
     ]
     return rows_to_csv(rows, columns, "inventory_items.csv")
 
@@ -400,6 +460,9 @@ async def create_warehouse(
     warehouse = Warehouse(
         name=payload.name,
         location=payload.location,
+        address=payload.address,
+        warehouse_type=payload.warehouse_type,
+        manager_id=payload.manager_id,
     )
     db.add(warehouse)
     await db.commit()
@@ -857,6 +920,44 @@ async def send_purchase_order(
         )
 
     po.status = "sent"
+
+    # Update quantity_incoming for each line item in the default warehouse
+    result_lines = await db.execute(
+        select(PurchaseOrder)
+        .options(selectinload(PurchaseOrder.lines))
+        .where(PurchaseOrder.id == po.id)
+    )
+    po_with_lines = result_lines.scalar_one()
+
+    wh_result = await db.execute(
+        select(Warehouse)
+        .where(Warehouse.is_active == True)  # noqa: E712
+        .order_by(Warehouse.name.asc())
+        .limit(1)
+    )
+    default_warehouse = wh_result.scalar_one_or_none()
+
+    if default_warehouse:
+        for po_line in po_with_lines.lines:
+            sl_result = await db.execute(
+                select(StockLevel).where(
+                    and_(
+                        StockLevel.item_id == po_line.item_id,
+                        StockLevel.warehouse_id == default_warehouse.id,
+                    )
+                )
+            )
+            stock_level = sl_result.scalar_one_or_none()
+            if stock_level is None:
+                stock_level = StockLevel(
+                    item_id=po_line.item_id,
+                    warehouse_id=default_warehouse.id,
+                    quantity_incoming=po_line.quantity,
+                )
+                db.add(stock_level)
+            else:
+                stock_level.quantity_incoming += po_line.quantity
+
     await db.commit()
     await db.refresh(po)
     return POOut.model_validate(po).model_dump()
@@ -942,6 +1043,10 @@ async def receive_purchase_order(
             db.add(stock_level)
         else:
             stock_level.quantity_on_hand += qty_to_receive
+            # Decrement quantity_incoming now that goods have arrived
+            stock_level.quantity_incoming = max(
+                0, stock_level.quantity_incoming - qty_to_receive
+            )
 
         # Update received quantity on the PO line
         po_line.received_quantity = po_line.quantity
@@ -1058,11 +1163,37 @@ async def inventory_dashboard(
     )
     total_inventory_value = value_result.scalar() or Decimal("0")
 
+    # Overstock count: items where quantity_on_hand > max_stock_level
+    overstock_result = await db.execute(
+        select(func.count(func.distinct(InventoryItem.id)))
+        .select_from(InventoryItem)
+        .join(StockLevel, StockLevel.item_id == InventoryItem.id)
+        .where(
+            and_(
+                InventoryItem.is_active == True,  # noqa: E712
+                InventoryItem.max_stock_level.isnot(None),
+                StockLevel.quantity_on_hand > InventoryItem.max_stock_level,
+            )
+        )
+    )
+    overstock_count = overstock_result.scalar() or 0
+
+    # Total incoming quantity value
+    incoming_result = await db.execute(
+        select(
+            func.coalesce(func.sum(StockLevel.quantity_incoming), 0)
+        )
+        .select_from(StockLevel)
+    )
+    total_incoming = incoming_result.scalar() or 0
+
     return {
         "total_items": total_items,
         "low_stock_count": low_stock_count,
+        "overstock_count": overstock_count,
         "pending_pos": pending_pos,
         "total_inventory_value": float(total_inventory_value),
+        "total_incoming_units": total_incoming,
     }
 
 

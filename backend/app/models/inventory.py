@@ -11,6 +11,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -33,6 +34,14 @@ class Warehouse(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     location: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Phase 0 additions
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    warehouse_type: Mapped[str] = mapped_column(
+        String(30), default="standard"
+    )  # standard, transit, drop_ship, consignment
+    manager_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
 
 
 # ── InventoryItem ─────────────────────────────────────────────────────────────
@@ -53,9 +62,31 @@ class InventoryItem(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     owner_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
+    # Phase 0 additions
+    item_type: Mapped[str] = mapped_column(
+        String(30), default="stockable"
+    )  # stockable, consumable, service, kit
+    tracking_type: Mapped[str] = mapped_column(
+        String(20), default="none"
+    )  # none, batch, serial
+    weight: Mapped[Decimal | None] = mapped_column(Numeric(10, 3), nullable=True)
+    dimensions: Mapped[dict | None] = mapped_column(
+        JSON, nullable=True
+    )  # {length, width, height, unit}
+    barcode: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, index=True
+    )
+    min_order_qty: Mapped[int] = mapped_column(Integer, default=1)
+    lead_time_days: Mapped[int] = mapped_column(Integer, default=0)
+    preferred_supplier_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("inventory_suppliers.id"), nullable=True
+    )
+    custom_fields: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    max_stock_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     stock_levels = relationship("StockLevel", back_populates="item")
     stock_movements = relationship("StockMovement", back_populates="item")
+    preferred_supplier = relationship("InventorySupplier", foreign_keys=[preferred_supplier_id])
 
 
 # ── StockLevel ────────────────────────────────────────────────────────────────
@@ -75,9 +106,18 @@ class StockLevel(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     quantity_on_hand: Mapped[int] = mapped_column(Integer, default=0)
     quantity_reserved: Mapped[int] = mapped_column(Integer, default=0)
+    # Phase 0 additions
+    quantity_committed: Mapped[int] = mapped_column(Integer, default=0)
+    quantity_incoming: Mapped[int] = mapped_column(Integer, default=0)
+    bin_location: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     item = relationship("InventoryItem", back_populates="stock_levels")
     warehouse = relationship("Warehouse")
+
+    @property
+    def quantity_available(self) -> int:
+        """Available = on_hand - reserved - committed."""
+        return self.quantity_on_hand - self.quantity_reserved - self.quantity_committed
 
 
 # ── StockMovement ─────────────────────────────────────────────────────────────

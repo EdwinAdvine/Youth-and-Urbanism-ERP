@@ -123,11 +123,57 @@ class Task(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         default=list,
     )
 
+    # ── Enhanced fields (Sprint 1) ──────────────────────────────────────────
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("project_tasks.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+        comment="Subtask parent; NULL = top-level task",
+    )
+    start_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    estimated_hours: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sprint_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("project_sprints.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    recurring_config_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("project_recurring_configs.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
     # Relationships
     project = relationship("Project", back_populates="tasks", foreign_keys=[project_id])
     assignee = relationship("User", foreign_keys=[assignee_id])
     time_logs = relationship(
         "TimeLog",
+        back_populates="task",
+        cascade="all, delete-orphan",
+    )
+    parent = relationship("Task", remote_side="Task.id", foreign_keys=[parent_id])
+    subtasks = relationship(
+        "Task",
+        foreign_keys=[parent_id],
+        back_populates="parent",
+        cascade="all, delete-orphan",
+    )
+    checklists = relationship(
+        "TaskChecklist",
+        back_populates="task",
+        cascade="all, delete-orphan",
+    )
+    custom_field_values = relationship(
+        "TaskCustomFieldValue",
+        back_populates="task",
+        cascade="all, delete-orphan",
+    )
+    comments = relationship(
+        "TaskComment",
         back_populates="task",
         cascade="all, delete-orphan",
     )

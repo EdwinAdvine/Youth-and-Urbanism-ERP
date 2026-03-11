@@ -57,6 +57,10 @@ from app.models.meetings import MeetingRecording, MeetingChat, MeetingTemplate, 
 from app.models.docs import DocumentComment, DocumentTemplate, RecentDocument
 from app.models.analytics import Dashboard, DashboardWidget, SavedQuery, Report, DataAlert
 from app.models.project_links import ProjectDealLink, ProjectExpenseLink, ProjectDriveFolder, ProjectDocument
+from app.models.projects_enhanced import (
+    TaskChecklist, TaskRelationship, ProjectCustomField, TaskCustomFieldValue, Sprint,
+    RecurringTaskConfig, TaskAuditLog, TaskComment, AutomationRule, ProjectGuestAccess,
+)
 from app.models.agent import AgentRun, AgentRunStep, AgentApproval
 from app.models.handbook import HandbookCategory, HandbookArticle, HandbookFeedback, HandbookProgress, HandbookViewLog
 
@@ -125,6 +129,9 @@ __all__ = [
     "Dashboard", "DashboardWidget", "SavedQuery", "Report", "DataAlert",
     # Project Cross-Module Links
     "ProjectDealLink", "ProjectExpenseLink", "ProjectDriveFolder", "ProjectDocument",
+    # Projects Enhanced
+    "TaskChecklist", "TaskRelationship", "ProjectCustomField", "TaskCustomFieldValue", "Sprint",
+    "RecurringTaskConfig", "TaskAuditLog", "TaskComment", "AutomationRule", "ProjectGuestAccess",
     # Agent (Urban Bad AI)
     "AgentRun", "AgentRunStep", "AgentApproval",
     # Handbook
