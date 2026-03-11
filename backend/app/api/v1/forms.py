@@ -355,6 +355,17 @@ async def submit_response(
     db.add(response)
     await db.commit()
     await db.refresh(response)
+
+    # Publish event for cross-module integrations (e.g. lead capture forms → CRM)
+    from app.core.events import event_bus  # noqa: PLC0415
+    await event_bus.publish("form.submitted", {
+        "form_id": str(form.id),
+        "response_id": str(response.id),
+        "form_title": form.title,
+        "answers": payload.answers,
+        "respondent_id": str(respondent_id) if respondent_id else None,
+    })
+
     return FormResponseOut.model_validate(response).model_dump()
 
 

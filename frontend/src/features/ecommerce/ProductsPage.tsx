@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { Button, Badge, Card, Table } from '../../components/ui'
 import {
   useEcomProducts,
-  useUpdateProduct,
   useDeleteProduct,
+  usePublishProduct,
+  exportProductsCSV,
   type EcomProduct,
 } from '../../api/ecommerce'
 
@@ -28,14 +29,19 @@ export default function ProductsPage() {
     page,
     limit: 20,
   })
-  const updateProduct = useUpdateProduct()
   const deleteProduct = useDeleteProduct()
+  const publishProduct = usePublishProduct()
 
   const togglePublish = async (product: EcomProduct) => {
-    await updateProduct.mutateAsync({
-      id: product.id,
-      is_published: !product.is_published,
-    })
+    await publishProduct.mutateAsync(product.id)
+  }
+
+  const handleExportCSV = async () => {
+    try {
+      await exportProductsCSV()
+    } catch {
+      // export failed silently
+    }
   }
 
   const handleDelete = async (id: string) => {
@@ -49,12 +55,17 @@ export default function ProductsPage() {
       key: 'display_name',
       label: 'Product',
       render: (row: EcomProduct) => (
-        <button
-          className="text-primary font-medium hover:underline text-left"
-          onClick={() => navigate(`/ecommerce/products/${row.id}/edit`)}
-        >
-          {row.display_name}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            className="text-primary font-medium hover:underline text-left"
+            onClick={() => navigate(`/ecommerce/products/${row.id}/edit`)}
+          >
+            {row.display_name}
+          </button>
+          <Badge variant={row.is_published ? 'success' : 'default'} className="text-[10px]">
+            {row.is_published ? 'Published' : 'Draft'}
+          </Badge>
+        </div>
       ),
     },
     {
@@ -97,6 +108,9 @@ export default function ProductsPage() {
       label: '',
       render: (row: EcomProduct) => (
         <div className="flex gap-1">
+          <Button variant="ghost" size="sm" onClick={() => togglePublish(row)}>
+            {row.is_published ? 'Unpublish' : 'Publish'}
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => navigate(`/ecommerce/products/${row.id}/edit`)}>
             Edit
           </Button>
@@ -115,12 +129,20 @@ export default function ProductsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Products</h1>
           <p className="text-sm text-gray-500 mt-1">{data?.total ?? 0} products total</p>
         </div>
-        <Button onClick={() => navigate('/ecommerce/products/new')}>
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Product
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportCSV}>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Export CSV
+          </Button>
+          <Button onClick={() => navigate('/ecommerce/products/new')}>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Product
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

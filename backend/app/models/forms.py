@@ -140,3 +140,39 @@ class FormResponse(Base, UUIDPrimaryKeyMixin, TimestampMixin):
             f"<FormResponse id={self.id} form={self.form_id} "
             f"respondent={self.respondent_id}>"
         )
+
+
+class FormTemplate(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Reusable form template with pre-defined schema."""
+
+    __tablename__ = "form_templates"
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    schema: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    category: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+
+class FormCollaborator(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Collaborator on a form with role-based access."""
+
+    __tablename__ = "form_collaborators"
+
+    form_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("forms.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="viewer",
+        comment="editor | viewer",
+    )
+
+    form = relationship("Form", foreign_keys=[form_id])
+    user = relationship("User", foreign_keys=[user_id])

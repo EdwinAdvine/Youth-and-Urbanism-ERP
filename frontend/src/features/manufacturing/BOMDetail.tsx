@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { Spinner, Badge, Card } from '../../components/ui'
-import { useBOMDetail, useBOMCost, type BOMItem } from '../../api/manufacturing'
+import { useBOMDetail, useBOMCost, useRemoveBOMItem, type BOMItem } from '../../api/manufacturing'
 
 function formatCurrency(amount: string | number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(amount))
@@ -16,6 +16,7 @@ export default function BOMDetail() {
 
   const { data: bom, isLoading } = useBOMDetail(id ?? '')
   const { data: cost, isLoading: costLoading } = useBOMCost(id ?? '')
+  const removeBOMItem = useRemoveBOMItem()
 
   if (isLoading) {
     return (
@@ -129,12 +130,13 @@ export default function BOMDetail() {
                 <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Scrap %</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sub-BOM</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Notes</th>
+                <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide w-20">Actions</th>
               </tr>
             </thead>
             <tbody>
               {bom.items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-400">No items in this BOM</td>
+                  <td colSpan={8} className="text-center py-12 text-gray-400">No items in this BOM</td>
                 </tr>
               ) : (
                 bom.items
@@ -168,6 +170,21 @@ export default function BOMDetail() {
                       </td>
                       <td className="py-3 px-4 text-gray-500 text-xs max-w-[150px] truncate">
                         {item.notes ?? '--'}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Remove "${item.item_name ?? 'this item'}" from the BOM?`)) {
+                              removeBOMItem.mutate({ bomId: id!, itemId: item.id })
+                            }
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-[#ff3a6e] hover:bg-red-50 rounded-[6px] transition-colors"
+                          title="Remove item"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </td>
                     </tr>
                   ))

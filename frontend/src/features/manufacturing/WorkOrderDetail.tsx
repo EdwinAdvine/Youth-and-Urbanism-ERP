@@ -15,6 +15,13 @@ import {
   type MaterialAvailability,
   type QualityCheck,
 } from '../../api/manufacturing'
+import {
+  useWorkOrderCostBreakdown,
+  useRequestMaterials,
+  useAssignOperators,
+  useWorkOrderOperators,
+  type WorkOrderOperator,
+} from '../../api/cross_module_links'
 
 function formatCurrency(amount: string | number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(amount))
@@ -78,6 +85,14 @@ export default function WorkOrderDetail() {
   const completeWO = useCompleteWorkOrder()
   const cancelWO = useCancelWorkOrder()
   const createQC = useCreateQualityCheck()
+
+  // Cross-module hooks
+  const { data: costBreakdown } = useWorkOrderCostBreakdown(id ?? '')
+  const { data: operators } = useWorkOrderOperators(id ?? '')
+  const requestMaterialsMut = useRequestMaterials()
+  const assignOperatorsMut = useAssignOperators()
+  const [assignOpen, setAssignOpen] = useState(false)
+  const [employeeIdsInput, setEmployeeIdsInput] = useState('')
 
   if (isLoading) {
     return (
@@ -218,6 +233,26 @@ export default function WorkOrderDetail() {
               Add QC Check
             </Button>
           )}
+          {(canStart || isInProgress) && (
+            <Button
+              size="sm"
+              variant="outline"
+              loading={requestMaterialsMut.isPending}
+              onClick={async () => {
+                try {
+                  const res = await requestMaterialsMut.mutateAsync(id!)
+                  toast('success', res.message || 'Material requisition created')
+                } catch {
+                  toast('error', 'Failed to request materials')
+                }
+              }}
+            >
+              Request Materials
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={() => setAssignOpen(true)}>
+            Assign Operators
+          </Button>
           {canCancel && (
             <Button variant="danger" size="sm" onClick={() => setConfirmCancel(true)}>
               Cancel
@@ -431,6 +466,112 @@ export default function WorkOrderDetail() {
           </div>
         </Card>
       </div>
+
+      {/* Cost Breakdown (Finance Integration) */}
+      {costBreakdown && (
+        <Card className="mt-6">
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Production Cost Breakdown</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Material Cost</p>
+              <p className="text-lg font-bold text-gray-900">{formatCurrency(costBreakdown.total_material_cost)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Labor Cost</p>
+              <p className="text-lg font-bold text-gray-900">{formatCurrency(costBreakdown.total_labor_cost)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Overhead ({costBreakdown.overhead_rate})</p>
+              <p className="text-lg font-bold text-gray-900">{formatCurrency(costBreakdown.overhead_cost)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total / Unit Cost</p>
+              <p className="text-lg font-bold text-primary">{formatCurrency(costBreakdown.total_production_cost)}</p>
+              <p className="text-xs text-gray-500">{formatCurrency(costBreakdown.unit_cost)} per unit</p>
+            </div>
+          </div>
+          {costBreakdown.material_costs.length > 0 && (
+            <div className="overflow-x-auto border-t border-gray-100 pt-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Material Details</p>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left py-1 px-2 text-gray-500">Item</th>
+                    <th className="text-right py-1 px-2 text-gray-500">Qty</th>
+                    <th className="text-right py-1 px-2 text-gray-500">Unit Cost</th>
+                    <th className="text-right py-1 px-2 text-gray-500">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {costBreakdown.material_costs.map((m) => (
+                    <tr key={m.item_id} className="border-b border-gray-50">
+                      <td className="py-1 px-2 text-gray-700">{m.item_name}</td>
+                      <td className="py-1 px-2 text-right">{m.quantity}</td>
+                      <td className="py-1 px-2 text-right">{formatCurrency(m.unit_cost)}</td>
+                      <td className="py-1 px-2 text-right font-medium">{formatCurrency(m.total_cost)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Assigned Operators (HR Integration) */}
+      {operators?.operators && operators.operators.length > 0 && (
+        <Card className="mt-6">
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Assigned Operators</h2>
+          <div className="space-y-2">
+            {operators.operators.map((op: WorkOrderOperator) => (
+              <div key={op.employee_id} className="flex items-center justify-between py-2 px-3 rounded-[10px] bg-gray-50">
+                <div>
+                  <span className="text-sm font-medium text-gray-900">{op.name}</span>
+                  <span className="text-xs text-gray-500 ml-2">({op.employee_number})</span>
+                </div>
+                <div className="text-xs text-gray-500">{op.job_title || 'No title'}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Assign Operators Modal */}
+      <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Assign Operators" size="sm">
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Employee IDs</label>
+            <textarea
+              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[80px]"
+              placeholder="Paste employee UUIDs, one per line"
+              value={employeeIdsInput}
+              onChange={(e) => setEmployeeIdsInput(e.target.value)}
+            />
+            <p className="text-xs text-gray-400">Enter one employee ID per line</p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setAssignOpen(false)}>Cancel</Button>
+            <Button
+              size="sm"
+              loading={assignOperatorsMut.isPending}
+              onClick={async () => {
+                const ids = employeeIdsInput.split('\n').map(s => s.trim()).filter(Boolean)
+                if (ids.length === 0) { toast('warning', 'Enter at least one employee ID'); return }
+                try {
+                  await assignOperatorsMut.mutateAsync({ woId: id!, employeeIds: ids })
+                  toast('success', 'Operators assigned')
+                  setAssignOpen(false)
+                  setEmployeeIdsInput('')
+                } catch {
+                  toast('error', 'Failed to assign operators')
+                }
+              }}
+            >
+              Assign
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Start Confirmation Modal */}
       <Modal open={confirmStart} onClose={() => setConfirmStart(false)} title="Start Work Order" size="sm">

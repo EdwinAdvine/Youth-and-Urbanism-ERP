@@ -475,3 +475,43 @@ export function useSupportStats() {
     },
   })
 }
+
+export function useDeleteSLA() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/support/sla/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['support', 'sla'] }),
+  })
+}
+
+export function useUpdateComment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ ticketId, commentId, content }: { ticketId: string; commentId: string; content: string }) => {
+      const { data } = await apiClient.put<TicketComment>(
+        `/support/tickets/${ticketId}/comments/${commentId}`,
+        { content }
+      )
+      return data
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['support', 'tickets', variables.ticketId] })
+      qc.invalidateQueries({ queryKey: ['support', 'tickets', variables.ticketId, 'comments'] })
+    },
+  })
+}
+
+export function useDeleteComment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ ticketId, commentId }: { ticketId: string; commentId: string }) => {
+      await apiClient.delete(`/support/tickets/${ticketId}/comments/${commentId}`)
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['support', 'tickets', variables.ticketId] })
+      qc.invalidateQueries({ queryKey: ['support', 'tickets', variables.ticketId, 'comments'] })
+    },
+  })
+}

@@ -1,6 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import DOMPurify from 'dompurify'
-import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, type Note } from '../../api/notes'
+import {
+  useNotes, useCreateNote, useUpdateNote, useDeleteNote,
+  useAttachFile, useCreateEventFromNote, useEmailNote, useLinkNoteToTask,
+  type Note,
+} from '../../api/notes'
+import LinkedItemsSidebar from './LinkedItemsSidebar'
+import ExportMenu from './ExportMenu'
+import QuickNoteFAB from './QuickNoteFAB'
+import MarkdownToggle, { MarkdownEditor } from './MarkdownToggle'
+import TableOfContents from './TableOfContents'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -33,8 +42,20 @@ function NoteEditor({ note, onSave, onDelete }: {
   const [title, setTitle] = useState(note.title)
   const [tags, setTags] = useState((note.tags || []).join(', '))
   const [tagInput, setTagInput] = useState('')
+  const [editorMode, setEditorMode] = useState<'wysiwyg' | 'markdown'>('wysiwyg')
+  const [showLinkedItems, setShowLinkedItems] = useState(false)
+  const [showToc, setShowToc] = useState(false)
+  const [showCrossModuleMenu, setShowCrossModuleMenu] = useState(false)
+  const [dialogType, setDialogType] = useState<'attach-file' | 'create-event' | 'email-note' | 'link-task' | null>(null)
+  const [dialogInput1, setDialogInput1] = useState('')
+  const [dialogInput2, setDialogInput2] = useState('')
   const editorRef = useRef<HTMLDivElement>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const attachFile = useAttachFile()
+  const createEventFromNote = useCreateEventFromNote()
+  const emailNote = useEmailNote()
+  const linkNoteToTask = useLinkNoteToTask()
 
   useEffect(() => {
     setTitle(note.title)
@@ -112,6 +133,58 @@ function NoteEditor({ note, onSave, onDelete }: {
 
         <div className="flex-1" />
 
+        <MarkdownToggle mode={editorMode} onChange={setEditorMode} />
+
+        <div className="h-4 w-px bg-gray-200 mx-1" />
+
+        <button
+          onClick={() => setShowToc(!showToc)}
+          className={`p-1.5 rounded-[6px] transition-colors ${showToc ? 'text-[#51459d] bg-[#51459d]/10' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+          title="Table of Contents"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+        </button>
+
+        <button
+          onClick={() => setShowLinkedItems(!showLinkedItems)}
+          className={`p-1.5 rounded-[6px] transition-colors ${showLinkedItems ? 'text-[#51459d] bg-[#51459d]/10' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+          title="Linked Items"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+        </button>
+
+        <ExportMenu noteId={note.id} noteTitle={note.title} />
+
+        {/* Cross-module actions menu */}
+        <div className="relative">
+          <button
+            onClick={() => setShowCrossModuleMenu(!showCrossModuleMenu)}
+            className={`p-1.5 rounded-[6px] transition-colors ${showCrossModuleMenu ? 'text-[#51459d] bg-[#51459d]/10' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+            title="Cross-module actions"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
+          </button>
+          {showCrossModuleMenu && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setShowCrossModuleMenu(false)} />
+              <div className="absolute right-0 top-full mt-1 z-40 bg-white border border-gray-200 rounded-[8px] shadow-lg py-1 w-44">
+                <button onClick={() => { setDialogType('attach-file'); setShowCrossModuleMenu(false) }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                  <span className="w-4 text-center opacity-60">📎</span>Attach File
+                </button>
+                <button onClick={() => { setDialogType('create-event'); setShowCrossModuleMenu(false) }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                  <span className="w-4 text-center opacity-60">📅</span>Create Event
+                </button>
+                <button onClick={() => { setDialogType('email-note'); setShowCrossModuleMenu(false) }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                  <span className="w-4 text-center opacity-60">✉️</span>Email Note
+                </button>
+                <button onClick={() => { setDialogType('link-task'); setShowCrossModuleMenu(false) }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                  <span className="w-4 text-center opacity-60">☑️</span>Link to Task
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
         <button
           onClick={() => onDelete(note.id)}
           className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-[6px] transition-colors"
@@ -156,14 +229,39 @@ function NoteEditor({ note, onSave, onDelete }: {
 
       <div className="h-px bg-gray-100 mx-6 shrink-0" />
 
-      {/* Editor body */}
-      <div
-        ref={editorRef}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={triggerSave}
-        className="flex-1 overflow-y-auto px-6 py-4 text-sm text-gray-700 leading-relaxed focus:outline-none min-h-0"
-      />
+      {/* Editor body with optional sidebars */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {editorMode === 'wysiwyg' ? (
+            <div
+              ref={editorRef}
+              contentEditable
+              suppressContentEditableWarning
+              onInput={triggerSave}
+              className="flex-1 overflow-y-auto px-6 py-4 text-sm text-gray-700 leading-relaxed focus:outline-none min-h-0"
+            />
+          ) : (
+            <MarkdownEditor
+              content={editorRef.current?.innerHTML ?? note.content ?? ''}
+              onChange={(html) => {
+                if (editorRef.current) editorRef.current.innerHTML = html
+                triggerSave()
+              }}
+            />
+          )}
+        </div>
+
+        {/* Right sidebars */}
+        {showToc && (
+          <TableOfContents
+            content={editorRef.current?.innerHTML ?? note.content ?? ''}
+            onClose={() => setShowToc(false)}
+          />
+        )}
+        {showLinkedItems && (
+          <LinkedItemsSidebar noteId={note.id} onClose={() => setShowLinkedItems(false)} />
+        )}
+      </div>
 
       <style>{`
         [contenteditable] h1 { font-size: 1.25rem; font-weight: 700; margin: 0.75rem 0 0.25rem; color: #111827; }
@@ -174,6 +272,150 @@ function NoteEditor({ note, onSave, onDelete }: {
         [contenteditable] pre { background: #f3f4f6; border-radius: 6px; padding: 0.5rem 0.75rem; font-family: monospace; font-size: 0.8rem; margin: 0.5rem 0; }
         [contenteditable] a { color: #51459d; text-decoration: underline; }
       `}</style>
+
+      {/* Cross-module dialog */}
+      {dialogType && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => { setDialogType(null); setDialogInput1(''); setDialogInput2('') }}>
+          <div className="bg-white rounded-[10px] shadow-xl w-96 p-5" onClick={(e) => e.stopPropagation()}>
+            {dialogType === 'attach-file' && (
+              <>
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Attach File from Drive</h3>
+                <p className="text-xs text-gray-400 mb-3">Enter the Drive file ID to attach to this note.</p>
+                <input value={dialogInput1} onChange={(e) => setDialogInput1(e.target.value)} placeholder="File ID (UUID)" className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d] mb-3" />
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (!dialogInput1.trim()) return
+                      try {
+                        await attachFile.mutateAsync({ noteId: note.id, fileId: dialogInput1.trim() })
+                        alert('File attached successfully.')
+                        setDialogType(null); setDialogInput1('')
+                      } catch { alert('Failed to attach file.') }
+                    }}
+                    disabled={attachFile.isPending}
+                    className="flex-1 text-xs bg-[#51459d] text-white py-2 rounded-[8px] hover:bg-[#3d3480] disabled:opacity-50"
+                  >
+                    {attachFile.isPending ? 'Attaching...' : 'Attach'}
+                  </button>
+                  <button onClick={() => { setDialogType(null); setDialogInput1('') }} className="text-xs text-gray-400 px-3">Cancel</button>
+                </div>
+              </>
+            )}
+            {dialogType === 'create-event' && (
+              <>
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Create Calendar Event</h3>
+                <p className="text-xs text-gray-400 mb-3">Create an event from "{note.title}".</p>
+                <div className="space-y-2 mb-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Start Time</label>
+                    <input type="datetime-local" value={dialogInput1} onChange={(e) => setDialogInput1(e.target.value)} className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">End Time (optional)</label>
+                    <input type="datetime-local" value={dialogInput2} onChange={(e) => setDialogInput2(e.target.value)} className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]" />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (!dialogInput1) return
+                      try {
+                        await createEventFromNote.mutateAsync({
+                          noteId: note.id,
+                          startTime: new Date(dialogInput1).toISOString(),
+                          endTime: dialogInput2 ? new Date(dialogInput2).toISOString() : undefined,
+                        })
+                        alert('Calendar event created.')
+                        setDialogType(null); setDialogInput1(''); setDialogInput2('')
+                      } catch { alert('Failed to create event.') }
+                    }}
+                    disabled={createEventFromNote.isPending || !dialogInput1}
+                    className="flex-1 text-xs bg-[#51459d] text-white py-2 rounded-[8px] hover:bg-[#3d3480] disabled:opacity-50"
+                  >
+                    {createEventFromNote.isPending ? 'Creating...' : 'Create Event'}
+                  </button>
+                  <button onClick={() => { setDialogType(null); setDialogInput1(''); setDialogInput2('') }} className="text-xs text-gray-400 px-3">Cancel</button>
+                </div>
+              </>
+            )}
+            {dialogType === 'email-note' && (
+              <>
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Email This Note</h3>
+                <p className="text-xs text-gray-400 mb-3">Send the note content as an email.</p>
+                <div className="space-y-2 mb-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">To (comma-separated emails)</label>
+                    <input value={dialogInput1} onChange={(e) => setDialogInput1(e.target.value)} placeholder="user@example.com" className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Subject (optional)</label>
+                    <input value={dialogInput2} onChange={(e) => setDialogInput2(e.target.value)} placeholder={`Note: ${note.title}`} className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]" />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      const recipients = dialogInput1.split(',').map((e) => e.trim()).filter(Boolean)
+                      if (!recipients.length) return
+                      try {
+                        const result = await emailNote.mutateAsync({
+                          noteId: note.id,
+                          to: recipients,
+                          subject: dialogInput2 || undefined,
+                        })
+                        alert(result.sent ? 'Email sent successfully.' : 'Email queued (mail service may be unavailable).')
+                        setDialogType(null); setDialogInput1(''); setDialogInput2('')
+                      } catch { alert('Failed to send email.') }
+                    }}
+                    disabled={emailNote.isPending || !dialogInput1.trim()}
+                    className="flex-1 text-xs bg-[#51459d] text-white py-2 rounded-[8px] hover:bg-[#3d3480] disabled:opacity-50"
+                  >
+                    {emailNote.isPending ? 'Sending...' : 'Send Email'}
+                  </button>
+                  <button onClick={() => { setDialogType(null); setDialogInput1(''); setDialogInput2('') }} className="text-xs text-gray-400 px-3">Cancel</button>
+                </div>
+              </>
+            )}
+            {dialogType === 'link-task' && (
+              <>
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Link to Task</h3>
+                <p className="text-xs text-gray-400 mb-3">Link this note to a project task.</p>
+                <div className="space-y-2 mb-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Project ID</label>
+                    <input value={dialogInput1} onChange={(e) => setDialogInput1(e.target.value)} placeholder="Project UUID" className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Task ID</label>
+                    <input value={dialogInput2} onChange={(e) => setDialogInput2(e.target.value)} placeholder="Task UUID" className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]" />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (!dialogInput1.trim() || !dialogInput2.trim()) return
+                      try {
+                        await linkNoteToTask.mutateAsync({
+                          noteId: note.id,
+                          projectId: dialogInput1.trim(),
+                          taskId: dialogInput2.trim(),
+                        })
+                        alert('Note linked to task.')
+                        setDialogType(null); setDialogInput1(''); setDialogInput2('')
+                      } catch { alert('Failed to link note to task.') }
+                    }}
+                    disabled={linkNoteToTask.isPending || !dialogInput1.trim() || !dialogInput2.trim()}
+                    className="flex-1 text-xs bg-[#51459d] text-white py-2 rounded-[8px] hover:bg-[#3d3480] disabled:opacity-50"
+                  >
+                    {linkNoteToTask.isPending ? 'Linking...' : 'Link to Task'}
+                  </button>
+                  <button onClick={() => { setDialogType(null); setDialogInput1(''); setDialogInput2('') }} className="text-xs text-gray-400 px-3">Cancel</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -217,9 +459,9 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="h-full flex overflow-hidden">
-      {/* Notes list */}
-      <aside className="w-72 shrink-0 bg-white border-r border-gray-100 flex flex-col">
+    <div className="h-full flex flex-col md:flex-row overflow-hidden">
+      {/* Notes list - full width on mobile, sidebar on desktop */}
+      <aside className="w-full md:w-72 shrink-0 bg-white border-b md:border-b-0 md:border-r border-gray-100 flex flex-col max-h-[35vh] md:max-h-none">
         <div className="p-3 border-b border-gray-100 space-y-2">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
@@ -231,7 +473,7 @@ export default function NotesPage() {
                 onSuccess: (data) => setSelectedId(data.id),
               })}
               disabled={createNote.isPending}
-              className="w-8 h-8 rounded-[8px] bg-[#51459d] text-white flex items-center justify-center hover:bg-[#3d3480] transition-colors shrink-0 disabled:opacity-50"
+              className="w-11 h-11 sm:w-8 sm:h-8 rounded-[8px] bg-[#51459d] text-white flex items-center justify-center hover:bg-[#3d3480] transition-colors shrink-0 disabled:opacity-50"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             </button>
@@ -296,6 +538,9 @@ export default function NotesPage() {
           )}
         </div>
       </aside>
+
+      {/* Quick Note FAB (mobile) */}
+      <QuickNoteFAB onNoteCreated={(id) => setSelectedId(id)} />
 
       {/* Editor */}
       <div className="flex-1 flex flex-col overflow-hidden">

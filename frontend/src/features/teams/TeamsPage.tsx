@@ -2,10 +2,13 @@ import { useState } from 'react'
 import {
   useMeetings,
   useCreateMeeting,
-  useJoinMeeting,
   type Meeting,
   type CreateMeetingResponse,
 } from '../../api/meetings'
+import MeetingLobby from './MeetingLobby'
+import InMeetingControls from './InMeetingControls'
+import RecurringMeetingSetup from './RecurringMeetingSetup'
+import PostMeetingSummary from './PostMeetingSummary'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -198,7 +201,7 @@ function ActiveMeetingView({ meeting, onLeave }: { meeting: ActiveMeetingState; 
 
 // ─── Meeting card ─────────────────────────────────────────────────────────────
 
-function MeetingCard({ meeting, onJoin }: { meeting: Meeting; onJoin: (m: Meeting) => void }) {
+function MeetingCard({ meeting, onJoin, onViewSummary }: { meeting: Meeting; onJoin: (m: Meeting) => void; onViewSummary?: (id: string) => void }) {
   const status = deriveMeetingStatus(meeting)
   const duration = getDurationMinutes(meeting)
   const participants = meeting.attendees?.length ?? 0
@@ -239,6 +242,14 @@ function MeetingCard({ meeting, onJoin }: { meeting: Meeting; onJoin: (m: Meetin
             {duration} min
           </div>
         )}
+        {status === 'ended' && onViewSummary && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onViewSummary(meeting.id) }}
+            className="text-[#51459d] hover:underline text-[10px] font-medium ml-auto"
+          >
+            View Summary
+          </button>
+        )}
       </div>
     </div>
   )
@@ -250,9 +261,12 @@ export default function TeamsPage() {
   const [activeMeeting, setActiveMeeting] = useState<ActiveMeetingState | null>(null)
   const [showNew, setShowNew] = useState(false)
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming')
+  const [lobbyMeeting, setLobbyMeeting] = useState<Meeting | null>(null)
+  const [showRecurring, setShowRecurring] = useState(false)
+  const [summaryMeetingId, setSummaryMeetingId] = useState<string | null>(null)
+  const [showChat, setShowChat] = useState(false)
 
   const { data } = useMeetings()
-  const joinMeeting = useJoinMeeting()
   const meetings = data?.meetings ?? []
 
   const upcoming = meetings.filter((m) => {
@@ -262,28 +276,54 @@ export default function TeamsPage() {
   const past = meetings.filter((m) => deriveMeetingStatus(m) === 'ended')
 
   const handleJoin = (meeting: Meeting) => {
-    joinMeeting.mutate(meeting.id, {
-      onSuccess: (resp) => {
-        setActiveMeeting({ title: meeting.title, jitsiRoomUrl: resp.room_url })
-      },
-    })
+    setLobbyMeeting(meeting)
+  }
+
+  if (lobbyMeeting && !activeMeeting) {
+    return (
+      <MeetingLobby
+        meeting={lobbyMeeting}
+        onJoin={(roomUrl) => {
+          setActiveMeeting({ title: lobbyMeeting.title, jitsiRoomUrl: roomUrl })
+          setLobbyMeeting(null)
+        }}
+        onCancel={() => setLobbyMeeting(null)}
+      />
+    )
   }
 
   if (activeMeeting) {
-    return <ActiveMeetingView meeting={activeMeeting} onLeave={() => setActiveMeeting(null)} />
+    return (
+      <div className="relative h-full">
+        <ActiveMeetingView meeting={activeMeeting} onLeave={() => setActiveMeeting(null)} />
+        <InMeetingControls
+          meetingTitle={activeMeeting.title}
+          onLeave={() => setActiveMeeting(null)}
+          onToggleChat={() => setShowChat(!showChat)}
+          chatOpen={showChat}
+        />
+      </div>
+    )
   }
 
   return (
-    <div className="h-full flex overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-72 shrink-0 bg-white border-r border-gray-100 flex flex-col">
-        <div className="p-4 border-b border-gray-100 space-y-2">
+    <div className="h-full flex flex-col md:flex-row overflow-hidden">
+      {/* Sidebar - full width on mobile, fixed width on desktop */}
+      <aside className="w-full md:w-72 shrink-0 bg-white border-b md:border-b-0 md:border-r border-gray-100 flex flex-col max-h-[50vh] md:max-h-none">
+        <div className="p-3 sm:p-4 border-b border-gray-100 space-y-2">
           <button
             onClick={() => setShowNew(true)}
-            className="w-full flex items-center justify-center gap-2 bg-[#51459d] hover:bg-[#3d3480] text-white text-sm font-medium rounded-[8px] px-4 py-2.5 transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-[#51459d] hover:bg-[#3d3480] text-white text-sm font-medium rounded-[8px] px-4 py-2.5 min-h-[44px] transition-colors"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
             New Meeting
+          </button>
+          <button
+            onClick={() => setShowRecurring(true)}
+            className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-600 text-xs font-medium rounded-[8px] px-4 py-2 hover:bg-gray-50 transition-colors"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            Recurring Meeting
           </button>
         </div>
 
@@ -301,7 +341,12 @@ export default function TeamsPage() {
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {(tab === 'upcoming' ? upcoming : past).map((meeting) => (
-            <MeetingCard key={meeting.id} meeting={meeting} onJoin={handleJoin} />
+            <MeetingCard
+              key={meeting.id}
+              meeting={meeting}
+              onJoin={handleJoin}
+              onViewSummary={(id) => setSummaryMeetingId(id)}
+            />
           ))}
           {(tab === 'upcoming' ? upcoming : past).length === 0 && (
             <div className="text-center py-8">
@@ -315,8 +360,8 @@ export default function TeamsPage() {
       </aside>
 
       {/* Main area */}
-      <div className="flex-1 bg-gray-50 flex flex-col items-center justify-center p-8">
-        <div className="text-center max-w-md">
+      <div className="flex-1 bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-8">
+        <div className="text-center max-w-md w-full">
           <div className="w-20 h-20 rounded-3xl bg-[#51459d]/10 flex items-center justify-center mx-auto mb-4">
             <svg className="h-10 w-10 text-[#51459d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -326,7 +371,7 @@ export default function TeamsPage() {
           <p className="text-sm text-gray-500 mb-6">Start or join a meeting with your team. Powered by Jitsi Meet — no external accounts needed, fully self-hosted.</p>
 
           <div className="grid grid-cols-2 gap-3 mb-6">
-            <button onClick={() => setShowNew(true)} className="flex flex-col items-center gap-2 p-4 bg-white border border-gray-200 rounded-[10px] hover:border-[#51459d]/40 hover:shadow-md transition-all">
+            <button onClick={() => setShowNew(true)} className="flex flex-col items-center gap-2 p-4 bg-white border border-gray-200 rounded-[10px] hover:border-[#51459d]/40 hover:shadow-md transition-all min-h-[100px]">
               <div className="w-10 h-10 rounded-2xl bg-[#51459d]/10 flex items-center justify-center">
                 <svg className="h-5 w-5 text-[#51459d]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
               </div>
@@ -365,6 +410,18 @@ export default function TeamsPage() {
         <NewMeetingModal
           onClose={() => setShowNew(false)}
           onStart={(state) => { setActiveMeeting(state); setShowNew(false) }}
+        />
+      )}
+
+      <RecurringMeetingSetup
+        open={showRecurring}
+        onClose={() => setShowRecurring(false)}
+      />
+
+      {summaryMeetingId && (
+        <PostMeetingSummary
+          meetingId={summaryMeetingId}
+          onClose={() => setSummaryMeetingId(null)}
         />
       )}
     </div>

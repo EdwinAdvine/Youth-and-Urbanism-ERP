@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { cn } from '../../components/ui'
 import { useWebSocket } from '../../hooks/useWebSocket'
 import { useVoiceInput } from '../../hooks/useVoiceInput'
+import { useSwipeGesture } from '../../hooks/useSwipeGesture'
 import { useAuthStore } from '../../store/auth'
 
 interface Message {
@@ -157,10 +158,21 @@ export default function AIChat({ onClose, context }: AIChatProps) {
     }
   }
 
+  // Mobile: swipe down to dismiss
+  const handleSwipeDown = useCallback(() => {
+    if (onClose) onClose()
+  }, [onClose])
+  const swipeHandlers = useSwipeGesture({
+    onSwipeDown: handleSwipeDown,
+    threshold: 80,
+  })
+
   return (
-    <div className="flex flex-col h-full bg-white rounded-[10px] shadow-sm border border-gray-100">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+    <div className="flex flex-col h-full bg-white rounded-[10px] sm:rounded-[10px] shadow-sm border border-gray-100 fixed inset-0 sm:static sm:inset-auto z-50 sm:z-auto">
+      {/* Header - with swipe-down handle on mobile */}
+      <div {...swipeHandlers} className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+        {/* Mobile drag handle */}
+        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-300 rounded-full sm:hidden" />
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary-700 flex items-center justify-center">
             <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -249,8 +261,8 @@ export default function AIChat({ onClose, context }: AIChatProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="shrink-0 border-t border-gray-100 p-3">
+      {/* Input - bottom-anchored, safe area padding on mobile */}
+      <div className="shrink-0 border-t border-gray-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="flex gap-2 items-end">
           {/* Voice input button */}
           {voiceSupported && (
@@ -292,7 +304,7 @@ export default function AIChat({ onClose, context }: AIChatProps) {
           <button
             onClick={sendMessage}
             disabled={!input.trim() || isThinking}
-            className="p-2 rounded-[8px] bg-primary text-white hover:bg-primary-600 transition-colors disabled:opacity-40 disabled:pointer-events-none shrink-0"
+            className="p-2 min-w-[44px] min-h-[44px] rounded-[8px] bg-primary text-white hover:bg-primary-600 transition-colors disabled:opacity-40 disabled:pointer-events-none shrink-0 flex items-center justify-center"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

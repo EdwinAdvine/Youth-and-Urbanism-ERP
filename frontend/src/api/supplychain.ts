@@ -537,6 +537,47 @@ export function useCompleteReturn() {
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
+export function useDeleteRequisition() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/supply-chain/requisitions/${id}`)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['supplychain', 'requisitions'] })
+      qc.invalidateQueries({ queryKey: ['supplychain', 'dashboard'] })
+    },
+  })
+}
+
+export function useDeleteReturn() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/supply-chain/returns/${id}`)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['supplychain', 'returns'] })
+      qc.invalidateQueries({ queryKey: ['supplychain', 'dashboard'] })
+    },
+  })
+}
+
+export function usePostGRN() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.post<GoodsReceivedNote>(`/supply-chain/grn/${id}/post`)
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['supplychain', 'grns'] })
+      qc.invalidateQueries({ queryKey: ['supplychain', 'dashboard'] })
+      qc.invalidateQueries({ queryKey: ['inventory'] })
+    },
+  })
+}
+
 export function useSupplyChainDashboard() {
   return useQuery({
     queryKey: ['supplychain', 'dashboard', 'stats'],

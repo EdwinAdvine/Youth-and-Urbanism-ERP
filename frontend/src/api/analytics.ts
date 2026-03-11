@@ -35,11 +35,28 @@ export interface ModuleStatsResponse {
   modules: ModuleCount[]
 }
 
-export interface SupersetTokenResponse {
+export interface ExpenseDataPoint {
+  month: string
+  expenses: number
+}
+
+export interface ExpenseStatsResponse {
   service_available: boolean
-  token: string | null
-  superset_url?: string
-  dashboard_id?: string
+  data: ExpenseDataPoint[]
+  mock?: boolean
+}
+
+export interface SupportMetrics {
+  open: number
+  resolved: number
+  closed: number
+  total: number
+}
+
+export interface SupportMetricsResponse {
+  service_available: boolean
+  data: SupportMetrics
+  mock?: boolean
 }
 
 export interface DashboardStats {
@@ -92,17 +109,53 @@ export function useModuleStats() {
 /** Alias — used by AnalyticsPage */
 export const useModuleUsageStats = useModuleStats
 
-// ─── Superset Guest Token ─────────────────────────────────────────────────────
+// ─── Expense Stats ───────────────────────────────────────────────────────────
 
-export function useSupersetGuestToken(dashboardId?: string) {
+export function useExpenseStats(months?: number) {
   return useQuery({
-    queryKey: ['analytics', 'superset-guest-token', dashboardId],
+    queryKey: ['analytics', 'expenses', months],
     queryFn: async () => {
-      const params = dashboardId ? { dashboard_id: dashboardId } : {}
-      const { data } = await apiClient.get<SupersetTokenResponse>('/analytics/superset-guest-token', { params })
+      const params = months ? { months } : {}
+      const { data } = await apiClient.get<ExpenseStatsResponse>('/analytics/stats/expenses', { params })
       return data
     },
-    enabled: false, // only fetch on demand via refetch()
+  })
+}
+
+// ─── Support Metrics ─────────────────────────────────────────────────────────
+
+export function useSupportMetrics() {
+  return useQuery({
+    queryKey: ['analytics', 'support-metrics'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<SupportMetricsResponse>('/analytics/stats/support-metrics')
+      return data
+    },
+  })
+}
+
+// ─── Top Products Stats ─────────────────────────────────────────────────
+
+export interface TopProductEntry {
+  name: string
+  units_sold: number
+  revenue: number
+}
+
+export interface TopProductsResponse {
+  service_available: boolean
+  data: TopProductEntry[]
+  mock?: boolean
+}
+
+export function useTopProducts(limit?: number) {
+  return useQuery({
+    queryKey: ['analytics', 'top-products', limit],
+    queryFn: async () => {
+      const params = limit ? { limit } : {}
+      const { data } = await apiClient.get<TopProductsResponse>('/analytics/stats/top-products', { params })
+      return data
+    },
   })
 }
 

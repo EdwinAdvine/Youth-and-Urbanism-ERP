@@ -1,9 +1,12 @@
+import './print-styles.css'
 import { useState } from 'react'
 import {
   useRevenueStats,
   useModuleUsageStats,
-  useSupersetGuestToken,
+  useExpenseStats,
+  useSupportMetrics,
   useDashboardStats,
+  useTopProducts,
   type DashboardStats,
 } from '../../api/analytics'
 
@@ -145,19 +148,25 @@ const DEFAULT_STATS: DashboardStats = {
 }
 
 export default function AnalyticsPage() {
-  const [tab, setTab] = useState<'stats' | 'dashboards'>('stats')
+  const [tab, setTab] = useState<'overview' | 'finance' | 'operations'>('overview')
+  const [topProductsLimit, setTopProductsLimit] = useState(10)
 
-  // KPI cards — dashboard stats endpoint
+  // KPI cards
   const { data: stats } = useDashboardStats()
   const s = stats ?? DEFAULT_STATS
   const revChange = pctChange(s.revenue_mtd, s.revenue_prev)
 
-  // Revenue trend from analytics API
+  // Revenue trend
   const { data: revenueData } = useRevenueStats()
   const revenueValues = revenueData?.data?.map((d) => d.revenue / 1_000_000) ?? []
   const revenueLabels = revenueData?.data?.map((d) => d.month) ?? []
 
-  // Module usage from analytics API
+  // Expense trend
+  const { data: expenseData } = useExpenseStats()
+  const expenseValues = expenseData?.data?.map((d) => d.expenses / 1_000_000) ?? []
+  const expenseLabels = expenseData?.data?.map((d) => d.month) ?? []
+
+  // Module usage
   const { data: moduleData } = useModuleUsageStats()
   const moduleSegments = moduleData?.modules?.map((m, i) => ({
     label: m.module,
@@ -165,53 +174,37 @@ export default function AnalyticsPage() {
     color: MODULE_COLORS[m.module] ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length],
   })) ?? []
 
-  // Superset guest token for embedded dashboard
-  const { data: supersetToken, refetch: fetchSupersetToken } = useSupersetGuestToken()
-  const supersetUrl = supersetToken?.superset_url ?? 'http://localhost:8088'
+  // Support metrics
+  const { data: supportData } = useSupportMetrics()
+  const support = supportData?.data ?? { open: 0, resolved: 0, closed: 0, total: 0 }
 
-  // Fetch guest token when switching to dashboards tab
-  const handleDashboardsTab = () => {
-    setTab('dashboards')
-    fetchSupersetToken()
-  }
-
-  // Build Superset iframe URL — use guest token if available
-  const supersetIframeUrl =
-    supersetToken?.service_available && supersetToken?.token && supersetToken?.dashboard_id
-      ? `${supersetUrl}/superset/dashboard/${supersetToken.dashboard_id}/?standalone=true&guest_token=${supersetToken.token}`
-      : supersetUrl
+  // Top products
+  const { data: topProductsData, isLoading: topProductsLoading } = useTopProducts(topProductsLimit)
 
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-5 py-3 flex items-center gap-4 shrink-0">
-        <h1 className="text-base font-semibold text-gray-900">Analytics</h1>
+      <div className="bg-white border-b border-gray-100 px-4 sm:px-5 py-2 sm:py-3 flex items-center gap-3 sm:gap-4 shrink-0">
+        <h1 className="text-sm sm:text-base font-semibold text-gray-900">Analytics</h1>
         <div className="flex-1" />
-        <a
-          href={supersetUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-600 px-3 py-1.5 rounded-[8px] hover:bg-gray-50 transition-colors"
-        >
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-          Open Superset
-        </a>
-
         <div className="flex items-center border border-gray-200 rounded-[8px] overflow-hidden">
-          <button onClick={() => setTab('stats')} className={`px-3 py-1.5 text-xs font-medium transition-colors ${tab === 'stats' ? 'bg-[#51459d] text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
-            Quick Stats
-          </button>
-          <button onClick={handleDashboardsTab} className={`px-3 py-1.5 text-xs font-medium transition-colors ${tab === 'dashboards' ? 'bg-[#51459d] text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
-            Dashboards
-          </button>
+          {(['overview', 'finance', 'operations'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors capitalize ${tab === t ? 'bg-[#51459d] text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+            >
+              {t}
+            </button>
+          ))}
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {tab === 'stats' ? (
-          <div className="p-5 space-y-5 max-w-5xl mx-auto">
+        {tab === 'overview' && (
+          <div className="p-4 sm:p-5 space-y-4 sm:space-y-5 max-w-5xl mx-auto">
             {/* KPI Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <StatCard label="Revenue MTD"       value={formatKSh(s.revenue_mtd)}    change={revChange} color="#51459d" icon="💰" />
               <StatCard label="Open Invoices"     value={String(s.open_invoices)}      color="#ffa21d"    icon="📄" />
               <StatCard label="Active Employees"  value={String(s.active_employees)}   color="#3ec9d6"    icon="👥" />
@@ -255,7 +248,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Additional metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="bg-white border border-gray-100 rounded-[10px] p-4 shadow-sm">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Top Customers (Revenue)</h4>
                 <div className="space-y-2.5">
@@ -326,24 +319,140 @@ export default function AnalyticsPage() {
                 </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="flex flex-col h-full">
-            <div className="bg-amber-50 border-b border-amber-200 px-5 py-2.5 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <svg className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <p className="text-xs text-amber-700">Apache Superset is embedded below. If it shows an error, ensure Superset is running at <strong>{supersetUrl}</strong> and embedding is enabled.</p>
+
+            {/* Top Selling Products */}
+            <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900">Top Selling Products</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">Ranked by units sold</p>
+                </div>
+                <select
+                  value={topProductsLimit}
+                  onChange={(e) => setTopProductsLimit(Number(e.target.value))}
+                  className="text-xs border border-gray-200 rounded-[6px] px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
+                >
+                  <option value={5}>Top 5</option>
+                  <option value={10}>Top 10</option>
+                  <option value={20}>Top 20</option>
+                </select>
               </div>
-              <a href={supersetUrl} target="_blank" rel="noreferrer" className="text-xs text-[#51459d] hover:underline shrink-0 ml-3">Open full screen &rarr;</a>
+              {topProductsLoading ? (
+                <div className="h-28 flex items-center justify-center text-xs text-gray-400">Loading...</div>
+              ) : (topProductsData?.data ?? []).length === 0 ? (
+                <div className="h-28 flex items-center justify-center text-xs text-gray-400">No product data available</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="text-left py-2 pr-3 text-xs font-semibold text-gray-500 w-8">#</th>
+                        <th className="text-left py-2 pr-3 text-xs font-semibold text-gray-500">Product Name</th>
+                        <th className="text-right py-2 pr-3 text-xs font-semibold text-gray-500 w-24">Units Sold</th>
+                        <th className="text-right py-2 text-xs font-semibold text-gray-500 w-28">Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(topProductsData?.data ?? []).map((p: { name: string; units_sold: number; revenue: number }, i: number) => (
+                        <tr key={i} className="border-b border-gray-50">
+                          <td className="py-2 pr-3 text-gray-400 text-xs">{i + 1}</td>
+                          <td className="py-2 pr-3 font-medium text-gray-900">{p.name}</td>
+                          <td className="py-2 pr-3 text-right text-gray-700">{p.units_sold.toLocaleString()}</td>
+                          <td className="py-2 text-right font-medium text-gray-900">{formatKSh(p.revenue)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-            <div className="flex-1 bg-gray-100">
-              <iframe
-                src={supersetIframeUrl}
-                title="Apache Superset Analytics"
-                className="w-full h-full border-none"
-                style={{ minHeight: '600px' }}
-                allow="fullscreen"
-              />
+          </div>
+        )}
+
+        {tab === 'finance' && (
+          <div className="p-5 space-y-5 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Revenue */}
+              <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Revenue Trend</h3>
+                <p className="text-xs text-gray-400 mb-4">Monthly revenue (KSh M)</p>
+                {revenueValues.length > 0 ? (
+                  <BarChart data={revenueValues} labels={revenueLabels} color="#51459d" />
+                ) : (
+                  <div className="h-28 flex items-center justify-center text-xs text-gray-400">No data yet</div>
+                )}
+              </div>
+
+              {/* Expenses */}
+              <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Expense Trend</h3>
+                <p className="text-xs text-gray-400 mb-4">Monthly expenses (KSh M)</p>
+                {expenseValues.length > 0 ? (
+                  <BarChart data={expenseValues} labels={expenseLabels} color="#ff3a6e" />
+                ) : (
+                  <div className="h-28 flex items-center justify-center text-xs text-gray-400">No data yet</div>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatCard label="Revenue MTD" value={formatKSh(s.revenue_mtd)} change={revChange} color="#51459d" icon="💰" />
+              <StatCard label="Open Invoices" value={String(s.open_invoices)} color="#ffa21d" icon="📄" />
+              <StatCard label="Pipeline Deals" value={String(s.deals_pipeline)} color="#6fd943" icon="🤝" />
+              <StatCard label="Active Projects" value={String(s.active_projects)} color="#3ec9d6" icon="📋" />
+            </div>
+          </div>
+        )}
+
+        {tab === 'operations' && (
+          <div className="p-5 space-y-5 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <StatCard label="Open Tickets" value={String(support.open)} color="#ff3a6e" icon="🎫" />
+              <StatCard label="Resolved" value={String(support.resolved)} color="#6fd943" icon="✅" />
+              <StatCard label="Total Tickets" value={String(support.total)} color="#51459d" icon="📊" />
+              <StatCard label="Active Employees" value={String(s.active_employees)} color="#3ec9d6" icon="👥" />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Module usage */}
+              <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Module Usage</h3>
+                <p className="text-xs text-gray-400 mb-4">Records by module</p>
+                {moduleSegments.length > 0 ? (
+                  <DonutChart segments={moduleSegments} />
+                ) : (
+                  <div className="h-28 flex items-center justify-center text-xs text-gray-400">Loading...</div>
+                )}
+              </div>
+
+              {/* Support breakdown */}
+              <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Support Tickets</h3>
+                <p className="text-xs text-gray-400 mb-4">Current status breakdown</p>
+                <div className="space-y-3">
+                  {[
+                    { label: 'Open', value: support.open, color: '#ff3a6e' },
+                    { label: 'Resolved', value: support.resolved, color: '#6fd943' },
+                    { label: 'Closed', value: support.closed, color: '#9ca3af' },
+                  ].map((item) => (
+                    <div key={item.label}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-600">{item.label}</span>
+                        <span className="font-semibold text-gray-900">{item.value}</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: support.total ? `${(item.value / support.total) * 100}%` : '0%',
+                            backgroundColor: item.color,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}

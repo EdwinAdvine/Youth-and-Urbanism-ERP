@@ -1,11 +1,14 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { cn, Button, Spinner, Badge, Card, Table } from '../../components/ui'
+import { cn, Button, Spinner, Badge, Card, Table, Modal, Input, toast } from '../../components/ui'
 import {
   usePOSDashboardStats,
   usePOSTransactions,
   useActiveSession,
   type POSTransactionData,
 } from '../../api/pos'
+import { useSyncFromEcommerce } from '../../api/pos_ext'
+import { useWarehouses } from '../../api/inventory'
 
 function formatCurrency(amount: number | string) {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount
@@ -27,6 +30,26 @@ export default function POSDashboard() {
   const { data: stats, isLoading: statsLoading } = usePOSDashboardStats()
   const { data: transactions, isLoading: txnLoading } = usePOSTransactions({ limit: 10 })
   const { data: activeSession } = useActiveSession()
+
+  // E-Commerce sync
+  const [showSyncModal, setShowSyncModal] = useState(false)
+  const [syncWarehouseId, setSyncWarehouseId] = useState('')
+  const { data: warehouses } = useWarehouses()
+  const syncFromEcommerce = useSyncFromEcommerce()
+
+  const handleSync = async () => {
+    if (!syncWarehouseId) {
+      toast('error', 'Please select a warehouse')
+      return
+    }
+    try {
+      const result = await syncFromEcommerce.mutateAsync({ warehouse_id: syncWarehouseId })
+      toast('success', `Synced ${result.synced} products (${result.skipped} skipped)`)
+      setShowSyncModal(false)
+    } catch {
+      toast('error', 'Failed to sync products from E-Commerce')
+    }
+  }
 
   if (statsLoading) {
     return (
@@ -126,6 +149,12 @@ export default function POSDashboard() {
           <p className="text-sm text-gray-500 mt-1">Sales terminal and session management</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowSyncModal(true)}>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Sync from E-Commerce
+          </Button>
           <Button variant="outline" onClick={() => navigate('/pos/sessions')}>
             Sessions
           </Button>
@@ -216,6 +245,51 @@ export default function POSDashboard() {
           </div>
         </Card>
       </div>
+
+      {/* Sync from E-Commerce Modal */}
+      {showSyncModal && (
+        <Modal
+          open={showSyncModal}
+          onClose={() => setShowSyncModal(false)}
+          title="Sync Products from E-Commerce"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Import your e-commerce product catalog into the POS system. Products will be created
+              as inventory items in the selected warehouse.
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Target Warehouse
+              </label>
+              <select
+                className="w-full rounded-lg border border-gray-300 p-2 text-sm"
+                value={syncWarehouseId}
+                onChange={(e) => setSyncWarehouseId(e.target.value)}
+              >
+                <option value="">Select a warehouse...</option>
+                {(warehouses ?? []).map((wh) => (
+                  <option key={wh.id} value={wh.id}>
+                    {wh.name}{wh.location ? ` (${wh.location})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="ghost" onClick={() => setShowSyncModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSync}
+                loading={syncFromEcommerce.isPending}
+                disabled={!syncWarehouseId}
+              >
+                Sync Products
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

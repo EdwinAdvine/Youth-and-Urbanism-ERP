@@ -9,6 +9,7 @@ import {
   useCancelPO,
   type PurchaseOrderLine,
 } from '../../api/inventory'
+import MobilePOReceipt from './MobilePOReceipt'
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
@@ -89,20 +90,20 @@ export default function PODetailPage() {
   const isSent = po.status === 'sent'
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/inventory/purchase-orders')}
-            className="p-2 rounded-md hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-md hover:bg-gray-100 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center sm:min-h-0 sm:min-w-0"
           >
             <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{po.po_number}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{po.po_number}</h1>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant={STATUS_BADGE[po.status] ?? 'default'} className="capitalize">{po.status}</Badge>
               <span className="text-sm text-gray-500">{po.supplier_name}</span>
@@ -112,24 +113,29 @@ export default function PODetailPage() {
         <div className="flex gap-2">
           {isDraft && (
             <>
-              <Button variant="outline" size="sm" onClick={handleSend} loading={sendPO.isPending}>
+              <Button variant="outline" size="sm" onClick={handleSend} loading={sendPO.isPending} className="min-h-[44px] sm:min-h-0">
                 Send PO
               </Button>
-              <Button variant="danger" size="sm" onClick={() => setConfirmCancel(true)}>
+              <Button variant="danger" size="sm" onClick={() => setConfirmCancel(true)} className="min-h-[44px] sm:min-h-0">
                 Cancel PO
               </Button>
             </>
           )}
           {isSent && (
-            <Button size="sm" onClick={() => setConfirmReceive(true)}>
+            <Button size="sm" onClick={() => setConfirmReceive(true)} className="min-h-[44px] sm:min-h-0">
               Receive PO
             </Button>
           )}
         </div>
       </div>
 
-      {/* PO Header Info */}
-      <Card className="mb-6">
+      {/* Mobile PO Receipt view (visible on small screens for sent POs) */}
+      <div className="block md:hidden mb-5">
+        <MobilePOReceipt poId={id ?? ''} />
+      </div>
+
+      {/* PO Header Info (desktop) */}
+      <Card className="mb-6 hidden md:block">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Supplier</p>
@@ -159,8 +165,8 @@ export default function PODetailPage() {
         )}
       </Card>
 
-      {/* Line Items */}
-      <Card padding={false}>
+      {/* Line Items (desktop) */}
+      <Card padding={false} className="hidden md:block">
         <div className="p-5 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">Line Items</h2>
         </div>

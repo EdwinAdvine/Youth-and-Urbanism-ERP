@@ -9,6 +9,7 @@ import {
   type AttendanceRecord,
   type AttendanceStatus,
 } from '../../api/hr'
+import MobileAttendance from './MobileAttendance'
 
 // ─── Attendance Status Badge ──────────────────────────────────────────────────
 
@@ -129,20 +130,23 @@ export default function AttendancePage() {
   ]
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
-          <p className="text-sm text-gray-500 mt-1">Track your daily attendance</p>
-        </div>
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Attendance</h1>
+        <p className="text-sm text-gray-500 mt-1">Track your daily attendance</p>
       </div>
 
-      {/* Check-in / Check-out Card */}
-      <Card>
-        <div className="flex items-center justify-between">
+      {/* Mobile-optimized attendance view (visible on small screens only) */}
+      <div className="block md:hidden">
+        <MobileAttendance />
+      </div>
+
+      {/* Desktop check-in / check-out and table (hidden on mobile) */}
+      <Card className="hidden md:block">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Today's Status</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Today's Status</h2>
             <p className="text-sm text-gray-500 mt-1">
               {isCheckedOut
                 ? 'You have completed your shift for today.'
@@ -168,11 +172,12 @@ export default function AttendancePage() {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <Button
               onClick={handleCheckIn}
               loading={checkIn.isPending}
               disabled={!!isCheckedIn || !!isCheckedOut}
+              className="min-h-[56px] sm:min-h-[44px] min-w-[100px] flex-1 sm:flex-initial text-base sm:text-sm"
             >
               Check In
             </Button>
@@ -181,6 +186,7 @@ export default function AttendancePage() {
               onClick={handleCheckOut}
               loading={checkOut.isPending}
               disabled={!isCheckedIn || !!isCheckedOut}
+              className="min-h-[56px] sm:min-h-[44px] min-w-[100px] flex-1 sm:flex-initial text-base sm:text-sm"
             >
               Check Out
             </Button>
@@ -188,8 +194,8 @@ export default function AttendancePage() {
         </div>
       </Card>
 
-      {/* Date Range Filters */}
-      <div className="flex items-center gap-4">
+      {/* Date Range Filters (desktop only) */}
+      <div className="hidden md:flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
         <Input
           label="From"
           type="date"
@@ -224,15 +230,17 @@ export default function AttendancePage() {
         )}
       </div>
 
-      {/* Table */}
-      <Card padding={false}>
-        <Table
-          columns={columns}
-          data={attendance?.items ?? []}
-          loading={isLoading}
-          keyExtractor={(r) => r.id}
-          emptyText="No attendance records found"
-        />
+      {/* Table (desktop only) */}
+      <Card padding={false} className="hidden md:block">
+        <div className="overflow-x-auto">
+          <Table
+            columns={columns}
+            data={attendance?.items ?? []}
+            loading={isLoading}
+            keyExtractor={(r) => r.id}
+            emptyText="No attendance records found"
+          />
+        </div>
         <Pagination page={page} pages={totalPages} total={attendance?.total ?? 0} onChange={setPage} />
       </Card>
     </div>

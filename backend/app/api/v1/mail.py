@@ -1,15 +1,19 @@
-"""Mail API — proxies requests to the Stalwart mail server via JMAP.
+"""Mail API — built-in SMTP/IMAP + PostgreSQL storage.
+
+Messages are stored in the ``mailbox_messages`` table and sent via the
+``smtp_client`` integration.
 
 Enhanced with: inbox rules, signatures, read receipts, AI reply suggestions.
 """
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import select, update, delete
+from sqlalchemy import and_, func, select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -32,6 +36,7 @@ class SendMessagePayload(BaseModel):
     references: str | None = None
     signature_id: str | None = None
     request_read_receipt: bool = False
+    attachments: list[dict] | None = None
 
 
 class RuleCreate(BaseModel):
@@ -120,45 +125,128 @@ async def _append_signature(
     return body, html_body
 
 
+# ── Built-in helpers ──────────────────────────────────────────────────────────
+
+async def _builtin_get_message(db: AsyncSession, message_id: str, user_id: uuid.UUID) -> dict[str, Any] | None:
+    """Retrieve a message from local DB storage."""
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
+
+    try:
+        msg_uuid = uuid.UUID(message_id)
+    except ValueError:
+        return None
+
+    result = await db.execute(
+        select(MailboxMessage).where(
+            MailboxMessage.id == msg_uuid,
+            MailboxMessage.user_id == user_id,
+            MailboxMessage.is_deleted.is_(False),
+        )
+    )
+    msg = result.scalar_one_or_none()
+    if not msg:
+        return None
+    return msg.to_full_dict()
+
+
 # ── Core mail endpoints ──────────────────────────────────────────────────────
 
-@router.get("/folders", summary="List mail folders (Stalwart JMAP)")
-async def list_folders(current_user: CurrentUser) -> dict[str, Any]:
-    from app.integrations import stalwart  # noqa: PLC0415
+@router.get("/folders", summary="List mail folders")
+async def list_folders(current_user: CurrentUser, db: DBSession) -> dict[str, Any]:
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
 
-    result = await stalwart.list_folders(_user_email(current_user))
-    return result
+    result = await db.execute(
+        select(
+            MailboxMessage.folder,
+            func.count(MailboxMessage.id).label("total"),
+            func.count(MailboxMessage.id).filter(MailboxMessage.is_read.is_(False)).label("unread"),
+        )
+        .where(MailboxMessage.user_id == current_user.id, MailboxMessage.is_deleted.is_(False))
+        .group_by(MailboxMessage.folder)
+    )
+    rows = result.all()
+
+    # Ensure default folders always appear
+    default_folders = {"INBOX", "Sent", "Drafts", "Trash", "Spam", "Archive"}
+    folder_map: dict[str, dict] = {}
+    for name in default_folders:
+        folder_map[name] = {"id": name.lower(), "name": name, "role": name.lower(), "total_emails": 0, "unread_emails": 0}
+
+    for row in rows:
+        folder_name = row[0]
+        total = row[1]
+        unread = row[2]
+        key = folder_name
+        folder_map[key] = {
+            "id": folder_name.lower(),
+            "name": folder_name,
+            "role": folder_name.lower() if folder_name in default_folders else None,
+            "total_emails": total,
+            "unread_emails": unread,
+        }
+
+    return {"service_available": True, "folders": list(folder_map.values())}
 
 
 @router.get("/messages", summary="List messages in a folder")
 async def list_messages(
     current_user: CurrentUser,
-    folder: str = Query("inbox", description="Folder ID or name"),
+    db: DBSession,
+    folder: str = Query("INBOX", description="Folder name"),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
 ) -> dict[str, Any]:
-    from app.integrations import stalwart  # noqa: PLC0415
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
 
-    result = await stalwart.list_messages(
-        user_email=_user_email(current_user),
-        folder_id=folder,
-        page=page,
-        limit=limit,
+    # Map "inbox" -> "INBOX" for case-insensitive folder matching
+    folder_filter = folder if folder != "inbox" else "INBOX"
+
+    base_q = select(MailboxMessage).where(
+        MailboxMessage.user_id == current_user.id,
+        MailboxMessage.folder == folder_filter,
+        MailboxMessage.is_deleted.is_(False),
     )
-    return result
+
+    # Total count
+    count_result = await db.execute(
+        select(func.count()).select_from(base_q.subquery())
+    )
+    total = count_result.scalar() or 0
+
+    # Paginated results
+    offset = (page - 1) * limit
+    result = await db.execute(
+        base_q.order_by(MailboxMessage.received_at.desc()).offset(offset).limit(limit)
+    )
+    messages = result.scalars().all()
+
+    return {
+        "service_available": True,
+        "total": total,
+        "messages": [m.to_summary_dict() for m in messages],
+    }
 
 
 @router.get("/message/{message_id}", summary="Get full message content")
 async def get_message(
     message_id: str,
     current_user: CurrentUser,
+    db: DBSession,
 ) -> dict[str, Any]:
-    from app.integrations import stalwart  # noqa: PLC0415
-
-    result = await stalwart.get_message(_user_email(current_user), message_id)
-    if result.get("service_available") and result.get("message") is None:
+    msg = await _builtin_get_message(db, message_id, current_user.id)
+    if not msg:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
-    return result
+
+    # Auto-mark as read when fetched
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
+    await db.execute(
+        update(MailboxMessage)
+        .where(MailboxMessage.id == uuid.UUID(message_id), MailboxMessage.user_id == current_user.id)
+        .values(is_read=True)
+    )
+    await db.commit()
+
+    return {"service_available": True, "message": msg}
 
 
 @router.post("/send", status_code=status.HTTP_201_CREATED, summary="Send an email")
@@ -167,8 +255,6 @@ async def send_email(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
-    from app.integrations import stalwart  # noqa: PLC0415
-
     from_email = _user_email(current_user)
 
     # Append signature
@@ -176,25 +262,58 @@ async def send_email(
         db, current_user.id, payload.body, payload.html_body, payload.signature_id
     )
 
-    result = await stalwart.send_message(
-        from_email=from_email,
-        to=[str(addr) for addr in payload.to],
+    # Built-in SMTP sending
+    from app.integrations.smtp_client import send_email as smtp_send  # noqa: PLC0415
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
+
+    result = await smtp_send(
+        from_addr=from_email,
+        to_addrs=[str(addr) for addr in payload.to],
         subject=payload.subject,
-        body=body,
+        body_html=html_body,
+        body_text=body,
         cc=[str(addr) for addr in payload.cc] if payload.cc else None,
-        html_body=html_body,
+        attachments=payload.attachments,
+        in_reply_to=payload.in_reply_to,
+        references=payload.references,
+        from_name=getattr(current_user, "full_name", None),
     )
 
-    if not result.get("service_available"):
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Mail service is not available",
-        )
     if not result.get("success"):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to send email via mail server",
+            detail=result.get("error", "Failed to send email"),
         )
+
+    # Store in Sent folder
+    sent_msg = MailboxMessage(
+        user_id=current_user.id,
+        folder="Sent",
+        from_addr=from_email,
+        from_name=getattr(current_user, "full_name", "") or "",
+        to_addrs=[{"email": str(a)} for a in payload.to],
+        cc=[{"email": str(a)} for a in payload.cc] if payload.cc else [],
+        subject=payload.subject,
+        body_html=html_body or "",
+        body_text=body,
+        message_id_header=result.get("message_id", ""),
+        in_reply_to=payload.in_reply_to or "",
+        references=payload.references or "",
+        is_read=True,
+        received_at=datetime.now(timezone.utc),
+        sent_at=datetime.now(timezone.utc),
+        attachments=[
+            {"filename": a.get("filename", ""), "content_type": a.get("content_type", ""), "size": len(a.get("content", b""))}
+            for a in (payload.attachments or [])
+        ],
+    )
+    db.add(sent_msg)
+
+    result = {
+        "service_available": True,
+        "success": True,
+        "message_id": result.get("message_id"),
+    }
 
     # Create read receipt tracking if requested
     if payload.request_read_receipt:
@@ -206,9 +325,10 @@ async def send_email(
                 recipient_email=str(addr),
             )
             db.add(receipt)
-        await db.commit()
 
-    # Publish event for Mail→Calendar integration
+    await db.commit()
+
+    # Publish event for Mail->Calendar integration
     await event_bus.publish("mail.sent", {
         "user_id": str(current_user.id),
         "from": from_email,
@@ -224,122 +344,208 @@ async def send_email(
 async def mark_as_read(
     message_id: str,
     current_user: CurrentUser,
+    db: DBSession,
 ) -> dict[str, Any]:
-    """Mark a message as read via Stalwart JMAP Email/set (keywords update)."""
-    import httpx  # noqa: PLC0415
-
-    user_email = _user_email(current_user)
-
-    stalwart_url = settings.STALWART_URL.strip()
-    if not stalwart_url or stalwart_url in ("", "http://stalwart:8080"):
-        return {"service_available": False, "success": False}
-
-    jmap_base = f"{stalwart_url}/jmap"
-    headers = {
-        "Authorization": f"Bearer {settings.SECRET_KEY}",
-        "X-User-Email": user_email,
-        "Content-Type": "application/json",
-    }
-    payload_data = {
-        "using": ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:mail"],
-        "methodCalls": [
-            [
-                "Email/set",
-                {
-                    "accountId": user_email,
-                    "update": {
-                        message_id: {
-                            "keywords/\\Seen": True,
-                        }
-                    },
-                },
-                "0",
-            ]
-        ],
-    }
-
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(jmap_base, json=payload_data, headers=headers)
-            resp.raise_for_status()
-            data = resp.json()
-            for name, result, _ in data.get("methodResponses", []):
-                if name == "Email/set":
-                    updated = result.get("updated", {})
-                    return {
-                        "service_available": True,
-                        "success": message_id in updated,
-                        "message_id": message_id,
-                    }
-            return {"service_available": True, "success": False, "action": "mark_read"}
-    except Exception as exc:
-        return {"service_available": False, "success": False, "error": str(exc), "action": "mark_read"}
+        msg_uuid = uuid.UUID(message_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid message ID")
+
+    result = await db.execute(
+        update(MailboxMessage)
+        .where(MailboxMessage.id == msg_uuid, MailboxMessage.user_id == current_user.id)
+        .values(is_read=True)
+    )
+    await db.commit()
+    return {"service_available": True, "success": result.rowcount > 0, "message_id": message_id}
+
+
+@router.put("/message/{message_id}/star", summary="Toggle star on a message")
+async def toggle_star(
+    message_id: str,
+    current_user: CurrentUser,
+    db: DBSession,
+    starred: bool = Query(True),
+) -> dict[str, Any]:
+    """Toggle the starred flag on a message."""
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
+    try:
+        msg_uuid = uuid.UUID(message_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid message ID")
+
+    result = await db.execute(
+        update(MailboxMessage)
+        .where(MailboxMessage.id == msg_uuid, MailboxMessage.user_id == current_user.id)
+        .values(is_starred=starred)
+    )
+    await db.commit()
+    return {"success": result.rowcount > 0, "starred": starred}
+
+
+@router.put("/message/{message_id}/move", summary="Move message to another folder")
+async def move_message(
+    message_id: str,
+    current_user: CurrentUser,
+    db: DBSession,
+    folder: str = Query(..., description="Target folder name"),
+) -> dict[str, Any]:
+    """Move a message to a different folder."""
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
+    try:
+        msg_uuid = uuid.UUID(message_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid message ID")
+
+    result = await db.execute(
+        update(MailboxMessage)
+        .where(MailboxMessage.id == msg_uuid, MailboxMessage.user_id == current_user.id)
+        .values(folder=folder)
+    )
+    await db.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Message not found")
+    return {"success": True, "folder": folder}
 
 
 @router.delete("/message/{message_id}", status_code=status.HTTP_200_OK, summary="Delete/trash a message")
 async def delete_message(
     message_id: str,
     current_user: CurrentUser,
+    db: DBSession,
+    permanent: bool = Query(False, description="Permanently delete instead of moving to Trash"),
 ) -> dict[str, Any]:
-    """Move a message to Trash via Stalwart JMAP Email/set."""
-    import httpx  # noqa: PLC0415
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
+    try:
+        msg_uuid = uuid.UUID(message_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid message ID")
 
-    user_email = _user_email(current_user)
+    if permanent:
+        result = await db.execute(
+            update(MailboxMessage)
+            .where(MailboxMessage.id == msg_uuid, MailboxMessage.user_id == current_user.id)
+            .values(is_deleted=True)
+        )
+    else:
+        # Move to Trash
+        result = await db.execute(
+            update(MailboxMessage)
+            .where(MailboxMessage.id == msg_uuid, MailboxMessage.user_id == current_user.id)
+            .values(folder="Trash")
+        )
+    await db.commit()
+    return {"service_available": True, "success": result.rowcount > 0, "message_id": message_id}
 
-    stalwart_url = settings.STALWART_URL.strip()
-    if not stalwart_url or stalwart_url in ("", "http://stalwart:8080"):
-        return {"service_available": False, "success": False}
 
-    jmap_base = f"{stalwart_url}/jmap"
-    headers = {
-        "Authorization": f"Bearer {settings.SECRET_KEY}",
-        "X-User-Email": user_email,
-        "Content-Type": "application/json",
-    }
+# ── Attachments ──────────────────────────────────────────────────────────────
 
-    payload_data = {
-        "using": ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:mail"],
-        "methodCalls": [
-            [
-                "Mailbox/query",
-                {"accountId": user_email, "filter": {"role": "trash"}},
-                "0",
-            ],
-            [
-                "Email/set",
-                {
-                    "accountId": user_email,
-                    "update": {
-                        message_id: {
-                            "#mailboxIds": {
-                                "resultOf": "0",
-                                "name": "Mailbox/query",
-                                "path": "/ids/0",
-                            }
-                        }
-                    },
-                },
-                "1",
-            ],
-        ],
-    }
+@router.get("/message/{message_id}/attachment/{attachment_id}", summary="Download a mail attachment")
+async def download_attachment(
+    message_id: str,
+    attachment_id: str,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> Response:
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
+    try:
+        msg_uuid = uuid.UUID(message_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid message ID")
+
+    result = await db.execute(
+        select(MailboxMessage).where(
+            MailboxMessage.id == msg_uuid,
+            MailboxMessage.user_id == current_user.id,
+        )
+    )
+    msg = result.scalar_one_or_none()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    # Find attachment by index or storage_key
+    for att in (msg.attachments or []):
+        if att.get("storage_key") == attachment_id or str(att.get("index", "")) == attachment_id:
+            storage_key = att.get("storage_key")
+            if not storage_key:
+                raise HTTPException(status_code=404, detail="Attachment not stored")
+            from app.integrations import minio_client  # noqa: PLC0415
+            data = minio_client.download_file(storage_key)
+            return Response(
+                content=data,
+                media_type=att.get("content_type", "application/octet-stream"),
+                headers={"Content-Disposition": f'attachment; filename="{att.get("filename", "attachment")}"'},
+            )
+
+    raise HTTPException(status_code=404, detail="Attachment not found")
+
+
+@router.post("/message/{message_id}/attachment/{attachment_id}/save-to-drive", summary="Save attachment to Drive")
+async def save_attachment_to_drive(
+    message_id: str,
+    attachment_id: str,
+    current_user: CurrentUser,
+    db: DBSession,
+    folder_path: str = Query("mail-attachments", description="Drive folder to save into"),
+) -> dict[str, Any]:
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
+    from app.integrations import minio_client  # noqa: PLC0415
+    from app.models.drive import DriveFile  # noqa: PLC0415
 
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(jmap_base, json=payload_data, headers=headers)
-            resp.raise_for_status()
-            data = resp.json()
-            for name, result, _ in data.get("methodResponses", []):
-                if name == "Email/set":
-                    updated = result.get("updated", {})
-                    return {
-                        "service_available": True,
-                        "success": message_id in updated,
-                        "message_id": message_id,
-                    }
-            return {"service_available": True, "success": False}
-    except Exception as exc:
-        return {"service_available": False, "success": False, "error": str(exc)}
+        msg_uuid = uuid.UUID(message_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid message ID")
+
+    result = await db.execute(
+        select(MailboxMessage).where(
+            MailboxMessage.id == msg_uuid,
+            MailboxMessage.user_id == current_user.id,
+        )
+    )
+    msg = result.scalar_one_or_none()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    # Find matching attachment by storage_key or index
+    target_att = None
+    for att in (msg.attachments or []):
+        if att.get("storage_key") == attachment_id or str(att.get("index", "")) == attachment_id:
+            target_att = att
+            break
+
+    if not target_att or not target_att.get("storage_key"):
+        raise HTTPException(status_code=404, detail="Attachment not found")
+
+    data = minio_client.download_file(target_att["storage_key"])
+    filename = target_att.get("filename", "attachment")
+    content_type = target_att.get("content_type", "application/octet-stream")
+
+    record = minio_client.upload_file(
+        file_data=data, filename=filename,
+        user_id=str(current_user.id), folder_path=folder_path,
+        content_type=content_type,
+    )
+    drive_file = DriveFile(
+        id=uuid.UUID(record["file_id"]), name=filename,
+        content_type=content_type, size=len(data),
+        minio_key=record["minio_key"], folder_path=f"/{folder_path}",
+        owner_id=current_user.id, is_public=False,
+    )
+    db.add(drive_file)
+    await db.commit()
+    await db.refresh(drive_file)
+    await event_bus.publish("file.uploaded", {
+        "file_id": str(drive_file.id), "name": drive_file.name,
+        "size": drive_file.size, "owner_id": str(current_user.id),
+        "source": "mail_attachment", "message_id": message_id,
+    })
+    return {
+        "saved": True, "file_id": str(drive_file.id),
+        "filename": filename, "size": len(data),
+        "folder_path": f"/{folder_path}",
+    }
 
 
 # ── Reply / Forward ──────────────────────────────────────────────────────────
@@ -348,68 +554,114 @@ async def delete_message(
 async def reply_to_email(
     payload: ReplyPayload,
     current_user: CurrentUser,
+    db: DBSession,
 ) -> dict[str, Any]:
-    from app.integrations import stalwart  # noqa: PLC0415
-
     user_email = _user_email(current_user)
-    original = await stalwart.get_message(user_email, payload.message_id)
 
-    if not original.get("service_available"):
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Mail service unavailable")
-
-    msg = original.get("message")
-    if not msg:
+    msg_data = await _builtin_get_message(db, payload.message_id, current_user.id)
+    if not msg_data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Original message not found")
 
-    to_addrs = [msg.get("from", user_email)] if not payload.reply_all else [msg.get("from", "")] + (msg.get("cc") or [])
+    from_info = msg_data.get("from", {})
+    original_from = from_info.get("email", "") if isinstance(from_info, dict) else str(from_info)
+
+    to_addrs = [original_from] if not payload.reply_all else [original_from] + [a.get("email", "") for a in (msg_data.get("cc") or [])]
     to_addrs = [a for a in to_addrs if a and a != user_email]
     if not to_addrs:
-        to_addrs = [msg.get("from", "")]
+        to_addrs = [original_from]
 
-    subject = msg.get("subject", "")
+    subject = msg_data.get("subject", "")
     if not subject.lower().startswith("re:"):
         subject = f"Re: {subject}"
 
-    result = await stalwart.send_message(
-        from_email=user_email, to=to_addrs, subject=subject,
-        body=payload.body, html_body=payload.html_body,
+    from app.integrations.smtp_client import send_email as smtp_send  # noqa: PLC0415
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
+
+    result = await smtp_send(
+        from_addr=user_email,
+        to_addrs=to_addrs,
+        subject=subject,
+        body_text=payload.body,
+        body_html=payload.html_body,
+        in_reply_to=msg_data.get("message_id_header", ""),
+        references=msg_data.get("references", ""),
     )
-    if not result.get("success", False):
+    if not result.get("success"):
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Failed to send reply")
-    return result
+
+    # Store sent reply
+    sent_msg = MailboxMessage(
+        user_id=current_user.id,
+        folder="Sent",
+        from_addr=user_email,
+        from_name=getattr(current_user, "full_name", "") or "",
+        to_addrs=[{"email": a} for a in to_addrs],
+        subject=subject,
+        body_text=payload.body,
+        body_html=payload.html_body or "",
+        message_id_header=result.get("message_id", ""),
+        in_reply_to=msg_data.get("message_id_header", ""),
+        references=msg_data.get("references", ""),
+        is_read=True,
+        received_at=datetime.now(timezone.utc),
+        sent_at=datetime.now(timezone.utc),
+    )
+    db.add(sent_msg)
+    await db.commit()
+
+    return {"service_available": True, "success": True, "message_id": result.get("message_id")}
 
 
 @router.post("/forward", status_code=status.HTTP_201_CREATED, summary="Forward an email")
 async def forward_email(
     payload: ForwardPayload,
     current_user: CurrentUser,
+    db: DBSession,
 ) -> dict[str, Any]:
-    from app.integrations import stalwart  # noqa: PLC0415
-
     user_email = _user_email(current_user)
-    original = await stalwart.get_message(user_email, payload.message_id)
 
-    if not original.get("service_available"):
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Mail service unavailable")
-
-    msg = original.get("message")
-    if not msg:
+    msg_data = await _builtin_get_message(db, payload.message_id, current_user.id)
+    if not msg_data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Original message not found")
 
-    subject = msg.get("subject", "")
+    subject = msg_data.get("subject", "")
     if not subject.lower().startswith("fwd:"):
         subject = f"Fwd: {subject}"
 
-    original_body = msg.get("body_text", "") or msg.get("body_html", "")
-    combined = f"{payload.body or ''}\n\n---------- Forwarded message ----------\nFrom: {msg.get('from', '')}\nSubject: {msg.get('subject', '')}\n\n{original_body}"
+    from_info = msg_data.get("from", {})
+    original_from = from_info.get("email", "") if isinstance(from_info, dict) else str(from_info)
+    original_body = msg_data.get("body_text", "") or msg_data.get("body_html", "")
+    combined = f"{payload.body or ''}\n\n---------- Forwarded message ----------\nFrom: {original_from}\nSubject: {msg_data.get('subject', '')}\n\n{original_body}"
 
-    result = await stalwart.send_message(
-        from_email=user_email, to=[str(a) for a in payload.to],
-        subject=subject, body=combined,
+    from app.integrations.smtp_client import send_email as smtp_send  # noqa: PLC0415
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
+
+    result = await smtp_send(
+        from_addr=user_email,
+        to_addrs=[str(a) for a in payload.to],
+        subject=subject,
+        body_text=combined,
     )
-    if not result.get("success", False):
+    if not result.get("success"):
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Failed to forward email")
-    return result
+
+    sent_msg = MailboxMessage(
+        user_id=current_user.id,
+        folder="Sent",
+        from_addr=user_email,
+        from_name=getattr(current_user, "full_name", "") or "",
+        to_addrs=[{"email": str(a)} for a in payload.to],
+        subject=subject,
+        body_text=combined,
+        message_id_header=result.get("message_id", ""),
+        is_read=True,
+        received_at=datetime.now(timezone.utc),
+        sent_at=datetime.now(timezone.utc),
+    )
+    db.add(sent_msg)
+    await db.commit()
+
+    return {"service_available": True, "success": True, "message_id": result.get("message_id")}
 
 
 # ── Inbox Rules ──────────────────────────────────────────────────────────────
@@ -506,7 +758,6 @@ async def list_signatures(current_user: CurrentUser, db: DBSession) -> dict[str,
 
 @router.post("/signatures", status_code=status.HTTP_201_CREATED, summary="Create email signature")
 async def create_signature(payload: SignatureCreate, current_user: CurrentUser, db: DBSession) -> dict[str, Any]:
-    # If setting as default, unset any existing default
     if payload.is_default:
         await db.execute(
             update(MailSignature)
@@ -541,7 +792,6 @@ async def update_signature(
 
     update_data = payload.model_dump(exclude_unset=True)
 
-    # Handle default toggle
     if update_data.get("is_default"):
         await db.execute(
             update(MailSignature)
@@ -591,9 +841,6 @@ async def list_read_receipts(current_user: CurrentUser, db: DBSession) -> dict[s
 
 @router.post("/read-receipts/{receipt_id}/confirm", summary="Confirm a read receipt")
 async def confirm_read_receipt(receipt_id: str, db: DBSession) -> dict[str, Any]:
-    """Called when a recipient opens a tracked message (e.g., via tracking pixel)."""
-    from datetime import datetime, timezone
-
     receipt = await db.get(ReadReceipt, uuid.UUID(receipt_id))
     if not receipt:
         raise HTTPException(status_code=404, detail="Receipt not found")
@@ -611,22 +858,21 @@ async def confirm_read_receipt(receipt_id: str, db: DBSession) -> dict[str, Any]
 async def ai_suggest_reply(
     payload: AISuggestPayload,
     current_user: CurrentUser,
+    db: DBSession,
 ) -> dict[str, Any]:
-    from app.integrations import stalwart  # noqa: PLC0415
-    from app.services.ai import AIService  # noqa: PLC0415
+    msg = await _builtin_get_message(db, payload.message_id, current_user.id)
 
-    user_email = _user_email(current_user)
-    original = await stalwart.get_message(user_email, payload.message_id)
-
-    if not original.get("service_available"):
-        return {"suggestions": [], "error": "Mail service unavailable"}
-
-    msg = original.get("message")
     if not msg:
         return {"suggestions": [], "error": "Message not found"}
 
+    from_val = msg.get("from", "")
+    if isinstance(from_val, dict):
+        from_val = from_val.get("email", "")
+    elif isinstance(from_val, list) and from_val:
+        from_val = from_val[0].get("email", "") if isinstance(from_val[0], dict) else str(from_val[0])
+
     email_context = (
-        f"From: {msg.get('from', '')}\n"
+        f"From: {from_val}\n"
         f"Subject: {msg.get('subject', '')}\n"
         f"Body:\n{msg.get('body_text', '') or msg.get('body_html', '')}"
     )
@@ -640,16 +886,16 @@ async def ai_suggest_reply(
         prompt += f"\n\nAdditional context: {payload.context}"
 
     try:
+        from app.services.ai import AIService  # noqa: PLC0415
+        import json
+
         ai = AIService()
         response = await ai.generate(
             prompt=prompt,
             user_id=str(current_user.id),
             context={"tool": "mail_suggest_reply"},
         )
-        # Try to parse as JSON array
-        import json
         text = response.get("response", "")
-        # Extract JSON array from response
         start = text.find("[")
         end = text.rfind("]") + 1
         if start >= 0 and end > start:

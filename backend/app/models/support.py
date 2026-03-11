@@ -186,3 +186,99 @@ class SLAPolicy(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<SLAPolicy id={self.id} priority={self.priority}>"
+
+
+class CannedResponse(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Pre-written response template for support agents."""
+
+    __tablename__ = "canned_responses"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    author = relationship("User", foreign_keys=[created_by], lazy="joined")
+
+    def __repr__(self) -> str:
+        return f"<CannedResponse id={self.id} name={self.name!r}>"
+
+
+class TicketTag(Base, UUIDPrimaryKeyMixin):
+    """Explicit tag association for a ticket (normalised)."""
+
+    __tablename__ = "ticket_tags"
+
+    ticket_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tickets.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tag_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+
+    ticket = relationship("Ticket", foreign_keys=[ticket_id])
+
+    def __repr__(self) -> str:
+        return f"<TicketTag ticket={self.ticket_id} tag={self.tag_name!r}>"
+
+
+class TicketRoutingRule(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Auto-routing rule: matches conditions on new tickets to auto-assign/re-prioritize."""
+
+    __tablename__ = "ticket_routing_rules"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # JSON conditions: {"subject_contains": "...", "priority": "...", "customer_email_domain": "...", "tags_include": [...], "category_id": "..."}
+    conditions: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
+
+    # Actions
+    assign_to: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    priority_override: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    category_override: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ticket_categories.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    priority_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # Relationships
+    assignee = relationship("User", foreign_keys=[assign_to], lazy="joined")
+
+    def __repr__(self) -> str:
+        return f"<TicketRoutingRule id={self.id} name={self.name!r} active={self.is_active}>"
+
+
+class CustomerSatisfaction(Base, UUIDPrimaryKeyMixin):
+    """CSAT survey response linked to a resolved/closed ticket."""
+
+    __tablename__ = "customer_satisfaction"
+
+    ticket_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tickets.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5
+    feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
+    submitted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    ticket = relationship("Ticket", foreign_keys=[ticket_id])
+
+    def __repr__(self) -> str:
+        return f"<CustomerSatisfaction ticket={self.ticket_id} rating={self.rating}>"

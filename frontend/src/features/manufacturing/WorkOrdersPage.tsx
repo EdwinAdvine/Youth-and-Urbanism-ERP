@@ -239,17 +239,17 @@ export default function WorkOrdersPage() {
   ]
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Work Orders</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage production work orders</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Work Orders</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Manage production work orders</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/manufacturing')}>
+          <Button variant="outline" onClick={() => navigate('/manufacturing')} className="min-h-[44px] sm:min-h-0">
             Dashboard
           </Button>
-          <Button onClick={() => setModalOpen(true)}>
+          <Button onClick={() => setModalOpen(true)} className="min-h-[44px] sm:min-h-0">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -259,8 +259,8 @@ export default function WorkOrdersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="flex gap-1">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
+        <div className="flex gap-1 flex-wrap">
           {STATUS_FILTERS.map((sf) => (
             <Button
               key={sf}
@@ -282,13 +282,15 @@ export default function WorkOrdersPage() {
 
       {/* Table */}
       <Card padding={false}>
-        <Table<WorkOrder>
-          columns={columns}
-          data={data?.work_orders ?? []}
-          loading={isLoading}
-          emptyText="No work orders found"
-          keyExtractor={(row) => row.id}
-        />
+        <div className="overflow-x-auto">
+          <Table<WorkOrder>
+            columns={columns}
+            data={data?.work_orders ?? []}
+            loading={isLoading}
+            emptyText="No work orders found"
+            keyExtractor={(row) => row.id}
+          />
+        </div>
         {(data?.total ?? 0) > limit && (
           <div className="flex justify-center p-4 border-t border-gray-100">
             <div className="flex gap-2">
@@ -371,7 +373,7 @@ export default function WorkOrdersPage() {
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Planned Start"
               type="date"

@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Spinner, Badge, Card, toast } from '../../components/ui'
-import { useGRN, useAcceptGRN, useRejectGRN } from '../../api/supplychain'
+import { useState } from 'react'
+import { useGRN, useAcceptGRN, useRejectGRN, usePostGRN } from '../../api/supplychain'
 
 const STATUS_BADGE: Record<string, 'success' | 'danger' | 'info' | 'warning' | 'default'> = {
   draft: 'default',
@@ -16,6 +17,8 @@ export default function GRNDetail() {
   const { data: grn, isLoading } = useGRN(id ?? '')
   const accept = useAcceptGRN()
   const reject = useRejectGRN()
+  const postGRN = usePostGRN()
+  const [showPostConfirm, setShowPostConfirm] = useState(false)
 
   if (isLoading) return <div className="flex items-center justify-center min-h-[60vh]"><Spinner size="lg" /></div>
   if (!grn) return <div className="p-6 text-gray-500">GRN not found</div>
@@ -36,6 +39,11 @@ export default function GRNDetail() {
         <h1 className="text-xl font-bold text-gray-900">{grn.grn_number}</h1>
         <Badge variant={STATUS_BADGE[grn.status] ?? 'default'}>{grn.status}</Badge>
         <div className="ml-auto flex gap-2">
+          {(grn.status === 'draft' || grn.status === 'pending') && (
+            <Button size="sm" onClick={() => setShowPostConfirm(true)} loading={postGRN.isPending} className="bg-[#51459d] hover:bg-[#3d3480]">
+              Post GRN
+            </Button>
+          )}
           {grn.status === 'draft' && (
             <>
               <Button size="sm" variant="outline" onClick={handleReject} loading={reject.isPending}>Reject</Button>
@@ -85,6 +93,35 @@ export default function GRNDetail() {
           </table>
         </div>
       </Card>
+
+      {/* Post GRN Confirmation Dialog */}
+      {showPostConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">Post GRN</h3>
+            <p className="text-sm text-gray-500 mb-4">Are you sure you want to post this GRN? This action will update inventory and cannot be undone.</p>
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="outline" onClick={() => setShowPostConfirm(false)}>Cancel</Button>
+              <Button
+                size="sm"
+                loading={postGRN.isPending}
+                className="bg-[#51459d] hover:bg-[#3d3480]"
+                onClick={async () => {
+                  try {
+                    await postGRN.mutateAsync(grn!.id)
+                    toast('success', 'GRN posted successfully')
+                  } catch {
+                    toast('error', 'Failed to post GRN')
+                  }
+                  setShowPostConfirm(false)
+                }}
+              >
+                Confirm Post
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

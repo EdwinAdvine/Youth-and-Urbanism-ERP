@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { cn, Button, Spinner, Badge, Card, Table } from '../../components/ui'
+import { cn, Button, Spinner, Badge, Card, Table, toast } from '../../components/ui'
 import {
   useEcomOrder,
   useUpdateOrderStatus,
+  useFulfillOrder,
+  useCancelOrder,
   type EcomOrderLine,
 } from '../../api/ecommerce'
+import { useCreateProcurementFromOrder } from '../../api/cross_module_links'
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount)
@@ -45,8 +48,12 @@ export default function OrderDetail() {
   const { id } = useParams<{ id: string }>()
   const { data: order, isLoading } = useEcomOrder(id || '')
   const updateStatus = useUpdateOrderStatus()
+  const fulfillOrder = useFulfillOrder()
+  const cancelOrder = useCancelOrder()
+  const createProcurement = useCreateProcurementFromOrder()
 
   const [trackingNumber, setTrackingNumber] = useState('')
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null)
 
   if (isLoading) {
     return (
@@ -69,6 +76,31 @@ export default function OrderDetail() {
       tracking_number: trackingNumber || undefined,
     })
   }
+
+  const handleFulfill = async () => {
+    if (!window.confirm('Are you sure you want to fulfill this order?')) return
+    try {
+      await fulfillOrder.mutateAsync(order.id)
+      setActionSuccess('Order has been fulfilled successfully.')
+      setTimeout(() => setActionSuccess(null), 3000)
+    } catch {
+      alert('Failed to fulfill order.')
+    }
+  }
+
+  const handleCancel = async () => {
+    if (!window.confirm('Are you sure you want to cancel this order? This action cannot be undone.')) return
+    try {
+      await cancelOrder.mutateAsync(order.id)
+      setActionSuccess('Order has been cancelled.')
+      setTimeout(() => setActionSuccess(null), 3000)
+    } catch {
+      alert('Failed to cancel order.')
+    }
+  }
+
+  const canFulfill = ['pending', 'confirmed', 'processing'].includes(order.status)
+  const canCancel = !['fulfilled', 'delivered', 'cancelled'].includes(order.status)
 
   const currentStatusIdx = ORDER_STATUSES.indexOf(order.status)
 
@@ -105,15 +137,56 @@ export default function OrderDetail() {
             Placed on {formatDate(order.created_at)}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <Badge variant={STATUS_BADGE[order.status] ?? 'default'} className="text-sm px-3 py-1">
             {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
           </Badge>
+          {canFulfill && (
+            <Button
+              onClick={handleFulfill}
+              loading={fulfillOrder.isPending}
+              className="bg-[#6fd943] hover:bg-[#5ec835] text-white"
+            >
+              Fulfill Order
+            </Button>
+          )}
+          {canFulfill && (
+            <Button
+              variant="outline"
+              onClick={async () => {
+                try {
+                  const res = await createProcurement.mutateAsync({ orderId: order.id })
+                  toast('success', res.message || 'Procurement request created')
+                } catch {
+                  toast('error', 'Failed to create procurement request')
+                }
+              }}
+              loading={createProcurement.isPending}
+            >
+              Create Procurement
+            </Button>
+          )}
+          {canCancel && (
+            <Button
+              variant="danger"
+              onClick={handleCancel}
+              loading={cancelOrder.isPending}
+            >
+              Cancel Order
+            </Button>
+          )}
           <Button variant="ghost" onClick={() => navigate('/ecommerce/orders')}>
             Back
           </Button>
         </div>
       </div>
+
+      {/* Success toast */}
+      {actionSuccess && (
+        <div className="mb-4 bg-green-50 border border-green-200 rounded-[10px] px-4 py-3 text-sm text-green-700">
+          {actionSuccess}
+        </div>
+      )}
 
       {/* Status Timeline */}
       {order.status !== 'cancelled' && (

@@ -12,6 +12,7 @@ import {
 } from '../../api/crm'
 import { cn, Button, Spinner, Modal, Input, Badge, Select } from '../../components/ui'
 import { toast } from '../../components/ui'
+import QuickActivityLog from './QuickActivityLog'
 
 const STAGES: OpportunityStage[] = ['prospecting', 'proposal', 'negotiation', 'closed_won', 'closed_lost']
 
@@ -139,108 +140,118 @@ export default function PipelinePage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pipeline</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage opportunities through your sales pipeline</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Pipeline</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Manage opportunities through your sales pipeline</p>
         </div>
-        <Button onClick={openCreate}>+ New Opportunity</Button>
+        <Button onClick={openCreate} className="w-full sm:w-auto min-h-[44px] sm:min-h-0">+ New Opportunity</Button>
       </div>
 
-      {/* Kanban Board */}
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {STAGES.map((stage) => {
-          const stageData = stageMap[stage] ?? { count: 0, total_value: 0, items: [] }
-          return (
-            <div key={stage} className="flex-shrink-0 w-72">
-              {/* Column Header */}
-              <div
-                className={cn(
-                  'rounded-t-[10px] border-t-4 px-4 py-3',
-                  STAGE_COLORS[stage],
-                  STAGE_BG[stage]
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm text-gray-900">{STAGE_LABELS[stage]}</span>
-                    <span className="text-xs bg-gray-200 text-gray-600 rounded-full px-2 py-0.5">
-                      {stageData.count}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-600 mt-1 font-medium">
-                  {formatCurrency(stageData.total_value)}
-                </p>
-              </div>
-
-              {/* Cards */}
-              <div className="space-y-2 mt-2 min-h-[200px]">
-                {stageData.items.length === 0 ? (
-                  <div className="text-center text-gray-400 text-xs py-8 border-2 border-dashed border-gray-200 rounded-[10px]">
-                    No opportunities
-                  </div>
-                ) : (
-                  stageData.items.map((opp) => (
-                    <div
-                      key={opp.id}
-                      className="bg-white rounded-[10px] border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => openEdit(opp)}
-                    >
-                      <h3 className="font-medium text-sm text-gray-900 leading-tight">{opp.title}</h3>
-                      {opp.contact_name && (
-                        <p className="text-xs text-gray-500 mt-1">{opp.contact_name}</p>
-                      )}
-                      <div className="flex items-center justify-between mt-2">
-                        <p className="text-sm font-semibold text-primary">
-                          {formatCurrency(opp.value)}
-                        </p>
-                        <Badge variant="default">{opp.probability}%</Badge>
-                      </div>
-                      {opp.expected_close_date && (
-                        <p className="text-xs text-gray-400 mt-1">
-                          Close: {new Date(opp.expected_close_date).toLocaleDateString()}
-                        </p>
-                      )}
-
-                      {/* Action buttons for active opportunities */}
-                      {stage !== 'closed_won' && stage !== 'closed_lost' && (
-                        <div className="flex gap-2 mt-3">
-                          <Button
-                            size="sm"
-                            className="flex-1 bg-success text-white hover:opacity-90"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleCloseWon(opp)
-                            }}
-                            loading={closeWonMutation.isPending}
-                          >
-                            Won
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            className="flex-1"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleCloseLost(opp)
-                            }}
-                            loading={closeLostMutation.isPending}
-                          >
-                            Lost
-                          </Button>
-                        </div>
-                      )}
+      {/* Kanban Board - Desktop: horizontal scroll, Mobile: vertical stacked */}
+      <div className="overflow-x-auto pb-4 -mx-4 sm:mx-0 px-4 sm:px-0">
+        <div className="flex gap-4 min-w-0 lg:min-w-[1200px]">
+          {STAGES.map((stage) => {
+            const stageData = stageMap[stage] ?? { count: 0, total_value: 0, items: [] }
+            return (
+              <div key={stage} className="flex-shrink-0 w-[280px] sm:w-[300px] lg:flex-1 lg:w-auto lg:min-w-[220px]">
+                {/* Column Header */}
+                <div
+                  className={cn(
+                    'rounded-t-[10px] border-t-4 px-4 py-3',
+                    STAGE_COLORS[stage],
+                    STAGE_BG[stage]
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm text-gray-900">{STAGE_LABELS[stage]}</span>
+                      <span className="text-xs bg-gray-200 text-gray-600 rounded-full px-2 py-0.5">
+                        {stageData.count}
+                      </span>
                     </div>
-                  ))
-                )}
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1 font-medium">
+                    {formatCurrency(stageData.total_value)}
+                  </p>
+                </div>
+
+                {/* Cards */}
+                <div className="space-y-2 mt-2 min-h-[200px]">
+                  {stageData.items.length === 0 ? (
+                    <div className="text-center text-gray-400 text-xs py-8 border-2 border-dashed border-gray-200 rounded-[10px]">
+                      No opportunities
+                    </div>
+                  ) : (
+                    stageData.items.map((opp) => (
+                      <div
+                        key={opp.id}
+                        className="bg-white rounded-[10px] border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]"
+                        onClick={() => openEdit(opp)}
+                      >
+                        <h3 className="font-medium text-sm text-gray-900 leading-tight">{opp.title}</h3>
+                        {opp.contact_name && (
+                          <p className="text-xs text-gray-500 mt-1">{opp.contact_name}</p>
+                        )}
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="text-sm font-semibold text-primary">
+                            {formatCurrency(opp.value)}
+                          </p>
+                          <Badge variant="default">{opp.probability}%</Badge>
+                        </div>
+                        {opp.expected_close_date && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            Close: {new Date(opp.expected_close_date).toLocaleDateString()}
+                          </p>
+                        )}
+
+                        {/* Action buttons for active opportunities */}
+                        {stage !== 'closed_won' && stage !== 'closed_lost' && (
+                          <div className="flex gap-2 mt-3">
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-success text-white hover:opacity-90 min-h-[44px]"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleCloseWon(opp)
+                              }}
+                              loading={closeWonMutation.isPending}
+                            >
+                              Won
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              className="flex-1 min-h-[44px]"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleCloseLost(opp)
+                              }}
+                              loading={closeLostMutation.isPending}
+                            >
+                              Lost
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
+
+      {/* Mobile scroll hint */}
+      <p className="text-xs text-gray-400 text-center lg:hidden -mt-2">
+        Swipe left/right to see all stages
+      </p>
+
+      {/* Quick Activity FAB for mobile */}
+      <QuickActivityLog />
 
       {/* Create / Edit Modal */}
       <Modal
@@ -267,7 +278,7 @@ export default function PipelinePage() {
               onChange={(e) => setForm((f) => ({ ...f, contact_id: e.target.value }))}
             />
           )}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Value"
               type="number"
@@ -286,7 +297,7 @@ export default function PipelinePage() {
               onChange={(e) => setForm((f) => ({ ...f, probability: parseInt(e.target.value) || 0 }))}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Stage"
               options={STAGES.filter((s) => s !== 'closed_won' && s !== 'closed_lost').map((s) => ({

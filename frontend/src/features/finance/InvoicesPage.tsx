@@ -88,10 +88,10 @@ export default function InvoicesPage() {
     },
     { key: 'customer_name', label: 'Customer' },
     {
-      key: 'type',
+      key: 'invoice_type',
       label: 'Type',
       render: (row: Invoice) => (
-        <Badge variant={row.type === 'sales' ? 'primary' : 'info'}>{row.type}</Badge>
+        <Badge variant={row.invoice_type === 'sales' ? 'primary' : 'info'}>{row.invoice_type}</Badge>
       ),
     },
     {
@@ -150,7 +150,7 @@ export default function InvoicesPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="w-40">
           <Select
             options={STATUS_OPTIONS}
@@ -170,13 +170,15 @@ export default function InvoicesPage() {
 
       {/* Table */}
       <Card padding={false}>
-        <Table<Invoice>
-          columns={columns}
-          data={data?.items ?? []}
-          loading={isLoading}
-          emptyText="No invoices found"
-          keyExtractor={(row) => row.id}
-        />
+        <div className="overflow-x-auto">
+          <Table<Invoice>
+            columns={columns}
+            data={data?.items ?? []}
+            loading={isLoading}
+            emptyText="No invoices found"
+            keyExtractor={(row) => row.id}
+          />
+        </div>
         <Pagination
           page={page}
           pages={totalPages}

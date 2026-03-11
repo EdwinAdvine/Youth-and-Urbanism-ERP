@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { cn, Button, Spinner, Modal, Input, Select, Badge } from '../../components/ui'
 import { toast } from '../../components/ui'
@@ -8,6 +8,7 @@ import {
   useMilestones,
   useCreateTask,
   useBatchReorder,
+  useTasks,
   type Task,
   type TaskStatus,
   type TaskPriority,
@@ -16,8 +17,11 @@ import {
 } from '../../api/projects'
 import TaskCard from './TaskCard'
 import TaskDetail from './TaskDetail'
+import BoardCustomization, { useBoardColumns, type BoardColumn } from './BoardCustomization'
+import BulkTaskOperations, { TaskSelectionCheckbox } from './BulkTaskOperations'
+import QuickTaskFAB from './QuickTaskFAB'
 
-const COLUMNS: { key: TaskStatus; label: string; color: string }[] = [
+const DEFAULT_COLUMNS: { key: TaskStatus; label: string; color: string }[] = [
   { key: 'todo', label: 'To Do', color: 'bg-gray-400' },
   { key: 'in_progress', label: 'In Progress', color: 'bg-blue-500' },
   { key: 'in_review', label: 'In Review', color: 'bg-yellow-500' },
@@ -39,9 +43,15 @@ export default function ProjectBoard() {
   const { data: project, isLoading: projectLoading } = useProject(projectId)
   const { data: board, isLoading: boardLoading } = useBoard(projectId)
   const { data: milestones } = useMilestones(projectId)
+  const { data: allTasks } = useTasks(projectId)
 
   const createTask = useCreateTask()
   const batchReorder = useBatchReorder()
+
+  // Board customization
+  const savedColumns = useBoardColumns(projectId)
+  const [columns, setColumns] = useState<BoardColumn[]>(savedColumns)
+  const [customizeOpen, setCustomizeOpen] = useState(false)
 
   // Task detail modal
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
@@ -56,6 +66,20 @@ export default function ProjectBoard() {
 
   // Drag state for visual feedback
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null)
+
+  // Bulk selection
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set())
+
+  const toggleTaskSelection = useCallback((taskId: string) => {
+    setSelectedTaskIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(taskId)) next.delete(taskId)
+      else next.add(taskId)
+      return next
+    })
+  }, [])
+
+  const clearSelection = useCallback(() => setSelectedTaskIds(new Set()), [])
 
   if (projectLoading || boardLoading) {
     return (
@@ -77,6 +101,14 @@ export default function ProjectBoard() {
   }
 
   const boardData: BoardView = board ?? { todo: [], in_progress: [], in_review: [], done: [] }
+
+  // Map columns to use custom labels/colors, fallback to board data
+  const COLUMNS = columns.length > 0 ? columns.map((c) => ({
+    key: c.key as TaskStatus,
+    label: c.label,
+    color: `bg-[${c.color}]`,
+    rawColor: c.color,
+  })) : DEFAULT_COLUMNS.map((c) => ({ ...c, rawColor: '' }))
 
   // Milestones progress
   const totalMilestones = milestones?.length ?? 0
@@ -156,9 +188,9 @@ export default function ProjectBoard() {
   return (
     <div className="flex flex-col h-full">
       {/* Project Header */}
-      <div className="shrink-0 px-6 py-4 border-b border-gray-100 bg-white">
-        <div className="flex items-center gap-3 mb-1">
-          <button onClick={() => navigate('/projects')} className="text-gray-400 hover:text-gray-600 transition-colors">
+      <div className="shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-white">
+        <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
+          <button onClick={() => navigate('/projects')} className="text-gray-400 hover:text-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center sm:min-h-0 sm:min-w-0">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -166,14 +198,27 @@ export default function ProjectBoard() {
           {project.color && (
             <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: project.color }} />
           )}
-          <h1 className="text-xl font-bold text-gray-900">{project.name}</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900">{project.name}</h1>
           <Badge variant={project.status === 'active' ? 'success' : 'default'}>{project.status}</Badge>
-          <Button variant="outline" size="sm" onClick={() => navigate(`/projects/${projectId}/time-report`)} className="ml-auto">
-            <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Time Report
-          </Button>
+          <div className="flex items-center gap-2 ml-auto">
+            <Button variant="ghost" size="sm" onClick={() => setCustomizeOpen(true)} title="Customize board columns">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate(`/projects/${projectId}/time-report`)}>
+              <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Time Report
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate(`/projects/${projectId}/integrations`)}>
+              <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              Files &amp; Links
+            </Button>
+          </div>
         </div>
 
         {project.description && (
@@ -198,15 +243,15 @@ export default function ProjectBoard() {
       </div>
 
       {/* Board */}
-      <div className="flex-1 overflow-x-auto p-6">
-        <div className="flex gap-4 h-full min-w-max">
+      <div className="flex-1 overflow-x-auto p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row gap-4 h-full sm:min-w-max">
           {COLUMNS.map((col) => {
             const tasks = boardData[col.key] ?? []
             return (
               <div
                 key={col.key}
                 className={cn(
-                  'flex flex-col w-72 rounded-[10px] bg-gray-50 shrink-0',
+                  'flex flex-col w-full sm:w-72 rounded-[10px] bg-gray-50 sm:shrink-0',
                   dragOverColumn === col.key && 'ring-2 ring-primary/40'
                 )}
                 onDragOver={(e) => handleDragOver(e, col.key)}
@@ -216,7 +261,7 @@ export default function ProjectBoard() {
                 {/* Column header */}
                 <div className="flex items-center justify-between px-3 py-3">
                   <div className="flex items-center gap-2">
-                    <div className={cn('w-2 h-2 rounded-full', col.color)} />
+                    <div className="w-2 h-2 rounded-full" style={col.rawColor ? { backgroundColor: col.rawColor } : undefined} />
                     <span className="text-sm font-semibold text-gray-700">{col.label}</span>
                     <span className="text-xs font-medium text-gray-400 bg-gray-200 rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                       {tasks.length}
@@ -236,7 +281,18 @@ export default function ProjectBoard() {
                 {/* Cards */}
                 <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
                   {tasks.map((task) => (
-                    <TaskCard key={task.id} task={task} onClick={handleTaskClick} />
+                    <div key={task.id} className="flex items-start gap-1.5">
+                      <div className="pt-3">
+                        <TaskSelectionCheckbox
+                          taskId={task.id}
+                          selected={selectedTaskIds.has(task.id)}
+                          onToggle={toggleTaskSelection}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <TaskCard task={task} onClick={handleTaskClick} />
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -256,6 +312,25 @@ export default function ProjectBoard() {
         }}
       />
 
+      {/* Board Customization Modal */}
+      <BoardCustomization
+        projectId={projectId}
+        open={customizeOpen}
+        onClose={() => setCustomizeOpen(false)}
+        onColumnsChange={(newCols) => setColumns(newCols)}
+      />
+
+      {/* Bulk Task Operations Toolbar */}
+      <BulkTaskOperations
+        projectId={projectId}
+        selectedTaskIds={selectedTaskIds}
+        tasks={allTasks ?? []}
+        onClearSelection={clearSelection}
+      />
+
+      {/* Quick Task FAB (mobile) */}
+      <QuickTaskFAB projectId={projectId} />
+
       {/* Add Task Modal */}
       <Modal
         open={addTaskColumn !== null}
@@ -274,7 +349,7 @@ export default function ProjectBoard() {
               placeholder="Optional description..."
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select label="Priority" options={PRIORITY_OPTIONS} value={newPriority} onChange={(e) => setNewPriority(e.target.value as TaskPriority)} />
             <Input label="Due Date" type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
           </div>

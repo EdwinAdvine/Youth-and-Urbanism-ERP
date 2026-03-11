@@ -4,7 +4,7 @@ import {
   Button, Badge, Card, Table, Modal, Input, Select, Pagination, toast,
 } from '../../components/ui'
 import {
-  useReturns, useCreateReturn, useApproveReturn, useCompleteReturn,
+  useReturns, useCreateReturn, useApproveReturn, useCompleteReturn, useDeleteReturn,
   type SupplierReturn, type CreateReturnPayload, type ReturnLineIn,
 } from '../../api/supplychain'
 
@@ -77,6 +77,7 @@ export default function ReturnsPage() {
   const createMutation = useCreateReturn()
   const approveMutation = useApproveReturn()
   const completeMutation = useCompleteReturn()
+  const deleteMutation = useDeleteReturn()
 
   const totalPages = data ? Math.ceil(data.total / limit) : 1
 
@@ -209,6 +210,22 @@ export default function ReturnsPage() {
               Approve
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-[#ff3a6e]"
+            onClick={async () => {
+              if (!window.confirm('Delete this return? This cannot be undone.')) return
+              try {
+                await deleteMutation.mutateAsync(row.id)
+                toast('success', 'Return deleted')
+              } catch {
+                toast('error', 'Failed to delete return')
+              }
+            }}
+          >
+            Delete
+          </Button>
           {(row.status === 'approved' || row.status === 'shipped') && (
             <Button
               size="sm"

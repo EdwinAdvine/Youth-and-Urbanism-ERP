@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useSwipeGesture } from '../../hooks/useSwipeGesture'
 import {
   useCalendarEvents,
   useCreateCalendarEvent,
@@ -7,6 +8,12 @@ import {
   type CalendarEvent,
   type CreateEventPayload,
 } from '../../api/calendar'
+import MiniCalendar from './MiniCalendar'
+import MultiCalendarSidebar from './MultiCalendarSidebar'
+import EventDetailPopover from './EventDetailPopover'
+import RecurringEventEditor from './RecurringEventEditor'
+import CalendarShareDialog from './CalendarShareDialog'
+import PrintView from './PrintView'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -272,12 +279,13 @@ function DayView({ events, date, onEventClick }: {
 
 // ─── Month view ───────────────────────────────────────────────────────────────
 
-function MonthView({ events, year, month, onDayClick, onEventClick }: {
+function MonthView({ events, year, month, onDayClick, onEventClick, onEventDrop }: {
   events: CalendarEvent[];
   year: number;
   month: number;
   onDayClick: (date: string) => void;
   onEventClick: (ev: CalendarEvent) => void;
+  onEventDrop?: (event: CalendarEvent, newDate: string) => void;
 }) {
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
@@ -319,6 +327,15 @@ function MonthView({ events, year, month, onDayClick, onEventClick }: {
               key={i}
               className={`border-r border-b border-gray-100 min-h-24 p-1.5 cursor-pointer hover:bg-gray-50 transition-colors ${isToday ? 'bg-[#51459d]/3' : ''}`}
               onClick={() => onDayClick(dateStr)}
+              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }}
+              onDrop={(e) => {
+                e.preventDefault()
+                const eventId = e.dataTransfer.getData('text/plain')
+                const droppedEvent = events.find((ev) => ev.id === eventId)
+                if (droppedEvent && onEventDrop) {
+                  onEventDrop(droppedEvent, dateStr)
+                }
+              }}
             >
               <div className="flex items-center justify-between mb-1">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${isToday ? 'bg-[#51459d] text-white' : 'text-gray-700'}`}>
@@ -329,8 +346,13 @@ function MonthView({ events, year, month, onDayClick, onEventClick }: {
                 {dayEvents.slice(0, 3).map((ev) => (
                   <button
                     key={ev.id}
+                    draggable
                     onClick={(e) => { e.stopPropagation(); onEventClick(ev) }}
-                    className={`w-full text-left text-[10px] font-medium px-1.5 py-0.5 rounded-[3px] truncate ${EVENT_COLORS[ev.event_type].light} hover:opacity-80 transition-opacity`}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', ev.id)
+                      e.dataTransfer.effectAllowed = 'move'
+                    }}
+                    className={`w-full text-left text-[10px] font-medium px-1.5 py-0.5 rounded-[3px] truncate ${EVENT_COLORS[ev.event_type].light} hover:opacity-80 transition-opacity cursor-grab active:cursor-grabbing`}
                   >
                     {!ev.all_day && <span className="opacity-60 mr-1">{formatTime(ev.start_time).replace(' AM', 'a').replace(' PM', 'p')}</span>}
                     {ev.title}
@@ -352,15 +374,48 @@ function MonthView({ events, year, month, onDayClick, onEventClick }: {
 
 export default function CalendarPage() {
   const [viewDate, setViewDate] = useState(new Date())
-  const [view, setView] = useState<CalView>('month')
+  const [view, setView] = useState<CalView>(window.innerWidth < 640 ? 'day' : 'month')
   const [modal, setModal] = useState<{ date: string; event?: CalendarEvent } | null>(null)
-
+  const [popoverEvent, setPopoverEvent] = useState<{ event: CalendarEvent; rect: DOMRect | null } | null>(null)
+  const [showRecurring, setShowRecurring] = useState(false)
+  const [showShare, setShowShare] = useState(false)
+  const [showPrint, setShowPrint] = useState(false)
   const { data } = useCalendarEvents()
   const events = data?.events ?? []
 
   const createEvent = useCreateCalendarEvent()
   const updateEvent = useUpdateCalendarEvent()
   const deleteEvent = useDeleteCalendarEvent()
+
+  // Drag-and-drop reschedule handler
+  const handleEventDrop = (event: CalendarEvent, newDate: string) => {
+    const oldDateStr = getDateFromIso(event.start_time)
+    if (oldDateStr === newDate) return
+
+    const oldStart = new Date(event.start_time)
+    const oldEnd = event.end_time ? new Date(event.end_time) : new Date(event.start_time)
+    const diff = oldEnd.getTime() - oldStart.getTime()
+
+    const [year, month, day] = newDate.split('-').map(Number)
+    const newStart = new Date(oldStart)
+    newStart.setFullYear(year, month - 1, day)
+    const newEnd = new Date(newStart.getTime() + diff)
+
+    updateEvent.mutate({
+      id: event.id,
+      start_time: newStart.toISOString(),
+      end_time: newEnd.toISOString(),
+    })
+  }
+
+  // Swipe gesture for mobile navigation between date ranges
+  const handleSwipeLeft = useCallback(() => navigate(1), [])
+  const handleSwipeRight = useCallback(() => navigate(-1), [])
+  const swipeHandlers = useSwipeGesture({
+    onSwipeLeft: handleSwipeLeft,
+    onSwipeRight: handleSwipeRight,
+    threshold: 60,
+  })
 
   const navigate = (dir: 1 | -1) => {
     const d = new Date(viewDate)
@@ -402,9 +457,20 @@ export default function CalendarPage() {
     .slice(0, 5)
 
   return (
-    <div className="h-full flex overflow-hidden">
-      {/* Left sidebar */}
-      <aside className="w-64 shrink-0 bg-white border-r border-gray-100 flex flex-col">
+    <div className="h-full flex flex-col md:flex-row overflow-hidden">
+      {/* Mobile new event button */}
+      <div className="md:hidden shrink-0 p-3 bg-white border-b border-gray-100">
+        <button
+          onClick={() => setModal({ date: toDateStr(today) })}
+          className="w-full flex items-center justify-center gap-2 bg-[#51459d] hover:bg-[#3d3480] text-white text-sm font-medium rounded-[8px] px-4 py-2.5 min-h-[44px] transition-colors"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+          New Event
+        </button>
+      </div>
+
+      {/* Left sidebar - hidden on mobile */}
+      <aside className="hidden md:flex w-64 shrink-0 bg-white border-r border-gray-100 flex-col">
         <div className="p-4 border-b border-gray-100">
           <button
             onClick={() => setModal({ date: toDateStr(today) })}
@@ -413,6 +479,17 @@ export default function CalendarPage() {
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             New Event
           </button>
+        </div>
+
+        {/* Mini Calendar */}
+        <div className="p-3 border-b border-gray-100">
+          <MiniCalendar
+            selectedDate={viewDate}
+            onDateSelect={(date) => {
+              setViewDate(date)
+              setView('day')
+            }}
+          />
         </div>
 
         {/* Upcoming */}
@@ -442,13 +519,7 @@ export default function CalendarPage() {
           )}
 
           <div className="mt-4 pt-3 border-t border-gray-100">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">Legend</p>
-            {(Object.entries(EVENT_COLORS) as [EventType, typeof EVENT_COLORS[EventType]][]).map(([type, cfg]) => (
-              <div key={type} className="flex items-center gap-2 px-1 py-1">
-                <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: cfg.dot }} />
-                <span className="text-xs text-gray-600 capitalize">{type}</span>
-              </div>
-            ))}
+            <MultiCalendarSidebar />
           </div>
         </div>
       </aside>
@@ -456,7 +527,7 @@ export default function CalendarPage() {
       {/* Main calendar */}
       <div className="flex-1 flex flex-col overflow-hidden bg-white">
         {/* Toolbar */}
-        <div className="border-b border-gray-100 px-5 py-3 flex items-center gap-3 shrink-0">
+        <div className="border-b border-gray-100 px-3 sm:px-5 py-2 sm:py-3 flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
           <div className="flex items-center gap-1">
             <button onClick={() => navigate(-1)} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500 transition-colors">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -472,14 +543,29 @@ export default function CalendarPage() {
             </button>
           </div>
 
-          <h2 className="text-base font-semibold text-gray-900 flex-1">{headerLabel()}</h2>
+          <h2 className="text-sm sm:text-base font-semibold text-gray-900 flex-1">{headerLabel()}</h2>
+
+          <button
+            onClick={() => setShowShare(true)}
+            className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500 transition-colors"
+            title="Share calendar"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+          </button>
+          <button
+            onClick={() => setShowPrint(true)}
+            className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500 transition-colors"
+            title="Print view"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2z" /></svg>
+          </button>
 
           <div className="flex items-center border border-gray-200 rounded-[8px] overflow-hidden">
             {(['month', 'week', 'day'] as CalView[]).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-3 py-1.5 text-xs font-medium capitalize transition-colors ${view === v ? 'bg-[#51459d] text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`px-3 py-2 sm:py-1.5 text-xs font-medium capitalize transition-colors min-w-[44px] sm:min-w-0 ${view === v ? 'bg-[#51459d] text-white' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 {v}
               </button>
@@ -487,7 +573,8 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Calendar view */}
+        {/* Calendar view - with touch swipe for mobile */}
+        <div {...swipeHandlers} className="flex-1 flex flex-col overflow-hidden">
         {view === 'month' && (
           <MonthView
             events={events}
@@ -495,6 +582,7 @@ export default function CalendarPage() {
             month={viewDate.getMonth()}
             onDayClick={(date) => setModal({ date })}
             onEventClick={(ev) => setModal({ date: getDateFromIso(ev.start_time), event: ev })}
+            onEventDrop={handleEventDrop}
           />
         )}
         {view === 'week' && (
@@ -512,6 +600,7 @@ export default function CalendarPage() {
             onEventClick={(ev) => setModal({ date: getDateFromIso(ev.start_time), event: ev })}
           />
         )}
+        </div>
       </div>
 
       {modal && (
@@ -521,6 +610,44 @@ export default function CalendarPage() {
           onClose={() => setModal(null)}
           onSave={handleSave}
           onDelete={(id) => deleteEvent.mutate(id)}
+        />
+      )}
+
+      {popoverEvent && (
+        <EventDetailPopover
+          event={popoverEvent.event}
+          anchorRect={popoverEvent.rect}
+          onClose={() => setPopoverEvent(null)}
+          onEdit={(ev) => setModal({ date: getDateFromIso(ev.start_time), event: ev })}
+          onDelete={(id) => deleteEvent.mutate(id)}
+        />
+      )}
+
+      <RecurringEventEditor
+        open={showRecurring}
+        onClose={() => setShowRecurring(false)}
+        onApply={(_config, ruleString) => {
+          if (modal) {
+            handleSave({
+              title: 'Recurring Event',
+              start_time: composeIso(modal.date, '09:00'),
+              end_time: composeIso(modal.date, '10:00'),
+              recurrence_rule: ruleString,
+            })
+          }
+        }}
+      />
+
+      <CalendarShareDialog
+        open={showShare}
+        onClose={() => setShowShare(false)}
+      />
+
+      {showPrint && (
+        <PrintView
+          year={viewDate.getFullYear()}
+          month={viewDate.getMonth()}
+          onClose={() => setShowPrint(false)}
         />
       )}
     </div>

@@ -111,3 +111,131 @@ export function useSharedNotes() {
     },
   })
 }
+
+// ─── Linked Items ────────────────────────────────────────────────────────────
+
+export interface LinkedItem {
+  id: string
+  type: string
+  title: string
+  module: string
+}
+
+export function useLinkedItems(noteId: string) {
+  return useQuery({
+    queryKey: ['notes', noteId, 'linked-items'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ items: LinkedItem[] }>(`/notes/${noteId}/links`)
+      return data.items ?? []
+    },
+    enabled: !!noteId,
+  })
+}
+
+export function useLinkItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ noteId, item_type, item_id }: { noteId: string; item_type: string; item_id: string }) => {
+      const { data } = await apiClient.post(`/notes/${noteId}/links`, { item_type, item_id })
+      return data
+    },
+    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['notes', vars.noteId, 'linked-items'] }),
+  })
+}
+
+export function useUnlinkItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ noteId, linkId }: { noteId: string; linkId: string }) => {
+      await apiClient.delete(`/notes/${noteId}/links/${linkId}`)
+    },
+    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['notes', vars.noteId, 'linked-items'] }),
+  })
+}
+
+// ─── Export ──────────────────────────────────────────────────────────────────
+
+export function useExportNote() {
+  return useMutation({
+    mutationFn: async ({ noteId, format }: { noteId: string; format: 'pdf' | 'markdown' | 'text' }) => {
+      const { data } = await apiClient.post(`/notes/${noteId}/export`, { format }, { responseType: 'blob' })
+      return data as Blob
+    },
+  })
+}
+
+// ─── Cross-Module: Notes → Drive (attach file) ─────────────────────────────
+
+export function useAttachFile() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ noteId, fileId, fileName }: { noteId: string; fileId: string; fileName?: string }) => {
+      const { data } = await apiClient.post(`/notes/notes/${noteId}/attach-file`, {
+        file_id: fileId,
+        file_name: fileName,
+      })
+      return data
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['notes', vars.noteId, 'linked-items'] })
+      qc.invalidateQueries({ queryKey: ['notes', vars.noteId] })
+    },
+  })
+}
+
+// ─── Cross-Module: Notes → Calendar (create event) ─────────────────────────
+
+export function useCreateEventFromNote() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ noteId, startTime, endTime, eventType }: {
+      noteId: string
+      startTime: string
+      endTime?: string
+      eventType?: string
+    }) => {
+      const { data } = await apiClient.post(`/notes/notes/${noteId}/create-event`, {
+        start_time: startTime,
+        end_time: endTime,
+        event_type: eventType ?? 'reminder',
+      })
+      return data
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['notes', vars.noteId, 'linked-items'] })
+      qc.invalidateQueries({ queryKey: ['calendar'] })
+    },
+  })
+}
+
+// ─── Cross-Module: Notes → Mail (email note) ───────────────────────────────
+
+export function useEmailNote() {
+  return useMutation({
+    mutationFn: async ({ noteId, to, subject }: { noteId: string; to: string[]; subject?: string }) => {
+      const { data } = await apiClient.post(`/notes/notes/${noteId}/email`, {
+        to,
+        subject,
+      })
+      return data
+    },
+  })
+}
+
+// ─── Cross-Module: Notes → Projects (link to task) ─────────────────────────
+
+export function useLinkNoteToTask() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ noteId, taskId, projectId }: { noteId: string; taskId: string; projectId: string }) => {
+      const { data } = await apiClient.post(`/notes/notes/${noteId}/link-task`, {
+        task_id: taskId,
+        project_id: projectId,
+      })
+      return data
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['notes', vars.noteId, 'linked-items'] })
+    },
+  })
+}

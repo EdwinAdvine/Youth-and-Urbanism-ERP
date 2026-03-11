@@ -42,6 +42,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Start Redis event bus
     _register_event_handlers()
+    # Register cross-module integration handlers (POS→Finance, E-Commerce→Mail, etc.)
+    from app.core.integration_handlers import register_integration_handlers  # noqa: PLC0415
+    register_integration_handlers()
     await event_bus.start()
     logger.info("Event bus started.")
 
@@ -141,38 +144,7 @@ def _register_event_handlers() -> None:
     @event_bus.on("calendar.event.created")
     async def on_calendar_event_created(data: dict) -> None:
         logger.info("Event: calendar.event.created — %s", data.get("title"))
-        try:
-            from app.integrations.stalwart import caldav_push_event  # noqa: PLC0415
-
-            # Resolve organizer email for the CalDAV push
-            organizer_email = data.get("organizer_email", "")
-            if not organizer_email and data.get("organizer_id"):
-                try:
-                    from app.core.database import AsyncSessionLocal as _ASL  # noqa: PLC0415
-                    from app.models.user import User as _User  # noqa: PLC0415
-                    from sqlalchemy import select as _select  # noqa: PLC0415
-                    async with _ASL() as _db:
-                        _res = await _db.execute(
-                            _select(_User.email).where(_User.id == data["organizer_id"])
-                        )
-                        organizer_email = _res.scalar() or ""
-                except Exception:
-                    logger.debug("Could not resolve organizer email for CalDAV push")
-
-            if organizer_email:
-                await caldav_push_event(
-                    user_email=organizer_email,
-                    event_id=data.get("event_id", ""),
-                    title=data.get("title", ""),
-                    start_time=data.get("start_time", ""),
-                    end_time=data.get("end_time", ""),
-                    description=data.get("description", ""),
-                    location=data.get("location", ""),
-                    attendees=data.get("attendees"),
-                )
-        except Exception:
-            logger.debug("CalDAV push skipped (Stalwart may not be available)")
-
+        # Calendar is REST-first (no CalDAV sync).
         await _log_activity("created", f"Calendar event: {data.get('title')}", "calendar", data.get("organizer_id", ""), data)
 
     @event_bus.on("file.uploaded")
@@ -269,6 +241,33 @@ def _register_event_handlers() -> None:
                 title="Leave Approved",
                 message=f"Your {data.get('leave_type', 'leave')} request from {data.get('start_date', '')} to {data.get('end_date', '')} has been approved.",
                 notif_type="success",
+                module="hr",
+                link_url="/hr/leave",
+            )
+
+    @event_bus.on("leave.rejected")
+    async def on_leave_rejected(data: dict) -> None:
+        logger.info("Event: leave.rejected — employee %s", data.get("employee_id"))
+        await _log_activity("rejected", f"Leave rejected: {data.get('leave_type')}", "hr", data.get("rejected_by", ""), data)
+        # Notify the employee who requested leave
+        employee_user_id = data.get("user_id", "")
+        if not employee_user_id:
+            # Resolve user_id from employee_id
+            try:
+                from app.core.database import AsyncSessionLocal as _ASL  # noqa: PLC0415
+                from app.models.hr import Employee as _Emp  # noqa: PLC0415
+                from sqlalchemy import select as _sel  # noqa: PLC0415
+                async with _ASL() as _db:
+                    _res = await _db.execute(_sel(_Emp.user_id).where(_Emp.id == data.get("employee_id")))
+                    employee_user_id = str(_res.scalar() or "")
+            except Exception:
+                pass
+        if employee_user_id:
+            await _create_notification(
+                user_id=employee_user_id,
+                title="Leave Rejected",
+                message=f"Your {data.get('leave_type', 'leave')} request from {data.get('start_date', '')} to {data.get('end_date', '')} has been rejected.",
+                notif_type="warning",
                 module="hr",
                 link_url="/hr/leave",
             )
@@ -480,6 +479,168 @@ def _register_event_handlers() -> None:
 
         await _log_activity("sent", f"Email sent: {data.get('subject')}", "mail", data.get("user_id", ""), data)
 
+    # NOTE: ecommerce.order.created handler is in integration_handlers.py
+    # (creates invoice with customer details + order lines from DB relationships)
+
+    @event_bus.on("project.completed")
+    async def on_project_completed(data: dict) -> None:
+        """Projects → Finance: Log project cost as journal entry when completed."""
+        logger.info("Event: project.completed — %s", data.get("name"))
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.models.finance import JournalEntry, JournalLine, Account  # noqa: PLC0415
+            from datetime import date  # noqa: PLC0415
+            from sqlalchemy import func, select  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                project_cost = data.get("total_cost", 0)
+                if not project_cost:
+                    return
+
+                # Find a project expense account and cash/bank account
+                expense_acct = await db.execute(
+                    select(Account).where(Account.account_type == "expense", Account.is_active == True).limit(1)
+                )
+                expense_account = expense_acct.scalar_one_or_none()
+
+                asset_acct = await db.execute(
+                    select(Account).where(Account.account_type == "asset", Account.is_active == True).limit(1)
+                )
+                asset_account = asset_acct.scalar_one_or_none()
+
+                if not expense_account or not asset_account:
+                    logger.warning("No suitable accounts found for project cost journal entry")
+                    return
+
+                # Generate entry number
+                count_q = select(func.count()).select_from(JournalEntry)
+                count_result = await db.execute(count_q)
+                seq = (count_result.scalar() or 0) + 1
+                today = date.today()
+                entry_number = f"JE-PROJ-{today.year}-{seq:04d}"
+
+                entry = JournalEntry(
+                    entry_number=entry_number,
+                    entry_date=today,
+                    description=f"Project cost: {data.get('name', 'Unknown')}",
+                    status="posted",
+                    posted_by=data.get("owner_id"),
+                    metadata_json={"source": "project.completed", "project_id": data.get("project_id")},
+                )
+                db.add(entry)
+                await db.flush()
+
+                debit_line = JournalLine(
+                    journal_entry_id=entry.id,
+                    account_id=expense_account.id,
+                    debit=project_cost,
+                    credit=0,
+                    description=f"Project expense: {data.get('name', '')}",
+                )
+                credit_line = JournalLine(
+                    journal_entry_id=entry.id,
+                    account_id=asset_account.id,
+                    debit=0,
+                    credit=project_cost,
+                    description=f"Project expense: {data.get('name', '')}",
+                )
+                db.add_all([debit_line, credit_line])
+                await db.commit()
+                logger.info("Auto-created journal entry %s for completed project: %s", entry_number, data.get("name"))
+        except Exception:
+            logger.exception("Failed to create journal entry for project completion")
+
+        await _log_activity("completed", f"Project completed: {data.get('name')}", "projects", data.get("owner_id", ""), data)
+
+    @event_bus.on("stock.valued")
+    async def on_stock_valued(data: dict) -> None:
+        """Inventory → Finance: Create journal entry for stock valuation changes."""
+        logger.info("Event: stock.valued — item %s, value %s", data.get("item_name"), data.get("total_value"))
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.models.finance import JournalEntry, JournalLine, Account  # noqa: PLC0415
+            from datetime import date  # noqa: PLC0415
+            from sqlalchemy import func, select  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                total_value = data.get("total_value", 0)
+                if not total_value:
+                    return
+
+                # Find inventory asset account and COGS/expense account
+                inventory_acct = await db.execute(
+                    select(Account).where(
+                        Account.account_type == "asset",
+                        Account.name.ilike("%inventory%"),
+                        Account.is_active == True,
+                    ).limit(1)
+                )
+                inventory_account = inventory_acct.scalar_one_or_none()
+
+                # Fallback to any asset account
+                if not inventory_account:
+                    fallback = await db.execute(
+                        select(Account).where(Account.account_type == "asset", Account.is_active == True).limit(1)
+                    )
+                    inventory_account = fallback.scalar_one_or_none()
+
+                liability_acct = await db.execute(
+                    select(Account).where(Account.account_type == "liability", Account.is_active == True).limit(1)
+                )
+                liability_account = liability_acct.scalar_one_or_none()
+
+                if not inventory_account or not liability_account:
+                    logger.warning("No suitable accounts for stock valuation journal entry")
+                    return
+
+                count_q = select(func.count()).select_from(JournalEntry)
+                count_result = await db.execute(count_q)
+                seq = (count_result.scalar() or 0) + 1
+                today = date.today()
+                entry_number = f"JE-INV-{today.year}-{seq:04d}"
+
+                movement_type = data.get("movement_type", "receipt")
+                if movement_type == "receipt":
+                    # Stock received: Debit Inventory (asset), Credit Accounts Payable (liability)
+                    debit_acct = inventory_account
+                    credit_acct = liability_account
+                else:
+                    # Stock issued: Debit COGS/Expense, Credit Inventory
+                    debit_acct = liability_account
+                    credit_acct = inventory_account
+
+                entry = JournalEntry(
+                    entry_number=entry_number,
+                    entry_date=today,
+                    description=f"Stock valuation: {data.get('item_name', 'Unknown')} ({movement_type})",
+                    status="posted",
+                    metadata_json={"source": "stock.valued", "item_id": data.get("item_id"), "movement_type": movement_type},
+                )
+                db.add(entry)
+                await db.flush()
+
+                db.add_all([
+                    JournalLine(journal_entry_id=entry.id, account_id=debit_acct.id, debit=total_value, credit=0, description=f"Stock: {data.get('item_name', '')}"),
+                    JournalLine(journal_entry_id=entry.id, account_id=credit_acct.id, debit=0, credit=total_value, description=f"Stock: {data.get('item_name', '')}"),
+                ])
+                await db.commit()
+                logger.info("Auto-created stock valuation journal entry %s", entry_number)
+        except Exception:
+            logger.exception("Failed to create journal entry for stock valuation")
+
+    @event_bus.on("doc.commented")
+    async def on_doc_commented(data: dict) -> None:
+        logger.info("Event: doc.commented — %s on %s", data.get("author_id"), data.get("file_name"))
+        owner_id = data.get("owner_id", "")
+        if owner_id:
+            await _create_notification(
+                user_id=owner_id,
+                title="New Comment on Document",
+                message=f"Someone commented on '{data.get('file_name', 'your document')}': {data.get('content', '')[:80]}",
+                notif_type="info",
+                module="docs",
+                link_url=f"/docs",
+            )
+        await _log_activity("commented", f"Comment on: {data.get('file_name')}", "docs", data.get("author_id", ""), data)
+
 
 async def _seed_superadmin() -> None:
     """Create the first super-admin account if it does not exist."""
@@ -582,16 +743,6 @@ def create_app() -> FastAPI:
             checks["minio"] = "unavailable"
             overall = "degraded"
 
-        # Check Nextcloud
-        try:
-            from app.integrations.nextcloud_client import health_check as nc_health  # noqa: PLC0415
-            nc_ok = await nc_health()
-            checks["nextcloud"] = "ok" if nc_ok else "unavailable"
-            if not nc_ok:
-                overall = "degraded"
-        except Exception:
-            checks["nextcloud"] = "unavailable"
-            overall = "degraded"
 
         status_code = 200 if overall == "healthy" else 503
         return JSONResponse(

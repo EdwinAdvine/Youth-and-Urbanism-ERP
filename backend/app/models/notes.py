@@ -57,3 +57,55 @@ class Note(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<Note id={self.id} title={self.title!r} owner={self.owner_id}>"
+
+
+class NoteTag(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Tag attached to a note for categorisation."""
+
+    __tablename__ = "note_tags"
+
+    note_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("notes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tag_name: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    note = relationship("Note", foreign_keys=[note_id])
+
+
+class NoteShareRecord(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Fine-grained share record for a note with permission levels."""
+
+    __tablename__ = "note_shares"
+
+    note_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("notes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    shared_with_user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    permission: Mapped[str] = mapped_column(
+        String(10), nullable=False, default="view",
+        comment="view | edit",
+    )
+
+    note = relationship("Note", foreign_keys=[note_id])
+    shared_with = relationship("User", foreign_keys=[shared_with_user_id])
+
+
+class NoteTemplate(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Reusable note template."""
+
+    __tablename__ = "note_templates"
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    content_html: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    category: Mapped[str | None] = mapped_column(String(100), nullable=True)

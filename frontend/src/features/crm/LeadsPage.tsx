@@ -4,6 +4,7 @@ import {
   useCreateLead,
   useUpdateLead,
   useConvertLead,
+  useDeleteLead,
   useContacts,
   type Lead,
   type LeadStatus,
@@ -11,6 +12,7 @@ import {
 } from '../../api/crm'
 import { cn, Button, Spinner, Modal, Input, Badge, Select } from '../../components/ui'
 import { toast } from '../../components/ui'
+import LeadCaptureFormDialog from './LeadCaptureFormDialog'
 
 const STATUSES: LeadStatus[] = ['new', 'contacted', 'qualified', 'unqualified', 'converted']
 
@@ -57,7 +59,9 @@ export default function LeadsPage() {
   const createMutation = useCreateLead()
   const updateMutation = useUpdateLead()
   const convertMutation = useConvertLead()
+  const deleteMutation = useDeleteLead()
   const [modalOpen, setModalOpen] = useState(false)
+  const [leadCaptureOpen, setLeadCaptureOpen] = useState(false)
   const [editing, setEditing] = useState<Lead | null>(null)
   const [form, setForm] = useState<CreateLeadPayload>(EMPTY_FORM)
 
@@ -114,6 +118,16 @@ export default function LeadsPage() {
     }
   }
 
+  const handleDelete = async (lead: Lead) => {
+    if (!window.confirm(`Delete lead "${lead.title}"? This cannot be undone.`)) return
+    try {
+      await deleteMutation.mutateAsync(lead.id)
+      toast('success', 'Lead deleted')
+    } catch {
+      toast('error', 'Failed to delete lead')
+    }
+  }
+
   const handleConvert = async (lead: Lead) => {
     if (!window.confirm(`Convert "${lead.title}" to an opportunity?`)) return
     try {
@@ -140,7 +154,10 @@ export default function LeadsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
           <p className="text-sm text-gray-500 mt-1">Track and manage sales leads</p>
         </div>
-        <Button onClick={openCreate}>+ New Lead</Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => setLeadCaptureOpen(true)}>Create Lead Capture Form</Button>
+          <Button onClick={openCreate}>+ New Lead</Button>
+        </div>
       </div>
 
       {/* Kanban Board */}
@@ -192,6 +209,17 @@ export default function LeadsPage() {
                         {lead.source}
                       </Badge>
                     )}
+
+                    {/* Delete button */}
+                    <button
+                      className="text-xs text-[#ff3a6e] hover:underline mt-2"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(lead)
+                      }}
+                    >
+                      Delete
+                    </button>
 
                     {/* Convert button for qualified leads */}
                     {status === 'qualified' && (
@@ -286,6 +314,12 @@ export default function LeadsPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Lead Capture Form Dialog */}
+      <LeadCaptureFormDialog
+        open={leadCaptureOpen}
+        onClose={() => setLeadCaptureOpen(false)}
+      />
     </div>
   )
 }

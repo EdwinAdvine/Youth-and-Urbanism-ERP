@@ -4,7 +4,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -88,3 +88,61 @@ class CalendarEvent(Base, UUIDPrimaryKeyMixin, TimestampMixin):
             f"<CalendarEvent id={self.id} title={self.title!r} "
             f"type={self.event_type} start={self.start_time}>"
         )
+
+
+class CalendarSubscription(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """An external iCal calendar subscription that is periodically synced."""
+
+    __tablename__ = "calendar_subscriptions"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    name: Mapped[str] = mapped_column(String(500), nullable=False)
+
+    ical_url: Mapped[str] = mapped_column(Text, nullable=False)
+
+    sync_interval_minutes: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=60
+    )
+
+    last_synced: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+
+    def __repr__(self) -> str:
+        return f"<CalendarSubscription id={self.id} name={self.name!r} active={self.is_active}>"
+
+
+class CalendarCategory(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """A user-defined calendar category/label with a colour."""
+
+    __tablename__ = "calendar_categories"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+
+    color: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="#51459d"
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+
+    def __repr__(self) -> str:
+        return f"<CalendarCategory id={self.id} name={self.name!r} color={self.color}>"

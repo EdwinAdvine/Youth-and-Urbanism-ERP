@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -291,6 +292,19 @@ async def upload_file(
         "owner_id": str(current_user.id),
     })
 
+    # Trigger thumbnail generation for images and PDFs
+    if content_type.startswith("image/") or content_type == "application/pdf":
+        try:
+            from app.tasks.celery_app import generate_thumbnail  # noqa: PLC0415
+
+            generate_thumbnail.delay(
+                file_id=str(drive_file.id),
+                minio_key=drive_file.minio_key,
+                mime_type=content_type,
+            )
+        except Exception as exc:
+            logger.warning("Failed to enqueue thumbnail task for %s: %s", drive_file.id, exc)
+
     return FileOut.model_validate(drive_file).model_dump()
 
 
@@ -323,6 +337,44 @@ async def download_file(
         ) from exc
 
     return {"file_id": str(file_id), "filename": file.name, "download_url": url, "expires_in": 3600}
+
+
+@router.get("/file/{file_id}/thumbnail", summary="Get thumbnail for a file (redirect to presigned URL)")
+async def get_file_thumbnail(
+    file_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+):
+    """Return a redirect to the MinIO presigned URL for the file's thumbnail.
+
+    Returns 404 if no thumbnail has been generated yet.
+    """
+    from app.integrations import minio_client  # noqa: PLC0415
+
+    # Verify access
+    await _check_file_access(db, file_id, current_user.id)
+
+    thumbnail_key = f"thumbnails/{file_id}.jpg"
+
+    # Check if thumbnail exists in MinIO
+    try:
+        client = minio_client._get_client()
+        client.head_object(Bucket=minio_client.BUCKET_NAME, Key=thumbnail_key)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Thumbnail not available for this file",
+        )
+
+    try:
+        url = minio_client.get_download_url(thumbnail_key)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage service unavailable: {exc}",
+        ) from exc
+
+    return RedirectResponse(url=url, status_code=status.HTTP_302_FOUND)
 
 
 @router.delete("/file/{file_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a file")

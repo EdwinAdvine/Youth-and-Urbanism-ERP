@@ -313,6 +313,85 @@ export function useUpdateOrderStatus() {
   })
 }
 
+export function useFulfillOrder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.post<EcomOrder>(`/ecommerce/orders/${id}/fulfill`)
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ecommerce', 'orders'] })
+      qc.invalidateQueries({ queryKey: ['ecommerce', 'dashboard'] })
+    },
+  })
+}
+
+export function useCancelOrder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.post<EcomOrder>(`/ecommerce/orders/${id}/cancel`)
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ecommerce', 'orders'] })
+      qc.invalidateQueries({ queryKey: ['ecommerce', 'dashboard'] })
+    },
+  })
+}
+
+export function useDeleteOrder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/ecommerce/orders/${id}`)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ecommerce', 'orders'] })
+      qc.invalidateQueries({ queryKey: ['ecommerce', 'dashboard'] })
+    },
+  })
+}
+
+export function useDeleteStore() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/ecommerce/stores/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ecommerce', 'stores'] }),
+  })
+}
+
+export function usePublishProduct() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.post<EcomProduct>(`/ecommerce/products/${id}/publish`)
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ecommerce', 'products'] })
+      qc.invalidateQueries({ queryKey: ['ecommerce', 'dashboard'] })
+    },
+  })
+}
+
+export async function exportProductsCSV(storeId?: string) {
+  const params = storeId ? { store_id: storeId } : {}
+  const { data } = await apiClient.get('/ecommerce/products/export/csv', {
+    params,
+    responseType: 'blob',
+  })
+  const url = window.URL.createObjectURL(new Blob([data]))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'products.csv'
+  a.click()
+  window.URL.revokeObjectURL(url)
+}
+
 // ─── Customers ────────────────────────────────────────────────────────────────
 
 export function useEcomCustomers(params: {

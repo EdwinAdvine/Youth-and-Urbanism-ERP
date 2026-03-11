@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useDeals } from '../../api/crm'
 import { Badge, Card, Table, Pagination } from '../../components/ui'
 import type { Deal } from '../../api/crm'
+import ScheduleFollowupDialog from './ScheduleFollowupDialog'
+import ScheduleMeetingDialog from './ScheduleMeetingDialog'
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
@@ -11,6 +13,9 @@ export default function DealsPage() {
   const [page, setPage] = useState(1)
   const limit = 20
   const { data, isLoading } = useDeals({ page, limit })
+
+  const [followupDeal, setFollowupDeal] = useState<Deal | null>(null)
+  const [meetingDeal, setMeetingDeal] = useState<Deal | null>(null)
 
   const deals = data?.items ?? []
   const totalPages = Math.ceil((data?.total ?? 0) / limit)
@@ -49,6 +54,33 @@ export default function DealsPage() {
         <Badge variant={row.status === 'won' ? 'success' : row.status === 'lost' ? 'danger' : 'default'}>
           {row.status}
         </Badge>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (row: Deal) => (
+        <div className="flex gap-1">
+          <button
+            className="text-xs text-primary hover:underline"
+            onClick={(e) => {
+              e.stopPropagation()
+              setFollowupDeal(row)
+            }}
+          >
+            Follow-up
+          </button>
+          <span className="text-gray-300">|</span>
+          <button
+            className="text-xs text-primary hover:underline"
+            onClick={(e) => {
+              e.stopPropagation()
+              setMeetingDeal(row)
+            }}
+          >
+            Meeting
+          </button>
+        </div>
       ),
     },
   ]
@@ -103,6 +135,26 @@ export default function DealsPage() {
 
         <Pagination page={page} pages={totalPages} total={data?.total ?? 0} onChange={setPage} />
       </Card>
+
+      {/* CRM Cross-Module Dialogs */}
+      {followupDeal && (
+        <ScheduleFollowupDialog
+          open={!!followupDeal}
+          onClose={() => setFollowupDeal(null)}
+          entityType="deal"
+          entityId={followupDeal.id}
+          entityName={followupDeal.title}
+        />
+      )}
+      {meetingDeal && (
+        <ScheduleMeetingDialog
+          open={!!meetingDeal}
+          onClose={() => setMeetingDeal(null)}
+          entityType="deal"
+          entityId={meetingDeal.id}
+          entityName={meetingDeal.title}
+        />
+      )}
     </div>
   )
 }

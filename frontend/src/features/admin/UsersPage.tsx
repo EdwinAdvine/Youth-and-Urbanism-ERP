@@ -145,14 +145,14 @@ export default function UsersPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 space-y-5 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Users</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Users</h1>
           <p className="text-gray-500 text-sm mt-0.5">Manage system users and permissions</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button onClick={() => setCreateOpen(true)} className="w-full sm:w-auto min-h-[44px] sm:min-h-0">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -176,13 +176,15 @@ export default function UsersPage() {
           />
         </div>
 
-        <Table
-          columns={columns}
-          data={data?.items ?? []}
-          loading={isLoading}
-          keyExtractor={(u) => u.id}
-          emptyText="No users found"
-        />
+        <div className="overflow-x-auto">
+          <Table
+            columns={columns}
+            data={data?.items ?? []}
+            loading={isLoading}
+            keyExtractor={(u) => u.id}
+            emptyText="No users found"
+          />
+        </div>
 
         <Pagination
           page={page}

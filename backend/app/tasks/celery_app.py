@@ -38,13 +38,13 @@ def send_email(
     cc: str | None = None,
     html_body: str | None = None,
 ):
-    """Send email via SMTP (Mailhog in dev, Stalwart in prod)."""
+    """Send email via configured SMTP host."""
     import asyncio
 
     import aiosmtplib
     from email.message import EmailMessage
 
-    sender = from_email or "noreply@youthandurbanism.org"
+    sender = from_email or f"noreply@{settings.MAIL_DOMAIN}"
     msg = EmailMessage()
     msg["From"] = sender
     msg["To"] = to
@@ -58,7 +58,7 @@ def send_email(
         msg.set_content(body)
 
     async def _send():
-        await aiosmtplib.send(msg, hostname="mailhog", port=1025)
+        await aiosmtplib.send(msg, hostname=settings.SMTP_HOST, port=settings.SMTP_PORT)
 
     try:
         asyncio.run(_send())
@@ -68,9 +68,26 @@ def send_email(
 
 
 @celery_app.task(name="tasks.generate_report_pdf")
-def generate_report_pdf(report_type: str, data: dict, user_id: str):
-    """Generate a simple HTML report and return it as a string (PDF generation requires WeasyPrint which needs system deps)."""
+def generate_report_pdf(
+    report_type: str,
+    data: dict,
+    user_id: str,
+    email_recipients: list[str] | None = None,
+    save_to_drive: bool = True,
+):
+    """Generate an HTML report, save to Drive (MinIO), and optionally email to recipients.
+
+    Args:
+        report_type: Type/name of the report (e.g. "finance_pl", "hr_headcount").
+        data: Report data to render.
+        user_id: ID of the user who requested the report.
+        email_recipients: List of email addresses to send the report to.
+        save_to_drive: Whether to save the report to Drive/MinIO (default True).
+    """
     from datetime import datetime
+
+    generated_at = datetime.now().strftime('%Y-%m-%d %H:%M')
+    filename = f"{report_type}_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
 
     html = f"""<!DOCTYPE html>
     <html><head><style>
@@ -81,29 +98,54 @@ def generate_report_pdf(report_type: str, data: dict, user_id: str):
     th {{ background-color: #51459d; color: white; }}
     </style></head><body>
     <h1>Urban ERP — {report_type} Report</h1>
-    <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+    <p>Generated: {generated_at}</p>
     <p>User: {user_id}</p>
     <pre>{str(data)}</pre>
     </body></html>"""
 
-    # Store as HTML file in MinIO
-    try:
-        from app.integrations import minio_client
+    result: dict = {"status": "complete", "report_type": report_type}
 
-        record = minio_client.upload_file(
-            file_data=html.encode(),
-            filename=f"{report_type}_report.html",
-            user_id=user_id,
-            folder_path="reports",
-            content_type="text/html",
-        )
-        return {
-            "status": "complete",
-            "minio_key": record["minio_key"],
-            "filename": record["filename"],
-        }
-    except Exception as exc:
-        return {"status": "error", "error": str(exc)}
+    # ── Report → Drive: save report to MinIO ──────────────────────────────
+    if save_to_drive:
+        try:
+            from app.integrations import minio_client
+
+            record = minio_client.upload_file(
+                file_data=html.encode(),
+                filename=filename,
+                user_id=user_id,
+                folder_path="reports",
+                content_type="text/html",
+            )
+            result["minio_key"] = record["minio_key"]
+            result["filename"] = record["filename"]
+            result["drive_saved"] = True
+        except Exception as exc:
+            result["drive_saved"] = False
+            result["drive_error"] = str(exc)
+
+    # ── Report → Mail: email report to recipients ─────────────────────────
+    if email_recipients:
+        for recipient in email_recipients:
+            try:
+                send_email.delay(
+                    to=recipient,
+                    subject=f"Urban ERP Report: {report_type} ({generated_at})",
+                    body=(
+                        f"Your scheduled report '{report_type}' has been generated.\n\n"
+                        f"Generated at: {generated_at}\n"
+                        f"Report is attached below as HTML content.\n\n"
+                        f"You can also find it in your Drive under the 'reports' folder."
+                    ),
+                    html_body=html,
+                )
+                result.setdefault("emails_sent", []).append(recipient)
+            except Exception as exc:
+                result.setdefault("email_errors", []).append(
+                    {"recipient": recipient, "error": str(exc)}
+                )
+
+    return result
 
 
 @celery_app.task(name="tasks.ai_background_query")
@@ -129,270 +171,6 @@ def ai_background_query(
         result = asyncio.run(_query())
         return {"status": "complete", "response": result, "user_id": user_id}
     except Exception as exc:
-        return {"status": "error", "error": str(exc)}
-
-
-@celery_app.task(name="tasks.sync_caldav")
-def sync_caldav():
-    """Periodic CalDAV bi-directional sync with Stalwart CalDAV server.
-
-    For each active user:
-    1. Pull remote events from Stalwart CalDAV and create/update local CalendarEvent records.
-    2. Push local events that don't exist remotely to Stalwart CalDAV.
-    """
-    import asyncio
-    import logging
-
-    task_logger = logging.getLogger(__name__)
-
-    async def _sync():
-        from datetime import datetime, timezone
-
-        from sqlalchemy import select
-
-        from app.core.database import AsyncSessionLocal
-        from app.integrations.stalwart import caldav_pull_events, caldav_push_event
-        from app.models.calendar import CalendarEvent
-        from app.models.user import User
-
-        stats = {"users_synced": 0, "pulled": 0, "pushed": 0, "errors": 0}
-
-        async with AsyncSessionLocal() as db:
-            # Get all active users
-            result = await db.execute(
-                select(User).where(User.is_active == True)  # noqa: E712
-            )
-            users = result.scalars().all()
-
-        for user in users:
-            try:
-                # ── Pull: remote -> local ────────────────────────────────
-                pull_result = await caldav_pull_events(user_email=user.email)
-                if not pull_result.get("success"):
-                    task_logger.debug(
-                        "CalDAV pull skipped for %s: %s",
-                        user.email,
-                        pull_result.get("error", "unknown"),
-                    )
-                    continue
-
-                remote_events = pull_result.get("events", [])
-
-                async with AsyncSessionLocal() as db:
-                    # Build a set of existing event UIDs for this user
-                    existing_q = select(CalendarEvent).where(
-                        CalendarEvent.organizer_id == user.id
-                    )
-                    existing_result = await db.execute(existing_q)
-                    local_events = existing_result.scalars().all()
-                    local_uid_map = {
-                        str(ev.id): ev for ev in local_events
-                    }
-
-                    # Index remote UIDs (strip @urban-erp suffix if present)
-                    remote_uid_set: set[str] = set()
-                    for rev in remote_events:
-                        raw_uid = rev.get("uid", "")
-                        uid = raw_uid.replace("@urban-erp", "") if raw_uid else ""
-                        remote_uid_set.add(uid)
-
-                        # Create or update local event from remote
-                        if uid and uid not in local_uid_map:
-                            # Parse iCal datetime (YYYYMMDDTHHMMSSZ) to Python datetime
-                            start_str = rev.get("start", "")
-                            end_str = rev.get("end", "")
-                            try:
-                                start_dt = datetime.strptime(
-                                    start_str, "%Y%m%dT%H%M%SZ"
-                                ).replace(tzinfo=timezone.utc) if start_str else datetime.now(timezone.utc)
-                                end_dt = datetime.strptime(
-                                    end_str, "%Y%m%dT%H%M%SZ"
-                                ).replace(tzinfo=timezone.utc) if end_str else start_dt
-                            except ValueError:
-                                start_dt = datetime.now(timezone.utc)
-                                end_dt = start_dt
-
-                            new_event = CalendarEvent(
-                                title=rev.get("title", "Untitled"),
-                                description=rev.get("description", ""),
-                                location=rev.get("location", ""),
-                                start_time=start_dt,
-                                end_time=end_dt,
-                                event_type="meeting",
-                                organizer_id=user.id,
-                                color="#51459d",
-                            )
-                            db.add(new_event)
-                            stats["pulled"] += 1
-                        elif uid and uid in local_uid_map:
-                            # Update title if changed
-                            local_ev = local_uid_map[uid]
-                            remote_title = rev.get("title", "")
-                            if remote_title and remote_title != local_ev.title:
-                                local_ev.title = remote_title
-
-                    await db.commit()
-
-                    # ── Push: local -> remote ────────────────────────────────
-                    for local_ev in local_events:
-                        ev_id = str(local_ev.id)
-                        if ev_id not in remote_uid_set:
-                            try:
-                                await caldav_push_event(
-                                    user_email=user.email,
-                                    event_id=ev_id,
-                                    title=local_ev.title,
-                                    start_time=local_ev.start_time.isoformat() if local_ev.start_time else "",
-                                    end_time=local_ev.end_time.isoformat() if local_ev.end_time else "",
-                                    description=local_ev.description or "",
-                                    location=local_ev.location or "",
-                                    attendees=local_ev.attendees if isinstance(local_ev.attendees, list) else [],
-                                )
-                                stats["pushed"] += 1
-                            except Exception:
-                                task_logger.debug("Failed to push event %s for %s", ev_id, user.email)
-                                stats["errors"] += 1
-
-                stats["users_synced"] += 1
-
-            except Exception as exc:
-                task_logger.warning("CalDAV sync error for user %s: %s", user.email, exc)
-                stats["errors"] += 1
-
-        task_logger.info(
-            "CalDAV sync complete: %d users, %d pulled, %d pushed, %d errors",
-            stats["users_synced"],
-            stats["pulled"],
-            stats["pushed"],
-            stats["errors"],
-        )
-        return {"status": "ok", **stats}
-
-    try:
-        return asyncio.run(_sync())
-    except Exception as exc:
-        import logging as _logging
-        _logging.getLogger(__name__).exception("CalDAV sync task failed: %s", exc)
-        return {"status": "error", "error": str(exc)}
-
-
-@celery_app.task(name="tasks.sync_carddav")
-def sync_carddav():
-    """Periodic CardDAV bi-directional sync with Stalwart CardDAV server.
-
-    For each active user who owns CRM contacts:
-    1. Push local CRM contacts to Stalwart CardDAV as vCards.
-    2. Pull remote contacts from Stalwart CardDAV and create local CRM Contact records.
-    """
-    import asyncio
-    import logging
-
-    task_logger = logging.getLogger(__name__)
-
-    async def _sync():
-        from sqlalchemy import select
-
-        from app.core.database import AsyncSessionLocal
-        from app.integrations.stalwart import (
-            carddav_pull_contacts,
-            carddav_push_contact,
-        )
-        from app.models.crm import Contact
-        from app.models.user import User
-
-        stats = {"users_synced": 0, "pushed": 0, "pulled": 0, "errors": 0}
-
-        async with AsyncSessionLocal() as db:
-            result = await db.execute(
-                select(User).where(User.is_active == True)  # noqa: E712
-            )
-            users = result.scalars().all()
-
-        for user in users:
-            try:
-                # ── Push: local CRM contacts -> CardDAV ────────────────
-                async with AsyncSessionLocal() as db:
-                    contact_result = await db.execute(
-                        select(Contact).where(Contact.owner_id == user.id)
-                    )
-                    local_contacts = contact_result.scalars().all()
-
-                for contact in local_contacts:
-                    try:
-                        await carddav_push_contact(
-                            user_email=user.email,
-                            contact_id=str(contact.id),
-                            first_name=contact.first_name or "",
-                            last_name=contact.last_name or "",
-                            email=contact.email or "",
-                            phone=contact.phone or "",
-                        )
-                        stats["pushed"] += 1
-                    except Exception:
-                        task_logger.debug(
-                            "Failed to push contact %s for %s", contact.id, user.email
-                        )
-                        stats["errors"] += 1
-
-                # ── Pull: CardDAV -> local CRM contacts ────────────────
-                pull_result = await carddav_pull_contacts(user_email=user.email)
-                if not pull_result.get("success"):
-                    task_logger.debug(
-                        "CardDAV pull skipped for %s: %s",
-                        user.email,
-                        pull_result.get("error", "unknown"),
-                    )
-                    continue
-
-                remote_contacts = pull_result.get("contacts", [])
-
-                async with AsyncSessionLocal() as db:
-                    # Build set of local contact IDs for this user
-                    local_result = await db.execute(
-                        select(Contact).where(Contact.owner_id == user.id)
-                    )
-                    local_ids = {
-                        str(c.id) for c in local_result.scalars().all()
-                    }
-
-                    for rc in remote_contacts:
-                        raw_uid = rc.get("uid", "")
-                        uid = raw_uid.replace("@urban-erp", "") if raw_uid else ""
-                        if uid and uid not in local_ids:
-                            new_contact = Contact(
-                                contact_type="person",
-                                first_name=rc.get("first_name", ""),
-                                last_name=rc.get("last_name", ""),
-                                email=rc.get("email"),
-                                phone=rc.get("phone"),
-                                owner_id=user.id,
-                                source="carddav_sync",
-                            )
-                            db.add(new_contact)
-                            stats["pulled"] += 1
-
-                    await db.commit()
-
-                stats["users_synced"] += 1
-
-            except Exception as exc:
-                task_logger.warning("CardDAV sync error for user %s: %s", user.email, exc)
-                stats["errors"] += 1
-
-        task_logger.info(
-            "CardDAV sync complete: %d users, %d pushed, %d pulled, %d errors",
-            stats["users_synced"],
-            stats["pushed"],
-            stats["pulled"],
-            stats["errors"],
-        )
-        return {"status": "ok", **stats}
-
-    try:
-        return asyncio.run(_sync())
-    except Exception as exc:
-        import logging as _logging
-        _logging.getLogger(__name__).exception("CardDAV sync task failed: %s", exc)
         return {"status": "error", "error": str(exc)}
 
 
@@ -526,6 +304,96 @@ def daily_attendance_summary():
         return {"status": "error", "error": str(exc)}
 
 
+@celery_app.task(name="tasks.generate_thumbnail", bind=True, max_retries=2)
+def generate_thumbnail(self, file_id: str, minio_key: str, mime_type: str):
+    """Generate a 256x256 max thumbnail for an image or PDF and upload to MinIO.
+
+    For images (image/*): resize with Pillow preserving aspect ratio.
+    For PDFs (application/pdf): convert first page with pdf2image, then resize.
+    Thumbnail is stored at ``thumbnails/{file_id}.jpg`` in MinIO.
+    """
+    import io
+    import logging
+
+    task_logger = logging.getLogger(__name__)
+    thumbnail_key = f"thumbnails/{file_id}.jpg"
+
+    try:
+        from app.integrations import minio_client
+    except Exception as exc:
+        task_logger.warning("Cannot import minio_client for thumbnail generation: %s", exc)
+        return {"status": "error", "error": str(exc)}
+
+    # Download the original file from MinIO
+    try:
+        client = minio_client._get_client()
+        minio_client._ensure_bucket(client)
+        response = client.get_object(Bucket=minio_client.BUCKET_NAME, Key=minio_key)
+        file_data = response["Body"].read()
+    except Exception as exc:
+        task_logger.warning("Failed to download file %s for thumbnail: %s", minio_key, exc)
+        raise self.retry(exc=exc, countdown=30)
+
+    # Generate the thumbnail image
+    thumb_bytes: bytes | None = None
+
+    if mime_type.startswith("image/"):
+        try:
+            from PIL import Image
+
+            img = Image.open(io.BytesIO(file_data))
+            img.thumbnail((256, 256), Image.LANCZOS)
+            if img.mode in ("RGBA", "P", "LA"):
+                img = img.convert("RGB")
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=85)
+            thumb_bytes = buf.getvalue()
+        except ImportError:
+            task_logger.warning("Pillow not installed — skipping thumbnail for image %s", file_id)
+            return {"status": "skipped", "reason": "Pillow not installed"}
+        except Exception as exc:
+            task_logger.warning("Failed to generate image thumbnail for %s: %s", file_id, exc)
+            return {"status": "error", "error": str(exc)}
+
+    elif mime_type == "application/pdf":
+        try:
+            from pdf2image import convert_from_bytes
+
+            pages = convert_from_bytes(file_data, first_page=1, last_page=1, size=(256, None))
+            if pages:
+                page_img = pages[0]
+                page_img.thumbnail((256, 256))
+                if page_img.mode in ("RGBA", "P", "LA"):
+                    page_img = page_img.convert("RGB")
+                buf = io.BytesIO()
+                page_img.save(buf, format="JPEG", quality=85)
+                thumb_bytes = buf.getvalue()
+        except ImportError:
+            task_logger.warning("pdf2image not installed — skipping thumbnail for PDF %s", file_id)
+            return {"status": "skipped", "reason": "pdf2image not installed"}
+        except Exception as exc:
+            task_logger.warning("Failed to generate PDF thumbnail for %s: %s", file_id, exc)
+            return {"status": "error", "error": str(exc)}
+    else:
+        return {"status": "skipped", "reason": f"Unsupported mime type: {mime_type}"}
+
+    if not thumb_bytes:
+        return {"status": "error", "error": "No thumbnail data generated"}
+
+    # Upload thumbnail to MinIO
+    try:
+        minio_client.upload_file_from_bytes(
+            data=thumb_bytes,
+            object_name=thumbnail_key,
+            content_type="image/jpeg",
+        )
+        task_logger.info("Thumbnail generated for file %s -> %s (%d bytes)", file_id, thumbnail_key, len(thumb_bytes))
+        return {"status": "ok", "thumbnail_key": thumbnail_key, "size": len(thumb_bytes)}
+    except Exception as exc:
+        task_logger.warning("Failed to upload thumbnail for %s: %s", file_id, exc)
+        raise self.retry(exc=exc, countdown=30)
+
+
 @celery_app.task(name="tasks.daily_backup")
 def daily_backup():
     """Daily task: create a PostgreSQL backup and upload to MinIO."""
@@ -550,17 +418,181 @@ def daily_backup():
         return {"status": "error", "error": str(exc)}
 
 
+@celery_app.task(name="tasks.calendar_event_reminders")
+def calendar_event_reminders():
+    """Periodic task: fire reminder events for calendar events starting soon (within 15 min)."""
+    import asyncio
+    import logging
+
+    task_logger = logging.getLogger(__name__)
+
+    async def _check_reminders():
+        from datetime import datetime, timedelta, timezone
+
+        from sqlalchemy import select
+
+        from app.core.database import AsyncSessionLocal
+        from app.core.events import event_bus
+        from app.models.calendar import CalendarEvent
+
+        now = datetime.now(timezone.utc)
+        window_start = now
+        window_end = now + timedelta(minutes=15)
+
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(CalendarEvent).where(
+                    CalendarEvent.start_time >= window_start,
+                    CalendarEvent.start_time <= window_end,
+                )
+            )
+            upcoming_events = result.scalars().all()
+
+        if not upcoming_events:
+            return {"status": "ok", "reminders_sent": 0}
+
+        # Ensure event bus is connected for publishing
+        import redis.asyncio as aioredis
+        redis_conn = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        event_bus._redis = redis_conn
+
+        count = 0
+        for event in upcoming_events:
+            await event_bus.publish("calendar.event.reminder", {
+                "event_id": str(event.id),
+                "title": event.title,
+                "start_time": event.start_time.isoformat() if event.start_time else "",
+                "end_time": event.end_time.isoformat() if event.end_time else "",
+                "organizer_id": str(event.organizer_id),
+                "attendees": event.attendees if isinstance(getattr(event, "attendees", None), list) else [],
+                "event_type": event.event_type,
+            })
+            count += 1
+
+        await redis_conn.aclose()
+        task_logger.info("Sent %d calendar event reminders", count)
+        return {"status": "ok", "reminders_sent": count}
+
+    try:
+        return asyncio.run(_check_reminders())
+    except Exception as exc:
+        import logging as _logging
+        _logging.getLogger(__name__).exception("Calendar reminder task failed: %s", exc)
+        return {"status": "error", "error": str(exc)}
+
+
+@celery_app.task(name="tasks.document_retention_cleanup")
+def document_retention_cleanup():
+    """Periodic task: delete documents older than the configured retention period.
+
+    Reads retention policy from admin_docs config (system_settings table).
+    Honors ``exclude_pinned`` and ``exclude_shared`` flags.  When ``dry_run``
+    is True, only logs what would be deleted without actually removing files.
+    """
+    import asyncio
+    import json
+    import logging
+
+    task_logger = logging.getLogger(__name__)
+
+    async def _cleanup():
+        from datetime import datetime, timedelta, timezone
+
+        from sqlalchemy import select
+
+        from app.core.database import AsyncSessionLocal
+        from app.models.drive import DriveFile
+        from app.models.settings import SystemSettings
+
+        # Read retention config
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(SystemSettings).where(
+                    SystemSettings.key == "docs_retention",
+                    SystemSettings.category == "docs_admin",
+                )
+            )
+            row = result.scalar_one_or_none()
+
+        defaults = {
+            "retention_enabled": False,
+            "retention_days": 365,
+            "exclude_pinned": True,
+            "exclude_shared": True,
+            "dry_run": True,
+        }
+        if row and row.value:
+            try:
+                config = {**defaults, **json.loads(row.value)}
+            except json.JSONDecodeError:
+                config = defaults
+        else:
+            config = defaults
+
+        if not config["retention_enabled"]:
+            task_logger.info("Document retention is disabled, skipping")
+            return {"status": "disabled"}
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=config["retention_days"])
+
+        async with AsyncSessionLocal() as db:
+            query = select(DriveFile).where(DriveFile.created_at < cutoff)
+            result = await db.execute(query)
+            candidates = result.scalars().all()
+
+            deleted = 0
+            skipped = 0
+
+            for file in candidates:
+                # Skip shared files if configured
+                if config["exclude_shared"]:
+                    shared_with = getattr(file, "shared_with", None)
+                    if shared_with:
+                        skipped += 1
+                        continue
+
+                if config["dry_run"]:
+                    task_logger.info("DRY RUN: would delete %s (%s)", file.name, file.id)
+                    deleted += 1
+                    continue
+
+                # Actually delete from MinIO and DB
+                try:
+                    from app.integrations import minio_client
+
+                    minio_client.delete_file(file.minio_key)
+                    await db.delete(file)
+                    deleted += 1
+                except Exception as exc:
+                    task_logger.warning("Failed to delete %s: %s", file.id, exc)
+                    skipped += 1
+
+            if not config["dry_run"]:
+                await db.commit()
+
+        task_logger.info(
+            "Document retention cleanup: %d deleted, %d skipped (dry_run=%s, cutoff=%s)",
+            deleted, skipped, config["dry_run"], cutoff.isoformat(),
+        )
+        return {
+            "status": "ok",
+            "deleted": deleted,
+            "skipped": skipped,
+            "dry_run": config["dry_run"],
+            "retention_days": config["retention_days"],
+        }
+
+    try:
+        return asyncio.run(_cleanup())
+    except Exception as exc:
+        import logging as _logging
+        _logging.getLogger(__name__).exception("Document retention task failed: %s", exc)
+        return {"status": "error", "error": str(exc)}
+
+
 # ── Beat schedule ────────────────────────────────────────────────────────────
 
 celery_app.conf.beat_schedule = {
-    "sync-caldav-every-5-min": {
-        "task": "tasks.sync_caldav",
-        "schedule": 300.0,
-    },
-    "sync-carddav-every-5-min": {
-        "task": "tasks.sync_carddav",
-        "schedule": 300.0,
-    },
     "overdue-invoice-check-daily": {
         "task": "tasks.overdue_invoice_check",
         "schedule": 86400.0,  # 24 hours
@@ -572,5 +604,13 @@ celery_app.conf.beat_schedule = {
     "daily-backup": {
         "task": "tasks.daily_backup",
         "schedule": crontab(hour=2, minute=0),
+    },
+    "calendar-event-reminders-every-5-min": {
+        "task": "tasks.calendar_event_reminders",
+        "schedule": 300.0,
+    },
+    "document-retention-daily": {
+        "task": "tasks.document_retention_cleanup",
+        "schedule": crontab(hour=3, minute=0),
     },
 }

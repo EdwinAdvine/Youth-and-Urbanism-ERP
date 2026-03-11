@@ -142,8 +142,10 @@ export default function EcommerceDashboard() {
         {[
           { label: 'Stores', path: '/ecommerce/stores' },
           { label: 'Products', path: '/ecommerce/products' },
+          { label: 'Categories', path: '/ecommerce/categories' },
           { label: 'Orders', path: '/ecommerce/orders' },
           { label: 'Customers', path: '/ecommerce/customers' },
+          { label: 'Theme Editor', path: '/ecommerce/theme-editor' },
         ].map((item) => (
           <Button key={item.path} variant="outline" size="sm" onClick={() => navigate(item.path)}>
             {item.label}

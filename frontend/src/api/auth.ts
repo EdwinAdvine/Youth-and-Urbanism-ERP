@@ -35,7 +35,7 @@ export function useLogin() {
       // Temporarily store token to fetch user
       useAuthStore.setState({ token: tokens.access_token })
       const user = await meRequest()
-      setAuth(user, tokens.access_token)
+      setAuth(user, tokens.access_token, tokens.refresh_token)
       return user
     },
     onSuccess: () => {
@@ -57,6 +57,33 @@ export function useMe() {
     },
     enabled: !!token,
     staleTime: 60_000,
+  })
+}
+
+export async function registerRequest(payload: {
+  email: string
+  password: string
+  full_name: string
+}): Promise<AuthTokens> {
+  const { data } = await apiClient.post<AuthTokens>('/auth/register', payload)
+  return data
+}
+
+export function useRegister() {
+  const setAuth = useAuthStore((s) => s.setAuth)
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payload: { email: string; password: string; full_name: string }) => {
+      const tokens = await registerRequest(payload)
+      useAuthStore.setState({ token: tokens.access_token })
+      const user = await meRequest()
+      setAuth(user, tokens.access_token, tokens.refresh_token)
+      return user
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['me'] })
+    },
   })
 }
 

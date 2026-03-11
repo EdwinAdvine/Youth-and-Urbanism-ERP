@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import {
   useDriveFiles,
   useDriveFolders,
@@ -10,12 +10,18 @@ import {
   useSharedFolders,
   useTeamFolders,
   useCreateTeamFolder,
+  useOpenInEditor,
+  useFileAsAttachment,
+  useLinkFileToTask,
   formatFileSize,
   getFileType,
   type DriveFile,
   type DriveFolder,
 } from '../../api/drive'
 import ShareDialog from '../../components/drive/ShareDialog'
+import BulkActionsToolbar from './BulkActionsToolbar'
+import FavoritesView, { FavoriteToggle } from './FavoritesView'
+import FileVersionsPanel from './FileVersionsPanel'
 
 // ─── File type config ─────────────────────────────────────────────────────────
 
@@ -71,6 +77,36 @@ function foldersToDisplayItems(folders: DriveFolder[]): DisplayItem[] {
   }))
 }
 
+// ─── Long press hook for touch context menu ──────────────────────────────────
+
+function useLongPress(callback: (e: React.TouchEvent) => void, delay = 500) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const touchRef = useRef<{ x: number; y: number } | null>(null)
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    timerRef.current = setTimeout(() => {
+      callback(e)
+    }, delay)
+  }, [callback, delay])
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchRef.current) return
+    const dx = Math.abs(e.touches[0].clientX - touchRef.current.x)
+    const dy = Math.abs(e.touches[0].clientY - touchRef.current.y)
+    if (dx > 10 || dy > 10) {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
+
+  const onTouchEnd = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    touchRef.current = null
+  }, [])
+
+  return { onTouchStart, onTouchMove, onTouchEnd }
+}
+
 // ─── Context Menu ─────────────────────────────────────────────────────────────
 
 function ContextMenu({ x, y, item, onClose, onAction }: {
@@ -87,8 +123,12 @@ function ContextMenu({ x, y, item, onClose, onAction }: {
       ]
     : [
         { label: 'Open', icon: '→', action: 'open' },
+        { label: 'Open in Editor', icon: '✏', action: 'open-in-editor' },
         { label: 'Download', icon: '↓', action: 'download' },
         { label: 'Share', icon: '⤴', action: 'share' },
+        { label: 'Attach to Mail', icon: '✉', action: 'attach-to-mail' },
+        { label: 'Link to Task', icon: '☑', action: 'link-to-task' },
+        { label: 'Version History', icon: '⏱', action: 'versions' },
         { label: 'Move', icon: '↗', action: 'move' },
         null,
         { label: 'Delete', icon: '🗑', action: 'delete', danger: true },
@@ -143,12 +183,48 @@ function UploadZone({ onUpload }: { onUpload: (files: FileList) => void }) {
   )
 }
 
+// ─── File Grid Item with long-press for touch ────────────────────────────────
+
+function FileGridItem({ item, cfg, isSelected, onSelect, onContextMenu }: {
+  item: DisplayItem
+  cfg: { icon: string; color: string; bg: string }
+  isSelected: boolean
+  onSelect: (e: React.MouseEvent) => void
+  onContextMenu: (x: number, y: number) => void
+}) {
+  const longPressHandlers = useLongPress((e) => {
+    const touch = e.touches[0]
+    onContextMenu(touch.clientX, touch.clientY)
+  }, 500)
+
+  return (
+    <div
+      onClick={onSelect}
+      onContextMenu={(e) => { e.preventDefault(); onContextMenu(e.clientX, e.clientY) }}
+      {...longPressHandlers}
+      draggable
+      onDragStart={(e) => { e.dataTransfer.setData('text/drive-file-id', item.id); e.dataTransfer.effectAllowed = 'move' }}
+      className={`relative group flex flex-col items-center gap-2 p-4 bg-white border rounded-[10px] hover:border-[#51459d]/30 hover:shadow-sm transition-all text-center cursor-pointer min-h-[88px] ${isSelected ? 'border-[#51459d] ring-2 ring-[#51459d]/20' : 'border-gray-100'}`}
+    >
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 sm:transition-opacity touch-device:opacity-100">
+        <FavoriteToggle fileId={item.id} />
+      </div>
+      <span className="text-3xl">{cfg.icon}</span>
+      <div className="w-full">
+        <p className="text-xs font-medium text-gray-700 truncate">{item.name}</p>
+        <p className="text-[10px] text-gray-400">{item.size}</p>
+      </div>
+      {item.isPublic && <span className="text-[10px] text-[#51459d] bg-[#51459d]/10 px-1.5 rounded">Public</span>}
+    </div>
+  )
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function DrivePage() {
   const [activeSection, setActiveSection] = useState<string>('my-files')
   const [activeFolderId, setActiveFolderId] = useState<string | undefined>(undefined)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(window.innerWidth < 768 ? 'list' : 'grid')
   const [search, setSearch] = useState('')
   const [breadcrumbs, setBreadcrumbs] = useState<{ label: string; folderId?: string }[]>([{ label: 'My Files' }])
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: DisplayItem } | null>(null)
@@ -160,6 +236,12 @@ export default function DrivePage() {
   const [showCreateTeam, setShowCreateTeam] = useState(false)
   const [newTeamName, setNewTeamName] = useState('')
   const [newTeamDept, setNewTeamDept] = useState('')
+  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([])
+  const [versionsFile, setVersionsFile] = useState<{ id: string; name: string } | null>(null)
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
+  const [linkTaskTarget, setLinkTaskTarget] = useState<{ id: string; name: string } | null>(null)
+  const [linkTaskId, setLinkTaskId] = useState('')
+  const [linkProjectId, setLinkProjectId] = useState('')
 
   // ─── API hooks ──────────────────────────────────────────────────────────────
   const isSharedView = activeSection === 'shared'
@@ -178,6 +260,9 @@ export default function DrivePage() {
   const deleteFile = useDeleteFile()
   const createFolder = useCreateFolder()
   const createTeamFolder = useCreateTeamFolder()
+  const openInEditor = useOpenInEditor()
+  const fileAsAttachment = useFileAsAttachment()
+  const linkFileToTask = useLinkFileToTask()
 
   // ─── Build display items ───────────────────────────────────────────────────
 
@@ -244,6 +329,51 @@ export default function DrivePage() {
         name: item.name,
         type: item.isFolder ? 'folder' : 'file',
       })
+    } else if (action === 'versions' && !item.isFolder) {
+      setVersionsFile({ id: item.id, name: item.name })
+    } else if (action === 'open-in-editor' && !item.isFolder) {
+      try {
+        const result = await openInEditor.mutateAsync(item.id)
+        // Open the ONLYOFFICE editor in a new tab/window with the config
+        const configParam = encodeURIComponent(JSON.stringify(result.config))
+        window.open(`${result.editor_url}?config=${configParam}`, '_blank')
+      } catch {
+        alert('Cannot open this file type in the editor.')
+      }
+    } else if (action === 'attach-to-mail' && !item.isFolder) {
+      try {
+        const meta = await fileAsAttachment.mutateAsync(item.id)
+        // Copy the attachment info to clipboard for pasting into mail compose
+        await navigator.clipboard.writeText(JSON.stringify({
+          file_id: meta.file_id,
+          name: meta.name,
+          content_type: meta.content_type,
+          size: meta.size,
+          download_url: meta.download_url,
+        }))
+        alert(`Attachment info for "${meta.name}" copied to clipboard. Paste in mail compose.`)
+      } catch {
+        alert('Failed to get attachment info.')
+      }
+    } else if (action === 'link-to-task' && !item.isFolder) {
+      setLinkTaskTarget({ id: item.id, name: item.name })
+    }
+  }
+
+  const handleLinkToTask = async () => {
+    if (!linkTaskTarget || !linkTaskId.trim() || !linkProjectId.trim()) return
+    try {
+      await linkFileToTask.mutateAsync({
+        fileId: linkTaskTarget.id,
+        taskId: linkTaskId.trim(),
+        projectId: linkProjectId.trim(),
+      })
+      alert(`"${linkTaskTarget.name}" linked to task successfully.`)
+      setLinkTaskTarget(null)
+      setLinkTaskId('')
+      setLinkProjectId('')
+    } catch {
+      alert('Failed to link file to task. Check the Task ID and Project ID.')
     }
   }
 
@@ -282,9 +412,9 @@ export default function DrivePage() {
   ]
 
   return (
-    <div className="h-full flex overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-52 shrink-0 bg-white border-r border-gray-100 flex flex-col">
+    <div className="h-full flex flex-col md:flex-row overflow-hidden">
+      {/* Sidebar - hidden on mobile */}
+      <aside className="hidden md:flex w-52 shrink-0 bg-white border-r border-gray-100 flex-col">
         <div className="p-3 border-b border-gray-100 space-y-2">
           <button
             onClick={() => setShowUpload(true)}
@@ -375,7 +505,7 @@ export default function DrivePage() {
         )}
 
         {/* Toolbar */}
-        <div className="bg-white border-b border-gray-100 px-5 py-3 flex items-center gap-3 shrink-0">
+        <div className="bg-white border-b border-gray-100 px-3 sm:px-5 py-3 flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
           {/* Breadcrumbs */}
           <div className="flex items-center gap-1 text-sm min-w-0">
             {breadcrumbs.map((crumb, i) => (
@@ -404,17 +534,17 @@ export default function DrivePage() {
           </div>
 
           <div className="flex items-center border border-gray-200 rounded-[8px] overflow-hidden">
-            <button onClick={() => setViewMode('grid')} className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50'}`}>
+            <button onClick={() => setViewMode('grid')} className={`p-2 sm:p-1.5 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors ${viewMode === 'grid' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50'}`}>
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
             </button>
-            <button onClick={() => setViewMode('list')} className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50'}`}>
+            <button onClick={() => setViewMode('list')} className={`p-2 sm:p-1.5 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50'}`}>
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
             </button>
           </div>
 
-          <button onClick={() => setShowUpload(true)} className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-600 px-3 py-1.5 rounded-[8px] hover:bg-gray-50 transition-colors">
+          <button onClick={() => setShowUpload(true)} className="flex items-center justify-center gap-1.5 text-xs border border-gray-200 text-gray-600 px-3 py-1.5 rounded-[8px] hover:bg-gray-50 transition-colors min-h-[44px] min-w-[44px]">
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-            Upload
+            <span className="hidden sm:inline">Upload</span>
           </button>
         </div>
 
@@ -434,6 +564,12 @@ export default function DrivePage() {
             </div>
           </div>
         )}
+
+        {/* Bulk actions toolbar */}
+        <BulkActionsToolbar
+          selectedIds={selectedFileIds}
+          onClearSelection={() => setSelectedFileIds([])}
+        />
 
         {/* New folder dialog */}
         {showNewFolder && (
@@ -490,7 +626,7 @@ export default function DrivePage() {
         )}
 
         {/* File area */}
-        <div className="flex-1 overflow-y-auto p-5" onContextMenu={(e) => { e.preventDefault() }}>
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5" onContextMenu={(e) => { e.preventDefault() }}>
           {showUpload && (
             <div className="mb-5">
               <div className="flex items-center justify-between mb-2">
@@ -520,7 +656,7 @@ export default function DrivePage() {
                   <button onClick={() => setShowCreateTeam(true)} className="mt-3 text-xs text-[#51459d] hover:underline">Create one →</button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
                   {teamFoldersData.team_folders.map((tf) => (
                     <button
                       key={tf.id}
@@ -547,7 +683,12 @@ export default function DrivePage() {
             </div>
           )}
 
-          {!isTeamView && items.length === 0 ? (
+          {/* Favorites view */}
+          {activeSection === 'starred' && (
+            <FavoritesView />
+          )}
+
+          {activeSection === 'starred' ? null : !isTeamView && items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-center">
               <div className="text-4xl mb-3">📭</div>
               <p className="text-sm font-medium text-gray-700">
@@ -563,13 +704,20 @@ export default function DrivePage() {
               {items.some((f) => f.isFolder) && (
                 <div className="mb-4">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Folders</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
                     {items.filter((f) => f.isFolder).map((item) => (
                       <button
                         key={item.id}
                         onDoubleClick={() => { setBreadcrumbs((p) => [...p, { label: item.name, folderId: item.id }]); setActiveFolderId(item.id) }}
                         onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, item }) }}
-                        className="flex flex-col items-center gap-2 p-4 bg-white border border-gray-100 rounded-[10px] hover:border-yellow-300 hover:shadow-sm transition-all text-center"
+                        onDragOver={(e) => { e.preventDefault(); setDragOverFolderId(item.id) }}
+                        onDragLeave={() => setDragOverFolderId(null)}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          setDragOverFolderId(null)
+                          // File drag-and-drop into folder handled elsewhere if needed
+                        }}
+                        className={`flex flex-col items-center gap-2 p-4 bg-white border rounded-[10px] hover:border-yellow-300 hover:shadow-sm transition-all text-center ${dragOverFolderId === item.id ? 'border-[#51459d] bg-[#51459d]/5 border-dashed border-2' : 'border-gray-100'}`}
                       >
                         <span className="text-3xl">📁</span>
                         <p className="text-xs font-medium text-gray-700 truncate w-full">{item.name}</p>
@@ -583,22 +731,25 @@ export default function DrivePage() {
               {items.some((f) => !f.isFolder) && (
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Files</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
                     {items.filter((f) => !f.isFolder).map((item) => {
                       const cfg = FILE_ICONS[item.fileType] ?? FILE_ICONS.other
+                      const isSelected = selectedFileIds.includes(item.id)
                       return (
-                        <button
+                        <FileGridItem
                           key={item.id}
-                          onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, item }) }}
-                          className="flex flex-col items-center gap-2 p-4 bg-white border border-gray-100 rounded-[10px] hover:border-[#51459d]/30 hover:shadow-sm transition-all text-center"
-                        >
-                          <span className="text-3xl">{cfg.icon}</span>
-                          <div className="w-full">
-                            <p className="text-xs font-medium text-gray-700 truncate">{item.name}</p>
-                            <p className="text-[10px] text-gray-400">{item.size}</p>
-                          </div>
-                          {item.isPublic && <span className="text-[10px] text-[#51459d] bg-[#51459d]/10 px-1.5 rounded">Public</span>}
-                        </button>
+                          item={item}
+                          cfg={cfg}
+                          isSelected={isSelected}
+                          onSelect={(e) => {
+                            if (e.ctrlKey || e.metaKey) {
+                              setSelectedFileIds((prev) =>
+                                prev.includes(item.id) ? prev.filter((id) => id !== item.id) : [...prev, item.id]
+                              )
+                            }
+                          }}
+                          onContextMenu={(x, y) => setContextMenu({ x, y, item })}
+                        />
                       )
                     })}
                   </div>
@@ -606,8 +757,8 @@ export default function DrivePage() {
               )}
             </>
           ) : !isTeamView && items.length > 0 ? (
-            <div className="bg-white rounded-[10px] border border-gray-100 overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="bg-white rounded-[10px] border border-gray-100 overflow-x-auto">
+              <table className="w-full text-sm min-w-[500px]">
                 <thead>
                   <tr className="border-b border-gray-100">
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Name</th>
@@ -625,9 +776,13 @@ export default function DrivePage() {
                         key={item.id}
                         className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
                         onDoubleClick={() => item.isFolder && handleAction('open', item)}
+                        onClick={() => {
+                          // On touch devices, single tap opens folders
+                          if ('ontouchstart' in window && item.isFolder) handleAction('open', item)
+                        }}
                         onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, item }) }}
                       >
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 min-h-[48px]">
                           <div className="flex items-center gap-3">
                             <span className="text-lg">{cfg.icon}</span>
                             <div>
@@ -636,12 +791,12 @@ export default function DrivePage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-xs text-gray-500">{item.modified}</td>
-                        <td className="px-4 py-3 text-xs text-gray-500 text-right">{item.size}</td>
+                        <td className="px-4 py-3 text-xs text-gray-500 hidden sm:table-cell">{item.modified}</td>
+                        <td className="px-4 py-3 text-xs text-gray-500 text-right hidden sm:table-cell">{item.size}</td>
                         <td className="px-4 py-3 text-center">
                           <button
-                            onClick={() => setShareTarget({ id: item.id, name: item.name, type: item.isFolder ? 'folder' : 'file' })}
-                            className="p-1 hover:bg-[#51459d]/10 rounded-[4px] text-gray-400 hover:text-[#51459d] transition-colors"
+                            onClick={(e) => { e.stopPropagation(); setShareTarget({ id: item.id, name: item.name, type: item.isFolder ? 'folder' : 'file' }) }}
+                            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-[#51459d]/10 rounded-[4px] text-gray-400 hover:text-[#51459d] transition-colors"
                             title="Share"
                           >
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
@@ -650,7 +805,7 @@ export default function DrivePage() {
                         <td className="px-4 py-3 text-right">
                           <button
                             onClick={(e) => { e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, item }) }}
-                            className="p-1 hover:bg-gray-100 rounded-[4px] text-gray-400"
+                            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-gray-100 rounded-[4px] text-gray-400"
                           >
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
                           </button>
@@ -682,6 +837,62 @@ export default function DrivePage() {
           itemType={shareTarget.type}
           onClose={() => setShareTarget(null)}
         />
+      )}
+
+      {versionsFile && (
+        <div className="fixed inset-0 z-50 flex">
+          <div className="flex-1 bg-black/20" onClick={() => setVersionsFile(null)} />
+          <FileVersionsPanel
+            fileId={versionsFile.id}
+            fileName={versionsFile.name}
+            onClose={() => setVersionsFile(null)}
+          />
+        </div>
+      )}
+
+      {/* Link to Task dialog */}
+      {linkTaskTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setLinkTaskTarget(null)}>
+          <div className="bg-white rounded-[10px] shadow-xl w-96 p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Link to Task</h3>
+            <p className="text-xs text-gray-400 mb-4">Link "{linkTaskTarget.name}" to a project task.</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Project ID</label>
+                <input
+                  value={linkProjectId}
+                  onChange={(e) => setLinkProjectId(e.target.value)}
+                  placeholder="Enter project UUID"
+                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Task ID</label>
+                <input
+                  value={linkTaskId}
+                  onChange={(e) => setLinkTaskId(e.target.value)}
+                  placeholder="Enter task UUID"
+                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={handleLinkToTask}
+                  disabled={linkFileToTask.isPending || !linkTaskId.trim() || !linkProjectId.trim()}
+                  className="flex-1 text-xs bg-[#51459d] text-white py-2 rounded-[8px] hover:bg-[#3d3480] disabled:opacity-50 transition-colors"
+                >
+                  {linkFileToTask.isPending ? 'Linking...' : 'Link to Task'}
+                </button>
+                <button
+                  onClick={() => { setLinkTaskTarget(null); setLinkTaskId(''); setLinkProjectId('') }}
+                  className="text-xs text-gray-400 hover:text-gray-600 px-3"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -276,3 +276,113 @@ class OrderLine(Base, UUIDPrimaryKeyMixin):
 
     def __repr__(self) -> str:
         return f"<OrderLine id={self.id} product={self.product_name!r}>"
+
+
+# -- Coupon -------------------------------------------------------------------
+class Coupon(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Discount coupon / promo code."""
+
+    __tablename__ = "ecom_coupons"
+
+    code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    coupon_type: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="percentage",
+    )  # percentage | fixed
+    value: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    min_order: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+    valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    valid_to: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    usage_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    usage_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    def __repr__(self) -> str:
+        return f"<Coupon code={self.code!r} type={self.coupon_type}>"
+
+
+# -- ShippingMethod -----------------------------------------------------------
+class ShippingMethod(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """A shipping method with price, estimated days, and zone restrictions."""
+
+    __tablename__ = "ecom_shipping_methods"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    estimated_days: Mapped[int] = mapped_column(Integer, nullable=False)
+    zones: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    def __repr__(self) -> str:
+        return f"<ShippingMethod id={self.id} name={self.name!r}>"
+
+
+# -- Review -------------------------------------------------------------------
+class Review(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Product review left by an authenticated user."""
+
+    __tablename__ = "ecom_reviews"
+
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_approved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    # Relationships
+    product = relationship("EcomProduct", lazy="joined")
+    user = relationship("User", lazy="joined")
+
+    def __repr__(self) -> str:
+        return f"<Review id={self.id} product_id={self.product_id} rating={self.rating}>"
+
+
+# -- Wishlist -----------------------------------------------------------------
+class Wishlist(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """User wishlist entry for a product."""
+
+    __tablename__ = "ecom_wishlists"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    # Relationships
+    product = relationship("EcomProduct", lazy="joined")
+    user = relationship("User", lazy="joined")
+
+    def __repr__(self) -> str:
+        return f"<Wishlist id={self.id} user_id={self.user_id} product_id={self.product_id}>"
+
+
+# -- PaymentGateway -----------------------------------------------------------
+class PaymentGateway(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Configured payment gateway (Mpesa, Stripe, PayPal, etc.)."""
+
+    __tablename__ = "ecom_payment_gateways"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    provider: Mapped[str] = mapped_column(String(100), nullable=False)
+    config: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    def __repr__(self) -> str:
+        return f"<PaymentGateway id={self.id} name={self.name!r}>"

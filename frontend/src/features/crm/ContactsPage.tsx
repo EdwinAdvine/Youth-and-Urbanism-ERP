@@ -21,6 +21,7 @@ import {
 } from '../../components/ui'
 import { toast } from '../../components/ui'
 import apiClient from '../../api/client'
+import { ImportFromEcommerceDialog } from './EcommerceSyncDialog'
 
 const EMPTY_FORM: CreateContactPayload = {
   name: '',
@@ -53,6 +54,7 @@ export default function ContactsPage() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<ContactType | ''>('')
   const [modalOpen, setModalOpen] = useState(false)
+  const [ecomImportOpen, setEcomImportOpen] = useState(false)
   const [editing, setEditing] = useState<Contact | null>(null)
   const [form, setForm] = useState<CreateContactPayload>(EMPTY_FORM)
 
@@ -169,6 +171,9 @@ export default function ContactsPage() {
           <p className="text-sm text-gray-500 mt-1">Manage your CRM contacts</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setEcomImportOpen(true)}>
+            Import from E-Commerce
+          </Button>
           <Button variant="secondary" size="sm" onClick={() => handleExport('/crm/contacts/export', 'contacts.csv')}>
             Export CSV
           </Button>
@@ -279,6 +284,12 @@ export default function ContactsPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Import from E-Commerce Dialog */}
+      <ImportFromEcommerceDialog
+        open={ecomImportOpen}
+        onClose={() => setEcomImportOpen(false)}
+      />
     </div>
   )
 }

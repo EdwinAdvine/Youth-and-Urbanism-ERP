@@ -2,7 +2,7 @@
 # Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 networks:
-  urban-net:
+  urban-erp-net:
     driver: bridge
 
 services:
@@ -177,7 +177,7 @@ services:
     build:
       context: ./nginx
       dockerfile: Dockerfile
-    container_name: urban-nginx
+    container_name: urban-erp-nginx
     restart: always
     ports:
       - "80:80"
@@ -203,28 +203,9 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - urban-net
+      - urban-erp-net
 
   # ── OSS Integrations ──────────────────────────────────────────
-  stalwart:
-    restart: always
-    ports: []
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 20s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
   onlyoffice:
     restart: always
     ports: []
@@ -319,30 +300,3 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  superset:
-    restart: always
-    ports: []
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8088/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # ── Removed dev-only services ──────────────────────────────────
-  pgadmin:
-    profiles:
-      - disabled
-
-  mailhog:
-    profiles:
-      - disabled

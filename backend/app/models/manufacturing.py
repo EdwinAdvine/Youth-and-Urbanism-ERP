@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import (
     Boolean,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -199,4 +200,85 @@ class QualityCheck(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     work_order = relationship("WorkOrder", back_populates="quality_checks")
+    inspector = relationship("User", foreign_keys=[inspector_id])
+
+
+# ── Routing Step ────────────────────────────────────────────────────────────
+class RoutingStep(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """A single operation/step in a production routing for a BOM."""
+
+    __tablename__ = "mfg_routing_steps"
+
+    bom_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("mfg_bom.id"), nullable=False
+    )
+    workstation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("mfg_workstations.id"), nullable=False
+    )
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    operation: Mapped[str] = mapped_column(String(300), nullable=False)
+    duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    bom = relationship("BillOfMaterials", foreign_keys=[bom_id])
+    workstation = relationship("WorkStation", foreign_keys=[workstation_id])
+
+
+# ── Scrap Entry ─────────────────────────────────────────────────────────────
+class ScrapEntry(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Records scrapped / wasted items from a work order."""
+
+    __tablename__ = "mfg_scrap_entries"
+
+    work_order_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("mfg_work_orders.id"), nullable=False
+    )
+    item_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+
+    work_order = relationship("WorkOrder", foreign_keys=[work_order_id])
+
+
+# ── Maintenance Schedule ────────────────────────────────────────────────────
+class MaintenanceSchedule(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Scheduled maintenance for a workstation."""
+
+    __tablename__ = "mfg_maintenance_schedules"
+
+    workstation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("mfg_workstations.id"), nullable=False
+    )
+    description: Mapped[str] = mapped_column(String(500), nullable=False)
+    frequency: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # daily, weekly, monthly
+    next_date: Mapped[date] = mapped_column(Date, nullable=False)
+    last_completed: Mapped[date | None] = mapped_column(Date, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    workstation = relationship("WorkStation", foreign_keys=[workstation_id])
+
+
+# ── Quality Control ─────────────────────────────────────────────────────────
+class QualityControl(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Quality control test record for a work order."""
+
+    __tablename__ = "mfg_quality_control"
+
+    work_order_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("mfg_work_orders.id"), nullable=False
+    )
+    test_name: Mapped[str] = mapped_column(String(300), nullable=False)
+    result: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # pass, fail
+    inspector_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    work_order = relationship("WorkOrder", foreign_keys=[work_order_id])
     inspector = relationship("User", foreign_keys=[inspector_id])

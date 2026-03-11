@@ -475,6 +475,36 @@ export function useCreateQualityCheck() {
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
+export function useRemoveBOMItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ bomId, itemId }: { bomId: string; itemId: string }) => {
+      await apiClient.delete(`/manufacturing/bom/${bomId}/items/${itemId}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['manufacturing', 'bom'] }),
+  })
+}
+
+export function useDeleteQualityCheck() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/manufacturing/quality-checks/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['manufacturing', 'quality-checks'] }),
+  })
+}
+
+export function useDeleteWorkStation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/manufacturing/workstations/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['manufacturing', 'workstations'] }),
+  })
+}
+
 export function useManufacturingStats() {
   return useQuery({
     queryKey: ['manufacturing', 'dashboard', 'stats'],

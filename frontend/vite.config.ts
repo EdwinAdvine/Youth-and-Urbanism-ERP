@@ -7,6 +7,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@apps': path.resolve(__dirname, './src/apps'),
+      '@shared': path.resolve(__dirname, './src/shared'),
     },
   },
   build: {
@@ -25,7 +27,8 @@ export default defineConfig({
             }
             return 'vendor-misc'
           }
-          const m = id.match(/features\/(finance|hr|crm|inventory|projects|forms|admin|mail|calendar|docs|notes|drive|analytics|teams|pos|ecommerce|manufacturing|support|supplychain|supply-chain)\//)
+          // Match both features/ and apps/ paths for code splitting
+          const m = id.match(/(?:features|apps\/yu-)(finance|hr|crm|inventory|projects|forms|admin|mail|calendar|docs|notes|drive|analytics|teams|pos|ecommerce|manufacturing|support|supplychain|supply-chain)\//)
           if (m) {
             const mod = m[1].replace('-', '')
             return `mod-${mod}`

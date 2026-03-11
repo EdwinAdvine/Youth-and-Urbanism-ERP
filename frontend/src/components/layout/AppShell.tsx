@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
+import { useAISidebarStore } from '../../store/aiSidebar'
 import { useLogout } from '../../api/auth'
 import Sidebar from './Sidebar'
 import { NotificationsDropdown } from './NotificationsDropdown'
 import SearchModal from './SearchModal'
+import AISidebar from '../ai/AISidebar'
 
 const BASE_MODULES = [
   { id: 'home', label: 'Home', icon: '⊞', href: '/' },
@@ -47,17 +49,23 @@ export default function AppShell() {
   const [notifOpen, setNotifOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
 
-  // Cmd+K / Ctrl+K opens the search modal
+  const aiSidebar = useAISidebarStore()
+
+  // Cmd+K / Ctrl+K opens the search modal; Cmd+Shift+A toggles AI sidebar
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         setSearchOpen(true)
       }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault()
+        aiSidebar.toggle()
+      }
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [])
+  }, [aiSidebar])
   const user = useAuthStore((s) => s.user)
   const logout = useLogout()
   const navigate = useNavigate()
@@ -149,10 +157,15 @@ export default function AppShell() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            {/* AI assistant quick button */}
+            {/* AI assistant quick button — toggles Urban Bad AI sidebar */}
             <button
-              onClick={() => navigate('/')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+              onClick={() => aiSidebar.toggle()}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-xs font-semibold transition-colors ${
+                aiSidebar.isOpen
+                  ? 'bg-primary text-white'
+                  : 'bg-primary/10 text-primary hover:bg-primary/20'
+              }`}
+              title="Toggle Urban Bad AI (Cmd+Shift+A)"
             >
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -236,6 +249,9 @@ export default function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      {/* Urban Bad AI sidebar */}
+      <AISidebar />
 
       {/* Global search modal */}
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />

@@ -5,6 +5,7 @@ import { toast } from '../../components/ui'
 import {
   useQualityChecks,
   useCreateQualityCheck,
+  useDeleteQualityCheck,
   useWorkOrders,
   type QualityCheck,
   type CreateQualityCheckPayload,
@@ -48,6 +49,7 @@ export default function QualityChecksPage() {
   })
   const { data: wos } = useWorkOrders({ limit: 100 })
   const createQC = useCreateQualityCheck()
+  const deleteQC = useDeleteQualityCheck()
 
   const handleCreate = async () => {
     if (!form.work_order_id || !form.quantity_inspected) {
@@ -162,6 +164,28 @@ export default function QualityChecksPage() {
       label: 'Notes',
       render: (row: QualityCheck) => (
         <span className="text-gray-500 text-xs max-w-[120px] truncate block">{row.notes ?? '--'}</span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: '',
+      render: (row: QualityCheck) => (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-[#ff3a6e]"
+          onClick={async () => {
+            if (!window.confirm(`Delete quality check ${row.check_number}?`)) return
+            try {
+              await deleteQC.mutateAsync(row.id)
+              toast('success', 'Quality check deleted')
+            } catch {
+              toast('error', 'Failed to delete quality check')
+            }
+          }}
+        >
+          Delete
+        </Button>
       ),
     },
   ]

@@ -93,3 +93,53 @@ class DriveFile(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<DriveFile id={self.id} name={self.name!r} size={self.size}>"
+
+
+class FileTag(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Tag attached to a drive file for categorisation."""
+
+    __tablename__ = "file_tags"
+
+    file_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("drive_files.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    tag_name: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    file = relationship("DriveFile", foreign_keys=[file_id])
+
+
+class FileComment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Comment on a drive file."""
+
+    __tablename__ = "file_comments"
+
+    file_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("drive_files.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+
+    file = relationship("DriveFile", foreign_keys=[file_id])
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class TrashBin(UUIDPrimaryKeyMixin, Base):
+    """Soft-delete record for drive files moved to trash."""
+
+    __tablename__ = "trash_bin"
+
+    file_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("drive_files.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    deleted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default="now()", nullable=False,
+    )
+    deleted_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False,
+    )
+    auto_purge_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    file = relationship("DriveFile", foreign_keys=[file_id])
+    deleter = relationship("User", foreign_keys=[deleted_by])

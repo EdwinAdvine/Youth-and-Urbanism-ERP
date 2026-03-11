@@ -1,6 +1,6 @@
 
 networks:
-  urban-net:
+  urban-erp-net:
     driver: bridge
 
 volumes:
@@ -8,20 +8,17 @@ volumes:
   redis_data:
   minio_data:
   ollama_data:
-  stalwart_data:
+
   onlyoffice_data:
   onlyoffice_logs:
   jitsi_web_config:
   jitsi_prosody_config:
   jitsi_prosody_plugins:
-  superset_data:
-  nextcloud_data:
-  nextcloud_db:
 
 services:
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: urban-postgres
+    container_name: urban-erp-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-urban}
@@ -38,11 +35,11 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - urban-net
+      - urban-erp-net
 
   redis:
     image: redis:7-alpine
-    container_name: urban-redis
+    container_name: urban-erp-redis
     restart: unless-stopped
     ports:
       - "6380:6379"
@@ -54,11 +51,11 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - urban-net
+      - urban-erp-net
 
   minio:
     image: minio/minio:latest
-    container_name: urban-minio
+    container_name: urban-erp-minio
     restart: unless-stopped
     ports:
       - "9010:9000"
@@ -70,23 +67,23 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
     networks:
-      - urban-net
+      - urban-erp-net
 
   ollama:
     image: ollama/ollama:latest
-    container_name: urban-ollama
+    container_name: urban-erp-ollama
     ports:
       - "11435:11434"
     volumes:
       - ollama_data:/root/.ollama
     networks:
-      - urban-net
+      - urban-erp-net
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: urban-backend
+    container_name: urban-erp-backend
     restart: unless-stopped
     ports:
       - "8010:8000"
@@ -107,13 +104,13 @@ services:
       retries: 5
       start_period: 15s
     networks:
-      - urban-net
+      - urban-erp-net
 
   celery-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: urban-celery-worker
+    container_name: urban-erp-celery-worker
     restart: unless-stopped
     depends_on:
       postgres:
@@ -126,13 +123,13 @@ services:
       - ./backend:/app
     command: celery -A app.tasks.celery_app worker -l info
     networks:
-      - urban-net
+      - urban-erp-net
 
   celery-beat:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: urban-celery-beat
+    container_name: urban-erp-celery-beat
     restart: unless-stopped
     depends_on:
       postgres:
@@ -145,13 +142,13 @@ services:
       - ./backend:/app
     command: celery -A app.tasks.celery_app beat -l info
     networks:
-      - urban-net
+      - urban-erp-net
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: urban-frontend
+    container_name: urban-erp-frontend
     restart: unless-stopped
     ports:
       - "3010:3000"
@@ -167,50 +164,12 @@ services:
       - ./frontend:/app
       - /app/node_modules
     networks:
-      - urban-net
+      - urban-erp-net
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: urban-pgadmin
-    restart: unless-stopped
-    ports:
-      - "5051:80"
-    environment:
-      PGADMIN_DEFAULT_EMAIL: super-admin@youthandurbanism.org
-      PGADMIN_DEFAULT_PASSWORD: "super-admin@2026!"
-    depends_on:
-      - postgres
-    networks:
-      - urban-net
-
-  mailhog:
-    image: mailhog/mailhog
-    container_name: urban-mailhog
-    restart: unless-stopped
-    ports:
-      - "1026:1025"
-      - "8026:8025"
-    networks:
-      - urban-net
-
-  stalwart:
-    image: stalwartlabs/stalwart:latest
-    container_name: urban-stalwart
-    restart: unless-stopped
-    ports:
-      - "25:25"      # SMTP
-      - "143:143"    # IMAP
-      - "587:587"    # SMTP submission
-      - "993:993"    # IMAPS
-      - "8082:8080"  # Web admin UI
-    volumes:
-      - stalwart_data:/opt/stalwart
-    networks:
-      - urban-net
 
   onlyoffice:
     image: onlyoffice/documentserver:latest
-    container_name: urban-onlyoffice
+    container_name: urban-erp-onlyoffice
     restart: unless-stopped
     ports:
       - "8083:80"
@@ -222,11 +181,11 @@ services:
       - onlyoffice_data:/var/www/onlyoffice/Data
       - onlyoffice_logs:/var/log/onlyoffice
     networks:
-      - urban-net
+      - urban-erp-net
 
   jitsi-web:
     image: jitsi/web:stable
-    container_name: urban-jitsi-web
+    container_name: urban-erp-jitsi-web
     restart: unless-stopped
     ports:
       - "8443:443"
@@ -245,11 +204,11 @@ services:
     volumes:
       - jitsi_web_config:/config
     networks:
-      - urban-net
+      - urban-erp-net
 
   jitsi-prosody:
     image: jitsi/prosody:stable
-    container_name: urban-jitsi-prosody
+    container_name: urban-erp-jitsi-prosody
     restart: unless-stopped
     expose:
       - "5222"
@@ -272,7 +231,7 @@ services:
       - jitsi_prosody_config:/config
       - jitsi_prosody_plugins:/prosody-plugins-custom
     networks:
-      urban-net:
+      urban-erp-net:
         aliases:
           - meet.jitsi
           - auth.meet.jitsi
@@ -282,7 +241,7 @@ services:
 
   jitsi-jicofo:
     image: jitsi/jicofo:stable
-    container_name: urban-jitsi-jicofo
+    container_name: urban-erp-jitsi-jicofo
     restart: unless-stopped
     environment:
       - XMPP_SERVER=jitsi-prosody
@@ -297,11 +256,11 @@ services:
     depends_on:
       - jitsi-prosody
     networks:
-      - urban-net
+      - urban-erp-net
 
   jitsi-jvb:
     image: jitsi/jvb:stable
-    container_name: urban-jitsi-jvb
+    container_name: urban-erp-jitsi-jvb
     restart: unless-stopped
     ports:
       - "10000:10000/udp"
@@ -319,93 +278,5 @@ services:
     depends_on:
       - jitsi-prosody
     networks:
-      - urban-net
+      - urban-erp-net
 
-  # ── Nextcloud (SharePoint-level sharing engine for Y&U Drive) ──────────────
-  nextcloud-db:
-    image: postgres:16-alpine
-    container_name: urban-nextcloud-db
-    restart: unless-stopped
-    volumes:
-      - nextcloud_db:/var/lib/postgresql/data
-    environment:
-      POSTGRES_DB: nextcloud
-      POSTGRES_USER: nextcloud
-      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASS:-nextcloud_secret}
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - urban-net
-
-  nextcloud:
-    image: nextcloud:fpm
-    container_name: urban-nextcloud
-    restart: unless-stopped
-    depends_on:
-      nextcloud-db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    volumes:
-      - nextcloud_data:/var/www/html
-    environment:
-      POSTGRES_HOST: nextcloud-db
-      POSTGRES_DB: nextcloud
-      POSTGRES_USER: nextcloud
-      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASS:-nextcloud_secret}
-      REDIS_HOST: redis
-      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-admin}
-      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD:-super-admin@2026!}
-      NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud-web nextcloud localhost ${DOMAIN:-localhost}"
-      OVERWRITEPROTOCOL: http
-    networks:
-      - urban-net
-
-  nextcloud-web:
-    image: nginx:alpine
-    container_name: urban-nextcloud-web
-    restart: unless-stopped
-    depends_on:
-      - nextcloud
-    ports:
-      - "8085:80"
-    volumes:
-      - ./nginx-nextcloud.conf:/etc/nginx/nginx.conf:ro
-      - nextcloud_data:/var/www/html:ro
-    networks:
-      - urban-net
-
-  superset:
-    build:
-      context: ./superset
-      dockerfile: Dockerfile
-    container_name: urban-superset
-    restart: unless-stopped
-    ports:
-      - "8088:8088"
-    environment:
-      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY:-superset-secret-key-2026-urban-erp}
-      - SUPERSET_CONFIG_PATH=/app/superset_config.py
-      - ADMIN_USERNAME=super-admin
-      - ADMIN_EMAIL=super-admin@youthandurbanism.org
-      - ADMIN_PASSWORD=${SUPERSET_ADMIN_PASSWORD:-super-admin@2026!}
-      - DATABASE_URL=postgresql+psycopg2://urban:urban_secret@postgres:5432/superset
-      - APP_URL=${APP_URL:-http://localhost:3010}
-    volumes:
-      - superset_data:/app/superset_home
-      - ./superset/superset_config.py:/app/superset_config.py:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-    command: >
-      sh -c "
-        superset db upgrade &&
-        superset fab create-admin --username admin --firstname Admin --lastname User --email super-admin@youthandurbanism.org --password 'super-admin@2026!' || true &&
-        superset init &&
-        superset run -h 0.0.0.0 -p 8088
-      "
-    networks:
-      - urban-net

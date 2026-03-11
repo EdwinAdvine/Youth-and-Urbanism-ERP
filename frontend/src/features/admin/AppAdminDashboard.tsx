@@ -17,7 +17,7 @@ const APP_META: Record<string, AppMeta> = {
     label: 'Y&U Mails',
     icon: '\u2709\ufe0f',
     gradient: 'from-blue-400 to-blue-600',
-    description: 'Email service powered by Stalwart',
+    description: 'Email service (built-in SMTP/IMAP)',
   },
   forms: {
     label: 'Y&U Forms',

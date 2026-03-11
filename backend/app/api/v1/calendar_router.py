@@ -7,7 +7,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel
-from sqlalchemy import and_, select
+from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DBSession
 from app.core.events import event_bus
@@ -142,6 +142,9 @@ async def create_event(
         "organizer_id": str(current_user.id),
         "start_time": event.start_time.isoformat(),
         "end_time": event.end_time.isoformat(),
+        "description": event.description or "",
+        "location": event.location or "",
+        "attendees": event.attendees or [],
     })
 
     return EventOut.model_validate(event).model_dump()
@@ -207,48 +210,13 @@ async def delete_event(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/sync", summary="Trigger CalDAV sync for the current user")
+@router.post("/sync", summary="CalDAV sync (retired)")
 async def sync_calendar(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
-    """Pull events from Stalwart CalDAV and merge into local DB."""
-    from app.integrations.stalwart import caldav_pull_events
-
-    user_email = current_user.email
-    result = await caldav_pull_events(user_email)
-
-    if not result.get("success"):
-        return {"synced": 0, "message": result.get("error", "CalDAV not available")}
-
-    synced = 0
-    for evt in result.get("events", []):
-        # Check if event already exists by title+start combo
-        existing = await db.execute(
-            select(CalendarEvent).where(
-                and_(
-                    CalendarEvent.organizer_id == current_user.id,
-                    CalendarEvent.title == evt.get("title", ""),
-                    CalendarEvent.start_time == evt.get("start"),
-                )
-            )
-        )
-        if existing.scalar_one_or_none() is None:
-            new_event = CalendarEvent(
-                title=evt.get("title", "Untitled"),
-                start_time=evt.get("start"),
-                end_time=evt.get("end"),
-                description=evt.get("description", ""),
-                event_type="meeting",
-                organizer_id=current_user.id,
-            )
-            db.add(new_event)
-            synced += 1
-
-    if synced > 0:
-        await db.commit()
-
-    return {"synced": synced, "total_remote": len(result.get("events", []))}
+    """CalDAV sync has been retired. The calendar now uses the REST API directly."""
+    return {"synced": 0, "message": "CalDAV sync retired. Calendar uses REST API directly."}
 
 
 @router.post(

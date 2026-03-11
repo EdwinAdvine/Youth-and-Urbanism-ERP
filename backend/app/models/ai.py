@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -80,3 +80,38 @@ class AIAuditLog(Base, UUIDPrimaryKeyMixin):
 
     def __repr__(self) -> str:
         return f"<AIAuditLog id={self.id} action={self.action}>"
+
+
+class AIPromptTemplate(UUIDPrimaryKeyMixin, Base):
+    """Reusable AI prompt template with variable interpolation."""
+
+    __tablename__ = "ai_prompt_templates"
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    template: Mapped[str] = mapped_column(Text, nullable=False)
+    module: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    variables: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    is_public: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    creator = relationship("User", foreign_keys=[created_by])
+
+
+class AIKnowledgeBase(UUIDPrimaryKeyMixin, Base):
+    """AI knowledge base for RAG-powered contextual responses."""
+
+    __tablename__ = "ai_knowledge_bases"
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    module: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    document_count: Mapped[int] = mapped_column(default=0, nullable=False)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    owner = relationship("User", foreign_keys=[owner_id])

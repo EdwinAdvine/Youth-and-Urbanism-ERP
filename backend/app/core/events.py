@@ -24,12 +24,21 @@ Registered event channels:
     - meeting.deleted          — when a meeting is deleted
     - calendar.event.created   — when a calendar event is created
     - calendar.event.updated   — when a calendar event is updated
+    - calendar.event.reminder  — when a calendar event reminder fires (→ Notifications)
     - file.uploaded            — when a file is uploaded to Drive
     - file.deleted             — when a file is deleted from Drive
     - email.sent               — when an email is sent
     - note.created             — when a note is created
     - form.response.submitted  — when a form response is submitted
     - task.status.changed      — when a project task status changes
+    - pos.sale.completed       — when a POS transaction completes (→ Finance journal entry)
+    - ecommerce.order.created  — when an e-commerce order is placed (→ Finance invoice, Mail confirmation)
+    - ecommerce.order.shipped  — when an e-commerce order ships (→ Mail shipping notification)
+    - inventory.valuation.changed — when stock valuation changes (→ Finance balance sheet)
+    - supplychain.goods_received  — when GRN is accepted (→ Inventory stock movements)
+    - wo.completed             — when a manufacturing work order completes (→ Notifications)
+    - support.ticket.created   — when a support ticket is created (→ Mail notification)
+    - opportunity.stage_changed — when a CRM deal stage changes (→ Mail + Notifications)
 """
 
 from __future__ import annotations

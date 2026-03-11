@@ -230,18 +230,18 @@ export default function GRNPage() {
   ]
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Goods Received Notes</h1>
-          <p className="text-sm text-gray-500 mt-1">{data?.total ?? 0} total GRNs</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Goods Received Notes</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{data?.total ?? 0} total GRNs</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/supply-chain')}>
+          <Button variant="outline" onClick={() => navigate('/supply-chain')} className="min-h-[44px] sm:min-h-0">
             Dashboard
           </Button>
-          <Button onClick={() => setShowCreate(true)}>
+          <Button onClick={() => setShowCreate(true)} className="min-h-[44px] sm:min-h-0">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -251,9 +251,9 @@ export default function GRNPage() {
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
+      <Card className="mb-5 sm:mb-6">
         <div className="flex flex-wrap gap-3 items-end">
-          <div className="w-48">
+          <div className="w-full sm:w-48">
             <Select
               label="Status"
               options={STATUS_OPTIONS}
@@ -266,13 +266,15 @@ export default function GRNPage() {
 
       {/* Table */}
       <Card padding={false}>
-        <Table<GoodsReceivedNote>
-          columns={columns}
-          data={data?.grns ?? []}
-          loading={isLoading}
-          emptyText="No goods received notes found"
-          keyExtractor={(row) => row.id}
-        />
+        <div className="overflow-x-auto">
+          <Table<GoodsReceivedNote>
+            columns={columns}
+            data={data?.grns ?? []}
+            loading={isLoading}
+            emptyText="No goods received notes found"
+            keyExtractor={(row) => row.id}
+          />
+        </div>
         {totalPages > 1 && (
           <Pagination page={page} pages={totalPages} total={data?.total ?? 0} onChange={setPage} />
         )}
@@ -281,7 +283,7 @@ export default function GRNPage() {
       {/* Create Modal */}
       <Modal open={showCreate} onClose={() => { setShowCreate(false); resetForm() }} title="New Goods Received Note" size="lg">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Purchase Order ID *"
               value={formPOId}
@@ -295,7 +297,7 @@ export default function GRNPage() {
               placeholder="Supplier UUID"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Warehouse ID *"
               value={formWarehouseId}
@@ -321,7 +323,7 @@ export default function GRNPage() {
             <div className="space-y-3">
               {formLines.map((line, idx) => (
                 <div key={idx} className="p-3 bg-gray-50 rounded-[10px] space-y-2">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <div className="flex-1">
                       <Input
                         placeholder="PO Line ID"
@@ -347,7 +349,7 @@ export default function GRNPage() {
                       </button>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <Input
                       type="number"
                       min="0"

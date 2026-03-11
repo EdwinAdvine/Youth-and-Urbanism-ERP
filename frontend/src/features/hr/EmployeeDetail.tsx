@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Card, Badge, Button, Spinner, Table, Pagination } from '../../components/ui'
+import { Card, Badge, Button, Spinner, Table, Pagination, toast } from '../../components/ui'
 import { cn } from '../../components/ui'
 import {
   useEmployee,
+  useDeleteEmployee,
   useLeaveBalance,
   useLeaveRequests,
   useAttendance,
@@ -12,6 +13,7 @@ import {
   type AttendanceRecord,
   type AttendanceStatus,
 } from '../../api/hr'
+import EmployeeAvailabilityBadge from './EmployeeAvailability'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -50,6 +52,7 @@ export default function EmployeeDetail() {
   const [attendancePage, setAttendancePage] = useState(1)
 
   const { data: employee, isLoading } = useEmployee(id ?? '')
+  const deleteEmployee = useDeleteEmployee()
   const { data: leaveBalance } = useLeaveBalance(id ?? '')
   const { data: leaveRequests, isLoading: leavesLoading } = useLeaveRequests({
     page: leavePage,
@@ -98,16 +101,38 @@ export default function EmployeeDetail() {
   return (
     <div className="p-6 space-y-6">
       {/* Back + Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/hr/employees')}>
-          &larr; Back
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {employee.first_name} {employee.last_name}
-          </h1>
-          <p className="text-sm text-gray-500">{employee.job_title} &middot; {employee.department_name ?? 'No department'}</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/hr/employees')}>
+            &larr; Back
+          </Button>
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {employee.first_name} {employee.last_name}
+              </h1>
+              <EmployeeAvailabilityBadge employeeId={id!} />
+            </div>
+            <p className="text-sm text-gray-500">{employee.job_title} &middot; {employee.department_name ?? 'No department'}</p>
+          </div>
         </div>
+        <Button
+          variant="danger"
+          size="sm"
+          loading={deleteEmployee.isPending}
+          onClick={async () => {
+            if (!window.confirm(`Delete employee "${employee.first_name} ${employee.last_name}"? This cannot be undone.`)) return
+            try {
+              await deleteEmployee.mutateAsync(id ?? '')
+              toast('success', 'Employee deleted')
+              navigate('/hr/employees')
+            } catch {
+              toast('error', 'Failed to delete employee')
+            }
+          }}
+        >
+          Delete Employee
+        </Button>
       </div>
 
       {/* Leave Balance Card */}

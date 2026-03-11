@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '../../api/client'
-import { Button, Spinner } from '../../components/ui'
+import { Button, Spinner, Modal, Input, toast } from '../../components/ui'
+import { useEmailPosReceipt } from '../../api/cross_module_links'
 
 interface ReceiptLine {
   id: string
@@ -32,6 +34,9 @@ function formatCurrency(value: number) {
 export default function POSReceiptView() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const emailReceiptMut = useEmailPosReceipt()
+  const [emailOpen, setEmailOpen] = useState(false)
+  const [emailInput, setEmailInput] = useState('')
 
   const { data: receipt, isLoading } = useQuery({
     queryKey: ['pos', 'receipt', id],
@@ -50,6 +55,7 @@ export default function POSReceiptView() {
       <div className="flex gap-2 mb-4 print:hidden">
         <Button size="sm" variant="outline" onClick={() => navigate(-1)}>Back</Button>
         <Button size="sm" onClick={() => window.print()}>Print Receipt</Button>
+        <Button size="sm" variant="outline" onClick={() => setEmailOpen(true)}>Email Receipt</Button>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 font-mono text-sm">
@@ -131,6 +137,39 @@ export default function POSReceiptView() {
           <p>Thank you for your purchase!</p>
         </div>
       </div>
+
+      {/* Email Receipt Modal */}
+      <Modal open={emailOpen} onClose={() => setEmailOpen(false)} title="Email Receipt" size="sm">
+        <div className="space-y-4">
+          <Input
+            label="Recipient Email"
+            type="email"
+            placeholder="customer@example.com"
+            value={emailInput}
+            onChange={(e) => setEmailInput(e.target.value)}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setEmailOpen(false)}>Cancel</Button>
+            <Button
+              size="sm"
+              loading={emailReceiptMut.isPending}
+              onClick={async () => {
+                if (!emailInput.trim()) { toast('warning', 'Enter an email address'); return }
+                try {
+                  await emailReceiptMut.mutateAsync({ txnId: id!, email: emailInput.trim() })
+                  toast('success', 'Receipt emailed successfully')
+                  setEmailOpen(false)
+                  setEmailInput('')
+                } catch {
+                  toast('error', 'Failed to email receipt')
+                }
+              }}
+            >
+              Send Email
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

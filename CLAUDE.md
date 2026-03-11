@@ -84,8 +84,9 @@ docker compose exec backend alembic upgrade head
 - **Database:** PostgreSQL 16 (pgvector) + Redis 7
 - **Background jobs:** Celery + Redis (broker on db 1, results on db 2)
 - **AI:** Ollama (primary, local) with OpenAI/Anthropic/Grok fallback
-- **File storage:** MinIO (S3-compatible) + Nextcloud
-- **Integrations:** Stalwart (mail/CalDAV), ONLYOFFICE (docs), Jitsi (meetings), Superset (analytics)
+- **File storage:** MinIO (S3-compatible)
+- **Integrations:** Built-in (SMTP/IMAP + PostgreSQL mail storage), ONLYOFFICE (docs engine, kept forever), Jitsi (video engine, kept forever)
+- **Analytics:** Built-in (direct PostgreSQL queries, replaces Superset)
 
 ### Backend Structure
 
@@ -103,7 +104,7 @@ backend/app/
 │   ├── rbac.py       # Role-based access control
 │   ├── rate_limit.py # slowapi Redis-backed limiter
 │   └── export.py     # CSV export helper
-├── integrations/     # External service wrappers (minio, nextcloud, stalwart, jitsi, onlyoffice)
+├── integrations/     # External service wrappers (minio, smtp/imap, jitsi, onlyoffice)
 └── tasks/            # Celery async jobs + beat schedule
 ```
 
@@ -167,9 +168,4 @@ Three-tier: **Super Admin** (full system) → **App Admin** (scoped to one modul
 | Redis | 6380 |
 | MinIO API / Console | 9010 / 9011 |
 | Ollama | 11435 |
-| pgAdmin | 5051 |
-| MailHog (SMTP / Web) | 1026 / 8026 |
-| Stalwart Admin | 8082 |
 | ONLYOFFICE | 8083 |
-| Nextcloud | 8085 |
-| Superset | 8088 |

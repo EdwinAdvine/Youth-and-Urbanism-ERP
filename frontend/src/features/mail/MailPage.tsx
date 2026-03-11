@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import DOMPurify from 'dompurify'
 import {
   useMailFolders,
@@ -9,8 +9,13 @@ import {
   useForwardMail,
   useMarkAsRead,
   useDeleteMessage,
+  useMoveMessage,
 } from '../../api/mail'
 import type { MailFolder, MailMessageSummary, MailMessageFull, MailAttachment } from '../../api/mail'
+import SnoozeDialog from './SnoozeDialog'
+import ContactPicker from './ContactPicker'
+import { useMailKeyboardShortcuts, KeyboardShortcutsHelp } from './KeyboardShortcuts'
+import { SaveToDriveDialog, LinkCRMDialog, ConvertToTaskDialog, SaveAsNoteDialog } from './MailCrossModuleActions'
 
 // ─── Compose Modal ────────────────────────────────────────────────────────────
 
@@ -50,18 +55,18 @@ function ComposeModal({ onClose }: { onClose: () => void }) {
 
         {/* Fields */}
         <div className="flex-1 overflow-y-auto">
-          <div className="border-b border-gray-100">
-            <div className="flex items-center px-4 py-2 gap-2">
+          <div className="border-b border-gray-100 px-4 py-2">
+            <div className="flex items-center gap-2">
               <span className="text-xs text-gray-400 w-12 shrink-0">To</span>
-              <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="Recipients" className="flex-1 text-sm text-gray-900 focus:outline-none placeholder:text-gray-400" />
+              <div className="flex-1"><ContactPicker value={to} onChange={setTo} placeholder="Recipients" /></div>
               <button onClick={() => setShowCc(!showCc)} className="text-xs text-[#51459d] hover:underline shrink-0">Cc</button>
             </div>
           </div>
           {showCc && (
-            <div className="border-b border-gray-100">
-              <div className="flex items-center px-4 py-2 gap-2">
+            <div className="border-b border-gray-100 px-4 py-2">
+              <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 w-12 shrink-0">Cc</span>
-                <input value={cc} onChange={(e) => setCc(e.target.value)} placeholder="Cc recipients" className="flex-1 text-sm text-gray-900 focus:outline-none placeholder:text-gray-400" />
+                <div className="flex-1"><ContactPicker value={cc} onChange={setCc} placeholder="Cc recipients" /></div>
               </div>
             </div>
           )}
@@ -143,6 +148,125 @@ function getInitials(name: string) {
   return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
+// ─── Swipeable mail list item ─────────────────────────────────────────────────
+
+function SwipeableMailItem({ msg, isSelected, onSelect, onArchive, onDelete, onSnooze }: {
+  msg: MailMessageSummary
+  isSelected: boolean
+  onSelect: (id: string) => void
+  onArchive: (id: string) => void
+  onDelete: (id: string) => void
+  onSnooze: (id: string) => void
+}) {
+  const itemRef = useRef<HTMLDivElement>(null)
+  const startX = useRef(0)
+  const currentX = useRef(0)
+  const swiping = useRef(false)
+  const [offset, setOffset] = useState(0)
+  const [revealed, setRevealed] = useState<'left' | 'right' | null>(null)
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX
+    currentX.current = startX.current
+    swiping.current = true
+  }, [])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!swiping.current) return
+    currentX.current = e.touches[0].clientX
+    const delta = currentX.current - startX.current
+    // Limit swipe range
+    const clamped = Math.max(-120, Math.min(120, delta))
+    setOffset(clamped)
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    swiping.current = false
+    const delta = currentX.current - startX.current
+    if (delta > 80) {
+      // Swipe right = archive
+      setRevealed('right')
+      setTimeout(() => {
+        onArchive(msg.id)
+        setOffset(0)
+        setRevealed(null)
+      }, 300)
+    } else if (delta < -80) {
+      // Swipe left = show delete/snooze
+      setRevealed('left')
+    } else {
+      setOffset(0)
+      setRevealed(null)
+    }
+  }, [msg.id, onArchive])
+
+  const resetSwipe = useCallback(() => {
+    setOffset(0)
+    setRevealed(null)
+  }, [])
+
+  return (
+    <div className="relative overflow-hidden">
+      {/* Background actions revealed on swipe */}
+      {/* Right swipe background (archive) */}
+      <div className="absolute inset-y-0 left-0 w-full flex items-center px-4 bg-[#6fd943]">
+        <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+        <span className="text-white text-xs font-medium ml-2">Archive</span>
+      </div>
+      {/* Left swipe background (delete/snooze) */}
+      <div className="absolute inset-y-0 right-0 flex items-center gap-1 px-2 bg-white">
+        <button
+          onClick={() => { onSnooze(msg.id); resetSwipe() }}
+          className="flex items-center gap-1 px-3 py-2 bg-[#ffa21d] text-white text-xs font-medium rounded-[6px] min-h-[36px]"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          Snooze
+        </button>
+        <button
+          onClick={() => { onDelete(msg.id); resetSwipe() }}
+          className="flex items-center gap-1 px-3 py-2 bg-[#ff3a6e] text-white text-xs font-medium rounded-[6px] min-h-[36px]"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          Delete
+        </button>
+      </div>
+
+      {/* Foreground content */}
+      <div
+        ref={itemRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ transform: `translateX(${revealed === 'left' ? -120 : offset}px)`, transition: swiping.current ? 'none' : 'transform 0.2s ease-out' }}
+        className="relative bg-white"
+      >
+        <button
+          onClick={() => { if (!revealed) onSelect(msg.id); else resetSwipe() }}
+          className={`w-full text-left px-3 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
+            isSelected ? 'bg-[#51459d]/5 border-l-2 border-l-[#51459d]' : ''
+          }`}
+        >
+          <div className="flex items-start gap-2.5">
+            <div className={`w-8 h-8 rounded-full ${getAvatarColor(msg.from.name ?? msg.from.email)} flex items-center justify-center text-white text-[10px] font-bold shrink-0`}>
+              {getInitials(msg.from.name ?? msg.from.email)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-0.5">
+                <span className={`text-xs truncate ${msg.read ? 'text-gray-600' : 'text-gray-900 font-semibold'}`}>{msg.from.name ?? msg.from.email}</span>
+                <span className="text-[10px] text-gray-400 shrink-0 ml-1">{msg.date}</span>
+              </div>
+              <p className={`text-xs truncate ${msg.read ? 'text-gray-500' : 'text-gray-800 font-medium'}`}>{msg.subject}</p>
+            </div>
+            {!msg.read && <div className="w-2 h-2 rounded-full bg-[#51459d] mt-1 shrink-0" />}
+          </div>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function MailPage() {
@@ -150,6 +274,13 @@ export default function MailPage() {
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null)
   const [composeOpen, setComposeOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const [snoozeMessageId, setSnoozeMessageId] = useState<string | null>(null)
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false)
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null)
+  const [showSaveToDrive, setShowSaveToDrive] = useState(false)
+  const [showLinkCRM, setShowLinkCRM] = useState(false)
+  const [showConvertToTask, setShowConvertToTask] = useState(false)
+  const [showSaveAsNote, setShowSaveAsNote] = useState(false)
 
   // ─── API hooks ──────────────────────────────────────────────────────────────
 
@@ -173,6 +304,16 @@ export default function MailPage() {
   const replyMail = useReplyMail()
   const forwardMail = useForwardMail()
   const deleteMessage = useDeleteMessage()
+  const moveMessage = useMoveMessage()
+
+  // Keyboard shortcuts
+  useMailKeyboardShortcuts({
+    messages: messages.map((m) => ({ id: m.id, read: m.read })),
+    selectedMessage,
+    onSelectMessage: setSelectedMessage,
+    onReply: () => handleReply(),
+    onCompose: () => setComposeOpen(true),
+  })
 
   // Mark as read when a message is selected
   useEffect(() => {
@@ -228,13 +369,13 @@ export default function MailPage() {
       {serverDown && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2 shrink-0">
           <svg className="h-4 w-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-          <p className="text-xs text-amber-700">Mail server not configured — showing empty mailbox. Configure Stalwart JMAP in Settings to enable real mail.</p>
+          <p className="text-xs text-amber-700">Mail server not configured — showing empty mailbox. Configure SMTP/IMAP in Settings to enable real mail.</p>
         </div>
       )}
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left: Folder sidebar */}
-        <aside className="w-52 shrink-0 bg-white border-r border-gray-100 flex flex-col">
+        {/* Left: Folder sidebar - hidden on mobile */}
+        <aside className="hidden md:flex w-52 shrink-0 bg-white border-r border-gray-100 flex-col">
           <div className="p-3 border-b border-gray-100">
             <button
               onClick={() => setComposeOpen(true)}
@@ -250,10 +391,20 @@ export default function MailPage() {
               <button
                 key={folder.id}
                 onClick={() => { setSelectedFolder(folder.id); setSelectedMessage(null) }}
+                onDragOver={(e) => { e.preventDefault(); setDragOverFolder(folder.id) }}
+                onDragLeave={() => setDragOverFolder(null)}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  setDragOverFolder(null)
+                  const msgId = e.dataTransfer.getData('text/mail-message-id')
+                  if (msgId) moveMessage.mutate({ messageId: msgId, folder: folder.id })
+                }}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-[8px] text-sm transition-colors mb-0.5 ${
-                  selectedFolder === folder.id
-                    ? 'bg-[#51459d]/10 text-[#51459d] font-medium'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  dragOverFolder === folder.id
+                    ? 'bg-[#51459d]/20 border-2 border-dashed border-[#51459d]'
+                    : selectedFolder === folder.id
+                      ? 'bg-[#51459d]/10 text-[#51459d] font-medium'
+                      : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -282,8 +433,8 @@ export default function MailPage() {
           </nav>
         </aside>
 
-        {/* Middle: Message list */}
-        <div className="w-80 shrink-0 bg-white border-r border-gray-100 flex flex-col">
+        {/* Middle: Message list - full width on mobile, fixed width on desktop */}
+        <div className={`${selectedMessage ? 'hidden md:flex' : 'flex'} w-full md:w-80 shrink-0 bg-white border-r border-gray-100 flex-col`}>
           <div className="p-3 border-b border-gray-100 shrink-0">
             <div className="relative">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -298,7 +449,15 @@ export default function MailPage() {
 
           <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 shrink-0">
             <h2 className="text-sm font-semibold text-gray-900 capitalize">{selectedFolder}</h2>
-            <span className="text-xs text-gray-400">{messages.length} messages</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">{messages.length}</span>
+              <button
+                onClick={() => setComposeOpen(true)}
+                className="md:hidden w-8 h-8 rounded-[8px] bg-[#51459d] text-white flex items-center justify-center"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto">
@@ -311,34 +470,22 @@ export default function MailPage() {
               </div>
             ) : (
               messages.map((msg) => (
-                <button
+                <SwipeableMailItem
                   key={msg.id}
-                  onClick={() => setSelectedMessage(msg.id)}
-                  className={`w-full text-left px-3 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
-                    selectedMessage === msg.id ? 'bg-[#51459d]/5 border-l-2 border-l-[#51459d]' : ''
-                  }`}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <div className={`w-8 h-8 rounded-full ${getAvatarColor(msg.from.name ?? msg.from.email)} flex items-center justify-center text-white text-[10px] font-bold shrink-0`}>
-                      {getInitials(msg.from.name ?? msg.from.email)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className={`text-xs truncate ${msg.read ? 'text-gray-600' : 'text-gray-900 font-semibold'}`}>{msg.from.name ?? msg.from.email}</span>
-                        <span className="text-[10px] text-gray-400 shrink-0 ml-1">{msg.date}</span>
-                      </div>
-                      <p className={`text-xs truncate ${msg.read ? 'text-gray-500' : 'text-gray-800 font-medium'}`}>{msg.subject}</p>
-                    </div>
-                    {!msg.read && <div className="w-2 h-2 rounded-full bg-[#51459d] mt-1 shrink-0" />}
-                  </div>
-                </button>
+                  msg={msg}
+                  isSelected={selectedMessage === msg.id}
+                  onSelect={setSelectedMessage}
+                  onArchive={(id) => moveMessage.mutate({ messageId: id, folder: 'archive' })}
+                  onDelete={(id) => deleteMessage.mutate(id, { onSuccess: () => { if (selectedMessage === id) setSelectedMessage(null) } })}
+                  onSnooze={(id) => setSnoozeMessageId(id)}
+                />
               ))
             )}
           </div>
         </div>
 
-        {/* Right: Message detail */}
-        <div className="flex-1 bg-gray-50 flex flex-col overflow-hidden">
+        {/* Right: Message detail - full width on mobile when message selected */}
+        <div className={`${selectedMessage ? 'flex' : 'hidden md:flex'} flex-1 bg-gray-50 flex-col overflow-hidden`}>
           {!selectedMessage ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center">
               <svg className="h-12 w-12 text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
@@ -351,9 +498,16 @@ export default function MailPage() {
           ) : detail ? (
             <div className="flex-1 overflow-y-auto">
               {/* Detail header */}
-              <div className="bg-white border-b border-gray-100 px-6 py-4">
+              <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-4">
+                <button
+                  onClick={() => setSelectedMessage(null)}
+                  className="md:hidden flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-3 min-h-[44px]"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                  Back to inbox
+                </button>
                 <div className="flex items-start justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 pr-4">{detail.subject}</h2>
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900 pr-4">{detail.subject}</h2>
                   <div className="flex items-center gap-1 shrink-0">
                     <button onClick={handleReply} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Reply">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
@@ -363,6 +517,23 @@ export default function MailPage() {
                     </button>
                     <button onClick={handleDelete} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Delete">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                    <button onClick={() => setSnoozeMessageId(selectedMessage)} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Snooze">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </button>
+                    <span className="w-px h-4 bg-gray-200" />
+                    {/* Cross-module actions */}
+                    <button onClick={() => setShowSaveToDrive(true)} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Save attachments to Drive">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                    </button>
+                    <button onClick={() => setShowLinkCRM(true)} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Link to CRM">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </button>
+                    <button onClick={() => setShowConvertToTask(true)} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Convert to Task">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                    </button>
+                    <button onClick={() => setShowSaveAsNote(true)} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Save as Note">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                     </button>
                   </div>
                 </div>
@@ -419,6 +590,41 @@ export default function MailPage() {
       </div>
 
       {composeOpen && <ComposeModal onClose={() => setComposeOpen(false)} />}
+      {snoozeMessageId && <SnoozeDialog messageId={snoozeMessageId} onClose={() => setSnoozeMessageId(null)} />}
+      {showSaveToDrive && selectedMessage && (
+        <SaveToDriveDialog
+          messageId={selectedMessage}
+          hasAttachments={!!(detail?.attachments && detail.attachments.length > 0)}
+          onClose={() => setShowSaveToDrive(false)}
+        />
+      )}
+      {showLinkCRM && selectedMessage && (
+        <LinkCRMDialog messageId={selectedMessage} onClose={() => setShowLinkCRM(false)} />
+      )}
+      {showConvertToTask && selectedMessage && (
+        <ConvertToTaskDialog messageId={selectedMessage} onClose={() => setShowConvertToTask(false)} />
+      )}
+      {showSaveAsNote && selectedMessage && (
+        <SaveAsNoteDialog messageId={selectedMessage} onClose={() => setShowSaveAsNote(false)} />
+      )}
+
+      {/* Keyboard shortcuts help toggle */}
+      <div className="fixed bottom-4 right-4 z-30">
+        <button
+          onClick={() => setShowShortcutsHelp(!showShortcutsHelp)}
+          className="w-8 h-8 bg-white border border-gray-200 rounded-full shadow-md flex items-center justify-center text-gray-400 hover:text-[#51459d] transition-colors"
+          title="Keyboard shortcuts"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+        {showShortcutsHelp && (
+          <div className="absolute bottom-10 right-0 mb-2">
+            <KeyboardShortcutsHelp />
+          </div>
+        )}
+      </div>
     </div>
   )
 }

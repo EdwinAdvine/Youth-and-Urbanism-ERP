@@ -230,6 +230,19 @@ export function useUpdateEmployee() {
   })
 }
 
+export function useDeleteEmployee() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/hr/employees/${id}`)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['hr', 'employees'] })
+      qc.invalidateQueries({ queryKey: ['hr', 'dashboard'] })
+    },
+  })
+}
+
 // ─── Leave Requests ───────────────────────────────────────────────────────────
 
 export function useLeaveRequests(params: { page?: number; limit?: number; status?: LeaveStatus; employee_id?: string }) {
@@ -624,6 +637,442 @@ export function useDeleteStatutoryDeduction() {
       await apiClient.delete(`/hr/statutory-deductions/${id}`)
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'statutory-deductions'] }),
+  })
+}
+
+// ─── Employee Documents ──────────────────────────────────────────────────────
+
+export interface EmployeeDocument {
+  id: string
+  employee_id: string
+  employee_name?: string
+  document_type: string
+  title: string
+  file_url: string
+  file_name: string
+  file_size: number
+  expiry_date: string | null
+  notes: string | null
+  uploaded_by: string | null
+  uploaded_by_name?: string
+  created_at: string
+  updated_at: string
+}
+
+export function useEmployeeDocuments(employeeId: string) {
+  return useQuery({
+    queryKey: ['hr', 'employee-documents', employeeId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ documents: EmployeeDocument[] }>(`/hr/employees/${employeeId}/documents`)
+      return data.documents
+    },
+    enabled: !!employeeId,
+  })
+}
+
+export function useUploadDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ employeeId, formData }: { employeeId: string; formData: FormData }) => {
+      const { data } = await apiClient.post<EmployeeDocument>(`/hr/employees/${employeeId}/documents`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'employee-documents'] }),
+  })
+}
+
+export function useDeleteDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ employeeId, documentId }: { employeeId: string; documentId: string }) => {
+      await apiClient.delete(`/hr/employees/${employeeId}/documents/${documentId}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'employee-documents'] }),
+  })
+}
+
+// ─── Training ────────────────────────────────────────────────────────────────
+
+export type TrainingStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled'
+
+export interface Training {
+  id: string
+  title: string
+  description: string | null
+  trainer: string | null
+  start_date: string
+  end_date: string
+  location: string | null
+  status: TrainingStatus
+  max_attendees: number | null
+  cost: number | null
+  department_id: string | null
+  department_name?: string
+  attendee_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface TrainingAttendee {
+  id: string
+  training_id: string
+  employee_id: string
+  employee_name?: string
+  status: 'registered' | 'attended' | 'absent' | 'cancelled'
+  score: number | null
+  feedback: string | null
+  created_at: string
+}
+
+export interface CreateTrainingPayload {
+  title: string
+  description?: string
+  trainer?: string
+  start_date: string
+  end_date: string
+  location?: string
+  status?: TrainingStatus
+  max_attendees?: number
+  cost?: number
+  department_id?: string | null
+}
+
+export interface UpdateTrainingPayload extends Partial<CreateTrainingPayload> {
+  id: string
+}
+
+export function useTrainings(params: { status?: TrainingStatus; department_id?: string } = {}) {
+  return useQuery({
+    queryKey: ['hr', 'trainings', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ trainings: Training[] }>('/hr/trainings', { params })
+      return data.trainings
+    },
+  })
+}
+
+export function useCreateTraining() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateTrainingPayload) => {
+      const { data } = await apiClient.post<Training>('/hr/trainings', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'trainings'] }),
+  })
+}
+
+export function useUpdateTraining() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: UpdateTrainingPayload) => {
+      const { data } = await apiClient.put<Training>(`/hr/trainings/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'trainings'] }),
+  })
+}
+
+export function useTrainingAttendees(trainingId: string) {
+  return useQuery({
+    queryKey: ['hr', 'trainings', trainingId, 'attendees'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ attendees: TrainingAttendee[] }>(`/hr/trainings/${trainingId}/attendees`)
+      return data.attendees
+    },
+    enabled: !!trainingId,
+  })
+}
+
+export function useAddTrainingAttendee() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ trainingId, employee_id }: { trainingId: string; employee_id: string }) => {
+      const { data } = await apiClient.post<TrainingAttendee>(`/hr/trainings/${trainingId}/attendees`, { employee_id })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'trainings'] }),
+  })
+}
+
+export function useRemoveTrainingAttendee() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ trainingId, attendeeId }: { trainingId: string; attendeeId: string }) => {
+      await apiClient.delete(`/hr/trainings/${trainingId}/attendees/${attendeeId}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'trainings'] }),
+  })
+}
+
+// ─── Performance Reviews ─────────────────────────────────────────────────────
+
+export interface PerformanceReview {
+  id: string
+  employee_id: string
+  employee_name?: string
+  reviewer_id: string
+  reviewer_name?: string
+  review_period: string
+  rating: number
+  goals: string | null
+  strengths: string | null
+  areas_for_improvement: string | null
+  comments: string | null
+  status: 'draft' | 'submitted' | 'acknowledged'
+  created_at: string
+  updated_at: string
+}
+
+export interface CreatePerformanceReviewPayload {
+  employee_id: string
+  review_period: string
+  rating: number
+  goals?: string
+  strengths?: string
+  areas_for_improvement?: string
+  comments?: string
+  status?: 'draft' | 'submitted' | 'acknowledged'
+}
+
+export interface UpdatePerformanceReviewPayload extends Partial<Omit<CreatePerformanceReviewPayload, 'employee_id'>> {
+  id: string
+}
+
+export function usePerformanceReviews(params: { employee_id?: string; status?: string } = {}) {
+  return useQuery({
+    queryKey: ['hr', 'performance-reviews', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ reviews: PerformanceReview[] }>('/hr/performance-reviews', { params })
+      return data.reviews
+    },
+  })
+}
+
+export function useCreatePerformanceReview() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreatePerformanceReviewPayload) => {
+      const { data } = await apiClient.post<PerformanceReview>('/hr/performance-reviews', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'performance-reviews'] }),
+  })
+}
+
+export function useUpdatePerformanceReview() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: UpdatePerformanceReviewPayload) => {
+      const { data } = await apiClient.put<PerformanceReview>(`/hr/performance-reviews/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'performance-reviews'] }),
+  })
+}
+
+// ─── Benefits ────────────────────────────────────────────────────────────────
+
+export type BenefitType = 'health' | 'dental' | 'vision' | 'life' | 'retirement' | 'other'
+
+export interface Benefit {
+  id: string
+  employee_id: string
+  employee_name?: string
+  benefit_type: BenefitType
+  provider: string | null
+  plan_name: string
+  coverage_start: string
+  coverage_end: string | null
+  employer_contribution: number
+  employee_contribution: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateBenefitPayload {
+  employee_id: string
+  benefit_type: BenefitType
+  provider?: string
+  plan_name: string
+  coverage_start: string
+  coverage_end?: string
+  employer_contribution: number
+  employee_contribution: number
+}
+
+export interface UpdateBenefitPayload extends Partial<Omit<CreateBenefitPayload, 'employee_id'>> {
+  id: string
+  is_active?: boolean
+}
+
+export function useBenefits(params: { employee_id?: string; benefit_type?: BenefitType } = {}) {
+  return useQuery({
+    queryKey: ['hr', 'benefits', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ benefits: Benefit[] }>('/hr/benefits', { params })
+      return data.benefits
+    },
+  })
+}
+
+export function useCreateBenefit() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateBenefitPayload) => {
+      const { data } = await apiClient.post<Benefit>('/hr/benefits', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'benefits'] }),
+  })
+}
+
+export function useUpdateBenefit() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: UpdateBenefitPayload) => {
+      const { data } = await apiClient.put<Benefit>(`/hr/benefits/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'benefits'] }),
+  })
+}
+
+// ─── Overtime ────────────────────────────────────────────────────────────────
+
+export type OvertimeStatus = 'pending' | 'approved' | 'rejected'
+
+export interface Overtime {
+  id: string
+  employee_id: string
+  employee_name?: string
+  date: string
+  hours: number
+  reason: string
+  status: OvertimeStatus
+  approved_by: string | null
+  approved_by_name?: string
+  rate_multiplier: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateOvertimePayload {
+  employee_id: string
+  date: string
+  hours: number
+  reason: string
+  rate_multiplier?: number
+}
+
+export function useOvertime(params: { employee_id?: string; status?: OvertimeStatus; date_from?: string; date_to?: string } = {}) {
+  return useQuery({
+    queryKey: ['hr', 'overtime', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ records: Overtime[] }>('/hr/overtime', { params })
+      return data.records
+    },
+  })
+}
+
+export function useCreateOvertime() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateOvertimePayload) => {
+      const { data } = await apiClient.post<Overtime>('/hr/overtime', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'overtime'] }),
+  })
+}
+
+export function useApproveOvertime() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.put<Overtime>(`/hr/overtime/${id}/approve`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'overtime'] }),
+  })
+}
+
+export function useRejectOvertime() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.put<Overtime>(`/hr/overtime/${id}/reject`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr', 'overtime'] }),
+  })
+}
+
+// ─── Org Chart ───────────────────────────────────────────────────────────────
+
+export interface OrgChartNode {
+  id: string
+  name: string
+  job_title: string
+  department_name: string | null
+  avatar_url: string | null
+  children: OrgChartNode[]
+}
+
+export function useOrgChart() {
+  return useQuery({
+    queryKey: ['hr', 'org-chart'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ nodes: OrgChartNode[] }>('/hr/org-chart')
+      return data.nodes
+    },
+  })
+}
+
+// ─── HR Reports & KPIs ──────────────────────────────────────────────────────
+
+export interface HRReportData {
+  headcount_by_department: { department: string; count: number }[]
+  headcount_by_type: { type: string; count: number }[]
+  turnover_rate: number
+  avg_tenure_months: number
+  cost_by_department: { department: string; total_cost: number }[]
+  leave_summary: { leave_type: string; total_days: number; count: number }[]
+  payroll_summary: { period: string; gross: number; deductions: number; net: number }[]
+  tax_summary: { tax_name: string; total: number }[]
+}
+
+export interface HRKPIs {
+  total_employees: number
+  active_employees: number
+  avg_salary: number
+  total_payroll_cost: number
+  attrition_rate: number
+  avg_leave_balance: number
+  training_completion_rate: number
+  overtime_hours_this_month: number
+}
+
+export function useHRReports(params: { period_start?: string; period_end?: string } = {}) {
+  return useQuery({
+    queryKey: ['hr', 'reports', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<HRReportData>('/hr/reports', { params })
+      return data
+    },
+  })
+}
+
+export function useHRKPIs() {
+  return useQuery({
+    queryKey: ['hr', 'kpis'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<HRKPIs>('/hr/kpis')
+      return data
+    },
   })
 }
 

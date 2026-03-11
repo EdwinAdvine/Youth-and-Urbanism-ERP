@@ -17,7 +17,7 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -215,3 +215,102 @@ class SupplierReturnLine(UUIDPrimaryKeyMixin, Base):
 
     supplier_return = relationship("SupplierReturn", back_populates="lines")
     item = relationship("InventoryItem")
+
+
+# ── Shipment ────────────────────────────────────────────────────────────────
+class Shipment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Tracks shipment of a purchase order to a destination."""
+
+    __tablename__ = "sc_shipments"
+
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
+    carrier: Mapped[str] = mapped_column(String(200), nullable=False)
+    tracking_no: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(30), default="pending"
+    )  # pending, shipped, in_transit, delivered
+    shipped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    destination: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+# ── ReturnOrder ─────────────────────────────────────────────────────────────
+class ReturnOrder(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Customer return order against an original order."""
+
+    __tablename__ = "sc_return_orders"
+
+    original_order_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(30), default="requested"
+    )  # requested, approved, received, refunded
+    return_items: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+
+# ── QualityInspection ───────────────────────────────────────────────────────
+class QualityInspection(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Quality inspection linked to a goods received note."""
+
+    __tablename__ = "sc_quality_inspections"
+
+    goods_receipt_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("sc_goods_received_notes.id"), nullable=False
+    )
+    inspector_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    result: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # pass, fail, partial
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    inspected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    goods_receipt = relationship("GoodsReceivedNote", foreign_keys=[goods_receipt_id])
+    inspector = relationship("User", foreign_keys=[inspector_id])
+
+
+# ── SupplierRating ──────────────────────────────────────────────────────────
+class SupplierRating(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Periodic rating / scorecard for a supplier."""
+
+    __tablename__ = "sc_supplier_ratings"
+
+    supplier_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("sc_suppliers.id"), nullable=False
+    )
+    quality_score: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5
+    delivery_score: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5
+    price_score: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5
+    period: Mapped[str] = mapped_column(String(50), nullable=False)  # e.g. "2026-Q1"
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    supplier = relationship("Supplier", foreign_keys=[supplier_id])
+
+
+# ── Contract ────────────────────────────────────────────────────────────────
+class Contract(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Supplier contract / agreement."""
+
+    __tablename__ = "sc_contracts"
+
+    supplier_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("sc_suppliers.id"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False)
+    terms: Mapped[str] = mapped_column(Text, nullable=False)
+    value: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    auto_renew: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(
+        String(20), default="active"
+    )  # active, expired, terminated
+
+    supplier = relationship("Supplier", foreign_keys=[supplier_id])

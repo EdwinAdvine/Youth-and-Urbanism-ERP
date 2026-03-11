@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { cn, Button, Badge, Card, Table, Input, Select, Modal, Pagination } from '../../components/ui'
 import { toast } from '../../components/ui'
 import apiClient from '../../api/client'
@@ -11,6 +11,7 @@ import {
   type InventoryItem,
   type CreateItemPayload,
 } from '../../api/inventory'
+import BarcodeScanner, { ManualBarcodeInput } from './BarcodeScanner'
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
@@ -88,6 +89,17 @@ export default function ItemsPage() {
   const deleteItem = useDeleteItem()
 
   const totalPages = data ? Math.ceil(data.total / limit) : 1
+  const [showScanBar, setShowScanBar] = useState(false)
+
+  const handleItemScanned = useCallback((item: InventoryItem) => {
+    setSearch(item.sku)
+    setPage(1)
+  }, [])
+
+  const handleManualBarcode = useCallback((barcode: string) => {
+    setSearch(barcode)
+    setPage(1)
+  }, [])
 
   function getStockOnHand(itemId: string): number | null {
     if (!stockLevels) return null
@@ -210,18 +222,25 @@ export default function ItemsPage() {
   ]
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inventory Items</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage your product catalog and stock items</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Inventory Items</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Manage your product catalog and stock items</p>
         </div>
         <div className="flex items-center gap-2">
+          <BarcodeScanner onItemScanned={handleItemScanned} />
+          <Button variant="secondary" size="sm" onClick={() => setShowScanBar(!showScanBar)}>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h1v10H4V7zm3 0h2v10H7V7zm4 0h1v10h-1V7zm3 0h2v10h-2V7zm4 0h2v10h-2V7z" />
+            </svg>
+            Scan
+          </Button>
           <Button variant="secondary" size="sm" onClick={() => handleExport('/inventory/items/export', 'inventory_items.csv')}>
             Export CSV
           </Button>
-          <Button onClick={openCreate}>
+          <Button onClick={openCreate} className="min-h-[44px] sm:min-h-0">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -231,8 +250,8 @@ export default function ItemsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-64">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
+        <div className="w-full sm:w-64">
           <Input
             placeholder="Search items..."
             value={search}
@@ -244,7 +263,7 @@ export default function ItemsPage() {
             }
           />
         </div>
-        <div className="w-44">
+        <div className="w-full sm:w-44">
           <Input
             placeholder="Category filter"
             value={categoryFilter}
@@ -254,15 +273,29 @@ export default function ItemsPage() {
         <span className="text-sm text-gray-500">{data?.total ?? 0} items</span>
       </div>
 
+      {/* Barcode manual input bar */}
+      {showScanBar && (
+        <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-[10px]">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium text-gray-600 whitespace-nowrap">Quick Lookup:</span>
+            <div className="flex-1 max-w-md">
+              <ManualBarcodeInput onSubmit={handleManualBarcode} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <Card padding={false}>
-        <Table<InventoryItem>
-          columns={columns}
-          data={data?.items ?? []}
-          loading={isLoading}
-          emptyText="No inventory items found"
-          keyExtractor={(row) => row.id}
-        />
+        <div className="overflow-x-auto">
+          <Table<InventoryItem>
+            columns={columns}
+            data={data?.items ?? []}
+            loading={isLoading}
+            emptyText="No inventory items found"
+            keyExtractor={(row) => row.id}
+          />
+        </div>
         <Pagination page={page} pages={totalPages} total={data?.total ?? 0} onChange={setPage} />
       </Card>
 
@@ -274,7 +307,7 @@ export default function ItemsPage() {
         size="lg"
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="SKU"
               value={form.sku}
@@ -288,7 +321,7 @@ export default function ItemsPage() {
               placeholder="Item name"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Category"
               value={form.category}
@@ -302,7 +335,7 @@ export default function ItemsPage() {
               onChange={(e) => setForm({ ...form, unit_of_measure: e.target.value })}
             />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Input
               label="Cost Price *"
               type="number"

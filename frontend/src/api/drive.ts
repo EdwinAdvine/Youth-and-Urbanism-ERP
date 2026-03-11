@@ -409,7 +409,135 @@ export function useDeleteTeamFolder() {
   })
 }
 
+// ─── File Versions ───────────────────────────────────────────────────────────
+
+export interface FileVersion {
+  id: string
+  file_id: string
+  version_number: number
+  size: number
+  created_at: string
+  created_by: string | null
+  comment: string | null
+}
+
+interface FileVersionsResponse {
+  total: number
+  versions: FileVersion[]
+}
+
+export function useFileVersions(fileId: string) {
+  return useQuery({
+    queryKey: ['drive', 'versions', fileId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<FileVersionsResponse>(`/drive/files/${fileId}/versions`)
+      return data
+    },
+    enabled: !!fileId,
+  })
+}
+
+export function useRestoreFileVersion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ fileId, versionId }: { fileId: string; versionId: string }) => {
+      const { data } = await apiClient.post(`/drive/files/${fileId}/versions/${versionId}/restore`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['drive'] }),
+  })
+}
+
+// ─── Favorites ───────────────────────────────────────────────────────────────
+
+export function useToggleFavorite() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (fileId: string) => {
+      const { data } = await apiClient.post(`/drive/file/${fileId}/favorite`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['drive'] }),
+  })
+}
+
+export function useFavoriteFiles() {
+  return useQuery({
+    queryKey: ['drive', 'favorites'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<FilesResponse>('/drive/favorites')
+      return data
+    },
+  })
+}
+
+// ─── Bulk Actions ────────────────────────────────────────────────────────────
+
+export function useBulkDeleteFiles() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (fileIds: string[]) => {
+      await apiClient.post('/drive/bulk/delete', { file_ids: fileIds })
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['drive'] }),
+  })
+}
+
+export function useBulkMoveFiles() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ fileIds, folderId }: { fileIds: string[]; folderId: string }) => {
+      await apiClient.post('/drive/bulk/move', { file_ids: fileIds, folder_id: folderId })
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['drive'] }),
+  })
+}
+
 // ─── Audit ────────────────────────────────────────────────────────────────────
+
+export interface SharingPolicies {
+  allow_external_sharing: boolean
+  allow_public_links: boolean
+  default_link_expiry_days: number | null
+  max_link_expiry_days: number | null
+  allow_file_drop: boolean
+  require_password_for_links: boolean
+}
+
+export function useSharingPolicies() {
+  return useQuery({
+    queryKey: ['drive', 'sharing-policies'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<SharingPolicies>('/drive/sharing-policies')
+      return data
+    },
+  })
+}
+
+export function useDownloadShareLink() {
+  return useMutation({
+    mutationFn: async ({ link, password }: { link: string; password?: string }) => {
+      const { data } = await apiClient.post<{ download_url: string }>(
+        `/drive/share/${link}/download`,
+        password ? { password } : {}
+      )
+      return data
+    },
+  })
+}
+
+export function useFileDropUpload() {
+  return useMutation({
+    mutationFn: async ({ link, file }: { link: string; file: File }) => {
+      const form = new FormData()
+      form.append('file', file)
+      const { data } = await apiClient.post(`/drive/share/${link}/upload`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      return data
+    },
+  })
+}
 
 export function useShareAudit(shareId?: string) {
   return useQuery({
@@ -419,5 +547,59 @@ export function useShareAudit(shareId?: string) {
       const { data } = await apiClient.get<AuditResponse>('/drive/share-audit', { params })
       return data
     },
+  })
+}
+
+// ─── Cross-Module: Drive → Docs (ONLYOFFICE) ────────────────────────────────
+
+export interface EditorConfig {
+  editor_url: string
+  config: Record<string, unknown>
+  file_id: string
+  file_name: string
+}
+
+export function useOpenInEditor() {
+  return useMutation({
+    mutationFn: async (fileId: string) => {
+      const { data } = await apiClient.post<EditorConfig>(`/drive/files/${fileId}/open-in-editor`)
+      return data
+    },
+  })
+}
+
+// ─── Cross-Module: Drive → Mail (attachment metadata) ────────────────────────
+
+export interface AttachmentMeta {
+  file_id: string
+  name: string
+  content_type: string
+  size: number
+  download_url: string
+  minio_key: string
+}
+
+export function useFileAsAttachment() {
+  return useMutation({
+    mutationFn: async (fileId: string) => {
+      const { data } = await apiClient.get<AttachmentMeta>(`/drive/files/${fileId}/as-attachment`)
+      return data
+    },
+  })
+}
+
+// ─── Cross-Module: Drive → Projects (link file to task) ─────────────────────
+
+export function useLinkFileToTask() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ fileId, taskId, projectId }: { fileId: string; taskId: string; projectId: string }) => {
+      const { data } = await apiClient.post(`/drive/files/${fileId}/link-task`, {
+        task_id: taskId,
+        project_id: projectId,
+      })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['drive'] }),
   })
 }

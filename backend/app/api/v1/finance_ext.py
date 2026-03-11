@@ -4,7 +4,7 @@ from __future__ import annotations
 import csv
 import io
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -45,7 +45,9 @@ class CurrencyOut(BaseModel):
     code: str
     name: str
     symbol: str
+    exchange_rate: Decimal = Decimal("1.0")
     is_base: bool
+    last_updated: Any | None = None
     created_at: Any
     updated_at: Any
     model_config = {"from_attributes": True}
@@ -371,8 +373,8 @@ async def auto_match_statement(
             select(Payment).where(
                 and_(
                     Payment.amount == abs(line.amount),
-                    Payment.payment_date >= line.date,
-                    Payment.payment_date <= line.date,
+                    Payment.payment_date >= line.date - timedelta(days=3),
+                    Payment.payment_date <= line.date + timedelta(days=3),
                 )
             )
         )

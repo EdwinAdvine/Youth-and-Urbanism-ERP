@@ -154,3 +154,104 @@ class PurchaseOrderLine(UUIDPrimaryKeyMixin, Base):
 
     purchase_order = relationship("PurchaseOrder", back_populates="lines")
     item = relationship("InventoryItem")
+
+
+# ── Supplier ─────────────────────────────────────────────────────────────────
+class InventorySupplier(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Vendor / supplier master record (inventory-specific)."""
+
+    __tablename__ = "inventory_suppliers"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    contact_person: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    payment_terms: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+# ── StockAdjustment ──────────────────────────────────────────────────────────
+class StockAdjustment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Record of a manual stock quantity adjustment with reason."""
+
+    __tablename__ = "inventory_stock_adjustments"
+
+    item_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("inventory_items.id"), nullable=False
+    )
+    warehouse_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("inventory_warehouses.id"), nullable=False
+    )
+    old_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    new_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    adjusted_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+    item = relationship("InventoryItem")
+    warehouse = relationship("Warehouse")
+
+
+# ── ItemVariant ──────────────────────────────────────────────────────────────
+class ItemVariant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Variant of an inventory item (e.g. colour, size)."""
+
+    __tablename__ = "inventory_item_variants"
+
+    item_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("inventory_items.id"), nullable=False
+    )
+    variant_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    sku: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    price_adjustment: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
+    attributes: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    item = relationship("InventoryItem")
+
+
+# ── BatchNumber ──────────────────────────────────────────────────────────────
+class BatchNumber(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Batch / lot tracking for inventory items."""
+
+    __tablename__ = "inventory_batch_numbers"
+
+    item_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("inventory_items.id"), nullable=False
+    )
+    batch_no: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    manufacture_date: Mapped[date] = mapped_column(Date, nullable=False)
+    expiry_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    warehouse_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("inventory_warehouses.id"), nullable=False
+    )
+
+    item = relationship("InventoryItem")
+    warehouse = relationship("Warehouse")
+
+
+# ── InventoryCount ───────────────────────────────────────────────────────────
+class InventoryCount(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Physical inventory count / stock-take session."""
+
+    __tablename__ = "inventory_counts"
+
+    warehouse_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("inventory_warehouses.id"), nullable=False
+    )
+    count_date: Mapped[date] = mapped_column(Date, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20), default="in_progress"
+    )  # in_progress, completed, cancelled
+    counted_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    lines: Mapped[list | None] = mapped_column(
+        JSON, nullable=True
+    )  # array of {item_id, expected_qty, actual_qty}
+
+    warehouse = relationship("Warehouse")

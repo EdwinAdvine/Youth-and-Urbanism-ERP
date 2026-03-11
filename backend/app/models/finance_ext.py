@@ -15,7 +15,7 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -28,7 +28,9 @@ class Currency(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     code: Mapped[str] = mapped_column(String(3), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     symbol: Mapped[str] = mapped_column(String(10), nullable=False)
+    exchange_rate: Mapped[Decimal] = mapped_column(Numeric(18, 8), default=Decimal("1.0"))
     is_base: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_updated: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class ExchangeRate(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -102,3 +104,27 @@ class Reconciliation(UUIDPrimaryKeyMixin, Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     statement = relationship("BankStatement", back_populates="reconciliation")
+
+
+class BankReconciliation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Full bank reconciliation with matched transaction items."""
+    __tablename__ = "finance_bank_reconciliations"
+
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("finance_accounts.id"), nullable=False
+    )
+    statement_date: Mapped[date] = mapped_column(Date, nullable=False)
+    statement_balance: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    reconciled_balance: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=Decimal("0"))
+    status: Mapped[str] = mapped_column(
+        String(20), default="draft"
+    )  # draft, in_progress, completed
+    reconciled_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    reconciled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    items: Mapped[list | None] = mapped_column(JSON, nullable=True)  # list of matched transactions
+
+    account = relationship("Account", lazy="selectin")

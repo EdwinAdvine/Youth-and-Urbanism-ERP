@@ -1,5 +1,5 @@
 /**
- * Mail API client — typed wrappers for the Stalwart JMAP mail proxy endpoints.
+ * Mail API client — typed wrappers for the Mail API proxy endpoints.
  *
  * Provides both standalone async functions (fetchFolders, sendMessage, etc.)
  * and TanStack Query hooks (useMailFolders, useSendMail, etc.).
@@ -388,6 +388,262 @@ export function useReadReceipts() {
       const { data } = await apiClient.get<{ total: number; receipts: ReadReceipt[] }>('/mail/read-receipts')
       return data
     },
+  })
+}
+
+// ── Attachment hooks ─────────────────────────────────────────────────────────
+
+/** Download an attachment blob from a mail message. */
+export function useDownloadAttachment() {
+  return useMutation({
+    mutationFn: async ({ messageId, attachmentId }: { messageId: string; attachmentId: string }) => {
+      const { data } = await apiClient.get(`/mail/message/${messageId}/attachment/${attachmentId}`, {
+        responseType: 'blob',
+      })
+      return data as Blob
+    },
+  })
+}
+
+/** Save a mail attachment directly to Drive. */
+export function useSaveAttachmentToDrive() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      messageId,
+      attachmentId,
+      folderPath,
+    }: {
+      messageId: string
+      attachmentId: string
+      folderPath?: string
+    }) => {
+      const params = folderPath ? { folder_path: folderPath } : {}
+      const { data } = await apiClient.post(
+        `/mail/message/${messageId}/attachment/${attachmentId}/save-to-drive`,
+        null,
+        { params },
+      )
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['drive'] })
+    },
+  })
+}
+
+// ── Cross-module interfaces ─────────────────────────────────────────────────
+
+export interface SaveToDriveResponse {
+  saved: boolean
+  file_count: number
+  files: Array<{ file_id: string; filename: string; size: number; content_type: string }>
+  folder_path: string
+}
+
+export interface LinkCRMPayload {
+  contact_id?: string
+  deal_id?: string
+  note?: string
+}
+
+export interface LinkCRMResponse {
+  linked: boolean
+  activity_id: string
+  message_id: string
+  contact_id?: string
+  deal_id?: string
+  entity_name: string
+  entity_type: string
+}
+
+export interface CRMLink {
+  activity_id: string
+  message: string
+  contact_id?: string
+  deal_id?: string
+  note?: string
+  created_at: string | null
+}
+
+export interface CRMLinksResponse {
+  message_id: string
+  total: number
+  links: CRMLink[]
+}
+
+export interface ConvertToTaskPayload {
+  project_id: string
+  assignee_id?: string
+  priority?: string
+}
+
+export interface ConvertToTaskResponse {
+  created: boolean
+  task_id: string
+  project_id: string
+  project_name: string
+  title: string
+  priority: string
+  status: string
+}
+
+export interface SaveAsNotePayload {
+  tags?: string[]
+  is_pinned?: boolean
+}
+
+export interface SaveAsNoteResponse {
+  created: boolean
+  note_id: string
+  title: string
+  tags: string[]
+  is_pinned: boolean
+}
+
+// ── Mail → Drive: Save all attachments ──────────────────────────────────────
+
+export function useSaveAllAttachmentsToDrive() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      messageId,
+      folderId,
+    }: {
+      messageId: string
+      folderId?: string
+    }) => {
+      const { data } = await apiClient.post<SaveToDriveResponse>(
+        `/mail/messages/${messageId}/save-to-drive`,
+        folderId ? { folder_id: folderId } : {},
+      )
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['drive'] })
+    },
+  })
+}
+
+// ── Mail → CRM: Link to contact/deal ───────────────────────────────────────
+
+export function useLinkMailToCRM() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      messageId,
+      ...payload
+    }: LinkCRMPayload & { messageId: string }) => {
+      const { data } = await apiClient.post<LinkCRMResponse>(
+        `/mail/messages/${messageId}/link-crm`,
+        payload,
+      )
+      return data
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['mail', 'crm-links', variables.messageId] })
+    },
+  })
+}
+
+export function useMailCRMLinks(messageId: string) {
+  return useQuery({
+    queryKey: ['mail', 'crm-links', messageId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<CRMLinksResponse>(
+        `/mail/messages/${messageId}/crm-links`,
+      )
+      return data
+    },
+    enabled: !!messageId,
+  })
+}
+
+// ── Mail → Projects: Convert to task ────────────────────────────────────────
+
+export function useConvertMailToTask() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      messageId,
+      ...payload
+    }: ConvertToTaskPayload & { messageId: string }) => {
+      const { data } = await apiClient.post<ConvertToTaskResponse>(
+        `/mail/messages/${messageId}/convert-to-task`,
+        payload,
+      )
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects'] })
+    },
+  })
+}
+
+// ── Mail → Notes: Save as note ──────────────────────────────────────────────
+
+export function useSaveMailAsNote() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      messageId,
+      ...payload
+    }: SaveAsNotePayload & { messageId: string }) => {
+      const { data } = await apiClient.post<SaveAsNoteResponse>(
+        `/mail/messages/${messageId}/save-as-note`,
+        payload,
+      )
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notes'] })
+    },
+  })
+}
+
+// ── Snooze hook ─────────────────────────────────────────────────────────────
+
+export function useSnoozeMail() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ messageId, snooze_until }: { messageId: string; snooze_until: string }) => {
+      const { data } = await apiClient.post(`/mail/messages/${messageId}/snooze`, { snooze_until })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail'] }),
+  })
+}
+
+// ── Contacts hook ───────────────────────────────────────────────────────────
+
+export interface MailContact {
+  email: string
+  name?: string
+}
+
+export function useMailContacts(search?: string) {
+  return useQuery({
+    queryKey: ['mail', 'contacts', search],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ contacts: MailContact[] }>('/mail/contacts', {
+        params: search ? { q: search } : {},
+      })
+      return data.contacts ?? []
+    },
+    enabled: search === undefined || search.length >= 1,
+  })
+}
+
+// ── Move message hook ───────────────────────────────────────────────────────
+
+export function useMoveMessage() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ messageId, folder }: { messageId: string; folder: string }) => {
+      const { data } = await apiClient.put(`/mail/message/${messageId}/move`, { folder })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail'] }),
   })
 }
 

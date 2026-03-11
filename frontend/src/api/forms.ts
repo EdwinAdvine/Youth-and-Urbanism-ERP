@@ -21,6 +21,7 @@ export interface Form {
   is_published: boolean
   owner_id: string
   fields: FormField[]
+  settings: Record<string, unknown> | null
   response_count: number
   created_at: string
   updated_at: string
@@ -147,6 +148,30 @@ export function useFormResponses(id: string) {
     queryKey: keys.responses(id),
     queryFn: () => formsApi.getResponses(id),
     enabled: !!id,
+  })
+}
+
+// ─── Cross-Module: Forms → Projects (create task from response) ─────────────
+
+export function useCreateTaskFromResponse() {
+  return useMutation({
+    mutationFn: async ({ formId, responseId, projectId, title, priority, assigneeId }: {
+      formId: string
+      responseId: string
+      projectId: string
+      title?: string
+      priority?: string
+      assigneeId?: string
+    }) => {
+      const { data } = await apiClient.post(`/forms/${formId}/create-task-from-response`, {
+        response_id: responseId,
+        project_id: projectId,
+        title,
+        priority: priority ?? 'medium',
+        assignee_id: assigneeId,
+      })
+      return data
+    },
   })
 }
 

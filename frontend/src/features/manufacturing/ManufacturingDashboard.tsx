@@ -158,6 +158,7 @@ export default function ManufacturingDashboard() {
           { label: 'Bills of Materials', path: '/manufacturing/bom' },
           { label: 'Work Stations', path: '/manufacturing/workstations' },
           { label: 'Work Orders', path: '/manufacturing/work-orders' },
+          { label: 'Production Tracking', path: '/manufacturing/production-tracking' },
           { label: 'Quality Checks', path: '/manufacturing/quality-checks' },
         ].map((item) => (
           <Button key={item.path} variant="outline" size="sm" onClick={() => navigate(item.path)}>

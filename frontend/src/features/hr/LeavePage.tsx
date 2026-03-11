@@ -12,6 +12,7 @@ import {
   type LeaveStatus,
   type CreateLeaveRequestPayload,
 } from '../../api/hr'
+import MobileLeaveRequest from './MobileLeaveRequest'
 
 // ─── Leave Status Badge ───────────────────────────────────────────────────────
 
@@ -147,19 +148,24 @@ export default function LeavePage() {
   ]
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Leave Requests</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage and review leave requests</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Leave Requests</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Manage and review leave requests</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>Submit Leave Request</Button>
+        <Button onClick={() => setShowCreate(true)} className="w-full sm:w-auto min-h-[44px] sm:min-h-0 hidden md:inline-flex">Submit Leave Request</Button>
       </div>
 
-      {/* Leave Balance */}
+      {/* Mobile Leave Request view (visible on small screens only) */}
+      <div className="block md:hidden">
+        <MobileLeaveRequest />
+      </div>
+
+      {/* Leave Balance (desktop) */}
       {leaveBalance && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="hidden md:grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <Card>
             <p className="text-sm text-gray-500">Annual Allocation</p>
             <p className="text-2xl font-bold text-gray-900">{leaveBalance.annual_allocation} days</p>
@@ -175,8 +181,8 @@ export default function LeavePage() {
         </div>
       )}
 
-      {/* Filter */}
-      <div className="flex items-center gap-4">
+      {/* Filter (desktop only) */}
+      <div className="hidden md:flex items-center gap-4">
         <Select
           value={statusFilter}
           onChange={(e) => {
@@ -193,15 +199,17 @@ export default function LeavePage() {
         />
       </div>
 
-      {/* Table */}
-      <Card padding={false}>
-        <Table
-          columns={columns}
-          data={leaves?.items ?? []}
-          loading={isLoading}
-          keyExtractor={(r) => r.id}
-          emptyText="No leave requests found"
-        />
+      {/* Table (desktop only) */}
+      <Card padding={false} className="hidden md:block">
+        <div className="overflow-x-auto">
+          <Table
+            columns={columns}
+            data={leaves?.items ?? []}
+            loading={isLoading}
+            keyExtractor={(r) => r.id}
+            emptyText="No leave requests found"
+          />
+        </div>
         <Pagination page={page} pages={totalPages} total={leaves?.total ?? 0} onChange={setPage} />
       </Card>
 
@@ -221,7 +229,7 @@ export default function LeavePage() {
               { value: 'unpaid', label: 'Unpaid Leave' },
             ]}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Start Date"
               type="date"

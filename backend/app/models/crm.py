@@ -121,3 +121,119 @@ class Deal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     opportunity = relationship("Opportunity", back_populates="deals")
+
+
+class Campaign(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Marketing campaign."""
+
+    __tablename__ = "crm_campaigns"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    campaign_type: Mapped[str] = mapped_column(
+        String(30), default="email"
+    )  # email, social, event, other
+    status: Mapped[str] = mapped_column(
+        String(20), default="draft"
+    )  # draft, active, paused, completed
+    budget: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True)
+    spent: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=Decimal("0"))
+    start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+    campaign_contacts = relationship("CampaignContact", back_populates="campaign", cascade="all, delete-orphan")
+
+
+class CampaignContact(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Tracks contact participation in a campaign."""
+
+    __tablename__ = "crm_campaign_contacts"
+
+    campaign_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("crm_campaigns.id"), nullable=False
+    )
+    contact_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("crm_contacts.id"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(
+        String(20), default="pending"
+    )  # pending, sent, opened, clicked, converted
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    campaign = relationship("Campaign", back_populates="campaign_contacts")
+    contact = relationship("Contact")
+
+
+class CRMProduct(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Product catalog for CRM quotes."""
+
+    __tablename__ = "crm_products"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    price: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    sku: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    category: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Quote(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Sales quote tied to a deal/contact."""
+
+    __tablename__ = "crm_quotes"
+
+    deal_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("crm_deals.id"), nullable=True
+    )
+    contact_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("crm_contacts.id"), nullable=False
+    )
+    quote_number: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    items: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    tax_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=Decimal("0"))
+    total: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20), default="draft"
+    )  # draft, sent, accepted, rejected
+    valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+    deal = relationship("Deal")
+    contact = relationship("Contact")
+
+
+class CRMTicket(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """CRM support ticket linked to a contact."""
+
+    __tablename__ = "crm_tickets"
+
+    contact_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("crm_contacts.id"), nullable=True
+    )
+    subject: Mapped[str] = mapped_column(String(300), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(20), default="open"
+    )  # open, in_progress, resolved, closed
+    priority: Mapped[str] = mapped_column(
+        String(20), default="medium"
+    )  # low, medium, high, urgent
+    assigned_to: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    contact = relationship("Contact", foreign_keys=[contact_id])
+    assignee = relationship("User", foreign_keys=[assigned_to])
+    creator = relationship("User", foreign_keys=[created_by])

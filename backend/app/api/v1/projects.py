@@ -346,9 +346,22 @@ async def create_task(
         "task_id": str(task.id),
         "title": task.title,
         "due_date": task.due_date.isoformat() if task.due_date else None,
+        "project_id": str(project.id),
         "project_name": project.name,
         "assignee_id": str(task.assignee_id) if task.assignee_id else None,
+        "owner_id": str(project.owner_id),
     })
+
+    # Publish task.assigned event if assignee was set on creation
+    if task.assignee_id:
+        await event_bus.publish("task.assigned", {
+            "task_id": str(task.id),
+            "title": task.title,
+            "project_id": str(project.id),
+            "project_name": project.name,
+            "assignee_id": str(task.assignee_id),
+            "assigned_by": str(current_user.id),
+        })
 
     return TaskOut.model_validate(task).model_dump()
 
@@ -370,6 +383,8 @@ async def update_task(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 
     old_due_date = task.due_date
+    old_status = task.status
+    old_assignee_id = task.assignee_id
 
     for field, value in payload.model_dump(exclude_none=True).items():
         setattr(task, field, value)
@@ -385,6 +400,30 @@ async def update_task(
             "due_date": task.due_date.isoformat() if task.due_date else None,
             "old_due_date": old_due_date.isoformat() if old_due_date else None,
             "project_name": project.name,
+            "assignee_id": str(task.assignee_id) if task.assignee_id else None,
+        })
+
+    # Publish task.assigned when assignee changes
+    if payload.assignee_id is not None and task.assignee_id != old_assignee_id and task.assignee_id:
+        await event_bus.publish("task.assigned", {
+            "task_id": str(task.id),
+            "title": task.title,
+            "project_id": str(project.id),
+            "project_name": project.name,
+            "assignee_id": str(task.assignee_id),
+            "assigned_by": str(current_user.id),
+        })
+
+    # Publish task.status_changed when status changes
+    if payload.status is not None and task.status != old_status:
+        await event_bus.publish("task.status_changed", {
+            "task_id": str(task.id),
+            "title": task.title,
+            "project_id": str(project.id),
+            "project_name": project.name,
+            "old_status": old_status,
+            "new_status": task.status,
+            "owner_id": str(project.owner_id),
             "assignee_id": str(task.assignee_id) if task.assignee_id else None,
         })
 

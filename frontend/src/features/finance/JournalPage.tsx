@@ -104,7 +104,7 @@ export default function JournalPage() {
     }
 
     const payload: CreateJournalEntryPayload = {
-      date: entryDate,
+      entry_date: entryDate,
       description: description.trim(),
       lines: lines.map((l) => ({
         account_id: l.account_id,
@@ -139,10 +139,10 @@ export default function JournalPage() {
   const columns = [
     { key: 'entry_number', label: 'Entry #' },
     {
-      key: 'date',
+      key: 'entry_date',
       label: 'Date',
       render: (row: JournalEntry) =>
-        new Date(row.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        new Date(row.entry_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     },
     { key: 'description', label: 'Description' },
     {

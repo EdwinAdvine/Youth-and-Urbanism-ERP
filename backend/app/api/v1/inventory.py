@@ -609,6 +609,20 @@ async def create_stock_movement(
 
     await db.commit()
     await db.refresh(movement)
+
+    # Publish stock valuation change event for Finance integration
+    value_change = float(item.cost_price) * payload.quantity
+    await event_bus.publish("inventory.valuation.changed", {
+        "item_id": str(item.id),
+        "item_name": item.name,
+        "warehouse_id": str(payload.warehouse_id),
+        "movement_type": payload.movement_type,
+        "quantity": payload.quantity,
+        "cost_price": float(item.cost_price),
+        "value_change": str(value_change),
+        "user_id": str(current_user.id),
+    })
+
     return StockMovementOut.model_validate(movement).model_dump()
 
 

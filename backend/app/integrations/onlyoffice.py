@@ -81,6 +81,10 @@ def get_editor_config(
     download_url: str,
     callback_url: str,
     mode: str = "edit",
+    *,
+    macros_enabled: bool = True,
+    macros_mode: str = "warn",
+    plugins_enabled: bool = True,
 ) -> dict[str, Any]:
     """Build the full ONLYOFFICE editor config dict for the JS SDK.
 
@@ -127,6 +131,11 @@ def get_editor_config(
                 "id": user_id,
                 "name": user_name,
             },
+            "customization": {
+                "macros": macros_enabled,
+                "plugins": plugins_enabled,
+                "macrosMode": macros_mode,
+            },
         },
         "token": "",  # filled below
     }
@@ -134,6 +143,162 @@ def get_editor_config(
     # Sign the entire config
     config["token"] = _sign(config)
     return config
+
+
+def request_conversion(
+    file_id: str,
+    filename: str,
+    download_url: str,
+    output_format: str,
+) -> dict[str, Any]:
+    """Request file conversion via ONLYOFFICE Conversion API.
+
+    Sends an HTTP POST to ``{ONLYOFFICE_URL}/ConvertService.ashx`` with a
+    signed JWT payload describing the source file and target format.
+
+    Returns the conversion result dict from ONLYOFFICE (contains ``fileUrl``
+    for the converted file when ``endConvert`` is ``True``).
+    """
+    import httpx  # noqa: PLC0415
+
+    doc_key = hashlib.md5(f"{file_id}:{int(time.time())}".encode()).hexdigest()
+
+    payload: dict[str, Any] = {
+        "async": False,
+        "filetype": filename.rsplit(".", 1)[-1].lower() if "." in filename else "docx",
+        "key": doc_key,
+        "outputtype": output_format.lower(),
+        "title": filename,
+        "url": download_url,
+    }
+
+    token = _sign(payload)
+    payload["token"] = token
+
+    conversion_url = f"{settings.ONLYOFFICE_URL}/ConvertService.ashx"
+
+    resp = httpx.post(
+        conversion_url,
+        json=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        },
+        timeout=60.0,
+    )
+    resp.raise_for_status()
+    result = resp.json()
+
+    return {
+        "end_convert": result.get("endConvert", False),
+        "file_url": result.get("fileUrl"),
+        "percent": result.get("percent", 0),
+        "error": result.get("error"),
+    }
+
+
+def get_editor_config_mobile(
+    file_id: str,
+    filename: str,
+    user_id: str,
+    user_name: str,
+    download_url: str,
+    callback_url: str,
+    mode: str = "edit",
+    *,
+    macros_enabled: bool = True,
+    macros_mode: str = "warn",
+    plugins_enabled: bool = True,
+) -> dict[str, Any]:
+    """Build ONLYOFFICE editor config for mobile devices.
+
+    Sets ``type: "mobile"`` in the config so ONLYOFFICE renders the
+    mobile-optimized editor interface.
+    """
+    config = get_editor_config(
+        file_id=file_id,
+        filename=filename,
+        user_id=user_id,
+        user_name=user_name,
+        download_url=download_url,
+        callback_url=callback_url,
+        mode=mode,
+        macros_enabled=macros_enabled,
+        macros_mode=macros_mode,
+        plugins_enabled=plugins_enabled,
+    )
+    config["type"] = "mobile"
+    # Re-sign the config with the updated type
+    config["token"] = _sign(config)
+    return config
+
+
+def track_editing_session(
+    file_id: str,
+    user_id: str,
+    user_name: str,
+    action: str = "join",
+) -> None:
+    """Track user editing sessions in Redis for co-editing presence.
+
+    ``action`` is ``"join"`` when a user opens the editor or ``"leave"``
+    when the ONLYOFFICE callback reports disconnect (status 4 with no changes
+    or status 2 on save-and-close).
+    """
+    import redis  # noqa: PLC0415
+
+    r = redis.from_url(settings.REDIS_URL, decode_responses=True)
+    key = f"doc:editors:{file_id}"
+
+    if action == "join":
+        # Store user info as a hash field with TTL refresh
+        r.hset(key, user_id, f"{user_name}|{int(time.time())}")
+        r.expire(key, 3600)  # auto-expire after 1 hour of no refresh
+    elif action == "leave":
+        r.hdel(key, user_id)
+        # Clean up empty key
+        if r.hlen(key) == 0:
+            r.delete(key)
+
+
+def get_active_editors(file_id: str) -> list[dict[str, str]]:
+    """Return list of users currently editing the document.
+
+    Each entry contains ``user_id``, ``user_name``, and ``joined_at`` (Unix timestamp).
+    Stale entries (older than 30 minutes without heartbeat) are filtered out.
+    """
+    import redis  # noqa: PLC0415
+
+    r = redis.from_url(settings.REDIS_URL, decode_responses=True)
+    key = f"doc:editors:{file_id}"
+    raw = r.hgetall(key)
+
+    now = int(time.time())
+    stale_threshold = 1800  # 30 minutes
+
+    editors: list[dict[str, str]] = []
+    stale_ids: list[str] = []
+
+    for user_id, value in raw.items():
+        parts = value.split("|", 1)
+        user_name = parts[0] if len(parts) > 0 else "Unknown"
+        joined_at = int(parts[1]) if len(parts) > 1 else 0
+
+        if now - joined_at > stale_threshold:
+            stale_ids.append(user_id)
+            continue
+
+        editors.append({
+            "user_id": user_id,
+            "user_name": user_name,
+            "joined_at": str(joined_at),
+        })
+
+    # Cleanup stale entries
+    if stale_ids:
+        r.hdel(key, *stale_ids)
+
+    return editors
 
 
 def validate_callback(body: dict[str, Any]) -> dict[str, Any]:

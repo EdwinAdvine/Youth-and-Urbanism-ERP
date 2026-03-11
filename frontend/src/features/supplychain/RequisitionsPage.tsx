@@ -5,7 +5,7 @@ import {
 } from '../../components/ui'
 import {
   useRequisitions, useCreateRequisition, useSubmitRequisition,
-  useApproveRequisition, useConvertRequisitionToPO,
+  useApproveRequisition, useConvertRequisitionToPO, useDeleteRequisition,
   type ProcurementRequisition, type CreateRequisitionPayload, type RequisitionLineIn,
 } from '../../api/supplychain'
 
@@ -95,6 +95,7 @@ export default function RequisitionsPage() {
   const submitMutation = useSubmitRequisition()
   const approveMutation = useApproveRequisition()
   const convertMutation = useConvertRequisitionToPO()
+  const deleteMutation = useDeleteRequisition()
 
   const totalPages = data ? Math.ceil(data.total / limit) : 1
 
@@ -241,9 +242,27 @@ export default function RequisitionsPage() {
       render: (row: ProcurementRequisition) => (
         <div className="flex items-center gap-1">
           {row.status === 'draft' && (
-            <Button size="sm" variant="ghost" onClick={() => handleSubmit(row.id)}>
-              Submit
-            </Button>
+            <>
+              <Button size="sm" variant="ghost" onClick={() => handleSubmit(row.id)}>
+                Submit
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-[#ff3a6e]"
+                onClick={async () => {
+                  if (!window.confirm('Delete this draft requisition?')) return
+                  try {
+                    await deleteMutation.mutateAsync(row.id)
+                    toast('success', 'Requisition deleted')
+                  } catch {
+                    toast('error', 'Failed to delete requisition')
+                  }
+                }}
+              >
+                Delete
+              </Button>
+            </>
           )}
           {row.status === 'submitted' && (
             <>

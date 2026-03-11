@@ -70,3 +70,56 @@ class ReadReceipt(UUIDPrimaryKeyMixin, Base):
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
 
     sender = relationship("User", foreign_keys=[sender_id])
+
+
+class MailThread(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Groups related messages into a conversation thread."""
+
+    __tablename__ = "mail_threads"
+
+    subject: Mapped[str] = mapped_column(String(500), nullable=False)
+    participant_ids: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    message_ids: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    last_message_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default="now()", nullable=False,
+    )
+    message_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class MailLabel(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Custom label for categorising mail messages."""
+
+    __tablename__ = "mail_labels"
+
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    color: Mapped[str] = mapped_column(String(20), default="#51459d", nullable=False)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class MailFilter(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Server-side Sieve-compatible mail filter — separate from MailRule (client-side inbox rules)."""
+
+    __tablename__ = "mail_filters"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    conditions: Mapped[dict] = mapped_column(JSONB, nullable=False, default=list)
+    actions: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    priority: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    sieve_script: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    user = relationship("User", foreign_keys=[user_id])

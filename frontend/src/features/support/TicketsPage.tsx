@@ -169,18 +169,18 @@ export default function TicketsPage() {
   ]
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Support Tickets</h1>
-          <p className="text-sm text-gray-500 mt-1">{data?.total ?? 0} total tickets</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Support Tickets</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{data?.total ?? 0} total tickets</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/support')}>
+          <Button variant="outline" onClick={() => navigate('/support')} className="min-h-[44px] sm:min-h-0">
             Dashboard
           </Button>
-          <Button onClick={() => setShowCreate(true)}>
+          <Button onClick={() => setShowCreate(true)} className="min-h-[44px] sm:min-h-0">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -190,9 +190,9 @@ export default function TicketsPage() {
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <div className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-[200px]">
+      <Card className="mb-5 sm:mb-6">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-end">
+          <div className="flex-1 min-w-0 sm:min-w-[200px]">
             <Input
               label="Search"
               placeholder="Ticket #, subject, customer..."
@@ -200,7 +200,7 @@ export default function TicketsPage() {
               onChange={(e) => { setSearch(e.target.value); setPage(1) }}
             />
           </div>
-          <div className="w-48">
+          <div className="w-full sm:w-48">
             <Select
               label="Status"
               options={STATUS_OPTIONS}
@@ -208,7 +208,7 @@ export default function TicketsPage() {
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
             />
           </div>
-          <div className="w-48">
+          <div className="w-full sm:w-48">
             <Select
               label="Priority"
               options={PRIORITY_OPTIONS}
@@ -221,13 +221,15 @@ export default function TicketsPage() {
 
       {/* Table */}
       <Card padding={false}>
-        <Table<Ticket>
-          columns={columns}
-          data={data?.tickets ?? []}
-          loading={isLoading}
-          emptyText="No tickets found"
-          keyExtractor={(row) => row.id}
-        />
+        <div className="overflow-x-auto">
+          <Table<Ticket>
+            columns={columns}
+            data={data?.tickets ?? []}
+            loading={isLoading}
+            emptyText="No tickets found"
+            keyExtractor={(row) => row.id}
+          />
+        </div>
         {totalPages > 1 && (
           <Pagination
             page={page}
@@ -256,7 +258,7 @@ export default function TicketsPage() {
               placeholder="Detailed description of the issue..."
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Priority"
               options={[
@@ -278,7 +280,7 @@ export default function TicketsPage() {
               onChange={(e) => setForm({ ...form, category_id: e.target.value || undefined })}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Customer Name"
               value={form.customer_name || ''}

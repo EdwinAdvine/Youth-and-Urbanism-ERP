@@ -133,3 +133,75 @@ class POSPayment(UUIDPrimaryKeyMixin, Base):
     change_given: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
 
     transaction = relationship("POSTransaction", back_populates="payments")
+
+
+# ── POS Terminal ────────────────────────────────────────────────────────────
+class POSTerminal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """A physical or virtual POS terminal/register."""
+
+    __tablename__ = "pos_terminals"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    location: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    is_active: Mapped[bool] = mapped_column(default=True)
+    settings: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+
+# ── POS Discount ────────────────────────────────────────────────────────────
+class POSDiscount(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Reusable discount definitions for POS transactions."""
+
+    __tablename__ = "pos_discounts"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    discount_type: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # percentage, fixed
+    value: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    valid_from: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    valid_to: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    conditions: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    is_active: Mapped[bool] = mapped_column(default=True)
+
+
+# ── POS Receipt ─────────────────────────────────────────────────────────────
+class POSReceipt(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Formal receipt generated for a POS transaction."""
+
+    __tablename__ = "pos_receipts"
+
+    transaction_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("pos_transactions.id"), nullable=False
+    )
+    receipt_number: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    printed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    transaction = relationship("POSTransaction")
+
+
+# ── POS Cash Movement ───────────────────────────────────────────────────────
+class POSCashMovement(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Cash-in / cash-out within a POS session (e.g. float top-up, cash drop)."""
+
+    __tablename__ = "pos_cash_movements"
+
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("pos_sessions.id"), nullable=False
+    )
+    movement_type: Mapped[str] = mapped_column(
+        String(10), nullable=False
+    )  # in, out
+    amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    reason: Mapped[str] = mapped_column(String(500), nullable=False)
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+    session = relationship("POSSession")
+    creator = relationship("User", foreign_keys=[created_by])

@@ -48,13 +48,13 @@ export default function AccountsPage() {
   const [form, setForm] = useState<CreateAccountPayload>({
     code: '',
     name: '',
-    type: 'asset',
+    account_type: 'asset',
     currency: 'USD',
     description: '',
   })
 
   function resetForm() {
-    setForm({ code: '', name: '', type: 'asset', currency: 'USD', description: '' })
+    setForm({ code: '', name: '', account_type: 'asset', currency: 'USD', description: '' })
     setEditingAccount(null)
   }
 
@@ -68,7 +68,7 @@ export default function AccountsPage() {
     setForm({
       code: account.code,
       name: account.name,
-      type: account.type,
+      account_type: account.account_type,
       currency: account.currency,
       description: account.description,
     })
@@ -109,10 +109,10 @@ export default function AccountsPage() {
     { key: 'code', label: 'Code', className: 'w-24' },
     { key: 'name', label: 'Name' },
     {
-      key: 'type',
+      key: 'account_type',
       label: 'Type',
       render: (row: Account) => (
-        <Badge variant={TYPE_BADGE[row.type] ?? 'default'}>{row.type}</Badge>
+        <Badge variant={TYPE_BADGE[row.account_type] ?? 'default'}>{row.account_type}</Badge>
       ),
     },
     { key: 'currency', label: 'Currency', className: 'w-24' },
@@ -229,8 +229,8 @@ export default function AccountsPage() {
             <Select
               label="Type"
               options={ACCOUNT_TYPE_OPTIONS}
-              value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value as AccountType })}
+              value={form.account_type}
+              onChange={(e) => setForm({ ...form, account_type: e.target.value as AccountType })}
             />
           </div>
           <Input

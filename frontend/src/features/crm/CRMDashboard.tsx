@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useCRMStats, usePipeline, useLeads } from '../../api/crm'
 import { cn, Card, Spinner, Badge } from '../../components/ui'
+import QuickActivityLog from './QuickActivityLog'
 
 const STAGE_LABELS: Record<string, string> = {
   prospecting: 'Prospecting',
@@ -220,6 +221,9 @@ export default function CRMDashboard() {
           </div>
         )}
       </Card>
+
+      {/* Quick Activity FAB for mobile */}
+      <QuickActivityLog />
     </div>
   )
 }

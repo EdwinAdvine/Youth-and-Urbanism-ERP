@@ -29,10 +29,9 @@ export default function PaymentsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState<CreatePaymentPayload>({
     amount: 0,
-    method: 'bank_transfer',
+    payment_method: 'bank_transfer',
     reference: '',
     invoice_id: null,
-    description: '',
     payment_date: new Date().toISOString().split('T')[0],
   })
 
@@ -47,10 +46,9 @@ export default function PaymentsPage() {
   function resetForm() {
     setForm({
       amount: 0,
-      method: 'bank_transfer',
+      payment_method: 'bank_transfer',
       reference: '',
       invoice_id: null,
-      description: '',
       payment_date: new Date().toISOString().split('T')[0],
     })
   }
@@ -88,24 +86,24 @@ export default function PaymentsPage() {
       render: (row: Payment) => <span className="font-medium text-green-700">{formatCurrency(row.amount)}</span>,
     },
     {
-      key: 'method',
+      key: 'payment_method',
       label: 'Method',
       render: (row: Payment) => (
-        <span className="capitalize">{row.method.replace(/_/g, ' ')}</span>
+        <span className="capitalize">{row.payment_method.replace(/_/g, ' ')}</span>
       ),
     },
     {
-      key: 'invoice_number',
+      key: 'invoice_id',
       label: 'Invoice',
       render: (row: Payment) =>
-        row.invoice_number ? (
-          <span className="text-primary">{row.invoice_number}</span>
+        row.invoice_id ? (
+          <span className="text-primary">{row.invoice_id}</span>
         ) : (
           <span className="text-gray-400">--</span>
         ),
     },
     { key: 'reference', label: 'Reference' },
-    { key: 'description', label: 'Description' },
+    { key: 'status', label: 'Status' },
   ]
 
   if (isLoading) {
@@ -166,8 +164,8 @@ export default function PaymentsPage() {
             <Select
               label="Payment Method"
               options={METHOD_OPTIONS}
-              value={form.method}
-              onChange={(e) => setForm({ ...form, method: e.target.value })}
+              value={form.payment_method}
+              onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
             />
           </div>
           <Input
@@ -188,16 +186,6 @@ export default function PaymentsPage() {
             onChange={(e) => setForm({ ...form, reference: e.target.value })}
             placeholder="e.g. Bank transaction ref"
           />
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Description</label>
-            <textarea
-              value={form.description ?? ''}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
-              placeholder="Payment description..."
-            />
-          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" size="sm" onClick={() => { setModalOpen(false); resetForm() }}>
               Cancel

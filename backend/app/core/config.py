@@ -57,20 +57,26 @@ class Settings(BaseSettings):
     # ── Jitsi ─────────────────────────────────────────────────────────────────
     JITSI_PUBLIC_URL: str = "http://localhost:8080"
 
-    # ── Superset ──────────────────────────────────────────────────────────────
-    SUPERSET_URL: str = "http://superset:8088"
-    SUPERSET_SECRET_KEY: str = "superset-secret-key-2026"
-    SUPERSET_ADMIN_USERNAME: str = "super-admin"
-    SUPERSET_ADMIN_PASSWORD: str = "super-admin@2026!"
-
-    # ── Stalwart Mail ─────────────────────────────────────────────────────────
-    STALWART_URL: str = "http://stalwart:8080"
+    # ── Mail ─────────────────────────────────────────────────────────────────
     MAIL_DOMAIN: str = "youthandurbanism.org"
+    SYSTEM_EMAIL: str = "noreply@youthandurbanism.org"
 
-    # ── Nextcloud ────────────────────────────────────────────────────────────
-    NEXTCLOUD_URL: str = "http://nextcloud-web:80"
-    NEXTCLOUD_ADMIN_USER: str = "admin"
-    NEXTCLOUD_ADMIN_PASSWORD: str = "super-admin@2026!"
+    # ── SMTP (outbound) ────────────────────────────────────────────────────
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 25
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_USE_TLS: bool = False
+
+    # ── IMAP (inbound / sync) ──────────────────────────────────────────────
+    IMAP_HOST: str = ""
+    IMAP_PORT: int = 993
+    IMAP_USER: str = ""
+    IMAP_PASSWORD: str = ""
+    IMAP_USE_SSL: bool = True
+
+    # ── DKIM / DNS ─────────────────────────────────────────────────────────
+    DKIM_PRIVATE_KEY_PATH: str = ""
 
     # ── CORS ──────────────────────────────────────────────────────────────────
     CORS_ORIGINS: list[str] = [

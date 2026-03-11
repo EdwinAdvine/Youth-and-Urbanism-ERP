@@ -1,0 +1,7 @@
+export { default as PrebuiltFinanceDashboard } from './FinanceDashboard'
+export { default as PrebuiltCRMDashboard } from './CRMDashboard'
+export { default as PrebuiltHRDashboard } from './HRDashboard'
+export { default as PrebuiltInventoryDashboard } from './InventoryDashboard'
+export { default as PrebuiltECommerceDashboard } from './ECommerceDashboard'
+export { default as PrebuiltSupportDashboard } from './SupportDashboard'
+export { default as PrebuiltManufacturingDashboard } from './ManufacturingDashboard'

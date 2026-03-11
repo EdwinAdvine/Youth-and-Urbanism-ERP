@@ -762,30 +762,4 @@ async def dashboard(
     }
 
 
-# ── CSV Export endpoints ──────────────────────────────────────────────────────
-
-@router.get("/contacts/export", summary="Export contacts as CSV")
-async def export_contacts(
-    current_user: CurrentUser,
-    db: DBSession,
-):
-    """Download all contacts as a CSV file."""
-    from app.core.export import rows_to_csv  # noqa: PLC0415
-    result = await db.execute(select(Contact).where(Contact.is_active == True).order_by(Contact.created_at.desc()))  # noqa: E712
-    contacts = result.scalars().all()
-    rows = [
-        {
-            "contact_type": c.contact_type,
-            "first_name": c.first_name or "",
-            "last_name": c.last_name or "",
-            "company": c.company_name or "",
-            "email": c.email or "",
-            "phone": c.phone or "",
-            "city": "",
-            "country": "",
-            "created_at": c.created_at.isoformat(),
-        }
-        for c in contacts
-    ]
-    columns = ["contact_type", "first_name", "last_name", "company", "email", "phone", "city", "country", "created_at"]
-    return rows_to_csv(rows, columns, "contacts.csv")
+# NOTE: CSV export + import moved to crm_ext.py

@@ -144,14 +144,14 @@ export default function WorkStationsPage() {
   ]
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Work Stations</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage manufacturing work stations and production lines</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Work Stations</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Manage manufacturing work stations and production lines</p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="w-full sm:w-auto min-h-[44px] sm:min-h-0">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -182,7 +182,7 @@ export default function WorkStationsPage() {
         size="md"
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Name *"
               value={form.name}
@@ -196,7 +196,7 @@ export default function WorkStationsPage() {
               placeholder="e.g. WS-ASM-A"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Capacity / Hour"
               type="number"

@@ -7,16 +7,18 @@ import {
   useUserPreferences,
   useUpdatePreferences,
 } from '../../api/settings'
+import { useSharingPolicies } from '../../api/drive'
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
-type Tab = 'general' | 'company' | 'notifications' | 'integrations'
+type Tab = 'general' | 'company' | 'notifications' | 'integrations' | 'sharing'
 
 const ALL_TABS: { id: Tab; label: string; adminOnly: boolean }[] = [
   { id: 'general', label: 'General', adminOnly: false },
   { id: 'company', label: 'Company', adminOnly: true },
   { id: 'notifications', label: 'Notifications', adminOnly: true },
   { id: 'integrations', label: 'Integrations', adminOnly: true },
+  { id: 'sharing', label: 'Sharing Policies', adminOnly: true },
 ]
 
 // ─── General Tab ─────────────────────────────────────────────────────────────
@@ -254,7 +256,7 @@ function NotificationsTab() {
 const INTEGRATIONS = [
   { name: 'Ollama', description: 'Local AI inference engine', status: 'connected' },
   { name: 'MinIO', description: 'S3-compatible object storage', status: 'connected' },
-  { name: 'Stalwart', description: 'IMAP/SMTP/JMAP mail server', status: 'connected' },
+  { name: 'Mail Engine', description: 'SMTP/IMAP + PostgreSQL', status: 'connected' },
 ]
 
 function IntegrationsTab() {
@@ -274,6 +276,55 @@ function IntegrationsTab() {
             <Badge variant="success">Connected</Badge>
           </div>
         ))}
+      </div>
+    </Card>
+  )
+}
+
+// ─── Sharing Policies Tab ────────────────────────────────────────────────────
+
+function SharingPoliciesTab() {
+  const { data: policies, isLoading } = useSharingPolicies()
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Spinner />
+      </div>
+    )
+  }
+
+  if (!policies) {
+    return (
+      <Card>
+        <p className="text-sm text-gray-500">Unable to load sharing policies.</p>
+      </Card>
+    )
+  }
+
+  const rows: { label: string; value: string }[] = [
+    { label: 'Allow External Sharing', value: policies.allow_external_sharing ? 'Yes' : 'No' },
+    { label: 'Allow Public Links', value: policies.allow_public_links ? 'Yes' : 'No' },
+    { label: 'Default Link Expiry (days)', value: policies.default_link_expiry_days != null ? String(policies.default_link_expiry_days) : 'None' },
+    { label: 'Max Link Expiry (days)', value: policies.max_link_expiry_days != null ? String(policies.max_link_expiry_days) : 'None' },
+    { label: 'Allow File Drop', value: policies.allow_file_drop ? 'Yes' : 'No' },
+    { label: 'Require Password for Links', value: policies.require_password_for_links ? 'Yes' : 'No' },
+  ]
+
+  return (
+    <Card>
+      <h2 className="text-base font-semibold text-gray-900 mb-5">Drive Sharing Policies</h2>
+      <div className="max-w-lg">
+        <table className="w-full text-sm">
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.label} className="border-b border-gray-50">
+                <td className="py-3 pr-4 text-gray-500 font-medium">{row.label}</td>
+                <td className="py-3 text-gray-900">{row.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </Card>
   )
@@ -326,6 +377,7 @@ export default function SettingsPage() {
       {activeTab === 'company' && isSuperAdmin && <CompanyTab />}
       {activeTab === 'notifications' && isSuperAdmin && <NotificationsTab />}
       {activeTab === 'integrations' && isSuperAdmin && <IntegrationsTab />}
+      {activeTab === 'sharing' && isSuperAdmin && <SharingPoliciesTab />}
     </div>
   )
 }

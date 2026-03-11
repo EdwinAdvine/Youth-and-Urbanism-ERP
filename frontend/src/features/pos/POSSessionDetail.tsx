@@ -1,9 +1,11 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { cn, Button, Spinner, Badge, Card, Table } from '../../components/ui'
+import { useState } from 'react'
 import {
   usePOSSession,
   useSessionReconciliation,
   usePOSTransactions,
+  useVoidTransaction,
   type POSTransactionData,
 } from '../../api/pos'
 
@@ -40,6 +42,9 @@ export default function POSSessionDetail() {
   const { data: session, isLoading: sessionLoading } = usePOSSession(id ?? '')
   const { data: reconciliation, isLoading: reconLoading } = useSessionReconciliation(id ?? '')
   const { data: txnData, isLoading: txnLoading } = usePOSTransactions({ session_id: id, limit: 100 })
+  const voidTransaction = useVoidTransaction()
+  const [voidConfirmId, setVoidConfirmId] = useState<string | null>(null)
+  const [voidSuccess, setVoidSuccess] = useState<string | null>(null)
 
   if (sessionLoading || reconLoading) {
     return (
@@ -67,6 +72,18 @@ export default function POSSessionDetail() {
   const difference = session.difference !== null && session.difference !== undefined
     ? (typeof session.difference === 'string' ? parseFloat(session.difference) : session.difference)
     : null
+
+  const handleVoidTransaction = async (txnId: string) => {
+    try {
+      await voidTransaction.mutateAsync(txnId)
+      setVoidConfirmId(null)
+      setVoidSuccess('Transaction voided successfully.')
+      setTimeout(() => setVoidSuccess(null), 3000)
+    } catch {
+      alert('Failed to void transaction.')
+      setVoidConfirmId(null)
+    }
+  }
 
   const txnColumns = [
     {
@@ -118,6 +135,40 @@ export default function POSSessionDetail() {
       render: (row: POSTransactionData) => (
         <span className="text-gray-500 text-xs">{formatTime(row.created_at)}</span>
       ),
+    },
+    {
+      key: 'actions',
+      label: '',
+      render: (row: POSTransactionData) => {
+        if (row.status !== 'completed') return null
+        if (voidConfirmId === row.id) {
+          return (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => handleVoidTransaction(row.id)}
+                disabled={voidTransaction.isPending}
+                className="px-2 py-1 text-xs font-medium text-white bg-[#ff3a6e] rounded-[6px] hover:bg-[#e6335f] disabled:opacity-50"
+              >
+                {voidTransaction.isPending ? 'Voiding...' : 'Confirm'}
+              </button>
+              <button
+                onClick={() => setVoidConfirmId(null)}
+                className="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-[6px] hover:bg-gray-200"
+              >
+                No
+              </button>
+            </div>
+          )
+        }
+        return (
+          <button
+            onClick={() => setVoidConfirmId(row.id)}
+            className="px-2 py-1 text-xs font-medium text-[#ff3a6e] border border-[#ff3a6e] rounded-[6px] hover:bg-red-50"
+          >
+            Void
+          </button>
+        )
+      },
     },
   ]
 
@@ -273,6 +324,13 @@ export default function POSSessionDetail() {
           <h2 className="text-base font-semibold text-gray-900 mb-2">Notes</h2>
           <p className="text-sm text-gray-600 whitespace-pre-wrap">{session.notes}</p>
         </Card>
+      )}
+
+      {/* Void success toast */}
+      {voidSuccess && (
+        <div className="mb-4 bg-green-50 border border-green-200 rounded-[10px] px-4 py-3 text-sm text-green-700">
+          {voidSuccess}
+        </div>
       )}
 
       {/* Transactions Table */}

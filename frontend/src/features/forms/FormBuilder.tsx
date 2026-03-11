@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useForm, useUpdateForm, useAddField, type FormField } from '../../api/forms'
 import { Button, Card, Badge, Input, Spinner, toast } from '../../components/ui'
+import ConditionalLogicBuilder, { type ConditionalRule } from './ConditionalLogicBuilder'
+import FormSharingDialog from './FormSharingDialog'
+import ThankYouPageEditor, { type ThankYouConfig } from './ThankYouPageEditor'
+import ResponseNotificationSettings, { type NotificationConfig } from './ResponseNotificationSettings'
 
 const FIELD_TYPES: { value: FormField['field_type']; label: string }[] = [
   { value: 'text', label: 'Text' },
@@ -40,6 +44,18 @@ export default function FormBuilder() {
   const [editTitle, setEditTitle] = useState('')
   const [editDesc, setEditDesc] = useState('')
   const [settingsInit, setSettingsInit] = useState(false)
+
+  // Sharing
+  const [showSharing, setShowSharing] = useState(false)
+
+  // Conditional logic
+  const [conditionalRules, setConditionalRules] = useState<ConditionalRule[]>([])
+
+  // Thank you page
+  const [thankYouConfig, setThankYouConfig] = useState<ThankYouConfig | undefined>(undefined)
+
+  // Notification settings
+  const [notificationConfig, setNotificationConfig] = useState<NotificationConfig | undefined>(undefined)
 
   // New field state
   const [showAddField, setShowAddField] = useState(false)
@@ -139,6 +155,10 @@ export default function FormBuilder() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowSharing(true)}>
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+            Share
+          </Button>
           <Button variant="outline" size="sm" onClick={() => navigate(`/forms/${id}/responses`)}>
             Responses
           </Button>
@@ -172,6 +192,22 @@ export default function FormBuilder() {
                 Save Settings
               </Button>
             </div>
+          </Card>
+
+          <Card>
+            <ResponseNotificationSettings
+              config={notificationConfig}
+              onChange={setNotificationConfig}
+              emailFieldIds={
+                (form.fields ?? [])
+                  .filter((f) => f.field_type === 'email')
+                  .map((f) => ({ id: f.id, label: f.label }))
+              }
+            />
+          </Card>
+
+          <Card>
+            <ThankYouPageEditor config={thankYouConfig} onChange={setThankYouConfig} />
           </Card>
 
           <Card>
@@ -331,8 +367,29 @@ export default function FormBuilder() {
               </div>
             )}
           </Card>
+
+          {/* Conditional Logic */}
+          {(form.fields?.length ?? 0) >= 2 && (
+            <Card>
+              <ConditionalLogicBuilder
+                fields={form.fields ?? []}
+                rules={conditionalRules}
+                onChange={setConditionalRules}
+              />
+            </Card>
+          )}
         </div>
       </div>
+
+      {/* Sharing Dialog */}
+      {showSharing && form && (
+        <FormSharingDialog
+          formId={form.id}
+          formTitle={form.title}
+          isPublished={form.is_published}
+          onClose={() => setShowSharing(false)}
+        />
+      )}
     </div>
   )
 }

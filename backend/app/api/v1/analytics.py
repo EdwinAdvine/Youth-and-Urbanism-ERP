@@ -1,99 +1,23 @@
-"""Analytics API — Superset guest token + aggregated stats endpoints."""
+"""Analytics API — aggregated stats endpoints (replaces Superset).
+
+All analytics are now served directly from our PostgreSQL database.
+No external analytics service dependency.
+"""
 from __future__ import annotations
 
 import logging
-import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-import httpx
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Query
 
-from app.core.config import settings
 from app.core.deps import CurrentUser, DBSession
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
-
-def _superset_configured() -> bool:
-    url = settings.SUPERSET_URL.strip()
-    return bool(url) and url != ""
-
-
-async def _get_superset_access_token() -> str | None:
-    """Obtain a Superset admin access token for the guest-token API."""
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(
-                f"{settings.SUPERSET_URL}/api/v1/security/login",
-                json={
-                    "username": settings.SUPERSET_ADMIN_USERNAME,
-                    "password": settings.SUPERSET_ADMIN_PASSWORD,
-                    "provider": "db",
-                    "refresh": False,
-                },
-            )
-            resp.raise_for_status()
-            return resp.json().get("access_token")
-    except Exception as exc:
-        logger.warning("Superset login failed: %s", exc)
-        return None
-
-
 # ── Endpoints ─────────────────────────────────────────────────────────────────
-
-@router.get("/superset-guest-token", summary="Get a Superset guest token for dashboard embedding")
-async def get_superset_guest_token(
-    current_user: CurrentUser,
-    dashboard_id: str | None = Query(None, description="Superset dashboard UUID to embed"),
-) -> dict[str, Any]:
-    """Return a short-lived Superset guest token for an embedded dashboard.
-
-    If Superset is not configured or unreachable, returns
-    ``{"service_available": false}``.
-    """
-    if not _superset_configured():
-        return {"service_available": False, "token": None}
-
-    access_token = await _get_superset_access_token()
-    if not access_token:
-        return {"service_available": False, "token": None}
-
-    # Default to first available dashboard if none specified
-    target_id = dashboard_id or "1"
-
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(
-                f"{settings.SUPERSET_URL}/api/v1/security/guest_token/",
-                headers={
-                    "Authorization": f"Bearer {access_token}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "resources": [{"type": "dashboard", "id": target_id}],
-                    "rls": [],
-                    "user": {
-                        "username": str(current_user.id),
-                        "first_name": getattr(current_user, "full_name", "User").split()[0],
-                        "last_name": "",
-                    },
-                },
-            )
-            resp.raise_for_status()
-            token = resp.json().get("token")
-            return {
-                "service_available": True,
-                "token": token,
-                "superset_url": settings.SUPERSET_URL,
-                "dashboard_id": target_id,
-            }
-    except Exception as exc:
-        logger.warning("Superset guest token failed: %s", exc)
-        return {"service_available": False, "token": None}
 
 
 @router.get("/stats/revenue", summary="Monthly revenue data from finance tables")
@@ -102,12 +26,7 @@ async def revenue_stats(
     db: DBSession,
     months: int = Query(12, ge=1, le=36, description="Number of past months to return"),
 ) -> dict[str, Any]:
-    """Return monthly revenue totals.
-
-    Attempts to query the ``invoices`` table if it exists; falls back to mock
-    data so the analytics dashboard always has something to display during
-    development.
-    """
+    """Return monthly revenue totals from the invoices table."""
     try:
         from sqlalchemy import text  # noqa: PLC0415
 
@@ -128,13 +47,12 @@ async def revenue_stats(
     except Exception as exc:
         logger.warning("Revenue stats query failed: %s", exc)
 
-    # Mock data: generate a plausible-looking series
+    # Mock data fallback for development
     now = datetime.now(timezone.utc)
     data = []
     for i in range(months, 0, -1):
         month_dt = now - timedelta(days=30 * i)
         month_str = month_dt.strftime("%Y-%m")
-        # Seed a deterministic but varied value
         seed = (month_dt.year * 100 + month_dt.month) % 50
         revenue = round(15000 + seed * 700 + (i % 3) * 2200, 2)
         data.append({"month": month_str, "revenue": revenue})
@@ -213,3 +131,104 @@ async def module_usage_stats(
 
     modules = [{"module": k, "count": v} for k, v in counts.items()]
     return {"service_available": True, "modules": modules}
+
+
+@router.get("/stats/expenses", summary="Monthly expense breakdown")
+async def expense_stats(
+    current_user: CurrentUser,
+    db: DBSession,
+    months: int = Query(12, ge=1, le=36),
+) -> dict[str, Any]:
+    """Return monthly expense totals from journal entries."""
+    try:
+        from sqlalchemy import text  # noqa: PLC0415
+
+        sql = text("""
+            SELECT
+                TO_CHAR(DATE_TRUNC('month', je.entry_date), 'YYYY-MM') AS month,
+                COALESCE(SUM(jl.debit), 0) AS total_expenses
+            FROM finance_journal_entries je
+            JOIN finance_journal_lines jl ON jl.entry_id = je.id
+            JOIN finance_accounts a ON a.id = jl.account_id AND a.account_type = 'expense'
+            WHERE je.entry_date >= NOW() - make_interval(months => :months)
+            GROUP BY 1
+            ORDER BY 1 ASC
+        """)
+        result = await db.execute(sql, {"months": months})
+        rows = result.fetchall()
+        data = [{"month": row[0], "expenses": float(row[1])} for row in rows]
+        if data:
+            return {"service_available": True, "data": data}
+    except Exception as exc:
+        logger.warning("Expense stats query failed: %s", exc)
+
+    return {"service_available": True, "mock": True, "data": []}
+
+
+@router.get("/stats/top-products", summary="Top selling products")
+async def top_products_stats(
+    current_user: CurrentUser,
+    db: DBSession,
+    limit: int = Query(10, ge=1, le=50),
+) -> dict[str, Any]:
+    """Return top products by sales volume."""
+    try:
+        from sqlalchemy import text  # noqa: PLC0415
+
+        sql = text("""
+            SELECT
+                p.name,
+                COUNT(oi.id) AS order_count,
+                COALESCE(SUM(oi.quantity), 0) AS total_qty,
+                COALESCE(SUM(oi.quantity * oi.unit_price), 0) AS total_revenue
+            FROM ecommerce_order_items oi
+            JOIN ecommerce_products p ON p.id = oi.product_id
+            GROUP BY p.id, p.name
+            ORDER BY total_revenue DESC
+            LIMIT :limit
+        """)
+        result = await db.execute(sql, {"limit": limit})
+        rows = result.fetchall()
+        data = [
+            {"name": row[0], "orders": int(row[1]), "quantity": int(row[2]), "revenue": float(row[3])}
+            for row in rows
+        ]
+        return {"service_available": True, "data": data}
+    except Exception as exc:
+        logger.warning("Top products query failed: %s", exc)
+
+    return {"service_available": True, "mock": True, "data": []}
+
+
+@router.get("/stats/support-metrics", summary="Support ticket metrics")
+async def support_metrics(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Return support ticket stats (open, resolved, avg resolution time)."""
+    try:
+        from sqlalchemy import text  # noqa: PLC0415
+
+        result = await db.execute(text("""
+            SELECT
+                COUNT(*) FILTER (WHERE status = 'open') AS open_tickets,
+                COUNT(*) FILTER (WHERE status = 'resolved') AS resolved_tickets,
+                COUNT(*) FILTER (WHERE status = 'closed') AS closed_tickets,
+                COUNT(*) AS total_tickets
+            FROM support_tickets
+        """))
+        row = result.fetchone()
+        if row:
+            return {
+                "service_available": True,
+                "data": {
+                    "open": int(row[0]),
+                    "resolved": int(row[1]),
+                    "closed": int(row[2]),
+                    "total": int(row[3]),
+                },
+            }
+    except Exception as exc:
+        logger.warning("Support metrics query failed: %s", exc)
+
+    return {"service_available": True, "mock": True, "data": {"open": 0, "resolved": 0, "closed": 0, "total": 0}}

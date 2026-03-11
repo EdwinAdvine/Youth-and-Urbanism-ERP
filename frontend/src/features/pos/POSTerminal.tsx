@@ -66,7 +66,7 @@ function PaymentModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-[10px] shadow-xl w-full max-w-md p-6">
+      <div className="bg-white rounded-[10px] shadow-xl w-full max-w-md p-4 sm:p-6 mx-4 sm:mx-0">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Payment</h2>
 
         <div className="text-center mb-6">
@@ -99,10 +99,10 @@ function PaymentModal({
                 key={m.value}
                 onClick={() => setMethod(m.value)}
                 className={cn(
-                  'px-3 py-2 rounded-[10px] border text-sm font-medium transition-colors',
+                  'px-3 py-2 min-h-[48px] rounded-[10px] border text-sm font-medium transition-colors active:scale-95',
                   method === m.value
                     ? 'bg-primary text-white border-primary'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 active:bg-gray-100'
                 )}
               >
                 {m.label}
@@ -127,7 +127,7 @@ function PaymentModal({
                 <button
                   key={qa}
                   onClick={() => setAmount(qa.toFixed(2))}
-                  className="px-3 py-1 rounded-lg bg-gray-100 text-sm font-medium hover:bg-gray-200 transition-colors"
+                  className="px-3 py-2 min-h-[44px] rounded-lg bg-gray-100 text-sm font-medium hover:bg-gray-200 active:bg-gray-300 transition-colors"
                 >
                   {formatCurrency(qa)}
                 </button>
@@ -160,11 +160,11 @@ function PaymentModal({
 
         {/* Actions */}
         <div className="flex gap-3 mt-6">
-          <Button variant="outline" className="flex-1" onClick={onClose} disabled={isLoading}>
+          <Button variant="outline" className="flex-1 min-h-[52px]" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
           <Button
-            className="flex-1"
+            className="flex-1 min-h-[52px]"
             onClick={handleConfirm}
             disabled={isLoading || parseFloat(amount || '0') < total}
           >
@@ -192,7 +192,7 @@ function ProductCard({
       onClick={() => !outOfStock && onAdd(product)}
       disabled={outOfStock}
       className={cn(
-        'flex flex-col items-center justify-center p-4 rounded-[10px] border transition-all text-center h-full min-h-[120px]',
+        'flex flex-col items-center justify-center p-3 sm:p-4 rounded-[10px] border transition-all text-center h-full min-h-[120px] sm:min-h-[120px]',
         outOfStock
           ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed'
           : 'bg-white border-gray-200 hover:border-primary hover:shadow-md cursor-pointer active:scale-95'
@@ -324,7 +324,7 @@ export default function POSTerminal() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-64px)]">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)]">
       {/* Left: Product Grid */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
@@ -356,7 +356,7 @@ export default function POSTerminal() {
               <button
                 onClick={() => setSelectedCategory(null)}
                 className={cn(
-                  'px-3 py-1 rounded-full text-xs font-medium transition-colors',
+                  'px-3 py-1.5 sm:py-1 rounded-full text-xs font-medium transition-colors min-h-[44px] sm:min-h-0 active:scale-95',
                   !selectedCategory ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 )}
               >
@@ -367,7 +367,7 @@ export default function POSTerminal() {
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
                   className={cn(
-                    'px-3 py-1 rounded-full text-xs font-medium transition-colors',
+                    'px-3 py-1.5 sm:py-1 rounded-full text-xs font-medium transition-colors min-h-[44px] sm:min-h-0 active:scale-95',
                     selectedCategory === cat ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   )}
                 >
@@ -385,7 +385,7 @@ export default function POSTerminal() {
               <Spinner size="lg" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-5 gap-3">
               {(products ?? []).map((product) => (
                 <ProductCard key={product.id} product={product} onAdd={addToCart} />
               ))}
@@ -400,7 +400,7 @@ export default function POSTerminal() {
       </div>
 
       {/* Right: Cart Sidebar */}
-      <div className="w-96 border-l border-gray-200 bg-gray-50 flex flex-col">
+      <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-gray-200 bg-gray-50 flex flex-col max-h-[50vh] lg:max-h-none">
         {/* Cart Header */}
         <div className="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900">
@@ -451,7 +451,7 @@ export default function POSTerminal() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                      className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
+                      className="w-9 h-9 sm:w-7 sm:h-7 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
                     >
                       -
                     </button>
@@ -459,7 +459,7 @@ export default function POSTerminal() {
                     <button
                       onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
                       disabled={item.quantity >= item.product.stock_on_hand}
-                      className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                      className="w-9 h-9 sm:w-7 sm:h-7 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50"
                     >
                       +
                     </button>

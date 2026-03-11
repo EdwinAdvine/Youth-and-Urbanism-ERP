@@ -387,3 +387,437 @@ export function useInventoryStats() {
     },
   })
 }
+
+// ─── Suppliers ───────────────────────────────────────────────────────────────
+
+export interface Supplier {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  address: string | null
+  contact_person: string | null
+  payment_terms: string | null
+  is_active: boolean
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateSupplierPayload {
+  name: string
+  email?: string
+  phone?: string
+  address?: string
+  contact_person?: string
+  payment_terms?: string
+  notes?: string
+}
+
+export interface UpdateSupplierPayload extends Partial<CreateSupplierPayload> {
+  id: string
+  is_active?: boolean
+}
+
+export function useSuppliers(params: { search?: string; is_active?: boolean } = {}) {
+  return useQuery({
+    queryKey: ['inventory', 'suppliers', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ suppliers: Supplier[] }>('/inventory/suppliers', { params })
+      return data.suppliers
+    },
+  })
+}
+
+export function useCreateSupplier() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateSupplierPayload) => {
+      const { data } = await apiClient.post<Supplier>('/inventory/suppliers', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'suppliers'] }),
+  })
+}
+
+export function useUpdateSupplier() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: UpdateSupplierPayload) => {
+      const { data } = await apiClient.put<Supplier>(`/inventory/suppliers/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'suppliers'] }),
+  })
+}
+
+export function useDeleteSupplier() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/inventory/suppliers/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'suppliers'] }),
+  })
+}
+
+// ─── Stock Adjustments ───────────────────────────────────────────────────────
+
+export type AdjustmentReason = 'damaged' | 'expired' | 'lost' | 'found' | 'correction' | 'return' | 'other'
+
+export interface StockAdjustment {
+  id: string
+  item_id: string
+  item_name?: string
+  warehouse_id: string
+  warehouse_name?: string
+  adjustment_type: 'increase' | 'decrease'
+  quantity: number
+  reason: AdjustmentReason
+  notes: string | null
+  adjusted_by: string | null
+  adjusted_by_name?: string
+  created_at: string
+}
+
+export interface CreateStockAdjustmentPayload {
+  item_id: string
+  warehouse_id: string
+  adjustment_type: 'increase' | 'decrease'
+  quantity: number
+  reason: AdjustmentReason
+  notes?: string
+}
+
+export function useStockAdjustments(params: { item_id?: string; warehouse_id?: string; reason?: AdjustmentReason } = {}) {
+  return useQuery({
+    queryKey: ['inventory', 'stock-adjustments', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ adjustments: StockAdjustment[] }>('/inventory/stock-adjustments', { params })
+      return data.adjustments
+    },
+  })
+}
+
+export function useCreateStockAdjustment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateStockAdjustmentPayload) => {
+      const { data } = await apiClient.post<StockAdjustment>('/inventory/stock-adjustments', payload)
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inventory', 'stock-adjustments'] })
+      qc.invalidateQueries({ queryKey: ['inventory', 'stock-levels'] })
+      qc.invalidateQueries({ queryKey: ['inventory', 'stock-movements'] })
+    },
+  })
+}
+
+// ─── Item History ────────────────────────────────────────────────────────────
+
+export function useItemHistory(itemId: string) {
+  return useQuery({
+    queryKey: ['inventory', 'items', itemId, 'history'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ movements: StockMovement[] }>(`/inventory/items/${itemId}/history`)
+      return data.movements
+    },
+    enabled: !!itemId,
+  })
+}
+
+// ─── Inventory Valuation ─────────────────────────────────────────────────────
+
+export interface InventoryValuation {
+  warehouse_id: string
+  warehouse_name: string
+  items: {
+    item_id: string
+    item_name: string
+    sku: string
+    quantity: number
+    unit_cost: number
+    total_value: number
+  }[]
+  total_value: number
+}
+
+export function useInventoryValuation(params: { warehouse_id?: string } = {}) {
+  return useQuery({
+    queryKey: ['inventory', 'valuation', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ valuations: InventoryValuation[] }>('/inventory/valuation', { params })
+      return data.valuations
+    },
+  })
+}
+
+// ─── Inventory Counts ────────────────────────────────────────────────────────
+
+export type CountStatus = 'draft' | 'in_progress' | 'completed' | 'reconciled'
+
+export interface InventoryCount {
+  id: string
+  warehouse_id: string
+  warehouse_name?: string
+  status: CountStatus
+  count_date: string
+  notes: string | null
+  counted_by: string | null
+  counted_by_name?: string
+  items: InventoryCountItem[]
+  created_at: string
+  updated_at: string
+}
+
+export interface InventoryCountItem {
+  id: string
+  item_id: string
+  item_name?: string
+  sku?: string
+  expected_quantity: number
+  counted_quantity: number | null
+  variance: number | null
+}
+
+export interface CreateInventoryCountPayload {
+  warehouse_id: string
+  count_date: string
+  notes?: string
+  item_ids?: string[]
+}
+
+export interface UpdateInventoryCountPayload {
+  id: string
+  status?: CountStatus
+  items?: { item_id: string; counted_quantity: number }[]
+}
+
+export function useInventoryCounts(params: { warehouse_id?: string; status?: CountStatus } = {}) {
+  return useQuery({
+    queryKey: ['inventory', 'counts', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ counts: InventoryCount[] }>('/inventory/counts', { params })
+      return data.counts
+    },
+  })
+}
+
+export function useCreateInventoryCount() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateInventoryCountPayload) => {
+      const { data } = await apiClient.post<InventoryCount>('/inventory/counts', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'counts'] }),
+  })
+}
+
+export function useUpdateInventoryCount() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: UpdateInventoryCountPayload) => {
+      const { data } = await apiClient.put<InventoryCount>(`/inventory/counts/${id}`, payload)
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inventory', 'counts'] })
+      qc.invalidateQueries({ queryKey: ['inventory', 'stock-levels'] })
+    },
+  })
+}
+
+// ─── Turnover & Aging Reports ────────────────────────────────────────────────
+
+export interface TurnoverReport {
+  items: {
+    item_id: string
+    item_name: string
+    sku: string
+    avg_inventory: number
+    total_sold: number
+    turnover_ratio: number
+    days_of_supply: number
+  }[]
+  avg_turnover_ratio: number
+}
+
+export interface AgingReport {
+  items: {
+    item_id: string
+    item_name: string
+    sku: string
+    quantity: number
+    last_movement_date: string
+    days_since_movement: number
+    aging_bucket: '0-30' | '31-60' | '61-90' | '90+'
+  }[]
+}
+
+export function useTurnoverReport(params: { period_start?: string; period_end?: string } = {}) {
+  return useQuery({
+    queryKey: ['inventory', 'reports', 'turnover', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<TurnoverReport>('/inventory/reports/turnover', { params })
+      return data
+    },
+  })
+}
+
+export function useAgingReport() {
+  return useQuery({
+    queryKey: ['inventory', 'reports', 'aging'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<AgingReport>('/inventory/reports/aging')
+      return data
+    },
+  })
+}
+
+// ─── Item Variants ───────────────────────────────────────────────────────────
+
+export interface ItemVariant {
+  id: string
+  item_id: string
+  name: string
+  sku: string
+  attributes: Record<string, string>
+  cost_price: number
+  selling_price: number
+  is_active: boolean
+  created_at: string
+}
+
+export interface CreateItemVariantPayload {
+  item_id: string
+  name: string
+  sku?: string
+  attributes: Record<string, string>
+  cost_price: number
+  selling_price: number
+}
+
+export interface UpdateItemVariantPayload extends Partial<Omit<CreateItemVariantPayload, 'item_id'>> {
+  id: string
+  is_active?: boolean
+}
+
+export function useItemVariants(itemId: string) {
+  return useQuery({
+    queryKey: ['inventory', 'items', itemId, 'variants'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ variants: ItemVariant[] }>(`/inventory/items/${itemId}/variants`)
+      return data.variants
+    },
+    enabled: !!itemId,
+  })
+}
+
+export function useCreateItemVariant() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateItemVariantPayload) => {
+      const { data } = await apiClient.post<ItemVariant>(`/inventory/items/${payload.item_id}/variants`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'items'] }),
+  })
+}
+
+export function useUpdateItemVariant() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: UpdateItemVariantPayload & { item_id: string }) => {
+      const { data } = await apiClient.put<ItemVariant>(`/inventory/items/${payload.item_id}/variants/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'items'] }),
+  })
+}
+
+export function useDeleteItemVariant() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ itemId, variantId }: { itemId: string; variantId: string }) => {
+      await apiClient.delete(`/inventory/items/${itemId}/variants/${variantId}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'items'] }),
+  })
+}
+
+// ─── Batch / Serial Numbers ──────────────────────────────────────────────────
+
+export interface BatchNumber {
+  id: string
+  item_id: string
+  item_name?: string
+  batch_number: string
+  serial_number: string | null
+  quantity: number
+  manufacturing_date: string | null
+  expiry_date: string | null
+  warehouse_id: string | null
+  warehouse_name?: string
+  status: 'active' | 'expired' | 'recalled' | 'consumed'
+  created_at: string
+}
+
+export interface CreateItemBatchPayload {
+  item_id: string
+  batch_number: string
+  serial_number?: string
+  quantity: number
+  manufacturing_date?: string
+  expiry_date?: string
+  warehouse_id?: string
+}
+
+export function useItemBatches(params: { item_id?: string; warehouse_id?: string; status?: string } = {}) {
+  return useQuery({
+    queryKey: ['inventory', 'batches', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ batches: BatchNumber[] }>('/inventory/batches', { params })
+      return data.batches
+    },
+  })
+}
+
+export function useCreateItemBatch() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateItemBatchPayload) => {
+      const { data } = await apiClient.post<BatchNumber>('/inventory/batches', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'batches'] }),
+  })
+}
+
+// ─── Import / Export Items ───────────────────────────────────────────────────
+
+export function useImportItems() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (formData: FormData) => {
+      const { data } = await apiClient.post<{ imported: number; errors: string[] }>('/inventory/items/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'items'] }),
+  })
+}
+
+export function useExportItems() {
+  return useMutation({
+    mutationFn: async (params: { format?: 'csv' | 'xlsx'; category?: string } = {}) => {
+      const { data } = await apiClient.get('/inventory/items/export', {
+        params,
+        responseType: 'blob',
+      })
+      return data
+    },
+  })
+}

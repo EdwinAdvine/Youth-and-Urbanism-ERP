@@ -980,6 +980,24 @@ async def accept_grn(
     grn.status = "accepted" if all_accepted else "partial"
     await db.commit()
     await db.refresh(grn)
+
+    # Publish event for cross-module integrations (SupplyChain→Inventory, notifications)
+    await event_bus.publish("supplychain.goods_received", {
+        "grn_id": str(grn.id),
+        "grn_number": grn.grn_number,
+        "warehouse_id": str(grn.warehouse_id),
+        "supplier_id": str(grn.supplier_id),
+        "received_by": str(grn.received_by),
+        "items": [
+            {
+                "item_id": str(gl.item_id),
+                "accepted_quantity": gl.accepted_quantity,
+                "rejected_quantity": gl.rejected_quantity,
+            }
+            for gl in grn.lines
+        ],
+    })
+
     return GRNOut.model_validate(grn).model_dump()
 
 

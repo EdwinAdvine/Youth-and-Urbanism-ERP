@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  cn, Button, Spinner, Badge, Card, toast,
+  cn, Button, Spinner, Badge, Card, Modal, Input, toast,
 } from '../../components/ui'
 import {
-  useTicketDetail, useAddComment, useResolveTicket, useCloseTicket,
-  useReopenTicket,
+  useTicketDetail, useAddComment, useUpdateComment, useDeleteComment,
+  useResolveTicket, useCloseTicket, useReopenTicket,
   type TicketComment,
 } from '../../api/support'
+import {
+  useTicketLinkedContact, useLinkTicketToContact, useEscalateTicketToTask,
+} from '../../api/cross_module_links'
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -48,11 +51,25 @@ export default function TicketDetail() {
 
   const [comment, setComment] = useState('')
   const [isInternal, setIsInternal] = useState(false)
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
+  const [editingContent, setEditingContent] = useState('')
 
   const addCommentMut = useAddComment()
+  const updateCommentMut = useUpdateComment()
+  const deleteCommentMut = useDeleteComment()
   const resolveMut = useResolveTicket()
   const closeMut = useCloseTicket()
   const reopenMut = useReopenTicket()
+
+  // Cross-module link hooks
+  const { data: linkedContact } = useTicketLinkedContact(id || '')
+  const linkContactMut = useLinkTicketToContact()
+  const escalateMut = useEscalateTicketToTask()
+  const [linkContactOpen, setLinkContactOpen] = useState(false)
+  const [contactIdInput, setContactIdInput] = useState('')
+  const [escalateOpen, setEscalateOpen] = useState(false)
+  const [projectIdInput, setProjectIdInput] = useState('')
+  const [escalatePriority, setEscalatePriority] = useState('medium')
 
   if (isLoading || !ticket) {
     return (
@@ -224,7 +241,71 @@ export default function TicketDetail() {
                       </div>
                       <span className="text-xs text-gray-400">{timeAgo(c.created_at)}</span>
                     </div>
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{c.content}</p>
+                    {editingCommentId === c.id ? (
+                      <div className="space-y-2">
+                        <textarea
+                          className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[60px]"
+                          value={editingContent}
+                          onChange={(e) => setEditingContent(e.target.value)}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            loading={updateCommentMut.isPending}
+                            onClick={async () => {
+                              try {
+                                await updateCommentMut.mutateAsync({
+                                  ticketId: ticket.id,
+                                  commentId: c.id,
+                                  content: editingContent,
+                                })
+                                setEditingCommentId(null)
+                                toast('success', 'Comment updated')
+                              } catch {
+                                toast('error', 'Failed to update comment')
+                              }
+                            }}
+                          >
+                            Save
+                          </Button>
+                          <Button size="sm" variant="secondary" onClick={() => setEditingCommentId(null)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-600 whitespace-pre-wrap">{c.content}</p>
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            className="text-xs text-primary hover:underline"
+                            onClick={() => {
+                              setEditingCommentId(c.id)
+                              setEditingContent(c.content)
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="text-xs text-[#ff3a6e] hover:underline"
+                            onClick={async () => {
+                              if (!window.confirm('Delete this comment?')) return
+                              try {
+                                await deleteCommentMut.mutateAsync({
+                                  ticketId: ticket.id,
+                                  commentId: c.id,
+                                })
+                                toast('success', 'Comment deleted')
+                              } catch {
+                                toast('error', 'Failed to delete comment')
+                              }
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
@@ -326,6 +407,41 @@ export default function TicketDetail() {
             </dl>
           </Card>
 
+          {/* CRM Link card */}
+          <Card>
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">CRM Contact</h3>
+            {linkedContact?.contact ? (
+              <dl className="space-y-2">
+                <dd className="text-sm font-medium text-gray-900">
+                  {linkedContact.contact.first_name || ''} {linkedContact.contact.last_name || linkedContact.contact.company_name || 'Unnamed'}
+                </dd>
+                {linkedContact.contact.email && (
+                  <dd className="text-sm text-gray-500">{linkedContact.contact.email}</dd>
+                )}
+                <dd>
+                  <Badge variant="success">Linked</Badge>
+                </dd>
+              </dl>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-400">No CRM contact linked</p>
+                <Button size="sm" variant="outline" onClick={() => setLinkContactOpen(true)}>
+                  Link to CRM Contact
+                </Button>
+              </div>
+            )}
+          </Card>
+
+          {/* Escalate to Project Task */}
+          {isOpenOrInProgress && (
+            <Card>
+              <h3 className="text-sm font-semibold text-gray-700 mb-4">Escalate</h3>
+              <Button size="sm" variant="outline" onClick={() => setEscalateOpen(true)}>
+                Escalate to Project Task
+              </Button>
+            </Card>
+          )}
+
           {/* SLA card */}
           <Card>
             <h3 className="text-sm font-semibold text-gray-700 mb-4">SLA</h3>
@@ -381,6 +497,82 @@ export default function TicketDetail() {
           </Card>
         </div>
       </div>
+      {/* Link Contact Modal */}
+      <Modal open={linkContactOpen} onClose={() => setLinkContactOpen(false)} title="Link to CRM Contact" size="sm">
+        <div className="space-y-4">
+          <Input
+            label="CRM Contact ID"
+            placeholder="Paste the contact UUID"
+            value={contactIdInput}
+            onChange={(e) => setContactIdInput(e.target.value)}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setLinkContactOpen(false)}>Cancel</Button>
+            <Button
+              size="sm"
+              loading={linkContactMut.isPending}
+              onClick={async () => {
+                if (!contactIdInput.trim()) { toast('warning', 'Enter a contact ID'); return }
+                try {
+                  await linkContactMut.mutateAsync({ ticketId: id!, contactId: contactIdInput.trim() })
+                  toast('success', 'Contact linked to ticket')
+                  setLinkContactOpen(false)
+                  setContactIdInput('')
+                } catch {
+                  toast('error', 'Failed to link contact')
+                }
+              }}
+            >
+              Link Contact
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Escalate to Task Modal */}
+      <Modal open={escalateOpen} onClose={() => setEscalateOpen(false)} title="Escalate to Project Task" size="sm">
+        <div className="space-y-4">
+          <Input
+            label="Project ID"
+            placeholder="Paste the project UUID"
+            value={projectIdInput}
+            onChange={(e) => setProjectIdInput(e.target.value)}
+          />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Priority</label>
+            <select
+              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              value={escalatePriority}
+              onChange={(e) => setEscalatePriority(e.target.value)}
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setEscalateOpen(false)}>Cancel</Button>
+            <Button
+              size="sm"
+              loading={escalateMut.isPending}
+              onClick={async () => {
+                if (!projectIdInput.trim()) { toast('warning', 'Enter a project ID'); return }
+                try {
+                  await escalateMut.mutateAsync({ ticketId: id!, projectId: projectIdInput.trim(), priority: escalatePriority })
+                  toast('success', 'Ticket escalated to project task')
+                  setEscalateOpen(false)
+                  setProjectIdInput('')
+                } catch {
+                  toast('error', 'Failed to escalate ticket')
+                }
+              }}
+            >
+              Escalate
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

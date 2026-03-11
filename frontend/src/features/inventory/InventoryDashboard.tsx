@@ -7,6 +7,7 @@ import {
   type ReorderAlert,
   type StockMovement,
 } from '../../api/inventory'
+import MobileStockCheck from './MobileStockCheck'
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
@@ -139,21 +140,27 @@ export default function InventoryDashboard() {
   ]
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Inventory</h1>
           <p className="text-sm text-gray-500 mt-1">Stock management and purchase orders</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => navigate('/inventory/purchase-orders')}>
+          <Button onClick={() => navigate('/inventory/purchase-orders')} className="w-full sm:w-auto min-h-[44px] sm:min-h-0">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             New PO
           </Button>
         </div>
+      </div>
+
+      {/* Mobile Stock Check (visible on small screens only) */}
+      <div className="block md:hidden mb-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-3">Quick Stock Check</h2>
+        <MobileStockCheck />
       </div>
 
       {/* Navigation Buttons */}

@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { useDocuments, useCreateDocument, useEditorConfig, Document } from '../../api/docs'
+import { useDocuments, useCreateDocument, useEditorConfig, useDocComments, useCreateDocComment, useUpdateDocComment, useDeleteDocComment, useDocVersions, useDownloadVersion, useRestoreVersion, useDocLinks, useCreateDocLink, useDeleteDocLink, Document } from '../../api/docs'
 import { formatFileSize } from '../../api/drive'
+import FilePickerDialog from './FilePickerDialog'
+import PermissionSharingDialog from './PermissionSharingDialog'
+import AIGenerationPanel from './AIGenerationPanel'
+import PrintPreview from './PrintPreview'
+import RibbonToolbar from './RibbonToolbar'
 
 // ─── File type config ─────────────────────────────────────────────────────────
 
@@ -21,14 +26,85 @@ declare global {
   }
 }
 
+function LinkedTasksPanel({ fileId }: { fileId: string }) {
+  const { data: links } = useDocLinks(fileId)
+  const createLink = useCreateDocLink()
+  const deleteLink = useDeleteDocLink()
+  const [showForm, setShowForm] = useState(false)
+  const [entityType, setEntityType] = useState('task')
+  const [entityId, setEntityId] = useState('')
+
+  return (
+    <div className="border-t border-gray-100 px-4 py-3 bg-gray-50 shrink-0">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-gray-700">Linked Tasks</span>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="text-[10px] text-[#51459d] hover:underline"
+        >
+          {showForm ? 'Cancel' : '+ Link Task'}
+        </button>
+      </div>
+      {showForm && (
+        <div className="flex gap-2 mb-2">
+          <input
+            value={entityType}
+            onChange={(e) => setEntityType(e.target.value)}
+            placeholder="Type (e.g. task)"
+            className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded-[6px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30"
+          />
+          <input
+            value={entityId}
+            onChange={(e) => setEntityId(e.target.value)}
+            placeholder="Entity ID"
+            className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded-[6px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30"
+          />
+          <button
+            onClick={async () => {
+              if (!entityId.trim()) return
+              await createLink.mutateAsync({
+                file_id: fileId,
+                entity_type: entityType,
+                entity_id: entityId.trim(),
+              })
+              setEntityId('')
+              setShowForm(false)
+            }}
+            className="px-2 py-1 text-xs bg-[#51459d] text-white rounded-[6px] hover:bg-[#3d3480]"
+          >
+            Link
+          </button>
+        </div>
+      )}
+      {(links ?? []).length === 0 ? (
+        <p className="text-[10px] text-gray-400">No linked items</p>
+      ) : (
+        <ul className="space-y-1">
+          {(links ?? []).map((link: { id: string; entity_type: string; entity_id: string }) => (
+            <li key={link.id} className="flex items-center justify-between text-xs text-gray-600">
+              <span>{link.entity_type}: {link.entity_id.slice(0, 8)}...</span>
+              <button
+                className="text-[#ff3a6e] hover:underline text-[10px]"
+                onClick={() => deleteLink.mutate(link.id)}
+              >
+                Unlink
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 function OnlyOfficeEditor({ file, onClose }: { file: Document; onClose: () => void }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [sidePanel, setSidePanel] = useState<'comments' | 'versions' | 'ai' | null>(null)
+  const [showShare, setShowShare] = useState(false)
+  const [showPrint, setShowPrint] = useState(false)
   const { data: editorData, isError: configError } = useEditorConfig(file.id)
-
-  const ext = file.extension.replace(/^\./, '')
-  const cfg = FILE_CONFIG[ext] ?? FILE_CONFIG.docx
 
   useEffect(() => {
     if (configError) {
@@ -76,25 +152,31 @@ function OnlyOfficeEditor({ file, onClose }: { file: Document; onClose: () => vo
 
   return (
     <div className="flex-1 flex flex-col h-full">
-      {/* Editor toolbar */}
-      <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center gap-3 shrink-0">
-        <button onClick={onClose} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors">
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-          Back to files
-        </button>
-        <div className="h-4 w-px bg-gray-200" />
-        <div className={`px-2 py-0.5 rounded border text-[10px] font-bold ${cfg.bg} ${cfg.color}`}>
-          {cfg.label}
-        </div>
-        <span className="text-sm font-medium text-gray-900">{file.name}</span>
-        <div className="ml-auto flex items-center gap-2">
-          <button className="px-3 py-1.5 text-xs bg-[#51459d] text-white rounded-[6px] hover:bg-[#3d3480] transition-colors">Save</button>
-          <button className="px-3 py-1.5 text-xs border border-gray-200 text-gray-600 rounded-[6px] hover:bg-gray-50 transition-colors">Share</button>
-        </div>
-      </div>
+      {/* Ribbon Toolbar */}
+      <RibbonToolbar
+        fileId={file.id}
+        fileName={file.name}
+        fileExtension={file.extension}
+        onBack={onClose}
+        onSave={() => {}}
+        onShare={() => setShowShare(true)}
+        onPrint={() => setShowPrint(true)}
+        onToggleComments={() => setSidePanel(sidePanel === 'comments' ? null : 'comments')}
+        onToggleVersions={() => setSidePanel(sidePanel === 'versions' ? null : 'versions')}
+        onToggleAI={() => setSidePanel(sidePanel === 'ai' ? null : 'ai')}
+        commentsActive={sidePanel === 'comments'}
+        versionsActive={sidePanel === 'versions'}
+        aiActive={sidePanel === 'ai'}
+      />
+
+      {/* Linked Tasks */}
+      <LinkedTasksPanel fileId={file.id} />
 
       {/* Editor area */}
       <div className="flex-1 relative" ref={containerRef}>
+        {sidePanel === 'comments' && <CommentsPanel fileId={file.id} onClose={() => setSidePanel(null)} />}
+        {sidePanel === 'versions' && <VersionPanel fileId={file.id} onClose={() => setSidePanel(null)} />}
+        {sidePanel === 'ai' && <AIGenerationPanel fileId={file.id} onClose={() => setSidePanel(null)} />}
         {loading && !error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 z-10">
             <svg className="animate-spin h-6 w-6 text-[#51459d] mb-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -111,6 +193,138 @@ function OnlyOfficeEditor({ file, onClose }: { file: Document; onClose: () => vo
           </div>
         )}
         <div id="onlyoffice-editor" className="w-full h-full" />
+      </div>
+
+      <PermissionSharingDialog
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        fileName={file.name}
+        fileId={file.id}
+      />
+
+      {showPrint && <PrintPreview file={file} onClose={() => setShowPrint(false)} />}
+    </div>
+  )
+}
+
+// ─── Comments Panel ──────────────────────────────────────────────────────────
+
+function CommentsPanel({ fileId, onClose }: { fileId: string; onClose: () => void }) {
+  const { data: comments, isLoading } = useDocComments(fileId)
+  const createComment = useCreateDocComment(fileId)
+  const updateComment = useUpdateDocComment(fileId)
+  const deleteComment = useDeleteDocComment(fileId)
+  const [newComment, setNewComment] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+
+  const handleSubmit = () => {
+    if (!newComment.trim()) return
+    createComment.mutate({ content: newComment }, { onSuccess: () => setNewComment('') })
+  }
+
+  return (
+    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white border-l border-gray-200 shadow-lg z-20 flex flex-col">
+      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <h3 className="text-sm font-semibold text-gray-900">Comments</h3>
+        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-[6px] text-gray-400">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        {isLoading && <p className="text-xs text-gray-400 text-center py-4">Loading...</p>}
+        {(comments ?? []).map((c: { id: string; author_name?: string; content: string; created_at: string }) => (
+          <div key={c.id} className="bg-gray-50 rounded-[8px] p-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-gray-700">{c.author_name ?? 'User'}</span>
+              <span className="text-[10px] text-gray-400">{new Date(c.created_at).toLocaleString()}</span>
+            </div>
+            {editingId === c.id ? (
+              <div className="space-y-2">
+                <textarea value={editText} onChange={(e) => setEditText(e.target.value)} className="w-full text-xs border border-gray-200 rounded-[6px] p-2 focus:outline-none focus:ring-1 focus:ring-[#51459d]/40" rows={2} />
+                <div className="flex gap-1">
+                  <button onClick={() => { updateComment.mutate({ commentId: c.id, content: editText }); setEditingId(null) }} className="text-[10px] text-[#51459d] hover:underline">Save</button>
+                  <button onClick={() => setEditingId(null)} className="text-[10px] text-gray-400 hover:underline">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-gray-600">{c.content}</p>
+                <div className="flex gap-2 mt-1.5">
+                  <button onClick={() => { setEditingId(c.id); setEditText(c.content) }} className="text-[10px] text-gray-400 hover:text-[#51459d]">Edit</button>
+                  <button onClick={() => { if (window.confirm('Delete this comment?')) deleteComment.mutate(c.id) }} className="text-[10px] text-gray-400 hover:text-[#ff3a6e]">Delete</button>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+        {!isLoading && (comments ?? []).length === 0 && (
+          <p className="text-xs text-gray-400 text-center py-4">No comments yet</p>
+        )}
+      </div>
+      <div className="border-t border-gray-100 p-3 shrink-0">
+        <textarea
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          placeholder="Add a comment..."
+          className="w-full text-xs border border-gray-200 rounded-[8px] p-2 focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 resize-none"
+          rows={3}
+        />
+        <button
+          onClick={handleSubmit}
+          disabled={!newComment.trim() || createComment.isPending}
+          className="mt-2 w-full px-3 py-1.5 text-xs bg-[#51459d] text-white rounded-[6px] hover:bg-[#3d3480] transition-colors disabled:opacity-50"
+        >
+          {createComment.isPending ? 'Posting...' : 'Post Comment'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Version History Panel ───────────────────────────────────────────────────
+
+function VersionPanel({ fileId, onClose }: { fileId: string; onClose: () => void }) {
+  const { data: versions, isLoading } = useDocVersions(fileId)
+  const downloadVersion = useDownloadVersion()
+  const restoreVersion = useRestoreVersion(fileId)
+
+  return (
+    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white border-l border-gray-200 shadow-lg z-20 flex flex-col">
+      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <h3 className="text-sm font-semibold text-gray-900">Version History</h3>
+        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-[6px] text-gray-400">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {isLoading && <p className="text-xs text-gray-400 text-center py-4">Loading...</p>}
+        {(versions ?? []).map((v: { id: string; version_number: number; created_at: string; size?: number }) => (
+          <div key={v.id} className="bg-gray-50 rounded-[8px] p-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-semibold text-gray-900">Version {v.version_number}</span>
+              <span className="text-[10px] text-gray-400">{new Date(v.created_at).toLocaleString()}</span>
+            </div>
+            {v.size !== undefined && <p className="text-[10px] text-gray-400 mb-2">{formatFileSize(v.size)}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={() => downloadVersion.mutate(v.id)}
+                className="text-[10px] px-2 py-1 border border-gray-200 rounded-[4px] text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                Download
+              </button>
+              <button
+                onClick={() => { if (window.confirm(`Restore to version ${v.version_number}?`)) restoreVersion.mutate(v.id) }}
+                className="text-[10px] px-2 py-1 border border-[#51459d]/30 rounded-[4px] text-[#51459d] hover:bg-[#51459d]/5 transition-colors"
+              >
+                Restore
+              </button>
+            </div>
+          </div>
+        ))}
+        {!isLoading && (versions ?? []).length === 0 && (
+          <p className="text-xs text-gray-400 text-center py-4">No versions available</p>
+        )}
       </div>
     </div>
   )
@@ -187,6 +401,7 @@ export default function DocsPage() {
   const [openFile, setOpenFile] = useState<Document | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showCreate, setShowCreate] = useState(false)
+  const [showFilePicker, setShowFilePicker] = useState(false)
   const [search, setSearch] = useState('')
 
   const { data, isError } = useDocuments()
@@ -220,24 +435,24 @@ export default function DocsPage() {
       )}
 
       {/* Toolbar */}
-      <div className="bg-white border-b border-gray-100 px-5 py-3 flex items-center gap-3 shrink-0">
+      <div className="bg-white border-b border-gray-100 px-3 sm:px-5 py-3 flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
         <h1 className="text-base font-semibold text-gray-900">Documents</h1>
         <div className="flex-1" />
-        <div className="relative">
+        <div className="relative w-full sm:w-auto order-last sm:order-none mt-2 sm:mt-0">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search documents..." className="pl-9 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30 w-48" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search documents..." className="w-full sm:w-48 pl-9 pr-3 py-2 sm:py-1.5 text-sm sm:text-xs bg-gray-50 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30 min-h-[44px] sm:min-h-0" />
         </div>
         <div className="flex items-center border border-gray-200 rounded-[8px] overflow-hidden">
-          <button onClick={() => setViewMode('grid')} className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50'}`}>
+          <button onClick={() => setViewMode('grid')} className={`p-2 sm:p-1.5 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors ${viewMode === 'grid' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50'}`}>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
           </button>
-          <button onClick={() => setViewMode('list')} className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50'}`}>
+          <button onClick={() => setViewMode('list')} className={`p-2 sm:p-1.5 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50'}`}>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
           </button>
         </div>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 bg-[#51459d] text-white text-xs font-medium rounded-[8px] px-3 py-2 hover:bg-[#3d3480] transition-colors">
+        <button onClick={() => setShowCreate(true)} className="flex items-center justify-center gap-1.5 bg-[#51459d] text-white text-xs font-medium rounded-[8px] px-3 py-2 hover:bg-[#3d3480] transition-colors min-h-[44px] min-w-[44px]">
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-          New Document
+          <span className="hidden sm:inline">New Document</span>
         </button>
       </div>
 
@@ -259,8 +474,11 @@ export default function DocsPage() {
                 <button
                   key={doc.id}
                   onDoubleClick={() => setOpenFile(doc)}
-                  onClick={() => {}}
-                  className="flex flex-col items-center gap-2.5 p-4 bg-white border border-gray-100 rounded-[10px] hover:border-[#51459d]/30 hover:shadow-md transition-all text-center group"
+                  onClick={() => {
+                    // On touch devices, single tap opens
+                    if ('ontouchstart' in window) setOpenFile(doc)
+                  }}
+                  className="flex flex-col items-center gap-2.5 p-4 bg-white border border-gray-100 rounded-[10px] hover:border-[#51459d]/30 hover:shadow-md transition-all text-center group min-h-[88px]"
                 >
                   <div className={`w-14 h-16 rounded-[8px] border-2 flex items-center justify-center text-xl font-bold ${cfg.bg} ${cfg.color}`}>
                     {cfg.icon}
@@ -289,17 +507,17 @@ export default function DocsPage() {
                   const ext = doc.extension.replace(/^\./, '')
                   const cfg = FILE_CONFIG[ext] ?? FILE_CONFIG.docx
                   return (
-                    <tr key={doc.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3">
+                    <tr key={doc.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setOpenFile(doc)}>
+                      <td className="px-4 py-3 min-h-[48px]">
                         <div className="flex items-center gap-3">
                           <div className={`w-7 h-7 rounded-[6px] border flex items-center justify-center text-xs font-bold ${cfg.bg} ${cfg.color}`}>{cfg.icon}</div>
                           <span className="text-sm text-gray-800 font-medium">{doc.name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500">{new Date(doc.updated_at).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 text-xs text-gray-500 text-right">{formatFileSize(doc.size)}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500 hidden sm:table-cell">{new Date(doc.updated_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500 text-right hidden sm:table-cell">{formatFileSize(doc.size)}</td>
                       <td className="px-4 py-3 text-right">
-                        <button onClick={() => setOpenFile(doc)} className="text-xs text-[#51459d] hover:underline">Open</button>
+                        <button onClick={(e) => { e.stopPropagation(); setOpenFile(doc) }} className="text-xs text-[#51459d] hover:underline min-h-[44px] min-w-[44px] flex items-center justify-center">Open</button>
                       </td>
                     </tr>
                   )
@@ -320,6 +538,13 @@ export default function DocsPage() {
           onCreate={handleCreate}
         />
       )}
+
+      <FilePickerDialog
+        open={showFilePicker}
+        onClose={() => setShowFilePicker(false)}
+        onOpenFile={(doc) => setOpenFile(doc)}
+        onCreateFile={handleCreate}
+      />
     </div>
   )
 }

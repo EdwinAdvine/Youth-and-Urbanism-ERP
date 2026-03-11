@@ -9,7 +9,7 @@ export interface Account {
   id: string
   code: string
   name: string
-  type: AccountType
+  account_type: AccountType
   currency: string
   description: string
   is_active: boolean
@@ -32,7 +32,7 @@ export interface InvoiceLineItem {
 export interface Invoice {
   id: string
   invoice_number: string
-  type: InvoiceType
+  invoice_type: InvoiceType
   status: InvoiceStatus
   customer_name: string
   customer_email: string
@@ -49,13 +49,14 @@ export interface Invoice {
 
 export interface Payment {
   id: string
+  payment_number: string
   amount: number
-  method: string
-  reference: string
+  currency: string
+  payment_method: string
+  reference: string | null
   invoice_id: string | null
-  invoice_number?: string
-  description: string
   payment_date: string
+  status: string
   created_at: string
 }
 
@@ -72,7 +73,7 @@ export interface JournalLine {
 export interface JournalEntry {
   id: string
   entry_number: string
-  date: string
+  entry_date: string
   description: string
   status: JournalEntryStatus
   lines: JournalLine[]
@@ -110,7 +111,7 @@ export interface PaginatedResponse<T> {
 export interface CreateAccountPayload {
   code: string
   name: string
-  type: AccountType
+  account_type: AccountType
   currency?: string
   description?: string
 }
@@ -120,7 +121,7 @@ export interface UpdateAccountPayload extends Partial<CreateAccountPayload> {
 }
 
 export interface CreateInvoicePayload {
-  type: InvoiceType
+  invoice_type: InvoiceType
   customer_name: string
   customer_email?: string
   issue_date: string
@@ -136,17 +137,30 @@ export interface UpdateInvoicePayload extends Partial<CreateInvoicePayload> {
 
 export interface CreatePaymentPayload {
   amount: number
-  method: string
+  payment_method?: string
   reference?: string
   invoice_id?: string | null
-  description?: string
   payment_date?: string
 }
 
 export interface CreateJournalEntryPayload {
-  date: string
+  entry_date: string
   description: string
   lines: Omit<JournalLine, 'account_name'>[]
+}
+
+// ─── Invoice PDF Export ──────────────────────────────────────────────────────
+
+export async function exportInvoicePDF(invoiceId: string) {
+  const { data } = await apiClient.get(`/finance/invoices/${invoiceId}/pdf`, {
+    responseType: 'blob',
+  })
+  const url = window.URL.createObjectURL(new Blob([data]))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `invoice-${invoiceId}.html`
+  a.click()
+  window.URL.revokeObjectURL(url)
 }
 
 // ─── Accounts ─────────────────────────────────────────────────────────────────
@@ -744,6 +758,29 @@ export function usePnLReport(from: string, to: string) {
   })
 }
 
+export interface CashFlowReport {
+  from: string
+  to: string
+  operating: { description: string; amount: number }[]
+  total_operating: number
+  investing: { description: string; amount: number }[]
+  total_investing: number
+  financing: { description: string; amount: number }[]
+  total_financing: number
+  net_change: number
+}
+
+export function useCashFlowReport(from: string, to: string) {
+  return useQuery({
+    queryKey: ['finance', 'reports', 'cash-flow', from, to],
+    queryFn: async () => {
+      const { data } = await apiClient.get<CashFlowReport>('/finance/reports/cash-flow', { params: { from, to } })
+      return data
+    },
+    enabled: !!from && !!to,
+  })
+}
+
 export function useBalanceSheet(asOf: string) {
   return useQuery({
     queryKey: ['finance', 'reports', 'balance-sheet', asOf],
@@ -752,5 +789,524 @@ export function useBalanceSheet(asOf: string) {
       return data
     },
     enabled: !!asOf,
+  })
+}
+
+// ─── Recurring Invoice Types & Hooks ─────────────────────────────────────────
+
+export type RecurringFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly'
+
+export interface RecurringInvoice {
+  id: string
+  customer_name: string
+  customer_email: string
+  frequency: RecurringFrequency
+  next_date: string
+  end_date: string | null
+  is_active: boolean
+  line_items: InvoiceLineItem[]
+  subtotal: number
+  tax_amount: number
+  total: number
+  notes: string
+  last_generated_at: string | null
+  generated_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateRecurringInvoicePayload {
+  customer_name: string
+  customer_email?: string
+  frequency: RecurringFrequency
+  next_date: string
+  end_date?: string | null
+  line_items: Omit<InvoiceLineItem, 'id' | 'amount'>[]
+  tax_amount?: number
+  notes?: string
+}
+
+export interface UpdateRecurringInvoicePayload extends Partial<CreateRecurringInvoicePayload> {
+  id: string
+  is_active?: boolean
+}
+
+export function useRecurringInvoices(params: { page?: number; limit?: number; is_active?: boolean } = {}) {
+  return useQuery({
+    queryKey: ['finance', 'recurring-invoices', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<RecurringInvoice>>('/finance/recurring-invoices', { params })
+      return data
+    },
+  })
+}
+
+export function useCreateRecurringInvoice() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateRecurringInvoicePayload) => {
+      const { data } = await apiClient.post<RecurringInvoice>('/finance/recurring-invoices', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'recurring-invoices'] }),
+  })
+}
+
+export function useUpdateRecurringInvoice() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: UpdateRecurringInvoicePayload) => {
+      const { data } = await apiClient.put<RecurringInvoice>(`/finance/recurring-invoices/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'recurring-invoices'] }),
+  })
+}
+
+export function useDeleteRecurringInvoice() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/finance/recurring-invoices/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'recurring-invoices'] }),
+  })
+}
+
+export function useGenerateRecurringInvoice() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.post<Invoice>(`/finance/recurring-invoices/${id}/generate`)
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['finance', 'recurring-invoices'] })
+      qc.invalidateQueries({ queryKey: ['finance', 'invoices'] })
+    },
+  })
+}
+
+// ─── Expense Types & Hooks ───────────────────────────────────────────────────
+
+export type ExpenseStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'reimbursed'
+export type ExpenseCategory = 'travel' | 'meals' | 'supplies' | 'equipment' | 'software' | 'services' | 'utilities' | 'marketing' | 'other'
+
+export interface Expense {
+  id: string
+  description: string
+  amount: number
+  currency: string
+  category: ExpenseCategory
+  expense_date: string
+  receipt_file_id: string | null
+  status: ExpenseStatus
+  user_id: string
+  approver_id: string | null
+  approved_at: string | null
+  rejection_reason: string | null
+  account_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateExpensePayload {
+  description: string
+  amount: number
+  currency?: string
+  category: ExpenseCategory
+  expense_date: string
+  receipt_file_id?: string | null
+  account_id?: string | null
+}
+
+export interface UpdateExpensePayload extends Partial<CreateExpensePayload> {
+  id: string
+}
+
+export function useExpenses(params: { page?: number; limit?: number; status?: string; category?: string; from?: string; to?: string } = {}) {
+  return useQuery({
+    queryKey: ['finance', 'expenses', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<Expense>>('/finance/expenses', { params })
+      return data
+    },
+  })
+}
+
+export function useCreateExpense() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateExpensePayload) => {
+      const { data } = await apiClient.post<Expense>('/finance/expenses', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'expenses'] }),
+  })
+}
+
+export function useUpdateExpense() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: UpdateExpensePayload) => {
+      const { data } = await apiClient.put<Expense>(`/finance/expenses/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'expenses'] }),
+  })
+}
+
+export function useSubmitExpense() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.put<Expense>(`/finance/expenses/${id}/submit`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'expenses'] }),
+  })
+}
+
+export function useApproveExpense() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.put<Expense>(`/finance/expenses/${id}/approve`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'expenses'] }),
+  })
+}
+
+export function useRejectExpense() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const { data } = await apiClient.put<Expense>(`/finance/expenses/${id}/reject`, { reason })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'expenses'] }),
+  })
+}
+
+export function useReimburseExpense() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.put<Expense>(`/finance/expenses/${id}/reimburse`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'expenses'] }),
+  })
+}
+
+export function useUploadReceipt() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ expenseId, file }: { expenseId: string; file: File }) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      const { data } = await apiClient.post(`/finance/expenses/${expenseId}/receipt`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'expenses'] }),
+  })
+}
+
+export async function getExpenseReceiptUrl(expenseId: string): Promise<string> {
+  const { data } = await apiClient.get<{ url: string }>(`/finance/expenses/${expenseId}/receipt`)
+  return data.url
+}
+
+// ─── Vendor Bill Types & Hooks ───────────────────────────────────────────────
+
+export type VendorBillStatus = 'draft' | 'pending' | 'approved' | 'paid' | 'cancelled'
+
+export interface VendorBillLineItem {
+  id?: string
+  description: string
+  quantity: number
+  unit_price: number
+  amount: number
+}
+
+export interface VendorBill {
+  id: string
+  bill_number: string
+  vendor_name: string
+  vendor_email: string
+  status: VendorBillStatus
+  issue_date: string
+  due_date: string
+  line_items: VendorBillLineItem[]
+  subtotal: number
+  tax_amount: number
+  total: number
+  notes: string
+  paid_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateVendorBillPayload {
+  vendor_name: string
+  vendor_email?: string
+  issue_date: string
+  due_date: string
+  line_items: Omit<VendorBillLineItem, 'id' | 'amount'>[]
+  tax_amount?: number
+  notes?: string
+}
+
+export interface UpdateVendorBillPayload extends Partial<CreateVendorBillPayload> {
+  id: string
+}
+
+export function useVendorBills(params: { page?: number; limit?: number; status?: string } = {}) {
+  return useQuery({
+    queryKey: ['finance', 'vendor-bills', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<VendorBill>>('/finance/vendor-bills', { params })
+      return data
+    },
+  })
+}
+
+export function useCreateVendorBill() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateVendorBillPayload) => {
+      const { data } = await apiClient.post<VendorBill>('/finance/vendor-bills', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'vendor-bills'] }),
+  })
+}
+
+export function useUpdateVendorBill() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: UpdateVendorBillPayload) => {
+      const { data } = await apiClient.put<VendorBill>(`/finance/vendor-bills/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'vendor-bills'] }),
+  })
+}
+
+export function useApproveVendorBill() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.post<VendorBill>(`/finance/vendor-bills/${id}/approve`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'vendor-bills'] }),
+  })
+}
+
+export function usePayVendorBill() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.post<VendorBill>(`/finance/vendor-bills/${id}/pay`)
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['finance', 'vendor-bills'] })
+      qc.invalidateQueries({ queryKey: ['finance', 'payments'] })
+    },
+  })
+}
+
+export function useDeleteVendorBill() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/finance/vendor-bills/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'vendor-bills'] }),
+  })
+}
+
+// ─── Fixed Asset Types & Hooks ───────────────────────────────────────────────
+
+export type DepreciationMethod = 'straight_line' | 'declining_balance' | 'sum_of_years'
+export type AssetStatus = 'active' | 'fully_depreciated' | 'disposed'
+
+export interface FixedAsset {
+  id: string
+  name: string
+  asset_code: string
+  category: string
+  status: AssetStatus
+  purchase_date: string
+  purchase_cost: number
+  salvage_value: number
+  useful_life_years: number
+  depreciation_method: DepreciationMethod
+  accumulated_depreciation: number
+  current_value: number
+  disposed_at: string | null
+  disposal_amount: number | null
+  notes: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateFixedAssetPayload {
+  name: string
+  asset_code: string
+  category: string
+  purchase_date: string
+  purchase_cost: number
+  salvage_value?: number
+  useful_life_years: number
+  depreciation_method: DepreciationMethod
+  notes?: string
+}
+
+export interface UpdateFixedAssetPayload extends Partial<CreateFixedAssetPayload> {
+  id: string
+}
+
+export function useFixedAssets(params: { page?: number; limit?: number; status?: string; category?: string } = {}) {
+  return useQuery({
+    queryKey: ['finance', 'fixed-assets', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<FixedAsset>>('/finance/fixed-assets', { params })
+      return data
+    },
+  })
+}
+
+export function useCreateFixedAsset() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateFixedAssetPayload) => {
+      const { data } = await apiClient.post<FixedAsset>('/finance/fixed-assets', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'fixed-assets'] }),
+  })
+}
+
+export function useUpdateFixedAsset() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: UpdateFixedAssetPayload) => {
+      const { data } = await apiClient.put<FixedAsset>(`/finance/fixed-assets/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'fixed-assets'] }),
+  })
+}
+
+export function useDepreciateAsset() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.post<FixedAsset>(`/finance/fixed-assets/${id}/depreciate`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'fixed-assets'] }),
+  })
+}
+
+export function useDisposeAsset() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, disposal_amount }: { id: string; disposal_amount: number }) => {
+      const { data } = await apiClient.post<FixedAsset>(`/finance/fixed-assets/${id}/dispose`, { disposal_amount })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'fixed-assets'] }),
+  })
+}
+
+// ─── Aged Receivables & Payables Types & Hooks ───────────────────────────────
+
+export interface AgedItem {
+  id: string
+  name: string
+  reference: string
+  total: number
+  current: number
+  days_30: number
+  days_60: number
+  days_90: number
+  days_120_plus: number
+}
+
+export interface AgedReport {
+  items: AgedItem[]
+  totals: {
+    total: number
+    current: number
+    days_30: number
+    days_60: number
+    days_90: number
+    days_120_plus: number
+  }
+  as_of: string
+}
+
+export function useAgedReceivables(asOf?: string) {
+  return useQuery({
+    queryKey: ['finance', 'reports', 'aged-receivables', asOf],
+    queryFn: async () => {
+      const params = asOf ? { as_of: asOf } : {}
+      const { data } = await apiClient.get<AgedReport>('/finance/reports/aged-receivables', { params })
+      return data
+    },
+  })
+}
+
+export function useAgedPayables(asOf?: string) {
+  return useQuery({
+    queryKey: ['finance', 'reports', 'aged-payables', asOf],
+    queryFn: async () => {
+      const params = asOf ? { as_of: asOf } : {}
+      const { data } = await apiClient.get<AgedReport>('/finance/reports/aged-payables', { params })
+      return data
+    },
+  })
+}
+
+// ─── Finance KPI Types & Hooks ───────────────────────────────────────────────
+
+export interface FinanceKPIs {
+  revenue: number
+  revenue_prev_period: number
+  revenue_change_pct: number
+  expenses: number
+  expenses_prev_period: number
+  expenses_change_pct: number
+  profit: number
+  profit_prev_period: number
+  profit_change_pct: number
+  cash_position: number
+  cash_position_prev_period: number
+  cash_position_change_pct: number
+  accounts_receivable: number
+  accounts_payable: number
+  gross_margin_pct: number
+  net_margin_pct: number
+  current_ratio: number
+  quick_ratio: number
+}
+
+export function useFinanceKPIs(from?: string, to?: string) {
+  return useQuery({
+    queryKey: ['finance', 'kpis', from, to],
+    queryFn: async () => {
+      const params: Record<string, string> = {}
+      if (from) params.from = from
+      if (to) params.to = to
+      const { data } = await apiClient.get<FinanceKPIs>('/finance/reports/kpis', { params })
+      return data
+    },
   })
 }

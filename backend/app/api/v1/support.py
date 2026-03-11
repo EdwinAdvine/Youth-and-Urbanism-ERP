@@ -11,6 +11,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.core.deps import CurrentUser, DBSession
+from app.core.events import event_bus
 from app.core.export import rows_to_csv
 from app.models.support import (
     KnowledgeBaseArticle,
@@ -413,6 +414,19 @@ async def create_ticket(
         select(Ticket).where(Ticket.id == ticket.id)
     )
     ticket = result.scalar_one()
+
+    # Publish event for cross-module integrations (Support→Mail, notifications)
+    await event_bus.publish("support.ticket.created", {
+        "ticket_id": str(ticket.id),
+        "ticket_number": ticket.ticket_number,
+        "subject": ticket.subject,
+        "priority": ticket.priority,
+        "customer_email": ticket.customer_email or "",
+        "customer_name": ticket.customer_name or "",
+        "assigned_to": str(ticket.assigned_to) if ticket.assigned_to else "",
+        "created_by": str(ticket.created_by),
+    })
+
     return _ticket_out(ticket)
 
 

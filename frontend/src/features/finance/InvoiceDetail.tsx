@@ -8,6 +8,7 @@ import {
   useUpdateInvoice,
   useSendInvoice,
   useMarkInvoicePaid,
+  exportInvoicePDF,
   type InvoiceType,
   type CreateInvoicePayload,
 } from '../../api/finance'
@@ -55,6 +56,7 @@ export default function InvoiceDetail() {
   const sendInvoice = useSendInvoice()
   const markPaid = useMarkInvoicePaid()
 
+  const [downloading, setDownloading] = useState(false)
   const [editing, setEditing] = useState(isNew)
   const [type, setType] = useState<InvoiceType>('sales')
   const [customerName, setCustomerName] = useState('')
@@ -70,7 +72,7 @@ export default function InvoiceDetail() {
   // Populate form from existing invoice
   useEffect(() => {
     if (invoice && !isNew) {
-      setType(invoice.type)
+      setType(invoice.invoice_type)
       setCustomerName(invoice.customer_name)
       setCustomerEmail(invoice.customer_email)
       setIssueDate(invoice.issue_date)
@@ -116,7 +118,7 @@ export default function InvoiceDetail() {
     }
 
     const payload: CreateInvoicePayload = {
-      type,
+      invoice_type: type,
       customer_name: customerName.trim(),
       customer_email: customerEmail.trim(),
       issue_date: issueDate,
@@ -152,6 +154,19 @@ export default function InvoiceDetail() {
       toast('success', 'Invoice marked as sent')
     } catch {
       toast('error', 'Failed to send invoice')
+    }
+  }
+
+  async function handleDownloadPDF() {
+    if (!id || isNew) return
+    setDownloading(true)
+    try {
+      await exportInvoicePDF(id)
+      toast('success', 'Invoice PDF downloaded')
+    } catch {
+      toast('error', 'Failed to download invoice PDF')
+    } finally {
+      setDownloading(false)
     }
   }
 
@@ -196,12 +211,24 @@ export default function InvoiceDetail() {
             {invoice && (
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant={STATUS_BADGE[invoice.status] ?? 'default'}>{invoice.status}</Badge>
-                <span className="text-sm text-gray-500">{invoice.type} invoice</span>
+                <span className="text-sm text-gray-500">{invoice.invoice_type} invoice</span>
               </div>
             )}
           </div>
         </div>
         <div className="flex gap-2">
+          {!isNew && (
+            <button
+              onClick={handleDownloadPDF}
+              disabled={downloading}
+              className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#51459d] px-3 py-1.5 text-sm font-medium text-[#51459d] hover:bg-[#51459d]/10 transition-colors disabled:opacity-50"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {downloading ? 'Downloading...' : 'Download PDF'}
+            </button>
+          )}
           {!isNew && isDraft && !editing && (
             <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
               Edit

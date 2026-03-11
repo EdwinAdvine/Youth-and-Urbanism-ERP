@@ -1,11 +1,12 @@
 """Meetings API — calendar events with an associated Jitsi room."""
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, HTTPException, Request, Response, UploadFile, File, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -150,7 +151,7 @@ async def create_meeting(
                     pass
 
             if attendee_emails:
-                from app.integrations import stalwart  # noqa: PLC0415
+                from app.integrations.smtp_client import send_email  # noqa: PLC0415
 
                 invite_body = (
                     f"You have been invited to a meeting.\n\n"
@@ -162,11 +163,11 @@ async def create_meeting(
                 if payload.description:
                     invite_body += f"\nDescription: {payload.description}\n"
 
-                await stalwart.send_message(
-                    from_email=email,
-                    to=attendee_emails,
+                await send_email(
+                    from_addr=email,
+                    to_addrs=attendee_emails,
                     subject=f"Meeting Invite: {event.title}",
-                    body=invite_body,
+                    body_text=invite_body,
                 )
         except Exception:
             pass  # Don't fail meeting creation if invite sending fails
@@ -262,6 +263,156 @@ async def join_meeting(
         "room_name": event.jitsi_room,
         "room_url": room_url,
         "jwt_token": token,
+    }
+
+
+# ── Virtual Backgrounds ─────────────────────────────────────────────────────
+
+VIRTUAL_BG_PREFIX = "virtual-backgrounds/"
+DEFAULT_BACKGROUNDS = [
+    {"id": "solid-blur", "name": "Blur", "type": "blur", "url": ""},
+    {"id": "solid-1", "name": "Dark Gray", "type": "color", "url": "#1a1a2e"},
+    {"id": "solid-2", "name": "Deep Purple", "type": "color", "url": "#51459d"},
+    {"id": "solid-3", "name": "Navy", "type": "color", "url": "#0f3460"},
+    {"id": "solid-4", "name": "Forest Green", "type": "color", "url": "#1b4332"},
+    {"id": "solid-5", "name": "Warm Gray", "type": "color", "url": "#4a4e69"},
+]
+
+
+@router.get("/virtual-backgrounds", summary="List available virtual backgrounds")
+async def list_virtual_backgrounds(
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """Return built-in solid-color/blur backgrounds plus any custom images uploaded to MinIO."""
+    backgrounds = list(DEFAULT_BACKGROUNDS)
+
+    try:
+        from app.integrations import minio_client  # noqa: PLC0415
+
+        uploaded = minio_client.list_files(user_id="system", folder_path="virtual-backgrounds")
+        for item in uploaded:
+            download_url = minio_client.get_download_url(item["minio_key"])
+            backgrounds.append({
+                "id": item["minio_key"],
+                "name": item["filename"],
+                "type": "image",
+                "url": download_url,
+            })
+    except Exception:
+        pass  # MinIO may not be available in dev
+
+    return {"backgrounds": backgrounds, "total": len(backgrounds)}
+
+
+@router.post("/virtual-backgrounds", status_code=status.HTTP_201_CREATED, summary="Upload a custom virtual background")
+async def upload_virtual_background(
+    current_user: CurrentUser,
+    file: UploadFile = File(...),
+) -> dict[str, Any]:
+    """Upload a custom image as a virtual background to MinIO."""
+    allowed_types = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"File type {file.content_type} not allowed. Use PNG, JPEG, or WebP.",
+        )
+
+    max_size = 5 * 1024 * 1024  # 5 MB
+    file_data = await file.read()
+    if len(file_data) > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File too large. Maximum size is 5 MB.",
+        )
+
+    try:
+        from app.integrations import minio_client  # noqa: PLC0415
+
+        result = minio_client.upload_file(
+            file_data=file_data,
+            filename=file.filename or "background.png",
+            user_id="system",
+            folder_path="virtual-backgrounds",
+            content_type=file.content_type or "image/png",
+        )
+        download_url = minio_client.get_download_url(result["minio_key"])
+        return {
+            "id": result["minio_key"],
+            "name": result["filename"],
+            "type": "image",
+            "url": download_url,
+            "size": result["size"],
+        }
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Failed to upload background: {exc}",
+        ) from exc
+
+
+# ── SIP Dial-In ────────────────────────────────────────────────────────────
+
+@router.post("/{meeting_id}/dial-in", summary="Get SIP dial-in details for a meeting")
+async def get_dial_in(
+    meeting_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Generate SIP dial-in details for a meeting if SIP is configured."""
+    from app.models.settings import SystemSettings  # noqa: PLC0415
+
+    event = await db.get(CalendarEvent, meeting_id)
+    if not event or event.event_type != "meeting":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meeting not found")
+
+    attendees: list = event.attendees or []
+    if event.organizer_id != current_user.id and str(current_user.id) not in attendees:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    # Fetch SIP config from system settings
+    result = await db.execute(
+        select(SystemSettings).where(
+            SystemSettings.key == "meetings_sip_config",
+            SystemSettings.category == "meetings_admin",
+        )
+    )
+    row = result.scalar_one_or_none()
+    sip_config: dict = {}
+    if row and row.value:
+        try:
+            sip_config = json.loads(row.value)
+        except json.JSONDecodeError:
+            pass
+
+    if not sip_config.get("sip_enabled"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="SIP gateway is not configured or not enabled",
+        )
+
+    # Generate a meeting-specific PIN from meeting ID
+    meeting_pin = str(int(meeting_id.int % 10**8)).zfill(8)
+    pin_prefix = sip_config.get("dial_in_pin_prefix", "")
+    full_pin = f"{pin_prefix}{meeting_pin}" if pin_prefix else meeting_pin
+
+    dial_in_number = sip_config.get("dial_in_number", "")
+    sip_server = sip_config.get("sip_server", "")
+
+    sip_uri = ""
+    if sip_server and event.jitsi_room:
+        sip_uri = f"sip:{event.jitsi_room}@{sip_server}"
+
+    return {
+        "meeting_id": str(meeting_id),
+        "dial_in_number": dial_in_number,
+        "meeting_pin": full_pin,
+        "sip_uri": sip_uri,
+        "jitsi_room": event.jitsi_room,
+        "instructions": (
+            f"Dial {dial_in_number} and enter PIN {full_pin} when prompted."
+            if dial_in_number
+            else f"Use SIP client to dial {sip_uri}"
+        ),
     }
 
 

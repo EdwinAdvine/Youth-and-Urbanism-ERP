@@ -41,14 +41,14 @@ export default function FormsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Forms</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Forms</h1>
           <p className="text-sm text-gray-500 mt-1">Create and manage forms, collect responses</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>
+        <Button onClick={() => setShowCreate(true)} className="w-full sm:w-auto min-h-[44px] sm:min-h-0">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -88,9 +88,14 @@ export default function FormsPage() {
                   <h3 className="text-sm font-semibold text-gray-900 line-clamp-1 group-hover:text-primary transition-colors">
                     {form.title}
                   </h3>
-                  <Badge variant={form.is_published ? 'success' : 'default'}>
-                    {form.is_published ? 'Published' : 'Draft'}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    {form.settings?.crm_lead_capture && (
+                      <Badge variant="info">Lead Capture</Badge>
+                    )}
+                    <Badge variant={form.is_published ? 'success' : 'default'}>
+                      {form.is_published ? 'Published' : 'Draft'}
+                    </Badge>
+                  </div>
                 </div>
                 {form.description && (
                   <p className="text-xs text-gray-500 line-clamp-2 mb-3">{form.description}</p>

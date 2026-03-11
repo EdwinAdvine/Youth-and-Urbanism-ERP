@@ -13,7 +13,10 @@ from app.core.deps import CurrentUser, DBSession
 from app.core.events import event_bus
 from app.models.drive import DriveFile
 from app.models.doc_link import DocLink
+from app.models.doc_comment import DocComment, DocVersion
 from app.models.projects import Project, Task
+from app.models.finance import Invoice
+from app.models.notes import Note
 
 router = APIRouter()
 
@@ -49,6 +52,22 @@ class OnlyOfficeCallback(BaseModel):
     forcesavetype: int | None = None
 
 
+class ConvertRequest(BaseModel):
+    output_format: str  # pdf, docx, xlsx, csv, odt, etc.
+
+
+class AttachToEmailResponse(BaseModel):
+    file_id: str
+    filename: str
+    content_type: str
+    download_url: str
+    size: int
+
+
+class LinkToNoteRequest(BaseModel):
+    note_id: uuid.UUID
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _ext(filename: str) -> str:
@@ -57,6 +76,15 @@ def _ext(filename: str) -> str:
 
 def _callback_url(file_id: str) -> str:
     return f"{settings.APP_URL}/api/v1/docs/callback?file_id={file_id}"
+
+
+_MOBILE_UA_KEYWORDS = ("mobile", "android", "iphone", "ipad", "ipod", "webos", "opera mini")
+
+
+def _is_mobile_ua(user_agent: str) -> bool:
+    """Check if User-Agent string indicates a mobile browser."""
+    ua_lower = user_agent.lower()
+    return any(kw in ua_lower for kw in _MOBILE_UA_KEYWORDS)
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -152,6 +180,7 @@ async def create_document(
 @router.get("/editor-config/{file_id}", summary="Get ONLYOFFICE editor config with JWT")
 async def get_editor_config(
     file_id: uuid.UUID,
+    request: Request,
     current_user: CurrentUser,
     db: DBSession,
     mode: str = Query("edit", description="edit | view"),
@@ -174,20 +203,49 @@ async def get_editor_config(
     display_name = getattr(current_user, "full_name", None) or getattr(current_user, "email", str(current_user.id))
     callback_url = _callback_url(str(file_id))
 
-    config = onlyoffice.get_editor_config(
-        file_id=str(file_id),
-        filename=file.name,
-        user_id=str(current_user.id),
-        user_name=display_name,
-        download_url=download_url,
-        callback_url=callback_url,
-        mode=mode if mode in ("edit", "view") else "edit",
-    )
+    # Auto-detect mobile user-agent and use mobile config
+    user_agent = request.headers.get("user-agent", "")
+    is_mobile = _is_mobile_ua(user_agent)
+
+    if is_mobile:
+        config = onlyoffice.get_editor_config_mobile(
+            file_id=str(file_id),
+            filename=file.name,
+            user_id=str(current_user.id),
+            user_name=display_name,
+            download_url=download_url,
+            callback_url=callback_url,
+            mode=mode if mode in ("edit", "view") else "edit",
+        )
+    else:
+        config = onlyoffice.get_editor_config(
+            file_id=str(file_id),
+            filename=file.name,
+            user_id=str(current_user.id),
+            user_name=display_name,
+            download_url=download_url,
+            callback_url=callback_url,
+            mode=mode if mode in ("edit", "view") else "edit",
+        )
+
+    # Track editing session for co-editing presence
+    if mode == "edit":
+        try:
+            onlyoffice.track_editing_session(
+                file_id=str(file_id),
+                user_id=str(current_user.id),
+                user_name=display_name,
+                action="join",
+            )
+        except Exception:
+            pass  # Non-critical: Redis may be unavailable
+
     return {
         "file_id": str(file_id),
         "filename": file.name,
         "onlyoffice_url": settings.ONLYOFFICE_PUBLIC_URL,
         "editor_config": config,
+        "is_mobile": is_mobile,
     }
 
 
@@ -227,6 +285,18 @@ async def onlyoffice_callback(
                 "name": file.name if file else "unknown",
                 "url": url,
             })
+
+    # Track editor leaving on close/save-close (status 2 or 4)
+    cb_status = body.get("status", 0)
+    cb_users = body.get("users", [])
+    if cb_status in (2, 4):
+        # All users disconnected — clear sessions for any users in the callback
+        try:
+            if cb_users:
+                for uid in cb_users:
+                    onlyoffice.track_editing_session(str(file_id), uid, "", "leave")
+        except Exception:
+            pass  # Non-critical
 
     # Always acknowledge
     return {"error": 0}
@@ -385,12 +455,575 @@ async def delete_doc_link(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+# ── Doc Comment schemas ─────────────────────────────────────────────────────
+
+class CommentCreate(BaseModel):
+    content: str
+    anchor: str | None = None
+    parent_id: uuid.UUID | None = None
+
+
+class CommentUpdate(BaseModel):
+    content: str | None = None
+    resolved: bool | None = None
+
+
+class CommentOut(BaseModel):
+    id: uuid.UUID
+    file_id: uuid.UUID
+    author_id: uuid.UUID
+    content: str
+    anchor: str | None
+    parent_id: uuid.UUID | None
+    resolved: bool
+    created_at: Any
+    updated_at: Any
+
+    model_config = {"from_attributes": True}
+
+
+# ── Doc Comment endpoints ──────────────────────────────────────────────────
+
+@router.get("/file/{file_id}/comments", summary="List comments on a document")
+async def list_comments(
+    file_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    file = await db.get(DriveFile, file_id)
+    if not file or (file.owner_id != current_user.id and not file.is_public):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    result = await db.execute(
+        select(DocComment)
+        .where(DocComment.file_id == file_id, DocComment.parent_id.is_(None))
+        .order_by(DocComment.created_at.asc())
+    )
+    comments = result.scalars().all()
+
+    out = []
+    for c in comments:
+        comment_data = CommentOut.model_validate(c).model_dump()
+        # Fetch replies
+        replies_result = await db.execute(
+            select(DocComment).where(DocComment.parent_id == c.id).order_by(DocComment.created_at.asc())
+        )
+        comment_data["replies"] = [CommentOut.model_validate(r).model_dump() for r in replies_result.scalars().all()]
+        out.append(comment_data)
+
+    return {"total": len(out), "comments": out}
+
+
+@router.post("/file/{file_id}/comments", status_code=status.HTTP_201_CREATED, summary="Add a comment to a document")
+async def create_comment(
+    file_id: uuid.UUID,
+    payload: CommentCreate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    file = await db.get(DriveFile, file_id)
+    if not file or (file.owner_id != current_user.id and not file.is_public):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    if payload.parent_id:
+        parent = await db.get(DocComment, payload.parent_id)
+        if not parent or parent.file_id != file_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parent comment not found")
+
+    comment = DocComment(
+        file_id=file_id,
+        author_id=current_user.id,
+        content=payload.content,
+        anchor=payload.anchor,
+        parent_id=payload.parent_id,
+    )
+    db.add(comment)
+    await db.commit()
+    await db.refresh(comment)
+
+    # Notify doc owner if commenter is different
+    if file.owner_id != current_user.id:
+        await event_bus.publish("doc.commented", {
+            "file_id": str(file_id),
+            "file_name": file.name,
+            "comment_id": str(comment.id),
+            "author_id": str(current_user.id),
+            "owner_id": str(file.owner_id),
+            "content": payload.content[:100],
+        })
+
+    return CommentOut.model_validate(comment).model_dump()
+
+
+@router.put("/comment/{comment_id}", summary="Update a comment")
+async def update_comment(
+    comment_id: uuid.UUID,
+    payload: CommentUpdate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    comment = await db.get(DocComment, comment_id)
+    if not comment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+    if comment.author_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your comment")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(comment, field, value)
+
+    await db.commit()
+    await db.refresh(comment)
+    return CommentOut.model_validate(comment).model_dump()
+
+
+@router.delete("/comment/{comment_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a comment")
+async def delete_comment(
+    comment_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> Response:
+    comment = await db.get(DocComment, comment_id)
+    if not comment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+
+    # Author or doc owner can delete
+    file = await db.get(DriveFile, comment.file_id)
+    if comment.author_id != current_user.id and (not file or file.owner_id != current_user.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    await db.delete(comment)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ── Doc Version endpoints ──────────────────────────────────────────────────
+
+@router.get("/file/{file_id}/versions", summary="List version history for a document")
+async def list_versions(
+    file_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    file = await db.get(DriveFile, file_id)
+    if not file or (file.owner_id != current_user.id and not file.is_public):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    result = await db.execute(
+        select(DocVersion)
+        .where(DocVersion.file_id == file_id)
+        .order_by(DocVersion.version_number.desc())
+    )
+    versions = result.scalars().all()
+    return {
+        "total": len(versions),
+        "versions": [
+            {
+                "id": str(v.id),
+                "version_number": v.version_number,
+                "size": v.size,
+                "saved_by": str(v.saved_by) if v.saved_by else None,
+                "label": v.label,
+                "created_at": v.created_at,
+            }
+            for v in versions
+        ],
+    }
+
+
+@router.get("/version/{version_id}/download", summary="Download a specific version of a document")
+async def download_version(
+    version_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    from app.integrations import minio_client  # noqa: PLC0415
+
+    version = await db.get(DocVersion, version_id)
+    if not version:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version not found")
+
+    file = await db.get(DriveFile, version.file_id)
+    if not file or (file.owner_id != current_user.id and not file.is_public):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    try:
+        download_url = minio_client.get_download_url(version.minio_key)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage unavailable: {exc}",
+        ) from exc
+
+    return {
+        "version_id": str(version_id),
+        "version_number": version.version_number,
+        "download_url": download_url,
+        "filename": file.name,
+    }
+
+
+@router.post("/file/{file_id}/versions/{version_id}/restore", summary="Restore a document to a previous version")
+async def restore_version(
+    file_id: uuid.UUID,
+    version_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Restore a document to a previous version by copying its content as the current file."""
+    from app.integrations.minio_client import _get_client, BUCKET_NAME  # noqa: PLC0415
+
+    file = await db.get(DriveFile, file_id)
+    if not file or file.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    version = await db.get(DocVersion, version_id)
+    if not version or version.file_id != file_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version not found")
+
+    try:
+        s3 = _get_client()
+        # Copy the version's object over the current file's object
+        s3.copy_object(
+            Bucket=BUCKET_NAME,
+            Key=file.minio_key,
+            CopySource={"Bucket": BUCKET_NAME, "Key": version.minio_key},
+        )
+        file.size = version.size
+        await db.commit()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage error: {exc}",
+        ) from exc
+
+    return {
+        "restored": True,
+        "file_id": str(file_id),
+        "restored_to_version": version.version_number,
+    }
+
+
+# ── Conversion API ───────────────────────────────────────────────────────────
+
+
+@router.post("/{doc_id}/convert", summary="Convert document to another format via ONLYOFFICE")
+async def convert_document(
+    doc_id: uuid.UUID,
+    payload: ConvertRequest,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Convert a document to a different format using the ONLYOFFICE Conversion API.
+
+    Supported conversions include docx->pdf, xlsx->csv, pptx->pdf, etc.
+    Returns the converted file URL or conversion status.
+    """
+    from app.integrations import onlyoffice  # noqa: PLC0415
+    from app.integrations import minio_client  # noqa: PLC0415
+
+    file = await db.get(DriveFile, doc_id)
+    if not file or (file.owner_id != current_user.id and not file.is_public):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    valid_formats = {"pdf", "docx", "xlsx", "pptx", "odt", "ods", "odp", "csv", "txt", "html", "png", "jpg"}
+    if payload.output_format.lower() not in valid_formats:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"output_format must be one of: {', '.join(sorted(valid_formats))}",
+        )
+
+    try:
+        download_url = minio_client.get_download_url(file.minio_key)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage unavailable: {exc}",
+        ) from exc
+
+    try:
+        result = onlyoffice.request_conversion(
+            file_id=str(doc_id),
+            filename=file.name,
+            download_url=download_url,
+            output_format=payload.output_format.lower(),
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"ONLYOFFICE conversion failed: {exc}",
+        ) from exc
+
+    return {
+        "file_id": str(doc_id),
+        "original_name": file.name,
+        "target_format": payload.output_format,
+        "conversion": result,
+    }
+
+
+# ── Co-editing Presence ──────────────────────────────────────────────────────
+
+
+@router.get("/{doc_id}/editors", summary="List users currently editing a document")
+async def list_active_editors(
+    doc_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Return the list of users currently editing the document.
+
+    Uses Redis-based session tracking updated by ONLYOFFICE callbacks
+    and editor-config requests.
+    """
+    from app.integrations import onlyoffice  # noqa: PLC0415
+
+    file = await db.get(DriveFile, doc_id)
+    if not file or (file.owner_id != current_user.id and not file.is_public):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    try:
+        editors = onlyoffice.get_active_editors(str(doc_id))
+    except Exception:
+        editors = []
+
+    return {
+        "file_id": str(doc_id),
+        "editors": editors,
+        "count": len(editors),
+    }
+
+
+# ── Cross-Module: Docs → Finance (invoice document generation) ──────────────
+
+
+@router.post("/generate-invoice/{invoice_id}", status_code=status.HTTP_201_CREATED,
+             summary="Generate a document from an invoice")
+async def generate_invoice_document(
+    invoice_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Create a formatted DOCX document from a finance invoice.
+
+    Generates an HTML invoice from the invoice data, uploads it to MinIO,
+    and creates a DriveFile record so it appears in the user's documents.
+    """
+    from app.integrations import minio_client  # noqa: PLC0415
+
+    invoice = await db.get(Invoice, invoice_id)
+    if not invoice:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+
+    # Build invoice HTML content
+    items_html = ""
+    items_data = invoice.items or []
+    for item in items_data:
+        desc = item.get("description", "Item")
+        qty = item.get("quantity", 1)
+        price = item.get("unit_price", item.get("price", 0))
+        amount = item.get("amount", float(qty) * float(price))
+        items_html += f"<tr><td>{desc}</td><td style='text-align:right'>{qty}</td><td style='text-align:right'>{invoice.currency} {float(price):,.2f}</td><td style='text-align:right'>{invoice.currency} {float(amount):,.2f}</td></tr>"
+
+    if not items_html:
+        items_html = "<tr><td colspan='4' style='text-align:center'>No line items</td></tr>"
+
+    html_content = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+body {{ font-family: 'Open Sans', Arial, sans-serif; padding: 40px; color: #333; }}
+h1 {{ color: #51459d; margin-bottom: 5px; }}
+.invoice-header {{ display: flex; justify-content: space-between; margin-bottom: 30px; }}
+.meta {{ color: #666; font-size: 14px; }}
+table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+th {{ background: #51459d; color: white; padding: 10px 12px; text-align: left; }}
+td {{ padding: 10px 12px; border-bottom: 1px solid #eee; }}
+.totals {{ text-align: right; margin-top: 20px; }}
+.totals .total {{ font-size: 20px; color: #51459d; font-weight: bold; }}
+.footer {{ margin-top: 40px; padding-top: 20px; border-top: 2px solid #51459d; font-size: 12px; color: #999; }}
+</style></head><body>
+<h1>INVOICE</h1>
+<div class="invoice-header">
+    <div>
+        <p class="meta"><strong>Invoice #:</strong> {invoice.invoice_number}</p>
+        <p class="meta"><strong>Date:</strong> {invoice.issue_date}</p>
+        <p class="meta"><strong>Due Date:</strong> {invoice.due_date}</p>
+        <p class="meta"><strong>Status:</strong> {invoice.status.upper()}</p>
+    </div>
+    <div>
+        <p class="meta"><strong>Bill To:</strong></p>
+        <p class="meta">{invoice.customer_name or 'N/A'}</p>
+        <p class="meta">{invoice.customer_email or ''}</p>
+    </div>
+</div>
+<table>
+    <thead><tr><th>Description</th><th style="text-align:right">Qty</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Amount</th></tr></thead>
+    <tbody>{items_html}</tbody>
+</table>
+<div class="totals">
+    <p>Subtotal: {invoice.currency} {float(invoice.subtotal):,.2f}</p>
+    <p>Tax: {invoice.currency} {float(invoice.tax_amount):,.2f}</p>
+    <p class="total">Total: {invoice.currency} {float(invoice.total):,.2f}</p>
+</div>
+{f'<p class="meta"><em>{invoice.notes}</em></p>' if invoice.notes else ''}
+<div class="footer">
+    <p>Generated by Urban ERP</p>
+</div>
+</body></html>"""
+
+    filename = f"Invoice_{invoice.invoice_number}.html"
+    content_type = "text/html"
+
+    try:
+        record = minio_client.upload_file(
+            file_data=html_content.encode("utf-8"),
+            filename=filename,
+            user_id=str(current_user.id),
+            folder_path="documents/invoices",
+            content_type=content_type,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage unavailable: {exc}",
+        ) from exc
+
+    drive_file = DriveFile(
+        id=uuid.UUID(record["file_id"]),
+        name=filename,
+        content_type=content_type,
+        size=len(html_content.encode("utf-8")),
+        minio_key=record["minio_key"],
+        folder_path="/documents/invoices",
+        owner_id=current_user.id,
+        is_public=False,
+    )
+    db.add(drive_file)
+    await db.commit()
+    await db.refresh(drive_file)
+
+    await event_bus.publish("doc.invoice_generated", {
+        "file_id": str(drive_file.id),
+        "invoice_id": str(invoice_id),
+        "invoice_number": invoice.invoice_number,
+        "user_id": str(current_user.id),
+    })
+
+    return {
+        "file_id": str(drive_file.id),
+        "filename": filename,
+        "invoice_number": invoice.invoice_number,
+        "size": drive_file.size,
+    }
+
+
+# ── Cross-Module: Docs → Mail (attachment) ──────────────────────────────────
+
+
+@router.post("/{doc_id}/attach-to-email", summary="Get document as email attachment blob")
+async def attach_to_email(
+    doc_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Return document metadata and a pre-signed download URL suitable for
+    attaching to an outgoing email.
+
+    The frontend can use the ``download_url`` to fetch the file bytes and
+    include them in a mail compose payload.
+    """
+    from app.integrations import minio_client  # noqa: PLC0415
+
+    file = await db.get(DriveFile, doc_id)
+    if not file or (file.owner_id != current_user.id and not file.is_public):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    try:
+        download_url = minio_client.get_download_url(file.minio_key)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage unavailable: {exc}",
+        ) from exc
+
+    return {
+        "file_id": str(doc_id),
+        "filename": file.name,
+        "content_type": file.content_type,
+        "download_url": download_url,
+        "size": file.size,
+    }
+
+
+# ── Cross-Module: Docs → Notes (link) ───────────────────────────────────────
+
+
+@router.post("/{doc_id}/link-to-note", summary="Link a document to a note")
+async def link_to_note(
+    doc_id: uuid.UUID,
+    payload: LinkToNoteRequest,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Add a document reference to a note's ``linked_items`` array.
+
+    Creates a cross-module link so the note shows the document as a
+    related item. The link includes ``type``, ``id``, and ``title``.
+    """
+    file = await db.get(DriveFile, doc_id)
+    if not file or (file.owner_id != current_user.id and not file.is_public):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    note = await db.get(Note, payload.note_id)
+    if not note or note.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+
+    # Add to linked_items (avoid duplicates)
+    linked = note.linked_items or []
+    doc_link_entry = {
+        "type": "doc",
+        "id": str(doc_id),
+        "title": file.name,
+    }
+
+    # Check for existing link
+    already_linked = any(
+        item.get("type") == "doc" and item.get("id") == str(doc_id)
+        for item in linked
+    )
+    if already_linked:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document is already linked to this note",
+        )
+
+    linked.append(doc_link_entry)
+    note.linked_items = linked
+    await db.commit()
+    await db.refresh(note)
+
+    await event_bus.publish("doc.linked_to_note", {
+        "file_id": str(doc_id),
+        "file_name": file.name,
+        "note_id": str(payload.note_id),
+        "note_title": note.title,
+        "user_id": str(current_user.id),
+    })
+
+    return {
+        "file_id": str(doc_id),
+        "note_id": str(payload.note_id),
+        "linked_items_count": len(linked),
+    }
+
+
 # ── Background helpers ────────────────────────────────────────────────────────
 
 async def _persist_saved_doc(db: Any, file_id: uuid.UUID, url: str) -> None:
-    """Background task: fetch saved document from ONLYOFFICE and update MinIO + DB."""
+    """Background task: fetch saved document from ONLYOFFICE, update MinIO + DB, and create a version snapshot."""
     import httpx  # noqa: PLC0415
-    from app.integrations import minio_client  # noqa: PLC0415
+    import io  # noqa: PLC0415
+    from app.integrations.minio_client import _get_client, _ensure_bucket, BUCKET_NAME  # noqa: PLC0415
+    from sqlalchemy import func  # noqa: PLC0415
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:
@@ -402,10 +1035,48 @@ async def _persist_saved_doc(db: Any, file_id: uuid.UUID, url: str) -> None:
         if not file:
             return
 
-        # Overwrite the existing MinIO object
-        from app.integrations.minio_client import _get_client, BUCKET_NAME  # noqa: PLC0415
-        import io  # noqa: PLC0415
         s3 = _get_client()
+        _ensure_bucket(s3)
+
+        # Create a version snapshot before overwriting
+        count_result = await db.execute(
+            select(func.count()).select_from(DocVersion).where(DocVersion.file_id == file_id)
+        )
+        next_version = (count_result.scalar() or 0) + 1
+        version_key = f"{file.minio_key}.v{next_version}"
+
+        # Copy current file to version key (if file has content)
+        if file.size > 0:
+            try:
+                s3.copy_object(
+                    Bucket=BUCKET_NAME,
+                    Key=version_key,
+                    CopySource={"Bucket": BUCKET_NAME, "Key": file.minio_key},
+                )
+            except Exception:
+                # If copy fails (e.g., source doesn't exist yet), upload the new data as version instead
+                s3.put_object(
+                    Bucket=BUCKET_NAME, Key=version_key,
+                    Body=io.BytesIO(file_data), ContentType=file.content_type,
+                    ContentLength=len(file_data),
+                )
+        else:
+            # First save — snapshot the new data as v1
+            s3.put_object(
+                Bucket=BUCKET_NAME, Key=version_key,
+                Body=io.BytesIO(file_data), ContentType=file.content_type,
+                ContentLength=len(file_data),
+            )
+
+        version = DocVersion(
+            file_id=file_id,
+            version_number=next_version,
+            minio_key=version_key,
+            size=file.size if file.size > 0 else len(file_data),
+        )
+        db.add(version)
+
+        # Overwrite the current file in MinIO
         s3.put_object(
             Bucket=BUCKET_NAME,
             Key=file.minio_key,

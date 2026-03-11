@@ -29,10 +29,10 @@ export default function AdminDashboard() {
   ]
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 space-y-5 sm:space-y-6 max-w-6xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Admin Dashboard</h1>
         <p className="text-gray-500 text-sm mt-1">System overview and administration</p>
       </div>
 
@@ -42,15 +42,15 @@ export default function AdminDashboard() {
           <Spinner size="lg" />
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {statCards.map((card) => (
             <Card key={card.label}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 font-medium">{card.label}</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">{card.value}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 font-medium">{card.label}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{card.value}</p>
                 </div>
-                <div className={`w-12 h-12 rounded-2xl ${card.bg} flex items-center justify-center text-2xl`}>
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl ${card.bg} flex items-center justify-center text-xl sm:text-2xl`}>
                   {card.icon}
                 </div>
               </div>
@@ -68,7 +68,7 @@ export default function AdminDashboard() {
               <button
                 key={action.label}
                 onClick={() => navigate(action.href)}
-                className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 hover:border-primary/30 hover:bg-primary/5 transition-colors text-left group"
+                className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 hover:border-primary/30 hover:bg-primary/5 transition-colors text-left group min-h-[44px]"
               >
                 <span className="text-xl">{action.icon}</span>
                 <span className="text-sm font-medium text-gray-700 group-hover:text-primary transition-colors">
@@ -116,7 +116,7 @@ export default function AdminDashboard() {
             <button
               key={item.label}
               onClick={() => navigate(item.href)}
-              className="flex items-center gap-4 p-4 bg-white rounded-[10px] border border-gray-100 hover:border-primary/30 hover:shadow-md transition-all text-left group"
+              className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-[10px] border border-gray-100 hover:border-primary/30 hover:shadow-md transition-all text-left group min-h-[44px]"
             >
               <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-2xl shrink-0 shadow-sm`}>
                 {item.icon}

@@ -1,0 +1,121 @@
+/* Analytics print-friendly styles */
+@media print {
+  /* Hide non-essential UI */
+  nav,
+  aside,
+  header,
+  footer,
+  .sidebar,
+  .app-sidebar,
+  .app-header,
+  [data-sidebar],
+  [role="navigation"],
+  [role="banner"] {
+    display: none !important;
+  }
+
+  /* Hide action buttons, tabs, selects, and interactive controls */
+  button,
+  select,
+  .tab-bar,
+  [role="tablist"] {
+    display: none !important;
+  }
+
+  /* Ensure the main content takes full width */
+  main,
+  .main-content,
+  [role="main"],
+  .flex-1 {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Full-width charts and cards */
+  .grid {
+    display: block !important;
+  }
+
+  .grid > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 16px !important;
+    page-break-inside: avoid;
+  }
+
+  /* Ensure charts render at full width */
+  svg {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Remove shadows and borders for clean print */
+  .shadow-sm,
+  .shadow,
+  .shadow-md {
+    box-shadow: none !important;
+  }
+
+  /* Ensure text is dark for printing */
+  * {
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Keep chart colors */
+  svg circle,
+  svg rect,
+  svg path,
+  div[style*="backgroundColor"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Remove background colors except on chart elements */
+  .bg-white,
+  .bg-gray-50,
+  .bg-gray-100 {
+    background-color: #fff !important;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 1cm;
+    size: A4 landscape;
+  }
+
+  /* Avoid page breaks inside cards */
+  .rounded-\\[10px\\] {
+    page-break-inside: avoid;
+    border: 1px solid #e5e7eb !important;
+    margin-bottom: 12px;
+  }
+
+  /* Print title */
+  h1 {
+    display: block !important;
+    font-size: 18pt !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Show stat card labels clearly */
+  .text-xs,
+  .text-sm {
+    font-size: 10pt !important;
+  }
+
+  /* Ensure table content is visible */
+  table {
+    width: 100% !important;
+    border-collapse: collapse;
+  }
+
+  table th,
+  table td {
+    border: 1px solid #d1d5db !important;
+    padding: 4px 8px !important;
+  }
+}
