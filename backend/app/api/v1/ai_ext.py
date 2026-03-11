@@ -215,7 +215,7 @@ async def delete_template(
     template_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
-) -> None:
+):
     template = await db.get(AIPromptTemplate, template_id)
     if not template or template.created_by != current_user.id:
         raise HTTPException(status_code=404, detail="Template not found")
@@ -300,7 +300,7 @@ async def delete_knowledge_base(
     kb_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
-) -> None:
+):
     kb = await db.get(AIKnowledgeBase, kb_id)
     if not kb or kb.owner_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")

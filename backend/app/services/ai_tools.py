@@ -121,6 +121,13 @@ TOOL_APPROVAL_TIERS: dict[str, str] = {
     "enroll_in_sequence": "warn",
     "suggest_duplicates": "auto_approve",
     "summarize_contact_360": "auto_approve",
+    # ── HR Phase 3 — AI Intelligence ────────────────────────────────────────────
+    "hr_flight_risk_check": "auto_approve",
+    "hr_burnout_check": "auto_approve",
+    "hr_skills_gap_report": "auto_approve",
+    "hr_policy_query": "auto_approve",
+    "hr_workforce_simulate": "auto_approve",
+    "hr_suggest_rating": "warn",
 }
 
 
@@ -1289,6 +1296,97 @@ TOOL_DEFINITIONS = [
                     "contact_id": {"type": "string", "description": "UUID of the contact to summarize"},
                 },
                 "required": ["contact_id"],
+            },
+        },
+    },
+    # ── HR Phase 3 AI Intelligence Tools ─────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "hr_flight_risk_check",
+            "description": "Check the attrition/flight risk score for an employee or team. Returns risk level, factors, and retention recommendations.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "employee_id": {"type": "string", "description": "UUID of the employee (omit for team summary)"},
+                    "department": {"type": "string", "description": "Department name for team-level check"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "hr_burnout_check",
+            "description": "Check burnout risk indicators for an employee. Returns risk level, warning signs, and recommended interventions.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "employee_id": {"type": "string", "description": "UUID of the employee to assess"},
+                },
+                "required": ["employee_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "hr_skills_gap_report",
+            "description": "Generate a skills gap analysis report for an employee or department comparing current skills against required skills.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "employee_id": {"type": "string", "description": "UUID of the employee (omit for department report)"},
+                    "department": {"type": "string", "description": "Department name for department-level report"},
+                    "target_role": {"type": "string", "description": "Optional target job title to compare against"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "hr_policy_query",
+            "description": "Answer HR policy questions using the AI HR chatbot. Returns policy guidance, procedures, and relevant HR information.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "question": {"type": "string", "description": "The HR policy or procedural question"},
+                    "context": {"type": "object", "description": "Optional context such as employee department or situation"},
+                },
+                "required": ["question"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "hr_workforce_simulate",
+            "description": "Run a workforce planning simulation to project headcount and cost under different growth/attrition scenarios.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "fiscal_year": {"type": "integer", "description": "Target fiscal year for the simulation"},
+                    "growth_rate": {"type": "number", "description": "Headcount growth rate as a percentage (e.g. 10 for 10%)"},
+                    "attrition_rate": {"type": "number", "description": "Expected attrition rate as a percentage"},
+                    "salary_increase_pct": {"type": "number", "description": "Expected salary increase percentage"},
+                },
+                "required": ["fiscal_year"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "hr_suggest_rating",
+            "description": "Suggest a performance rating for an employee based on their goal completion, feedback, and activity data.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "employee_id": {"type": "string", "description": "UUID of the employee to rate"},
+                    "review_period": {"type": "string", "description": "Review period e.g. 'Q4 2025' or 'Annual 2025'"},
+                },
+                "required": ["employee_id"],
             },
         },
     },

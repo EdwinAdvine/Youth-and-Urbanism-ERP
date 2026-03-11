@@ -35,7 +35,7 @@ _FORBIDDEN_SQL_RE = re.compile(
 _VALID_SELECT_RE = re.compile(r"^\s*(SELECT|WITH)\b", re.IGNORECASE)
 
 
-def _validate_readonly_sql(sql: str) -> None:
+def _validate_readonly_sql(sql: str):
     """Raise 400 if SQL is not a read-only SELECT statement."""
     stripped = sql.strip().rstrip(";").strip()
     if not _VALID_SELECT_RE.match(stripped):
@@ -297,7 +297,7 @@ async def delete_dashboard(
     dashboard_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
-) -> None:
+):
     result = await db.execute(select(Dashboard).where(Dashboard.id == dashboard_id))
     dashboard = result.scalar_one_or_none()
     if not dashboard:
@@ -400,7 +400,7 @@ async def delete_widget(
     widget_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
-) -> None:
+):
     result = await db.execute(select(DashboardWidget).where(DashboardWidget.id == widget_id))
     widget = result.scalar_one_or_none()
     if not widget:
@@ -544,7 +544,7 @@ async def delete_saved_query(
     query_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
-) -> None:
+):
     result = await db.execute(select(SavedQuery).where(SavedQuery.id == query_id))
     query = result.scalar_one_or_none()
     if not query:
@@ -773,7 +773,7 @@ async def delete_alert(
     alert_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
-) -> None:
+):
     result = await db.execute(
         select(DataAlert)
         .join(SavedQuery, SavedQuery.id == DataAlert.query_id)

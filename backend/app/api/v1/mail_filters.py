@@ -125,7 +125,7 @@ async def delete_filter(
     filter_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
-) -> None:
+):
     mail_filter = await db.get(MailFilter, filter_id)
     if not mail_filter or mail_filter.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Filter not found")

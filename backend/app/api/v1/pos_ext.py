@@ -240,7 +240,7 @@ async def delete_terminal(
     terminal_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
-) -> None:
+):
     terminal = await db.get(POSTerminal, terminal_id)
     if not terminal:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Terminal not found")
@@ -540,7 +540,7 @@ async def delete_discount(
     discount_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
-) -> None:
+):
     discount = await db.get(POSDiscount, discount_id)
     if not discount:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discount not found")

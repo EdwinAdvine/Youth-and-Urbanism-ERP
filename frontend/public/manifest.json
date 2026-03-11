@@ -1,0 +1,42 @@
+{
+  "name": "Urban ERP",
+  "short_name": "Urban ERP",
+  "description": "Urban ERP — Self-hosted business management platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#51459d",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create Expense",
+      "short_name": "Expense",
+      "description": "Submit a new expense",
+      "url": "/finance/expenses?new=true",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "New Invoice",
+      "short_name": "Invoice",
+      "description": "Create a new invoice",
+      "url": "/finance/invoices?new=true",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Finance Dashboard",
+      "short_name": "Finance",
+      "description": "View finance overview",
+      "url": "/finance",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ],
+  "categories": ["business", "finance", "productivity"]
+}

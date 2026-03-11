@@ -1113,6 +1113,68 @@ def _register_event_handlers() -> None:
         logger.info("Event: hr.offboarding_started — employee %s", data.get("employee_id"))
         await _log_activity("updated", f"Offboarding started for employee {data.get('employee_id', '')}", "hr", data.get("initiated_by", ""), data)
 
+    # ── Phase 3 HR Events ──────────────────────────────────────────────────────
+
+    @event_bus.on("hr.workflow_approval_required")
+    async def on_workflow_approval_required(data: dict) -> None:
+        """Notify approver that a workflow step needs their decision."""
+        logger.info("Event: hr.workflow_approval_required — execution %s", data.get("execution_id"))
+        approver_id = data.get("approver_id")
+        if approver_id:
+            await _send_notification(
+                user_id=approver_id,
+                title="Workflow Approval Required",
+                body=f"A workflow step requires your approval: {data.get('step_description', 'Approval needed')}",
+                link_url="/hr/workflows/approvals",
+            )
+
+    @event_bus.on("hr.workflow_decision")
+    async def on_workflow_decision(data: dict) -> None:
+        """Log workflow approval decision."""
+        logger.info(
+            "Event: hr.workflow_decision — execution %s decision=%s",
+            data.get("execution_id"),
+            data.get("decision"),
+        )
+        await _log_activity(
+            "updated",
+            f"Workflow decision: {data.get('decision')} for execution {data.get('execution_id', '')}",
+            "hr",
+            data.get("decided_by", ""),
+            data,
+        )
+
+    @event_bus.on("hr.workflow_task_created")
+    async def on_workflow_task_created(data: dict) -> None:
+        """Notify assignee of a task created by a workflow."""
+        logger.info("Event: hr.workflow_task_created — task %s", data.get("task_title"))
+        assignee_id = data.get("assignee_id")
+        if assignee_id:
+            await _send_notification(
+                user_id=assignee_id,
+                title="New Task Assigned",
+                body=f"Workflow task assigned: {data.get('task_title', 'New task')}",
+                link_url="/projects",
+            )
+
+    @event_bus.on("hr.flight_risk_high")
+    async def on_flight_risk_high(data: dict) -> None:
+        """Alert HR admins when an employee has high/critical flight risk."""
+        logger.info(
+            "Event: hr.flight_risk_high — employee %s risk=%s",
+            data.get("employee_id"),
+            data.get("risk_level"),
+        )
+
+    @event_bus.on("hr.burnout_risk_high")
+    async def on_burnout_risk_high(data: dict) -> None:
+        """Alert manager and HR when an employee has high burnout risk."""
+        logger.info(
+            "Event: hr.burnout_risk_high — employee %s risk=%s",
+            data.get("employee_id"),
+            data.get("risk_level"),
+        )
+
 
 async def _seed_superadmin() -> None:
     """Create the first super-admin account if it does not exist."""

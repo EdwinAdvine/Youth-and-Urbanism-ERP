@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   usePipeline,
   useCreateOpportunity,
@@ -10,6 +10,11 @@ import {
   type OpportunityStage,
   type CreateOpportunityPayload,
 } from '../../api/crm'
+import {
+  usePipelines,
+  usePipelineBoard,
+  type Pipeline,
+} from '../../api/crm_v2'
 import { cn, Button, Spinner, Modal, Input, Badge, Select } from '../../components/ui'
 import { toast } from '../../components/ui'
 import QuickActivityLog from './QuickActivityLog'
@@ -40,6 +45,15 @@ const STAGE_BG: Record<OpportunityStage, string> = {
   closed_lost: 'bg-red-50',
 }
 
+// Design token colors for swimlane owner bands
+const OWNER_BAND_COLORS = [
+  '#f0eefb', // primary tint
+  '#eafbf5', // success tint
+  '#eafafd', // info tint
+  '#fff8ee', // warning tint
+  '#fff0f4', // danger tint
+]
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
 }
@@ -54,26 +68,145 @@ const EMPTY_FORM: CreateOpportunityPayload = {
   notes: '',
 }
 
+// ─── Deal Card ────────────────────────────────────────────────────────────────
+
+interface DealCardProps {
+  opp: Opportunity
+  stage: OpportunityStage
+  onEdit: (opp: Opportunity) => void
+  onWon: (opp: Opportunity) => void
+  onLost: (opp: Opportunity) => void
+  wonPending: boolean
+  lostPending: boolean
+}
+
+function DealCard({ opp, stage, onEdit, onWon, onLost, wonPending, lostPending }: DealCardProps) {
+  return (
+    <div
+      className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]"
+      onClick={() => onEdit(opp)}
+    >
+      <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 leading-tight">{opp.title}</h3>
+      {opp.contact_name && (
+        <p className="text-xs text-gray-500 mt-1">{opp.contact_name}</p>
+      )}
+      <div className="flex items-center justify-between mt-2">
+        <p className="text-sm font-semibold text-primary">
+          {formatCurrency(opp.value)}
+        </p>
+        <Badge variant="default">{opp.probability}%</Badge>
+      </div>
+      {opp.expected_close_date && (
+        <p className="text-xs text-gray-400 mt-1">
+          Close: {new Date(opp.expected_close_date).toLocaleDateString()}
+        </p>
+      )}
+      {stage !== 'closed_won' && stage !== 'closed_lost' && (
+        <div className="flex gap-2 mt-3">
+          <Button
+            size="sm"
+            className="flex-1 bg-success text-white hover:opacity-90 min-h-[44px]"
+            onClick={(e) => { e.stopPropagation(); onWon(opp) }}
+            loading={wonPending}
+          >
+            Won
+          </Button>
+          <Button
+            size="sm"
+            variant="danger"
+            className="flex-1 min-h-[44px]"
+            onClick={(e) => { e.stopPropagation(); onLost(opp) }}
+            loading={lostPending}
+          >
+            Lost
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export default function PipelinePage() {
-  const { data: pipeline, isLoading } = usePipeline()
+  // ── Legacy pipeline (all-pipelines view) ──
+  const { data: pipeline, isLoading: legacyLoading } = usePipeline()
+
+  // ── Pipeline selector ──
+  const { data: pipelinesData, isLoading: pipelinesLoading } = usePipelines(true)
+  const pipelines: Pipeline[] = Array.isArray(pipelinesData) ? pipelinesData : (pipelinesData?.items ?? [])
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string>('')
+
+  // Once pipelines load, auto-select the default (or first)
+  const resolvedPipelineId = useMemo(() => {
+    if (selectedPipelineId) return selectedPipelineId
+    if (pipelines.length === 0) return ''
+    const def = pipelines.find((p) => p.is_default)
+    return def ? def.id : pipelines[0].id
+  }, [selectedPipelineId, pipelines])
+
+  // ── Swimlane toggle ──
+  const [swimlaneActive, setSwimlaneActive] = useState(false)
+
+  // ── Pipeline board (used when a specific pipeline is selected) ──
+  const { data: boardData, isLoading: boardLoading } = usePipelineBoard(
+    resolvedPipelineId,
+    swimlaneActive ? 'owner' : undefined
+  )
+
+  // ── CRM mutations ──
   const { data: contactsData } = useContacts({ page: 1, limit: 200 })
   const createMutation = useCreateOpportunity()
   const updateMutation = useUpdateOpportunity()
   const closeWonMutation = useCloseWon()
   const closeLostMutation = useCloseLost()
+
+  // ── Modal state ──
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Opportunity | null>(null)
   const [form, setForm] = useState<CreateOpportunityPayload>(EMPTY_FORM)
 
   const contacts = contactsData?.items ?? []
-  const stages = pipeline?.stages ?? []
 
-  // Build a lookup by stage
-  const stageMap: Record<string, { count: number; total_value: number; items: Opportunity[] }> = {}
-  stages.forEach((s) => {
-    stageMap[s.stage] = s
-  })
+  // ── Build stage map ──
+  // Prefer board data from the selected pipeline; fall back to legacy usePipeline()
+  const stageMap: Record<string, { count: number; total_value: number; items: Opportunity[] }> = useMemo(() => {
+    if (boardData) {
+      // boardData.board is Record<stageName, Opportunity[]>
+      const result: Record<string, { count: number; total_value: number; items: Opportunity[] }> = {}
+      STAGES.forEach((stage) => {
+        const items: Opportunity[] = boardData.board[stage] ?? []
+        result[stage] = {
+          items,
+          count: items.length,
+          total_value: items.reduce((sum, o) => sum + (o.value ?? 0), 0),
+        }
+      })
+      return result
+    }
+    // Legacy fallback
+    const result: Record<string, { count: number; total_value: number; items: Opportunity[] }> = {}
+    const stages = pipeline?.stages ?? []
+    stages.forEach((s) => {
+      result[s.stage] = s
+    })
+    return result
+  }, [boardData, pipeline])
 
+  // ── Build swimlane owner index: owner_id → display label ──
+  const ownerIndex = useMemo(() => {
+    if (!swimlaneActive || !boardData?.swimlanes) return {}
+    // swimlanes: Record<owner_id, Record<stage, Opportunity[]>>
+    const idx: Record<string, string> = {}
+    Object.keys(boardData.swimlanes).forEach((ownerId) => {
+      idx[ownerId] = ownerId // backend sends id; label shown as truncated id unless contact_name available
+    })
+    return idx
+  }, [swimlaneActive, boardData])
+
+  const ownerIds = Object.keys(ownerIndex)
+
+  // ── Handlers ──
   const openCreate = () => {
     setEditing(null)
     setForm(EMPTY_FORM)
@@ -131,7 +264,9 @@ export default function PipelinePage() {
     }
   }
 
-  if (isLoading) {
+  const isLoading = legacyLoading || pipelinesLoading || boardLoading
+
+  if (isLoading && !boardData && !pipeline) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Spinner size="lg" />
@@ -141,8 +276,8 @@ export default function PipelinePage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Pipeline</h1>
           <p className="text-sm text-gray-500 mt-0.5">Manage opportunities through your sales pipeline</p>
@@ -150,11 +285,96 @@ export default function PipelinePage() {
         <Button onClick={openCreate} className="w-full sm:w-auto min-h-[44px] sm:min-h-0">+ New Opportunity</Button>
       </div>
 
-      {/* Kanban Board - Desktop: horizontal scroll, Mobile: vertical stacked */}
+      {/* ── Toolbar: Pipeline selector + Swimlane toggle ── */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Pipeline selector */}
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="pipeline-select"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap"
+          >
+            Pipeline:
+          </label>
+          <select
+            id="pipeline-select"
+            value={resolvedPipelineId}
+            onChange={(e) => setSelectedPipelineId(e.target.value)}
+            style={{
+              borderRadius: '10px',
+              border: '1px solid #e5e7eb',
+              padding: '6px 32px 6px 12px',
+              fontSize: '0.875rem',
+              color: '#374151',
+              background: '#fff url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%236b7280\' stroke-width=\'2\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E") no-repeat right 10px center',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              minWidth: '180px',
+              outline: 'none',
+              cursor: 'pointer',
+            }}
+            disabled={pipelinesLoading}
+          >
+            {pipelines.length === 0 && (
+              <option value="">All deals</option>
+            )}
+            {pipelines.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}{p.is_default ? ' (Default)' : ''}
+              </option>
+            ))}
+          </select>
+          {boardLoading && <Spinner size="sm" />}
+        </div>
+
+        {/* Swimlane toggle */}
+        <button
+          type="button"
+          onClick={() => setSwimlaneActive((v) => !v)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            borderRadius: '10px',
+            border: `1.5px solid ${swimlaneActive ? '#51459d' : '#e5e7eb'}`,
+            background: swimlaneActive ? '#51459d' : '#fff',
+            color: swimlaneActive ? '#fff' : '#374151',
+            padding: '6px 14px',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            minHeight: '36px',
+          }}
+          title={swimlaneActive ? 'Disable owner grouping' : 'Group cards by owner'}
+        >
+          {/* icon */}
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="8" y1="6" x2="21" y2="6" />
+            <line x1="8" y1="12" x2="21" y2="12" />
+            <line x1="8" y1="18" x2="21" y2="18" />
+            <line x1="3" y1="6" x2="3.01" y2="6" />
+            <line x1="3" y1="12" x2="3.01" y2="12" />
+            <line x1="3" y1="18" x2="3.01" y2="18" />
+          </svg>
+          {swimlaneActive ? 'Group by Owner' : 'No Grouping'}
+        </button>
+      </div>
+
+      {/* ── Kanban Board ── */}
       <div className="overflow-x-auto pb-4 -mx-4 sm:mx-0 px-4 sm:px-0">
         <div className="flex gap-4 min-w-0 lg:min-w-[1200px]">
           {STAGES.map((stage) => {
             const stageData = stageMap[stage] ?? { count: 0, total_value: 0, items: [] }
+
             return (
               <div key={stage} className="flex-shrink-0 w-[280px] sm:w-[300px] lg:flex-1 lg:w-auto lg:min-w-[220px]">
                 {/* Column Header */}
@@ -178,65 +398,130 @@ export default function PipelinePage() {
                   </p>
                 </div>
 
-                {/* Cards */}
-                <div className="space-y-2 mt-2 min-h-[200px]">
-                  {stageData.items.length === 0 ? (
-                    <div className="text-center text-gray-400 text-xs py-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[10px]">
-                      No opportunities
-                    </div>
-                  ) : (
-                    stageData.items.map((opp) => (
-                      <div
-                        key={opp.id}
-                        className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]"
-                        onClick={() => openEdit(opp)}
-                      >
-                        <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 leading-tight">{opp.title}</h3>
-                        {opp.contact_name && (
-                          <p className="text-xs text-gray-500 mt-1">{opp.contact_name}</p>
-                        )}
-                        <div className="flex items-center justify-between mt-2">
-                          <p className="text-sm font-semibold text-primary">
-                            {formatCurrency(opp.value)}
-                          </p>
-                          <Badge variant="default">{opp.probability}%</Badge>
-                        </div>
-                        {opp.expected_close_date && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            Close: {new Date(opp.expected_close_date).toLocaleDateString()}
-                          </p>
-                        )}
-
-                        {/* Action buttons for active opportunities */}
-                        {stage !== 'closed_won' && stage !== 'closed_lost' && (
-                          <div className="flex gap-2 mt-3">
-                            <Button
-                              size="sm"
-                              className="flex-1 bg-success text-white hover:opacity-90 min-h-[44px]"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleCloseWon(opp)
-                              }}
-                              loading={closeWonMutation.isPending}
-                            >
-                              Won
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="danger"
-                              className="flex-1 min-h-[44px]"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleCloseLost(opp)
-                              }}
-                              loading={closeLostMutation.isPending}
-                            >
-                              Lost
-                            </Button>
-                          </div>
-                        )}
+                {/* Cards area */}
+                <div className="mt-2 min-h-[200px]">
+                  {swimlaneActive && boardData?.swimlanes ? (
+                    /* ── Swimlane mode: sub-rows grouped by owner ── */
+                    ownerIds.length === 0 ? (
+                      <div className="text-center text-gray-400 text-xs py-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[10px]">
+                        No opportunities
                       </div>
-                    ))
+                    ) : (
+                      <div className="space-y-2">
+                        {ownerIds.map((ownerId, ownerIdx) => {
+                          const swimlaneStageItems: Opportunity[] =
+                            (boardData.swimlanes![ownerId]?.[stage] as Opportunity[]) ?? []
+                          const bandColor = OWNER_BAND_COLORS[ownerIdx % OWNER_BAND_COLORS.length]
+
+                          return (
+                            <div
+                              key={ownerId}
+                              style={{
+                                borderRadius: '10px',
+                                background: bandColor,
+                                border: '1px solid #e5e7eb',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              {/* Owner label */}
+                              <div
+                                style={{
+                                  padding: '4px 10px',
+                                  borderBottom: '1px solid #e5e7eb',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    width: '20px',
+                                    height: '20px',
+                                    borderRadius: '50%',
+                                    background: '#51459d',
+                                    color: '#fff',
+                                    fontSize: '10px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 600,
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {ownerId.slice(0, 2).toUpperCase()}
+                                </span>
+                                <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151' }}>
+                                  {ownerId.length > 20 ? ownerId.slice(0, 8) + '…' : ownerId}
+                                </span>
+                                <span
+                                  style={{
+                                    marginLeft: 'auto',
+                                    fontSize: '10px',
+                                    background: '#e5e7eb',
+                                    borderRadius: '9999px',
+                                    padding: '1px 7px',
+                                    color: '#6b7280',
+                                  }}
+                                >
+                                  {swimlaneStageItems.length}
+                                </span>
+                              </div>
+
+                              {/* Cards for this owner in this stage */}
+                              <div style={{ padding: '6px' }} className="space-y-2">
+                                {swimlaneStageItems.length === 0 ? (
+                                  <div
+                                    style={{
+                                      textAlign: 'center',
+                                      color: '#9ca3af',
+                                      fontSize: '11px',
+                                      padding: '12px 0',
+                                    }}
+                                  >
+                                    —
+                                  </div>
+                                ) : (
+                                  swimlaneStageItems.map((opp) => (
+                                    <DealCard
+                                      key={opp.id}
+                                      opp={opp}
+                                      stage={stage}
+                                      onEdit={openEdit}
+                                      onWon={handleCloseWon}
+                                      onLost={handleCloseLost}
+                                      wonPending={closeWonMutation.isPending}
+                                      lostPending={closeLostMutation.isPending}
+                                    />
+                                  ))
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
+                  ) : (
+                    /* ── Normal mode ── */
+                    <div className="space-y-2">
+                      {stageData.items.length === 0 ? (
+                        <div className="text-center text-gray-400 text-xs py-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[10px]">
+                          No opportunities
+                        </div>
+                      ) : (
+                        stageData.items.map((opp) => (
+                          <DealCard
+                            key={opp.id}
+                            opp={opp}
+                            stage={stage}
+                            onEdit={openEdit}
+                            onWon={handleCloseWon}
+                            onLost={handleCloseLost}
+                            wonPending={closeWonMutation.isPending}
+                            lostPending={closeLostMutation.isPending}
+                          />
+                        ))
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -253,7 +538,7 @@ export default function PipelinePage() {
       {/* Quick Activity FAB for mobile */}
       <QuickActivityLog />
 
-      {/* Create / Edit Modal */}
+      {/* ── Create / Edit Modal ── */}
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}

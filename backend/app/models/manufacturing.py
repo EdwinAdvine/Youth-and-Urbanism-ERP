@@ -232,6 +232,9 @@ class RoutingStep(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     required_skill: Mapped[str | None] = mapped_column(String(100), nullable=True)
     min_operators: Mapped[int] = mapped_column(Integer, default=1)
+    work_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
+    instruction_media: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    barcode_scan_required: Mapped[bool] = mapped_column(Boolean, default=False)
 
     bom = relationship("BillOfMaterials", foreign_keys=[bom_id])
     workstation = relationship("WorkStation", foreign_keys=[workstation_id])
@@ -970,4 +973,88 @@ class CrewAssignment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     work_order = relationship("WorkOrder", foreign_keys=[work_order_id])
     workstation = relationship("WorkStation", foreign_keys=[workstation_id])
+    creator = relationship("User", foreign_keys=[created_by])
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PHASE 3 — MES / IoT, CPQ Configurator
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+# ── IoT Data Point ────────────────────────────────────────────────────────
+class IoTDataPoint(UUIDPrimaryKeyMixin, Base):
+    """Real-time sensor / machine data point from a workstation or asset."""
+
+    __tablename__ = "mfg_iot_data_points"
+
+    workstation_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("mfg_workstations.id"), nullable=True
+    )
+    asset_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("mfg_assets.id"), nullable=True
+    )
+    work_order_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("mfg_work_orders.id"), nullable=True
+    )
+    metric_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    metric_value: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
+    unit: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    source: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    workstation = relationship("WorkStation", foreign_keys=[workstation_id])
+
+
+# ── CPQ Configurator Rule ─────────────────────────────────────────────────
+class ConfiguratorRule(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Rule that drives CPQ configuration logic for a BOM."""
+
+    __tablename__ = "mfg_configurator_rules"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    bom_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("mfg_bom.id"), nullable=False
+    )
+    rule_type: Mapped[str] = mapped_column(
+        String(30), nullable=False
+    )  # include, exclude, substitute, quantity_adjust
+    condition: Mapped[dict] = mapped_column(JSON, nullable=False)
+    action: Mapped[dict] = mapped_column(JSON, nullable=False)
+    priority: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+    bom = relationship("BillOfMaterials", foreign_keys=[bom_id])
+    creator = relationship("User", foreign_keys=[created_by])
+
+
+# ── CPQ Configurator Session ──────────────────────────────────────────────
+class ConfiguratorSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Interactive CPQ session tracking user selections and computed BOM."""
+
+    __tablename__ = "mfg_configurator_sessions"
+
+    session_code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    base_bom_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("mfg_bom.id"), nullable=False
+    )
+    selections: Mapped[dict] = mapped_column(JSON, default=dict)
+    computed_bom_items: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    computed_cost: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0)
+    status: Mapped[str] = mapped_column(
+        String(20), default="active"
+    )  # active, finalized, abandoned
+    finalized_bom_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("mfg_bom.id"), nullable=True
+    )
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+    base_bom = relationship("BillOfMaterials", foreign_keys=[base_bom_id])
+    finalized_bom = relationship("BillOfMaterials", foreign_keys=[finalized_bom_id])
     creator = relationship("User", foreign_keys=[created_by])

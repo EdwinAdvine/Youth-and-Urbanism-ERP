@@ -76,6 +76,8 @@ from app.api.v1 import hr_goals as hr_goals_mod
 from app.api.v1 import hr_audit as hr_audit_mod
 from app.api.v1 import hr_manager_dashboard as hr_manager_dashboard_mod
 from app.api.v1 import hr_engagement as hr_engagement_mod
+from app.api.v1 import hr_ai_intelligence as hr_ai_intelligence_mod
+from app.api.v1 import hr_people_analytics as hr_people_analytics_mod
 from app.api.v1 import crm_contacts_v2 as crm_contacts_v2_mod
 from app.api.v1 import crm_custom_fields as crm_custom_fields_mod
 from app.api.v1 import crm_scoring as crm_scoring_mod
@@ -110,6 +112,10 @@ from app.api.v1 import hr_lms as hr_lms_mod
 from app.api.v1 import hr_onboarding_ext as hr_onboarding_ext_mod
 # HR Bulk Import — Rippling, BambooHR, HiBob, ADP, CSV/JSON
 from app.api.v1 import hr_import as hr_import_mod
+# HR Phase 3 — AI Intelligence, Workflows, People Analytics
+from app.api.v1 import hr_ai_intelligence as hr_ai_intelligence_mod
+from app.api.v1 import hr_workflows as hr_workflows_mod
+from app.api.v1 import hr_people_analytics as hr_people_analytics_mod
 # Inventory Phase 1-6 upgrades
 from app.api.v1 import inventory_serial_uom as inv_serial_uom_mod
 from app.api.v1 import inventory_wms as inv_wms_mod
@@ -214,6 +220,8 @@ api_router.include_router(hr_goals_mod.router, prefix="/hr", tags=["HR Goals & O
 api_router.include_router(hr_audit_mod.router, prefix="/hr", tags=["HR Audit"])
 api_router.include_router(hr_manager_dashboard_mod.router, prefix="/hr", tags=["HR Manager Dashboard"])
 api_router.include_router(hr_engagement_mod.router, prefix="/hr", tags=["HR Engagement"])
+api_router.include_router(hr_ai_intelligence_mod.router, prefix="/hr", tags=["HR AI Intelligence"])
+api_router.include_router(hr_people_analytics_mod.router, prefix="/hr", tags=["HR People Analytics"])
 api_router.include_router(crm_contacts_v2_mod.router, prefix="/crm", tags=["CRM Contacts V2"])
 api_router.include_router(crm_custom_fields_mod.router, prefix="/crm", tags=["CRM Custom Fields"])
 api_router.include_router(crm_scoring_mod.router, prefix="/crm", tags=["CRM Lead Scoring"])
@@ -244,6 +252,10 @@ api_router.include_router(hr_ats_mod.router, prefix="/hr", tags=["HR ATS"])
 api_router.include_router(hr_lms_mod.router, prefix="/hr", tags=["HR LMS"])
 api_router.include_router(hr_onboarding_ext_mod.router, prefix="/hr", tags=["HR Onboarding & Offboarding"])
 api_router.include_router(hr_import_mod.router, prefix="/hr", tags=["HR Bulk Import"])
+# HR Phase 3 — AI Intelligence, Workflows, People Analytics
+api_router.include_router(hr_ai_intelligence_mod.router, prefix="/hr", tags=["HR AI Intelligence"])
+api_router.include_router(hr_workflows_mod.router, prefix="/hr", tags=["HR Workflows"])
+api_router.include_router(hr_people_analytics_mod.router, prefix="/hr", tags=["HR People Analytics"])
 # Inventory Phase 1-6 upgrades
 api_router.include_router(inv_serial_uom_mod.router, prefix="/inventory", tags=["Inventory Serial & UoM"])
 api_router.include_router(inv_wms_mod.router, prefix="/inventory", tags=["Inventory WMS"])

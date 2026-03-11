@@ -829,6 +829,8 @@ export function useExportContacts() {
 export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed'
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent'
 
+export type TicketChannel = 'email' | 'chat' | 'phone' | 'social' | 'web_form'
+
 export interface CRMTicket {
   id: string
   contact_id: string | null
@@ -836,6 +838,8 @@ export interface CRMTicket {
   description: string | null
   status: TicketStatus
   priority: TicketPriority
+  channel: TicketChannel
+  tags: string[] | null
   assigned_to: string | null
   created_by: string
   resolved_at: string | null
@@ -849,6 +853,8 @@ export interface CreateTicketPayload {
   description?: string | null
   status?: TicketStatus
   priority?: TicketPriority
+  channel?: TicketChannel
+  tags?: string[] | null
   assigned_to?: string | null
 }
 

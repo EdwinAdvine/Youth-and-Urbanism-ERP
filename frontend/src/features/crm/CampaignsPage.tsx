@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, Button, Spinner, Table, Modal, Input, Select, Badge } from '../../components/ui'
 import { toast } from '../../components/ui'
 import {
@@ -34,6 +35,7 @@ const defaultForm: CreateCampaignPayload = {
 }
 
 export default function CampaignsPage() {
+  const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState<CampaignStatus | ''>('')
   const { data: campaigns, isLoading } = useCampaigns({ status: statusFilter || undefined })
   const createCampaign = useCreateCampaign()
@@ -148,6 +150,14 @@ export default function CampaignsPage() {
           {c.status === 'draft' && (
             <Button variant="ghost" size="sm" onClick={() => handleLaunch(c.id)}>Launch</Button>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            style={{ color: '#3ec9d6' }}
+            onClick={() => navigate(`/crm/campaigns/${c.id}/email-builder`)}
+          >
+            A/B Test
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>Edit</Button>
           <Button variant="ghost" size="sm" className="text-danger" onClick={() => handleDelete(c.id)}>Delete</Button>
         </div>
@@ -170,7 +180,15 @@ export default function CampaignsPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Campaigns</h1>
           <p className="text-sm text-gray-500 mt-1">Manage marketing campaigns</p>
         </div>
-        <Button onClick={openCreate}>Create Campaign</Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/crm/ab-test')}
+          >
+            New A/B Test
+          </Button>
+          <Button onClick={openCreate}>Create Campaign</Button>
+        </div>
       </div>
 
       <div className="flex gap-3">

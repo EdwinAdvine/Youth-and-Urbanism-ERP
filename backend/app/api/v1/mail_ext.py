@@ -253,7 +253,7 @@ async def delete_label(
     label_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
-) -> None:
+):
     label = await db.get(MailLabel, label_id)
     if not label or label.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Label not found")
