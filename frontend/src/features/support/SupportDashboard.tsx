@@ -98,7 +98,7 @@ export default function SupportDashboard() {
       key: 'subject',
       label: 'Subject',
       render: (row: Ticket) => (
-        <span className="text-gray-700 truncate max-w-[240px] block">{row.subject}</span>
+        <span className="text-gray-700 dark:text-gray-300 truncate max-w-[240px] block">{row.subject}</span>
       ),
     },
     {
@@ -120,7 +120,7 @@ export default function SupportDashboard() {
     {
       key: 'customer_name',
       label: 'Customer',
-      render: (row: Ticket) => <span className="text-gray-600">{row.customer_name || row.customer_email || '-'}</span>,
+      render: (row: Ticket) => <span className="text-gray-600 dark:text-gray-400">{row.customer_name || row.customer_email || '-'}</span>,
     },
     {
       key: 'created_at',
@@ -134,7 +134,7 @@ export default function SupportDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Customer Center</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Customer Center</h1>
           <p className="text-sm text-gray-500 mt-1">Support tickets, knowledge base, and SLA management</p>
         </div>
         <div className="flex gap-2">
@@ -171,7 +171,7 @@ export default function SupportDashboard() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{stat.label}</p>
-                <p className="text-lg font-bold text-gray-900 mt-1">{stat.value}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">{stat.value}</p>
               </div>
             </div>
           </Card>
@@ -182,7 +182,7 @@ export default function SupportDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Priority breakdown */}
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Tickets by Priority</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Tickets by Priority</h2>
           <div className="space-y-3">
             {Object.entries(priorityData).map(([priority, count]) => {
               const total = stats?.total_tickets || 1
@@ -196,10 +196,10 @@ export default function SupportDashboard() {
               return (
                 <div key={priority}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700 capitalize">{priority}</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">{priority}</span>
                     <span className="text-sm text-gray-500">{count} ({pct}%)</span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
+                  <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-full h-2">
                     <div
                       className={cn('h-2 rounded-full transition-all', colors[priority] || 'bg-gray-400')}
                       style={{ width: `${pct}%` }}
@@ -216,11 +216,11 @@ export default function SupportDashboard() {
 
         {/* Category breakdown */}
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Tickets by Category</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Tickets by Category</h2>
           <div className="space-y-3">
             {categoryData.map((cat) => (
-              <div key={cat.name} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                <span className="text-sm font-medium text-gray-700">{cat.name}</span>
+              <div key={cat.name} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{cat.name}</span>
                 <Badge variant="primary">{cat.count}</Badge>
               </div>
             ))}
@@ -243,7 +243,7 @@ export default function SupportDashboard() {
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Avg. First Response Time</p>
-                <p className="text-lg font-bold text-gray-900 mt-1">{stats.avg_response_hours} hours</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">{stats.avg_response_hours} hours</p>
               </div>
             </div>
           </Card>
@@ -252,8 +252,8 @@ export default function SupportDashboard() {
 
       {/* Recent Tickets */}
       <Card padding={false}>
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Recent Tickets</h2>
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Recent Tickets</h2>
           <Button variant="ghost" size="sm" onClick={() => navigate('/support/tickets')}>
             View All
           </Button>

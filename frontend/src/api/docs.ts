@@ -135,8 +135,8 @@ export function useDocComments(fileId: string) {
   return useQuery({
     queryKey: ['docs', 'comments', fileId],
     queryFn: async () => {
-      const { data } = await apiClient.get<DocComment[]>(`/docs/file/${fileId}/comments`)
-      return data
+      const { data } = await apiClient.get<{ total: number; comments: DocComment[] }>(`/docs/file/${fileId}/comments`)
+      return data.comments
     },
     enabled: !!fileId,
   })
@@ -216,8 +216,8 @@ export function useDocLinks(fileId: string) {
   return useQuery({
     queryKey: ['docs', 'links', fileId],
     queryFn: async () => {
-      const { data } = await apiClient.get<DocLink[]>(`/docs/file/${fileId}/links`)
-      return data
+      const { data } = await apiClient.get<{ total: number; links: DocLink[] }>(`/docs/file/${fileId}/links`)
+      return data.links
     },
     enabled: !!fileId,
   })

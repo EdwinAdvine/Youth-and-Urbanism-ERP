@@ -35,6 +35,7 @@ export default function LoginPage() {
   const { data: ssoProviders } = useSSOProviders()
   const [showPassword, setShowPassword] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
+  const [loginError, setLoginError] = useState<string | null>(null)
 
   const loginForm = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) })
   const registerForm = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) })
@@ -47,11 +48,20 @@ export default function LoginPage() {
   } = loginForm
 
   const onSubmit = async (data: LoginFormData) => {
+    setLoginError(null)
     try {
       const user = await login.mutateAsync({ email: data.email, password: data.password })
       navigate(getPostLoginRoute(user), { replace: true })
-    } catch {
-      setError('password', { message: 'Invalid email or password' })
+    } catch (err: unknown) {
+      const resp = (err as { response?: { status?: number; data?: { detail?: string } } })?.response
+      let message: string
+      if (resp?.status === 429) {
+        message = 'Too many login attempts. Please wait a minute and try again.'
+      } else {
+        message = resp?.data?.detail || 'Invalid email or password'
+      }
+      setLoginError(message)
+      setError('password', { message })
     }
   }
 
@@ -80,7 +90,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-lg mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white dark:bg-gray-800 rounded-2xl shadow-lg mb-4">
             <span className="text-primary font-black text-2xl">Y</span>
           </div>
           <h1 className="text-2xl font-bold text-white">Urban ERP</h1>
@@ -88,11 +98,11 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
           {!isRegistering ? (
             <>
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Welcome back</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Welcome back</h2>
                 <p className="text-gray-500 text-sm mt-1">Sign in to your account to continue</p>
               </div>
 
@@ -112,7 +122,7 @@ export default function LoginPage() {
                 />
 
                 <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">Password</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
                   <div className="relative">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -147,7 +157,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
                     <input type="checkbox" {...registerLogin('remember')} className="rounded border-gray-300 text-primary focus:ring-primary" />
                     Remember me
                   </label>
@@ -156,9 +166,9 @@ export default function LoginPage() {
                   </button>
                 </div>
 
-                {login.error && (
+                {loginError && (
                   <div className="bg-red-50 border border-red-200 rounded-[8px] px-3 py-2 text-sm text-red-700">
-                    Invalid credentials. Please try again.
+                    {loginError}
                   </div>
                 )}
 
@@ -172,10 +182,10 @@ export default function LoginPage() {
                 <div className="mt-6">
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-200" />
+                      <div className="w-full border-t border-gray-200 dark:border-gray-700" />
                     </div>
                     <div className="relative flex justify-center text-sm">
-                      <span className="px-3 bg-white text-gray-400">or continue with</span>
+                      <span className="px-3 bg-white dark:bg-gray-800 text-gray-400">or continue with</span>
                     </div>
                   </div>
                   <div className="mt-4 space-y-2.5">
@@ -205,7 +215,7 @@ export default function LoginPage() {
           ) : (
             <>
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Create account</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Create account</h2>
                 <p className="text-gray-500 text-sm mt-1">Sign up for a new account</p>
               </div>
 
@@ -239,7 +249,7 @@ export default function LoginPage() {
                 />
 
                 <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">Password</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
                   <div className="relative">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -276,7 +286,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">Confirm password</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm password</label>
                   <input
                     type="password"
                     placeholder="••••••••"

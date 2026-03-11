@@ -154,14 +154,14 @@ export default function TaxBracketsPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Tax & Statutory Deductions</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Tax & Statutory Deductions</h1>
         <p className="text-sm text-gray-500 mt-1">Configure tax brackets and mandatory deductions for payroll</p>
       </div>
 
       {/* Tax Brackets */}
       <Card padding={false}>
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900">Tax Brackets</h2>
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Tax Brackets</h2>
           <Button size="sm" onClick={openBracketCreate}>Add Bracket</Button>
         </div>
         <Table columns={bracketCols} data={brackets ?? []} loading={bracketsLoading} emptyText="No tax brackets" keyExtractor={(b) => b.id} />
@@ -169,8 +169,8 @@ export default function TaxBracketsPage() {
 
       {/* Statutory Deductions */}
       <Card padding={false}>
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900">Statutory Deductions</h2>
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Statutory Deductions</h2>
           <Button size="sm" onClick={openDeductionCreate}>Add Deduction</Button>
         </div>
         <Table columns={deductionCols} data={deductions ?? []} loading={deductionsLoading} emptyText="No deductions" keyExtractor={(d) => d.id} />
@@ -198,8 +198,8 @@ export default function TaxBracketsPage() {
         <div className="space-y-4">
           <Input label="Name" value={dName} onChange={(e) => setDName(e.target.value)} placeholder="e.g. NHIF" />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Calculation Type</label>
-            <select className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm" value={dType} onChange={(e) => setDType(e.target.value as 'percentage' | 'fixed')}>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Calculation Type</label>
+            <select className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm" value={dType} onChange={(e) => setDType(e.target.value as 'percentage' | 'fixed')}>
               <option value="percentage">Percentage</option>
               <option value="fixed">Fixed Amount</option>
             </select>

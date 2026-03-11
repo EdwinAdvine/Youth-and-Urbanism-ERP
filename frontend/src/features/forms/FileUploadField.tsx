@@ -98,18 +98,14 @@ export default function FileUploadField({
 
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         {label}
         {required && <span className="text-[#ff3a6e] ml-1">*</span>}
       </label>
 
       {/* Upload area */}
       <div
-        className={`border-2 border-dashed rounded-[10px] p-4 text-center transition-colors cursor-pointer ${
-          uploading
-            ? 'border-[#51459d]/30 bg-[#51459d]/5'
-            : 'border-gray-200 hover:border-[#51459d]/40 hover:bg-gray-50'
-        }`}
+        className={`border-2 border-dashed rounded-[10px] p-4 text-center transition-colors cursor-pointer ${ uploading ? 'border-[#51459d]/30 bg-[#51459d]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#51459d]/40 hover:bg-gray-50 dark:hover:bg-gray-800' }`}
         onClick={() => !uploading && inputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
@@ -132,7 +128,7 @@ export default function FileUploadField({
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            <p className="text-xs text-gray-600">Uploading... {progress}%</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Uploading... {progress}%</p>
             <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden max-w-[200px] mx-auto">
               <div
                 className="h-full bg-[#51459d] rounded-full transition-all"
@@ -145,7 +141,7 @@ export default function FileUploadField({
             <svg className="h-6 w-6 text-gray-400 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
             </svg>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-gray-600 dark:text-gray-400">
               Drop file{multiple ? 's' : ''} here or <span className="text-[#51459d] font-medium">browse</span>
             </p>
             <p className="text-[10px] text-gray-400 mt-0.5">
@@ -167,13 +163,13 @@ export default function FileUploadField({
           {uploadedFiles.map((file) => (
             <div
               key={file.id}
-              className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-[8px] px-3 py-2"
+              className="flex items-center gap-2 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-[8px] px-3 py-2"
             >
               <svg className="h-4 w-4 text-[#51459d] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-700 truncate">{file.name}</p>
+                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{file.name}</p>
                 <p className="text-[10px] text-gray-400">{formatFileSize(file.size)}</p>
               </div>
               <button

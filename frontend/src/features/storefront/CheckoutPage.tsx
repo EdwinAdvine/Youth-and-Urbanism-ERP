@@ -52,7 +52,7 @@ export default function CheckoutPage() {
 
       <form onSubmit={handleSubmit} className="grid md:grid-cols-5 gap-6">
         {/* Shipping form */}
-        <div className="md:col-span-3 bg-white rounded-[10px] border p-6 space-y-4">
+        <div className="md:col-span-3 bg-white dark:bg-gray-800 rounded-[10px] border p-6 space-y-4">
           <h2 className="font-medium text-sm mb-2">Shipping Address</h2>
 
           <input placeholder="Address" required value={form.address_line1} onChange={set('address_line1')} className={inputCls} />
@@ -75,7 +75,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* Order summary */}
-        <div className="md:col-span-2 bg-white rounded-[10px] border p-6 self-start">
+        <div className="md:col-span-2 bg-white dark:bg-gray-800 rounded-[10px] border p-6 self-start">
           <h2 className="font-medium text-sm mb-4">Order Summary</h2>
           <div className="space-y-2 text-sm">
             {cart.items.map((item) => (

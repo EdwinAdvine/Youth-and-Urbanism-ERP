@@ -37,11 +37,7 @@ export default function VirtualBackgrounds({ selected, onSelect }: VirtualBackgr
         </p>
         <button
           onClick={() => onSelect(null)}
-          className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${
-            !selected
-              ? 'bg-[#51459d] text-white'
-              : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-          }`}
+          className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${ !selected ? 'bg-[#51459d] text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600' }`}
         >
           None
         </button>
@@ -61,11 +57,7 @@ export default function VirtualBackgrounds({ selected, onSelect }: VirtualBackgr
               key={bg.id}
               onClick={() => onSelect(bg)}
               title={bg.name}
-              className={`relative w-full aspect-video rounded-lg overflow-hidden border-2 transition-all ${
-                selected === bg.id
-                  ? 'border-[#51459d] ring-1 ring-[#51459d]/50'
-                  : 'border-transparent hover:border-gray-600'
-              }`}
+              className={`relative w-full aspect-video rounded-lg overflow-hidden border-2 transition-all ${ selected === bg.id ? 'border-[#51459d] ring-1 ring-[#51459d]/50' : 'border-transparent hover:border-gray-600' }`}
             >
               {bg.type === 'blur' ? (
                 <div className="w-full h-full bg-gradient-to-br from-gray-500/50 to-gray-700/50 flex items-center justify-center backdrop-blur-sm">

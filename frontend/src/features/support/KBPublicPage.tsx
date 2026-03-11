@@ -46,7 +46,7 @@ export default function KBPublicPage() {
             <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
               {article.content || 'No content.'}
             </div>
-            <div className="mt-8 pt-4 border-t border-gray-100 flex items-center gap-4">
+            <div className="mt-8 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center gap-4">
               <span className="text-sm text-gray-500">Was this helpful?</span>
               <button
                 className="text-sm text-primary hover:underline font-medium"

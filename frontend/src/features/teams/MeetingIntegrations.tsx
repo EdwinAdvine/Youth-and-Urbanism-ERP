@@ -55,10 +55,10 @@ function TaskPickerDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-sm">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">Link Task</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-sm">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Link Task</h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -66,18 +66,18 @@ function TaskPickerDialog({
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1.5">Task ID</label>
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Task ID</label>
             <input
               value={taskId}
               onChange={(e) => setTaskId(e.target.value)}
               placeholder="Paste the task UUID"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
             />
             <p className="text-[10px] text-gray-400 mt-1">Find the task ID from the Projects module</p>
           </div>
         </div>
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-[8px]">
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px]">
             Cancel
           </button>
           <button
@@ -131,10 +131,10 @@ function CRMPickerDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-sm">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">Link CRM Entity</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-sm">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Link CRM Entity</h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -142,7 +142,7 @@ function CRMPickerDialog({
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-2">Type</label>
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-2">Type</label>
             <div className="flex gap-2">
               {(['contact', 'deal'] as const).map((t) => (
                 <button
@@ -151,7 +151,7 @@ function CRMPickerDialog({
                   className={`flex-1 py-2 text-xs rounded-[8px] border transition-colors capitalize ${
                     linkType === t
                       ? 'bg-[#51459d] text-white border-[#51459d]'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
                 >
                   {t}
@@ -160,20 +160,20 @@ function CRMPickerDialog({
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1.5">
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">
               {linkType === 'contact' ? 'Contact' : 'Deal'} ID
             </label>
             <input
               value={entityId}
               onChange={(e) => setEntityId(e.target.value)}
               placeholder={`Paste the ${linkType} UUID`}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
             />
             <p className="text-[10px] text-gray-400 mt-1">Find the ID from the CRM module</p>
           </div>
         </div>
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-[8px]">
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px]">
             Cancel
           </button>
           <button
@@ -231,7 +231,7 @@ function LinkedTasksSection({ meetingId }: { meetingId: string }) {
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <svg className="w-4 h-4 text-[#51459d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
@@ -249,11 +249,11 @@ function LinkedTasksSection({ meetingId }: { meetingId: string }) {
       ) : (
         <div className="space-y-2">
           {tasks.map((task) => (
-            <div key={task.link_id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 group">
+            <div key={task.link_id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-950 group">
               <div className="flex items-center gap-3 min-w-0">
                 <StatusDot status={task.status} />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-700 truncate">{task.title}</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{task.title}</p>
                   <p className="text-[10px] text-gray-400">
                     {task.status && <span className="capitalize">{task.status.replace('_', ' ')}</span>}
                     {task.priority && <span> / {task.priority}</span>}
@@ -300,7 +300,7 @@ function MeetingNotesSection({ meetingId }: { meetingId: string }) {
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <svg className="w-4 h-4 text-[#ffa21d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
@@ -326,9 +326,9 @@ function MeetingNotesSection({ meetingId }: { meetingId: string }) {
             <a
               key={note.link_id}
               href="/notes"
-              className="block p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+              className="block p-3 rounded-lg bg-gray-50 dark:bg-gray-950 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
-              <p className="text-sm font-medium text-gray-700 truncate">{note.title}</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{note.title}</p>
               <p className="text-xs text-gray-400 mt-1 line-clamp-2">{note.content_preview}</p>
               {note.created_at && (
                 <p className="text-[10px] text-gray-400 mt-1">
@@ -371,7 +371,7 @@ function CRMLinksSection({ meetingId }: { meetingId: string }) {
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <svg className="w-4 h-4 text-[#3ec9d6]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
@@ -393,13 +393,13 @@ function CRMLinksSection({ meetingId }: { meetingId: string }) {
               <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">Contacts</h3>
               <div className="space-y-2">
                 {contacts.map((c) => (
-                  <div key={c.link_id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 group">
+                  <div key={c.link_id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-950 group">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-7 h-7 rounded-full bg-[#3ec9d6]/10 text-[#3ec9d6] flex items-center justify-center text-xs font-bold shrink-0">
                         {(c.name || '?').charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-700 truncate">{c.name}</p>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{c.name}</p>
                         <p className="text-[10px] text-gray-400 truncate">
                           {[c.email, c.company].filter(Boolean).join(' / ') || 'No details'}
                         </p>
@@ -425,11 +425,11 @@ function CRMLinksSection({ meetingId }: { meetingId: string }) {
               <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">Deals</h3>
               <div className="space-y-2">
                 {deals.map((d) => (
-                  <div key={d.link_id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 group">
+                  <div key={d.link_id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-950 group">
                     <div className="flex items-center gap-3 min-w-0">
                       <StatusDot status={d.status} />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-700 truncate">{d.title}</p>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{d.title}</p>
                         <p className="text-[10px] text-gray-400">
                           {d.value && d.currency ? `${d.currency} ${d.value}` : 'No value'}
                           {d.status && <span className="capitalize"> / {d.status}</span>}

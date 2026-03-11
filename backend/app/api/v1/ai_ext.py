@@ -1,12 +1,12 @@
-"""AI extensions — prompt templates, knowledge base, usage stats."""
+"""AI extensions — prompt templates, knowledge base, usage stats, conversations."""
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,18 +21,44 @@ router = APIRouter()
 
 class TemplateCreate(BaseModel):
     name: str
-    template: str
+    # Accept both 'prompt' (frontend) and 'template' (legacy)
+    prompt: str | None = Field(default=None)
+    template: str | None = Field(default=None)
+    # Accept both 'category' (frontend) and 'module' (legacy)
+    category: str | None = None
     module: str | None = None
-    variables: dict | None = None
+    description: str | None = None
+    variables: list[str] | dict | None = None
     is_public: bool = False
+
+    @model_validator(mode="after")
+    def resolve_aliases(self) -> "TemplateCreate":
+        if self.prompt is None and self.template:
+            self.prompt = self.template
+        if self.prompt is None:
+            self.prompt = ""
+        if self.category is None and self.module:
+            self.category = self.module
+        return self
 
 
 class TemplateUpdate(BaseModel):
     name: str | None = None
+    prompt: str | None = None
     template: str | None = None
+    category: str | None = None
     module: str | None = None
-    variables: dict | None = None
+    description: str | None = None
+    variables: list[str] | dict | None = None
     is_public: bool | None = None
+
+    @model_validator(mode="after")
+    def resolve_aliases(self) -> "TemplateUpdate":
+        if self.prompt is None and self.template:
+            self.prompt = self.template
+        if self.category is None and self.module:
+            self.category = self.module
+        return self
 
 
 class KBCreate(BaseModel):
@@ -47,29 +73,44 @@ class KBUpdate(BaseModel):
     module: str | None = None
 
 
-class TemplateOut(BaseModel):
-    id: uuid.UUID
-    name: str
-    template: str
-    module: str | None
-    variables: dict | None
-    created_by: uuid.UUID
-    is_public: bool
-    created_at: Any
+# ── Response helpers ──────────────────────────────────────────────────────────
 
-    model_config = {"from_attributes": True}
+def _template_to_dict(t: AIPromptTemplate) -> dict[str, Any]:
+    """Map AIPromptTemplate ORM to the dict shape the frontend expects."""
+    vars_raw = t.variables
+    if isinstance(vars_raw, dict):
+        variables_out: list[str] = list(vars_raw.keys())
+    elif isinstance(vars_raw, list):
+        variables_out = [str(v) for v in vars_raw]
+    else:
+        variables_out = []
+
+    return {
+        "id": str(t.id),
+        "name": t.name,
+        "description": None,
+        "prompt": t.template,           # DB field 'template' → frontend 'prompt'
+        "category": t.module,           # DB field 'module' → frontend 'category'
+        "variables": variables_out,
+        "is_public": t.is_public,
+        "created_by": str(t.created_by),
+        "created_at": t.created_at.isoformat() if t.created_at else None,
+        "updated_at": t.created_at.isoformat() if t.created_at else None,
+    }
 
 
-class KBOut(BaseModel):
-    id: uuid.UUID
-    name: str
-    description: str | None
-    module: str | None
-    document_count: int
-    owner_id: uuid.UUID
-    created_at: Any
-
-    model_config = {"from_attributes": True}
+def _kb_to_dict(kb: AIKnowledgeBase) -> dict[str, Any]:
+    """Map AIKnowledgeBase ORM to the dict shape the frontend expects."""
+    return {
+        "id": str(kb.id),
+        "name": kb.name,
+        "description": kb.description,
+        "document_count": kb.document_count,
+        "total_chunks": kb.document_count,  # approximate: 1 doc ≈ 1 chunk
+        "status": "active",
+        "created_at": kb.created_at.isoformat() if kb.created_at else None,
+        "updated_at": kb.created_at.isoformat() if kb.created_at else None,
+    }
 
 
 # ── Prompt Templates ─────────────────────────────────────────────────────────
@@ -78,7 +119,7 @@ class KBOut(BaseModel):
 async def list_templates(
     current_user: CurrentUser,
     db: DBSession,
-    module: str | None = Query(None, description="Filter by module"),
+    module: str | None = Query(None, description="Filter by module/category"),
 ) -> dict[str, Any]:
     from sqlalchemy import or_  # noqa: PLC0415
 
@@ -96,7 +137,7 @@ async def list_templates(
     templates = result.scalars().all()
     return {
         "total": len(templates),
-        "templates": [TemplateOut.model_validate(t).model_dump() for t in templates],
+        "templates": [_template_to_dict(t) for t in templates],
     }
 
 
@@ -106,11 +147,17 @@ async def create_template(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
+    vars_db: dict | None = None
+    if isinstance(payload.variables, list):
+        vars_db = {v: "" for v in payload.variables}
+    elif isinstance(payload.variables, dict):
+        vars_db = payload.variables
+
     template = AIPromptTemplate(
         name=payload.name,
-        template=payload.template,
-        module=payload.module,
-        variables=payload.variables,
+        template=payload.prompt or "",
+        module=payload.category,
+        variables=vars_db,
         created_by=current_user.id,
         is_public=payload.is_public,
         created_at=datetime.now(timezone.utc),
@@ -118,7 +165,7 @@ async def create_template(
     db.add(template)
     await db.commit()
     await db.refresh(template)
-    return TemplateOut.model_validate(template).model_dump()
+    return _template_to_dict(template)
 
 
 @router.get("/templates/{template_id}", summary="Get an AI prompt template")
@@ -127,14 +174,12 @@ async def get_template(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
-    from sqlalchemy import or_  # noqa: PLC0415
-
     template = await db.get(AIPromptTemplate, template_id)
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     if template.created_by != current_user.id and not template.is_public:
         raise HTTPException(status_code=404, detail="Template not found")
-    return TemplateOut.model_validate(template).model_dump()
+    return _template_to_dict(template)
 
 
 @router.put("/templates/{template_id}", summary="Update an AI prompt template")
@@ -148,12 +193,23 @@ async def update_template(
     if not template or template.created_by != current_user.id:
         raise HTTPException(status_code=404, detail="Template not found")
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(template, field, value)
+    if payload.name is not None:
+        template.name = payload.name
+    if payload.prompt is not None:
+        template.template = payload.prompt
+    if payload.category is not None:
+        template.module = payload.category
+    if payload.is_public is not None:
+        template.is_public = payload.is_public
+    if payload.variables is not None:
+        if isinstance(payload.variables, list):
+            template.variables = {v: "" for v in payload.variables}
+        else:
+            template.variables = payload.variables
 
     await db.commit()
     await db.refresh(template)
-    return TemplateOut.model_validate(template).model_dump()
+    return _template_to_dict(template)
 
 
 @router.delete("/templates/{template_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, summary="Delete an AI prompt template")
@@ -169,9 +225,10 @@ async def delete_template(
     await db.commit()
 
 
-# ── Knowledge Base ───────────────────────────────────────────────────────────
+# ── Knowledge Bases ───────────────────────────────────────────────────────────
+# Uses plural '/knowledge-bases' to match the frontend API client.
 
-@router.get("/knowledge-base", summary="List AI knowledge bases")
+@router.get("/knowledge-bases", summary="List AI knowledge bases")
 async def list_knowledge_bases(
     current_user: CurrentUser,
     db: DBSession,
@@ -186,11 +243,11 @@ async def list_knowledge_bases(
     kbs = result.scalars().all()
     return {
         "total": len(kbs),
-        "knowledge_bases": [KBOut.model_validate(kb).model_dump() for kb in kbs],
+        "knowledge_bases": [_kb_to_dict(kb) for kb in kbs],
     }
 
 
-@router.post("/knowledge-base", status_code=status.HTTP_201_CREATED, summary="Create an AI knowledge base")
+@router.post("/knowledge-bases", status_code=status.HTTP_201_CREATED, summary="Create an AI knowledge base")
 async def create_knowledge_base(
     payload: KBCreate,
     current_user: CurrentUser,
@@ -206,10 +263,10 @@ async def create_knowledge_base(
     db.add(kb)
     await db.commit()
     await db.refresh(kb)
-    return KBOut.model_validate(kb).model_dump()
+    return _kb_to_dict(kb)
 
 
-@router.get("/knowledge-base/{kb_id}", summary="Get an AI knowledge base")
+@router.get("/knowledge-bases/{kb_id}", summary="Get an AI knowledge base")
 async def get_knowledge_base(
     kb_id: uuid.UUID,
     current_user: CurrentUser,
@@ -218,10 +275,10 @@ async def get_knowledge_base(
     kb = await db.get(AIKnowledgeBase, kb_id)
     if not kb or kb.owner_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
-    return KBOut.model_validate(kb).model_dump()
+    return _kb_to_dict(kb)
 
 
-@router.put("/knowledge-base/{kb_id}", summary="Update an AI knowledge base")
+@router.put("/knowledge-bases/{kb_id}", summary="Update an AI knowledge base")
 async def update_knowledge_base(
     kb_id: uuid.UUID,
     payload: KBUpdate,
@@ -237,10 +294,10 @@ async def update_knowledge_base(
 
     await db.commit()
     await db.refresh(kb)
-    return KBOut.model_validate(kb).model_dump()
+    return _kb_to_dict(kb)
 
 
-@router.delete("/knowledge-base/{kb_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, summary="Delete an AI knowledge base")
+@router.delete("/knowledge-bases/{kb_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, summary="Delete an AI knowledge base")
 async def delete_knowledge_base(
     kb_id: uuid.UUID,
     current_user: CurrentUser,
@@ -253,7 +310,7 @@ async def delete_knowledge_base(
     await db.commit()
 
 
-@router.post("/knowledge-base/{kb_id}/upload", status_code=status.HTTP_201_CREATED, summary="Upload a document to a knowledge base")
+@router.post("/knowledge-bases/{kb_id}/upload", status_code=status.HTTP_201_CREATED, summary="Upload a document to a knowledge base")
 async def upload_to_knowledge_base(
     kb_id: uuid.UUID,
     current_user: CurrentUser,
@@ -268,7 +325,6 @@ async def upload_to_knowledge_base(
     filename = file.filename or "document"
     content_type = file.content_type or "application/octet-stream"
 
-    # Store document in MinIO under knowledge-base path
     try:
         from app.integrations import minio_client  # noqa: PLC0415
 
@@ -285,7 +341,6 @@ async def upload_to_knowledge_base(
             detail=f"Storage service unavailable: {exc}",
         ) from exc
 
-    # Increment document count
     kb.document_count += 1
     await db.commit()
     await db.refresh(kb)
@@ -300,74 +355,39 @@ async def upload_to_knowledge_base(
     }
 
 
-# ── Usage Stats ──────────────────────────────────────────────────────────────
+# ── Usage Stats ───────────────────────────────────────────────────────────────
 
 @router.get("/usage", summary="Get AI usage statistics")
 async def usage_stats(
     current_user: CurrentUser,
     db: DBSession,
-    days: int = Query(30, ge=1, le=365, description="Number of days to look back"),
+    period: str = Query("30d", description="Period: 7d, 30d, 90d"),
+    days: int | None = Query(None, ge=1, le=365, description="Override period with explicit day count"),
 ) -> dict[str, Any]:
-    from datetime import timedelta  # noqa: PLC0415
+    # Parse period string
+    period_days = days
+    if period_days is None:
+        try:
+            period_days = int(period.rstrip("d"))
+        except (ValueError, AttributeError):
+            period_days = 30
 
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=period_days)
 
-    # Chat message count
-    chat_result = await db.execute(
+    # Total user requests
+    user_req_result = await db.execute(
         select(func.count())
         .select_from(AIChatHistory)
         .where(
             AIChatHistory.user_id == current_user.id,
+            AIChatHistory.role == "user",
             AIChatHistory.created_at >= cutoff,
         )
     )
-    total_messages = chat_result.scalar() or 0
+    total_requests = user_req_result.scalar() or 0
 
-    # Session count
-    session_result = await db.execute(
-        select(func.count(AIChatHistory.session_id.distinct()))
-        .where(
-            AIChatHistory.user_id == current_user.id,
-            AIChatHistory.created_at >= cutoff,
-        )
-    )
-    total_sessions = session_result.scalar() or 0
-
-    # Audit log count (actions)
-    audit_result = await db.execute(
-        select(func.count())
-        .select_from(AIAuditLog)
-        .where(
-            AIAuditLog.user_id == current_user.id,
-            AIAuditLog.created_at >= cutoff,
-        )
-    )
-    total_actions = audit_result.scalar() or 0
-
-    # Actions by type
-    action_breakdown_result = await db.execute(
-        select(AIAuditLog.action, func.count())
-        .where(
-            AIAuditLog.user_id == current_user.id,
-            AIAuditLog.created_at >= cutoff,
-        )
-        .group_by(AIAuditLog.action)
-        .order_by(func.count().desc())
-    )
-    action_breakdown = {row[0]: row[1] for row in action_breakdown_result.all()}
-
-    # Messages by role
-    role_result = await db.execute(
-        select(AIChatHistory.role, func.count())
-        .where(
-            AIChatHistory.user_id == current_user.id,
-            AIChatHistory.created_at >= cutoff,
-        )
-        .group_by(AIChatHistory.role)
-    )
-    messages_by_role = {row[0]: row[1] for row in role_result.all()}
-
-    # Estimate token usage from message length (rough approximation: 1 token ~ 4 chars)
+    # Estimated total tokens (~4 chars per token)
     char_result = await db.execute(
         select(func.sum(func.length(AIChatHistory.content)))
         .where(
@@ -376,14 +396,151 @@ async def usage_stats(
         )
     )
     total_chars = char_result.scalar() or 0
-    estimated_tokens = total_chars // 4
+    total_tokens = total_chars // 4
+
+    # Tool usage breakdown (from audit log)
+    audit_result = await db.execute(
+        select(AIAuditLog.action, func.count())
+        .where(
+            AIAuditLog.user_id == current_user.id,
+            AIAuditLog.created_at >= cutoff,
+        )
+        .group_by(AIAuditLog.action)
+        .order_by(func.count().desc())
+    )
+    tokens_by_tool = [
+        {"tool": action, "tokens": 0, "requests": count}
+        for action, count in audit_result.all()
+    ]
+
+    # tokens_by_model: single aggregate (model not tracked per message)
+    tokens_by_model = (
+        [{"model": "ollama/llama3.2", "tokens": total_tokens, "requests": total_requests}]
+        if total_requests > 0 else []
+    )
+
+    # Daily breakdown
+    daily_result = await db.execute(
+        select(
+            func.date_trunc("day", AIChatHistory.created_at).label("day"),
+            func.sum(func.length(AIChatHistory.content)).label("chars"),
+            func.count().label("msgs"),
+        )
+        .where(
+            AIChatHistory.user_id == current_user.id,
+            AIChatHistory.created_at >= cutoff,
+        )
+        .group_by(func.date_trunc("day", AIChatHistory.created_at))
+        .order_by(func.date_trunc("day", AIChatHistory.created_at))
+    )
+    tokens_by_day = [
+        {
+            "date": row.day.strftime("%Y-%m-%d") if row.day else "",
+            "tokens": (row.chars or 0) // 4,
+            "requests": row.msgs or 0,
+        }
+        for row in daily_result.all()
+    ]
 
     return {
-        "period_days": days,
-        "total_messages": total_messages,
-        "total_sessions": total_sessions,
-        "total_actions": total_actions,
-        "estimated_tokens": estimated_tokens,
-        "messages_by_role": messages_by_role,
-        "action_breakdown": action_breakdown,
+        "total_tokens": total_tokens,
+        "total_requests": total_requests,
+        "tokens_by_day": tokens_by_day,
+        "tokens_by_model": tokens_by_model,
+        "tokens_by_tool": tokens_by_tool,
+        "period_start": cutoff.isoformat(),
+        "period_end": now.isoformat(),
+    }
+
+
+# ── Conversations (session-based chat history) ────────────────────────────────
+
+@router.get("/conversations", summary="List AI conversations grouped by session")
+async def list_conversations(
+    current_user: CurrentUser,
+    db: DBSession,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+) -> dict[str, Any]:
+    offset = (page - 1) * limit
+
+    count_result = await db.execute(
+        select(func.count(AIChatHistory.session_id.distinct()))
+        .where(AIChatHistory.user_id == current_user.id)
+    )
+    total = count_result.scalar() or 0
+
+    sessions_result = await db.execute(
+        select(
+            AIChatHistory.session_id,
+            func.max(AIChatHistory.created_at).label("last_at"),
+            func.count().label("msg_count"),
+        )
+        .where(AIChatHistory.user_id == current_user.id)
+        .group_by(AIChatHistory.session_id)
+        .order_by(func.max(AIChatHistory.created_at).desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    sessions = sessions_result.all()
+
+    conversations = []
+    for row in sessions:
+        last_msg_result = await db.execute(
+            select(AIChatHistory.content)
+            .where(
+                AIChatHistory.user_id == current_user.id,
+                AIChatHistory.session_id == row.session_id,
+                AIChatHistory.role == "user",
+            )
+            .order_by(AIChatHistory.created_at.desc())
+            .limit(1)
+        )
+        last_user_msg = last_msg_result.scalar_one_or_none()
+        title = (
+            (last_user_msg[:60] + "…") if last_user_msg and len(last_user_msg) > 60
+            else last_user_msg or row.session_id
+        )
+
+        conversations.append({
+            "id": row.session_id,
+            "session_id": row.session_id,
+            "title": title,
+            "message_count": row.msg_count,
+            "last_message": last_user_msg[:100] if last_user_msg else None,
+            "created_at": row.last_at.isoformat() if row.last_at else None,
+            "updated_at": row.last_at.isoformat() if row.last_at else None,
+        })
+
+    return {"total": total, "conversations": conversations}
+
+
+@router.get("/conversations/{conversation_id}/messages", summary="Get messages for a conversation")
+async def get_conversation_messages(
+    conversation_id: str,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    result = await db.execute(
+        select(AIChatHistory)
+        .where(
+            AIChatHistory.user_id == current_user.id,
+            AIChatHistory.session_id == conversation_id,
+        )
+        .order_by(AIChatHistory.created_at)
+    )
+    messages = result.scalars().all()
+
+    return {
+        "messages": [
+            {
+                "id": str(m.id),
+                "role": m.role,
+                "content": m.content,
+                "tokens_used": len(m.content) // 4,
+                "model": None,
+                "timestamp": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in messages
+        ]
     }

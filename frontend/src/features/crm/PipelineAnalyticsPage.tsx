@@ -95,7 +95,7 @@ export default function PipelineAnalyticsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100">
+                    <tr className="border-b border-gray-100 dark:border-gray-800">
                       <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Month</th>
                       <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Won</th>
                       <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Lost</th>
@@ -108,7 +108,7 @@ export default function PipelineAnalyticsPage() {
                       const total = row.won + row.lost
                       const winRate = total > 0 ? (row.won / total) * 100 : 0
                       return (
-                        <tr key={row.month} className="border-b border-gray-50">
+                        <tr key={row.month} className="border-b border-gray-50 dark:border-gray-800">
                           <td className="py-2 px-3 font-medium">{row.month}</td>
                           <td className="py-2 px-3 text-right">
                             <Badge variant="success">{row.won}</Badge>

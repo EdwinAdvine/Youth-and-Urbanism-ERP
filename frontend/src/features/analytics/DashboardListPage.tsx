@@ -95,7 +95,7 @@ export default function DashboardListPage() {
                       {dashboards[mobileIndex].is_shared && <Badge variant="info">Shared</Badge>}
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
                     <span className="text-xs text-gray-400">
                       {dashboards[mobileIndex].owner_name || 'You'} - Updated {new Date(dashboards[mobileIndex].updated_at).toLocaleDateString()}
                     </span>
@@ -134,7 +134,7 @@ export default function DashboardListPage() {
                     {d.is_shared && <Badge variant="info">Shared</Badge>}
                   </div>
                 </div>
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
                   <span className="text-xs text-gray-400">
                     {d.owner_name || 'You'} - Updated {new Date(d.updated_at).toLocaleDateString()}
                   </span>

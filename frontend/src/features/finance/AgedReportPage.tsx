@@ -44,7 +44,7 @@ function AgedTable({ data, isLoading, error }: { data?: AgedReport; isLoading: b
       label: 'Name',
       render: (row: AgedItem) => (
         <div>
-          <span className="font-medium text-gray-900">{row.name}</span>
+          <span className="font-medium text-gray-900 dark:text-gray-100">{row.name}</span>
           <p className="text-xs text-gray-500">{row.reference}</p>
         </div>
       ),
@@ -98,7 +98,7 @@ function AgedTable({ data, isLoading, error }: { data?: AgedReport; isLoading: b
       key: 'total',
       label: 'Total',
       render: (row: AgedItem) => (
-        <span className="font-semibold text-gray-900">{formatCurrency(row.total)}</span>
+        <span className="font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(row.total)}</span>
       ),
     },
   ]
@@ -119,7 +119,7 @@ function AgedTable({ data, isLoading, error }: { data?: AgedReport; isLoading: b
         <div className="grid grid-cols-7 gap-4 text-center">
           <div>
             <p className="text-xs text-gray-500 mb-1">Total</p>
-            <p className="text-lg font-bold text-gray-900">{formatCurrency(data.totals.total)}</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatCurrency(data.totals.total)}</p>
           </div>
           <div>
             <p className="text-xs text-gray-500 mb-1">Current</p>
@@ -143,7 +143,7 @@ function AgedTable({ data, isLoading, error }: { data?: AgedReport; isLoading: b
           </div>
           <div>
             <p className="text-xs text-gray-500 mb-1">As of</p>
-            <p className="text-sm font-medium text-gray-700">{data.as_of}</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{data.as_of}</p>
           </div>
         </div>
       </Card>
@@ -164,13 +164,13 @@ export default function AgedReportPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Aged Report</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Aged Report</h1>
           <p className="text-sm text-gray-500 mt-1">Outstanding receivables and payables by aging bucket</p>
         </div>
       </div>
 
       {/* Tab selector */}
-      <div className="flex items-center gap-1 bg-gray-100 rounded-[10px] p-1 w-fit mb-6">
+      <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-900 rounded-[10px] p-1 w-fit mb-6">
         <button
           onClick={() => setTab('receivables')}
           className={cn(

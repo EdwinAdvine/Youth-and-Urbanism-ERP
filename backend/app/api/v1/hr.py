@@ -285,7 +285,7 @@ async def list_employees(
     is_active: bool | None = Query(None, description="Filter by active status"),
     employment_type: str | None = Query(None, description="Filter by employment type"),
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=1000),
 ) -> dict[str, Any]:
     query = select(Employee).options(selectinload(Employee.department))
 

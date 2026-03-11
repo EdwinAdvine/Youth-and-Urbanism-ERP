@@ -228,7 +228,7 @@ async def list_items(
     search: str | None = Query(None, description="Search by name or SKU"),
     category: str | None = Query(None, description="Filter by category"),
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=1000),
 ) -> dict[str, Any]:
     query = select(InventoryItem).where(InventoryItem.is_active == True)  # noqa: E712
 
@@ -282,6 +282,38 @@ async def create_item(
     await db.refresh(item)
     return ItemOut.model_validate(item).model_dump()
 
+
+# ── CSV Export endpoints ──────────────────────────────────────────────────────
+
+@router.get("/items/export", summary="Export inventory items as CSV")
+async def export_items(
+    current_user: CurrentUser,
+    db: DBSession,
+):
+    """Download all inventory items as a CSV file."""
+    from app.core.export import rows_to_csv  # noqa: PLC0415
+    result = await db.execute(select(InventoryItem).where(InventoryItem.is_active == True).order_by(InventoryItem.name))  # noqa: E712
+    items = result.scalars().all()
+    rows = [
+        {
+            "sku": i.sku,
+            "name": i.name,
+            "description": i.description or "",
+            "category": i.category or "",
+            "unit_of_measure": i.unit_of_measure,
+            "cost_price": float(i.cost_price),
+            "selling_price": float(i.selling_price),
+            "reorder_level": i.reorder_level,
+            "is_active": i.is_active,
+            "created_at": i.created_at.isoformat(),
+        }
+        for i in items
+    ]
+    columns = [
+        "sku", "name", "description", "category", "unit_of_measure",
+        "cost_price", "selling_price", "reorder_level", "is_active", "created_at",
+    ]
+    return rows_to_csv(rows, columns, "inventory_items.csv")
 
 @router.get("/items/{item_id}", summary="Get inventory item detail")
 async def get_item(
@@ -1030,7 +1062,7 @@ async def inventory_dashboard(
         "total_items": total_items,
         "low_stock_count": low_stock_count,
         "pending_pos": pending_pos,
-        "total_inventory_value": str(total_inventory_value),
+        "total_inventory_value": float(total_inventory_value),
     }
 
 
@@ -1083,30 +1115,3 @@ async def reorder_alerts(
     return alerts
 
 
-# ── CSV Export endpoints ──────────────────────────────────────────────────────
-
-@router.get("/items/export", summary="Export inventory items as CSV")
-async def export_items(
-    current_user: CurrentUser,
-    db: DBSession,
-):
-    """Download all inventory items as a CSV file."""
-    from app.core.export import rows_to_csv  # noqa: PLC0415
-    result = await db.execute(select(InventoryItem).where(InventoryItem.is_active == True).order_by(InventoryItem.name))  # noqa: E712
-    items = result.scalars().all()
-    rows = [
-        {
-            "sku": i.sku,
-            "name": i.name,
-            "category": i.category or "",
-            "unit_of_measure": i.unit_of_measure,
-            "cost_price": float(i.cost_price),
-            "selling_price": float(i.selling_price),
-            "reorder_level": i.reorder_level,
-            "is_active": i.is_active,
-            "created_at": i.created_at.isoformat(),
-        }
-        for i in items
-    ]
-    columns = ["sku", "name", "category", "unit_of_measure", "cost_price", "selling_price", "reorder_level", "is_active", "created_at"]
-    return rows_to_csv(rows, columns, "inventory_items.csv")

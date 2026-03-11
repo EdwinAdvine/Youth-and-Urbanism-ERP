@@ -66,7 +66,7 @@ export default function MobileStockCheck() {
         <Card className="border-2 border-primary/20">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">{selectedItem.name}</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{selectedItem.name}</h3>
               <p className="text-sm text-gray-500">SKU: {selectedItem.sku}</p>
               {selectedItem.category && (
                 <Badge variant="default" className="mt-1">{selectedItem.category}</Badge>
@@ -121,13 +121,13 @@ export default function MobileStockCheck() {
               {(stockLevels ?? []).map((sl: StockLevel) => (
                 <div
                   key={`${sl.item_id}-${sl.warehouse_id}`}
-                  className="flex items-center justify-between py-3 px-3 bg-gray-50 rounded-[10px]"
+                  className="flex items-center justify-between py-3 px-3 bg-gray-50 dark:bg-gray-950 rounded-[10px]"
                 >
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {sl.warehouse_name ?? sl.warehouse_id}
                   </span>
                   <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-gray-900">{sl.quantity_on_hand}</span>
+                    <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{sl.quantity_on_hand}</span>
                     {sl.quantity_reserved > 0 && (
                       <span className="text-xs text-orange-600">({sl.quantity_reserved} reserved)</span>
                     )}
@@ -140,7 +140,7 @@ export default function MobileStockCheck() {
           )}
 
           {/* Price info */}
-          <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-sm">
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-sm">
             <div>
               <span className="text-gray-500">Cost: </span>
               <span className="font-medium">${selectedItem.cost_price.toFixed(2)}</span>
@@ -172,10 +172,10 @@ export default function MobileStockCheck() {
                 <button
                   key={item.id}
                   onClick={() => handleSelectItem(item)}
-                  className="w-full text-left px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[56px] flex items-center justify-between"
+                  className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 transition-colors min-h-[56px] flex items-center justify-between"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{item.name}</p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       SKU: {item.sku}
                       {item.category && ` | ${item.category}`}

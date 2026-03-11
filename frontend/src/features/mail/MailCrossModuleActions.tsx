@@ -33,15 +33,15 @@ function DialogShell({
       <div className="fixed inset-0 bg-black/30 z-50" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="bg-white rounded-[10px] shadow-2xl w-full max-w-md"
+          className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-md"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-2">
               {icon}
-              <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-[6px] text-gray-400">
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-400">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -85,7 +85,7 @@ export function SaveToDriveDialog({
         <p className="text-sm text-gray-500">This email has no attachments to save.</p>
       ) : (
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             All attachments will be saved to the <strong>mail-attachments</strong> folder in your Drive.
           </p>
           {saveToDrive.isError && (
@@ -99,7 +99,7 @@ export function SaveToDriveDialog({
           <div className="flex justify-end gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-[8px] transition-colors"
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px] transition-colors"
             >
               Cancel
             </button>
@@ -165,11 +165,11 @@ export function LinkCRMDialog({
     >
       <div className="space-y-4">
         {/* Tab switch */}
-        <div className="flex bg-gray-100 rounded-[8px] p-0.5">
+        <div className="flex bg-gray-100 dark:bg-gray-900 rounded-[8px] p-0.5">
           <button
             onClick={() => setTab('contact')}
             className={`flex-1 text-xs font-medium py-2 rounded-[6px] transition-colors ${
-              tab === 'contact' ? 'bg-white text-[#51459d] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              tab === 'contact' ? 'bg-white dark:bg-gray-800 text-[#51459d] shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             Contact
@@ -177,7 +177,7 @@ export function LinkCRMDialog({
           <button
             onClick={() => setTab('deal')}
             className={`flex-1 text-xs font-medium py-2 rounded-[6px] transition-colors ${
-              tab === 'deal' ? 'bg-white text-[#51459d] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              tab === 'deal' ? 'bg-white dark:bg-gray-800 text-[#51459d] shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             Deal
@@ -190,12 +190,12 @@ export function LinkCRMDialog({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search contacts..."
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+            className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d] bg-transparent"
           />
         )}
 
         {/* List */}
-        <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-[8px] divide-y divide-gray-100">
+        <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-[8px] divide-y divide-gray-100 dark:divide-gray-800">
           {tab === 'contact' ? (
             contacts.length === 0 ? (
               <p className="px-3 py-4 text-xs text-gray-400 text-center">No contacts found</p>
@@ -204,8 +204,8 @@ export function LinkCRMDialog({
                 <button
                   key={c.id}
                   onClick={() => setSelectedContactId(c.id)}
-                  className={`w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
-                    selectedContactId === c.id ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-700'
+                  className={`w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                    selectedContactId === c.id ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <span className="font-medium">
@@ -222,8 +222,8 @@ export function LinkCRMDialog({
               <button
                 key={d.id}
                 onClick={() => setSelectedDealId(d.id)}
-                className={`w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
-                  selectedDealId === d.id ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-700'
+                className={`w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                  selectedDealId === d.id ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-700 dark:text-gray-300'
                 }`}
               >
                 <span className="font-medium">{d.title}</span>
@@ -239,7 +239,7 @@ export function LinkCRMDialog({
           onChange={(e) => setNote(e.target.value)}
           placeholder="Add a note (optional)..."
           rows={2}
-          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d] resize-none"
+          className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d] resize-none bg-transparent"
         />
 
         {linkCRM.isError && (
@@ -249,7 +249,7 @@ export function LinkCRMDialog({
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-[8px] transition-colors"
+            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px] transition-colors"
           >
             Cancel
           </button>
@@ -302,7 +302,7 @@ export function ConvertToTaskDialog({
         {/* Project picker */}
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1.5">Select Project</label>
-          <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-[8px] divide-y divide-gray-100">
+          <div className="max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-[8px] divide-y divide-gray-100 dark:divide-gray-800">
             {!projects || projects.length === 0 ? (
               <p className="px-3 py-4 text-xs text-gray-400 text-center">No projects available</p>
             ) : (
@@ -310,8 +310,8 @@ export function ConvertToTaskDialog({
                 <button
                   key={p.id}
                   onClick={() => setSelectedProjectId(p.id)}
-                  className={`w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
-                    selectedProjectId === p.id ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-700'
+                  className={`w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                    selectedProjectId === p.id ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <span className="font-medium">{p.name}</span>
@@ -328,7 +328,7 @@ export function ConvertToTaskDialog({
           <select
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d] bg-white"
+            className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d] bg-white dark:bg-gray-800"
           >
             <option value="low">Low</option>
             <option value="medium">Medium</option>
@@ -349,7 +349,7 @@ export function ConvertToTaskDialog({
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-[8px] transition-colors"
+            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px] transition-colors"
           >
             Cancel
           </button>
@@ -401,7 +401,7 @@ export function SaveAsNoteDialog({
       onClose={onClose}
     >
       <div className="space-y-4">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           The email subject, sender, date, and body will be saved as a new note.
         </p>
 
@@ -414,7 +414,7 @@ export function SaveAsNoteDialog({
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder="e.g. meeting, follow-up"
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+            className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d] bg-transparent"
           />
         </div>
 
@@ -424,9 +424,9 @@ export function SaveAsNoteDialog({
             type="checkbox"
             checked={pinned}
             onChange={(e) => setPinned(e.target.checked)}
-            className="rounded border-gray-300 text-[#51459d] focus:ring-[#51459d]"
+            className="rounded border-gray-300 dark:border-gray-600 text-[#51459d] focus:ring-[#51459d]"
           />
-          <span className="text-sm text-gray-600">Pin this note</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">Pin this note</span>
         </label>
 
         {saveAsNote.isSuccess && (
@@ -439,7 +439,7 @@ export function SaveAsNoteDialog({
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-[8px] transition-colors"
+            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px] transition-colors"
           >
             Cancel
           </button>

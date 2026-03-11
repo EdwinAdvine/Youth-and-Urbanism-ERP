@@ -214,8 +214,8 @@ export function useInvoices(params: { page?: number; limit?: number; status?: st
   return useQuery({
     queryKey: ['finance', 'invoices', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<Invoice>>('/finance/invoices', { params })
-      return data
+      const { data } = await apiClient.get<any>('/finance/invoices', { params })
+      return { total: data.total ?? 0, items: data.invoices ?? data.items ?? [] } as PaginatedResponse<Invoice>
     },
   })
 }
@@ -286,8 +286,8 @@ export function usePayments(params: { page?: number; limit?: number } = {}) {
   return useQuery({
     queryKey: ['finance', 'payments', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<Payment>>('/finance/payments', { params })
-      return data
+      const { data } = await apiClient.get<any>('/finance/payments', { params })
+      return { total: data.total ?? 0, items: data.payments ?? data.items ?? [] } as PaginatedResponse<Payment>
     },
   })
 }
@@ -312,8 +312,8 @@ export function useJournalEntries(params: { page?: number; limit?: number; statu
   return useQuery({
     queryKey: ['finance', 'journal-entries', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<JournalEntry>>('/finance/journal-entries', { params })
-      return data
+      const { data } = await apiClient.get<any>('/finance/journal-entries', { params })
+      return { total: data.total ?? 0, items: data.journal_entries ?? data.items ?? [] } as PaginatedResponse<JournalEntry>
     },
   })
 }
@@ -835,8 +835,8 @@ export function useRecurringInvoices(params: { page?: number; limit?: number; is
   return useQuery({
     queryKey: ['finance', 'recurring-invoices', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<RecurringInvoice>>('/finance/recurring-invoices', { params })
-      return data
+      const { data } = await apiClient.get<any>('/finance/recurring-invoices', { params })
+      return { total: data.total ?? 0, items: data.recurring_invoices ?? data.items ?? [] } as PaginatedResponse<RecurringInvoice>
     },
   })
 }
@@ -928,8 +928,8 @@ export function useExpenses(params: { page?: number; limit?: number; status?: st
   return useQuery({
     queryKey: ['finance', 'expenses', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<Expense>>('/finance/expenses', { params })
-      return data
+      const { data } = await apiClient.get<any>('/finance/expenses', { params })
+      return { total: data.total ?? 0, items: data.expenses ?? data.items ?? [] } as PaginatedResponse<Expense>
     },
   })
 }
@@ -1068,8 +1068,8 @@ export function useVendorBills(params: { page?: number; limit?: number; status?:
   return useQuery({
     queryKey: ['finance', 'vendor-bills', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<VendorBill>>('/finance/vendor-bills', { params })
-      return data
+      const { data } = await apiClient.get<any>('/finance/vendor-bills', { params })
+      return { total: data.total ?? 0, items: data.vendor_bills ?? data.items ?? [] } as PaginatedResponse<VendorBill>
     },
   })
 }
@@ -1176,8 +1176,8 @@ export function useFixedAssets(params: { page?: number; limit?: number; status?:
   return useQuery({
     queryKey: ['finance', 'fixed-assets', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<FixedAsset>>('/finance/fixed-assets', { params })
-      return data
+      const { data } = await apiClient.get<any>('/finance/fixed-assets', { params })
+      return { total: data.total ?? 0, items: data.fixed_assets ?? data.items ?? [] } as PaginatedResponse<FixedAsset>
     },
   })
 }

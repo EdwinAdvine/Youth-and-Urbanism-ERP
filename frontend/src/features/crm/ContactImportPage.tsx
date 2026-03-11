@@ -90,9 +90,7 @@ export default function ContactImportPage() {
       <div className="flex items-center gap-2">
         {(['upload', 'mapping', 'preview', 'result'] as Step[]).map((s, i) => (
           <div key={s} className="flex items-center gap-2">
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
-              step === s ? 'bg-primary text-white' : i < ['upload', 'mapping', 'preview', 'result'].indexOf(step) ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'
-            }`}>
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${ step === s ? 'bg-primary text-white' : i < ['upload', 'mapping', 'preview', 'result'].indexOf(step) ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400' }`}>
               {i + 1}
             </div>
             <span className={`text-sm capitalize ${step === s ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>{s}</span>
@@ -152,7 +150,7 @@ export default function ContactImportPage() {
               </div>
             ))}
           </div>
-          <div className="flex justify-between pt-4 mt-4 border-t border-gray-100">
+          <div className="flex justify-between pt-4 mt-4 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" onClick={reset}>Back</Button>
             <Button disabled={!isValid} onClick={() => setStep('preview')}>Preview</Button>
           </div>
@@ -167,7 +165,7 @@ export default function ContactImportPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
+                <tr className="border-b border-gray-100 dark:border-gray-800">
                   {ALL_FIELDS.filter((f) => columnMapping[f]).map((field) => (
                     <th key={field} className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">
                       {field.replace(/_/g, ' ')}
@@ -177,7 +175,7 @@ export default function ContactImportPage() {
               </thead>
               <tbody>
                 {csvRows.slice(0, 10).map((row, i) => (
-                  <tr key={i} className="border-b border-gray-50">
+                  <tr key={i} className="border-b border-gray-50 dark:border-gray-800">
                     {ALL_FIELDS.filter((f) => columnMapping[f]).map((field) => {
                       const colIdx = csvHeaders.indexOf(columnMapping[field])
                       return (
@@ -189,7 +187,7 @@ export default function ContactImportPage() {
               </tbody>
             </table>
           </div>
-          <div className="flex justify-between pt-4 mt-4 border-t border-gray-100">
+          <div className="flex justify-between pt-4 mt-4 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" onClick={() => setStep('mapping')}>Back</Button>
             <Button onClick={handleImport} loading={importContacts.isPending}>
               Import {csvRows.length} Contacts

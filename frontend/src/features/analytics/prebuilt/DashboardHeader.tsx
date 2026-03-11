@@ -128,7 +128,7 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
     <>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{title}</h1>
           {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
         </div>
         <div className="flex gap-2">
@@ -153,7 +153,7 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
           <p className="text-sm text-gray-500">Choose an export format for this dashboard.</p>
           <button
             onClick={handleExportPDF}
-            className="w-full flex items-center gap-3 p-3 rounded-[10px] border border-gray-200 hover:bg-gray-50 transition-colors text-left"
+            className="w-full flex items-center gap-3 p-3 rounded-[10px] border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
           >
             <div className="w-10 h-10 rounded-[8px] bg-red-50 flex items-center justify-center">
               <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -161,13 +161,13 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
               </svg>
             </div>
             <div>
-              <span className="text-sm font-medium text-gray-900 block">PDF</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 block">PDF</span>
               <span className="text-xs text-gray-400">Export via browser print</span>
             </div>
           </button>
           <button
             onClick={handleExportCSV}
-            className="w-full flex items-center gap-3 p-3 rounded-[10px] border border-gray-200 hover:bg-gray-50 transition-colors text-left"
+            className="w-full flex items-center gap-3 p-3 rounded-[10px] border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
           >
             <div className="w-10 h-10 rounded-[8px] bg-green-50 flex items-center justify-center">
               <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -175,13 +175,13 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
               </svg>
             </div>
             <div>
-              <span className="text-sm font-medium text-gray-900 block">CSV</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 block">CSV</span>
               <span className="text-xs text-gray-400">Comma-separated values</span>
             </div>
           </button>
           <button
             onClick={handleExportExcel}
-            className="w-full flex items-center gap-3 p-3 rounded-[10px] border border-gray-200 hover:bg-gray-50 transition-colors text-left"
+            className="w-full flex items-center gap-3 p-3 rounded-[10px] border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
           >
             <div className="w-10 h-10 rounded-[8px] bg-blue-50 flex items-center justify-center">
               <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -189,7 +189,7 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
               </svg>
             </div>
             <div>
-              <span className="text-sm font-medium text-gray-900 block">Excel</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 block">Excel</span>
               <span className="text-xs text-gray-400">Microsoft Excel format</span>
             </div>
           </button>
@@ -206,9 +206,9 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
             placeholder="colleague@company.com"
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Message (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Message (optional)</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 min-h-[60px]"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 min-h-[60px]"
               value={shareMessage}
               onChange={(e) => setShareMessage(e.target.value)}
               placeholder="Check out this dashboard..."

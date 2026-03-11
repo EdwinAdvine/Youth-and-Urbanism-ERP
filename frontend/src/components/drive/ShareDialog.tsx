@@ -94,18 +94,18 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
       <div className="fixed inset-0 bg-black/30 z-50" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="bg-white rounded-[10px] shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col"
+          className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+          <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
             <div>
-              <h2 className="text-sm font-semibold text-gray-900">Share "{itemName}"</h2>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Share "{itemName}"</h2>
               <p className="text-xs text-gray-400 mt-0.5">
                 {itemType === 'file' ? 'File' : 'Folder'} sharing with enterprise controls
               </p>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-[6px] text-gray-400">
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-400">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -113,7 +113,7 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b border-gray-100 shrink-0">
+          <div className="flex border-b border-gray-100 dark:border-gray-800 shrink-0">
             {tabs.map((t) => (
               <button
                 key={t.id}
@@ -121,7 +121,7 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
                 className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors ${
                   tab === t.id
                     ? 'text-[#51459d] border-b-2 border-[#51459d]'
-                    : 'text-gray-500 hover:text-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
                 <span>{t.icon}</span>
@@ -135,21 +135,21 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
             {tab === 'people' && (
               <>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Share with user (ID or email)</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Share with user (ID or email)</label>
                   <input
                     value={userId}
                     onChange={(e) => setUserId(e.target.value)}
                     placeholder="Enter user ID…"
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Permission</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Permission</label>
                   <select
                     value={permission}
                     onChange={(e) => setPermission(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d] bg-white"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d] bg-white dark:bg-gray-800"
                   >
                     <option value="view">View only</option>
                     <option value="edit">Can edit</option>
@@ -158,7 +158,7 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
                   </select>
                 </div>
 
-                <label className="flex items-center gap-2 text-xs text-gray-600">
+                <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                   <input type="checkbox" checked={notifyOnAccess} onChange={(e) => setNotifyOnAccess(e.target.checked)} className="rounded" />
                   Notify me when accessed
                 </label>
@@ -181,11 +181,11 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Permission</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Permission</label>
                   <select
                     value={permission}
                     onChange={(e) => setPermission(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d] bg-white"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d] bg-white dark:bg-gray-800"
                   >
                     <option value="view">View only</option>
                     <option value="edit">Can edit</option>
@@ -194,44 +194,44 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Link password (optional)</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Link password (optional)</label>
                   <input
                     type="password"
                     value={linkPassword}
                     onChange={(e) => setLinkPassword(e.target.value)}
                     placeholder="Set a password…"
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Expiry date (optional)</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Expiry date (optional)</label>
                   <input
                     type="datetime-local"
                     value={expiresAt}
                     onChange={(e) => setExpiresAt(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Max downloads (optional)</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Max downloads (optional)</label>
                   <input
                     type="number"
                     value={maxDownloads}
                     onChange={(e) => setMaxDownloads(e.target.value)}
                     placeholder="Unlimited"
                     min="1"
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-xs text-gray-600">
+                  <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                     <input type="checkbox" checked={noDownload} onChange={(e) => setNoDownload(e.target.checked)} className="rounded" />
                     Disable downloads (view only in browser)
                   </label>
-                  <label className="flex items-center gap-2 text-xs text-gray-600">
+                  <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                     <input
                       type="checkbox"
                       checked={isFileDrop}
@@ -243,7 +243,7 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
                     />
                     File Drop mode (recipients can only upload, not view)
                   </label>
-                  <label className="flex items-center gap-2 text-xs text-gray-600">
+                  <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                     <input type="checkbox" checked={notifyOnAccess} onChange={(e) => setNotifyOnAccess(e.target.checked)} className="rounded" />
                     Notify me when link is accessed
                   </label>
@@ -264,7 +264,7 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
                       <input
                         readOnly
                         value={copiedLink}
-                        className="flex-1 px-2 py-1 text-xs bg-white border border-green-200 rounded-[6px] text-gray-700"
+                        className="flex-1 px-2 py-1 text-xs bg-white dark:bg-gray-800 border border-green-200 rounded-[6px] text-gray-700 dark:text-gray-300"
                       />
                       <button
                         onClick={handleCopy}
@@ -290,14 +290,14 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
                     {sharesData.shares.map((share) => (
                       <div
                         key={share.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-[8px] border border-gray-100"
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-950 rounded-[8px] border border-gray-100 dark:border-gray-800"
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-sm">
                               {share.share_link ? '🔗' : '👤'}
                             </span>
-                            <span className="text-xs font-medium text-gray-800 truncate">
+                            <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
                               {share.share_link
                                 ? `Public link (${share.permission})`
                                 : `User share (${share.permission})`}

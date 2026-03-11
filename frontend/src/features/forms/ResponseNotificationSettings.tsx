@@ -52,31 +52,27 @@ export default function ResponseNotificationSettings({ config, onChange, emailFi
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-semibold text-gray-900">Response Notifications</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Response Notifications</h3>
         <p className="text-[11px] text-gray-400 mt-0.5">
           Get notified when someone submits a response
         </p>
       </div>
 
-      <div className="bg-gray-50 rounded-[10px] border border-gray-200 p-4 space-y-4">
+      <div className="bg-gray-50 dark:bg-gray-950 rounded-[10px] border border-gray-200 dark:border-gray-700 p-4 space-y-4">
         {/* Admin notification toggle */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-gray-700">Email me on new response</p>
+            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Email me on new response</p>
             <p className="text-[10px] text-gray-400 mt-0.5">
               Receive an email when someone submits the form
             </p>
           </div>
           <button
             onClick={() => update({ emailOnSubmit: !cfg.emailOnSubmit })}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              cfg.emailOnSubmit ? 'bg-[#6fd943]' : 'bg-gray-200'
-            }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${ cfg.emailOnSubmit ? 'bg-[#6fd943]' : 'bg-gray-200' }`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                cfg.emailOnSubmit ? 'translate-x-6' : 'translate-x-1'
-              }`}
+              className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-800 transition-transform ${ cfg.emailOnSubmit ? 'translate-x-6' : 'translate-x-1' }`}
             />
           </button>
         </div>
@@ -84,14 +80,14 @@ export default function ResponseNotificationSettings({ config, onChange, emailFi
         {/* Notification emails */}
         {cfg.emailOnSubmit && (
           <div className="space-y-2 pl-1 border-l-2 border-[#51459d]/20 ml-1">
-            <label className="block text-xs font-medium text-gray-700">Notify these emails</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Notify these emails</label>
             <div className="flex gap-2">
               <input
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addEmail())}
                 placeholder="admin@example.com"
-                className="flex-1 px-3 py-1.5 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                className="flex-1 px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
               />
               <button
                 onClick={addEmail}
@@ -118,7 +114,7 @@ export default function ResponseNotificationSettings({ config, onChange, emailFi
               </div>
             )}
 
-            <label className="flex items-center gap-2 text-xs text-gray-600">
+            <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
               <input
                 type="checkbox"
                 checked={cfg.includeAnswers}
@@ -130,25 +126,21 @@ export default function ResponseNotificationSettings({ config, onChange, emailFi
           </div>
         )}
 
-        <div className="border-t border-gray-200 pt-4">
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
           {/* Respondent confirmation */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-gray-700">Send confirmation to respondent</p>
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Send confirmation to respondent</p>
               <p className="text-[10px] text-gray-400 mt-0.5">
                 Automatically email a confirmation to the person who submitted
               </p>
             </div>
             <button
               onClick={() => update({ sendConfirmationToRespondent: !cfg.sendConfirmationToRespondent })}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                cfg.sendConfirmationToRespondent ? 'bg-[#6fd943]' : 'bg-gray-200'
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${ cfg.sendConfirmationToRespondent ? 'bg-[#6fd943]' : 'bg-gray-200' }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  cfg.sendConfirmationToRespondent ? 'translate-x-6' : 'translate-x-1'
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-800 transition-transform ${ cfg.sendConfirmationToRespondent ? 'translate-x-6' : 'translate-x-1' }`}
               />
             </button>
           </div>
@@ -156,13 +148,13 @@ export default function ResponseNotificationSettings({ config, onChange, emailFi
           {cfg.sendConfirmationToRespondent && (
             <div className="mt-3 space-y-3 pl-1 border-l-2 border-[#51459d]/20 ml-1">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Email field
                 </label>
                 <select
                   value={cfg.respondentEmailFieldId}
                   onChange={(e) => update({ respondentEmailFieldId: e.target.value })}
-                  className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-[8px] bg-white focus:outline-none focus:border-[#51459d]"
+                  className="w-full px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] bg-white dark:bg-gray-800 focus:outline-none focus:border-[#51459d]"
                 >
                   <option value="">Select email field...</option>
                   {emailFieldIds.map((f) => (
@@ -177,25 +169,25 @@ export default function ResponseNotificationSettings({ config, onChange, emailFi
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Subject line
                 </label>
                 <input
                   value={cfg.confirmationSubject}
                   onChange={(e) => update({ confirmationSubject: e.target.value })}
-                  className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                  className="w-full px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Confirmation message
                 </label>
                 <textarea
                   value={cfg.confirmationMessage}
                   onChange={(e) => update({ confirmationMessage: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d] resize-none"
+                  className="w-full px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d] resize-none"
                 />
               </div>
             </div>

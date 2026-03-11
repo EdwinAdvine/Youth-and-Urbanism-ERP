@@ -49,7 +49,7 @@ export default function LeadCaptureFormDialog({ open, onClose }: Props) {
           <div className="space-y-2 text-sm">
             <div>
               <span className="text-gray-500">Form URL:</span>
-              <p className="font-mono text-xs bg-gray-50 rounded px-2 py-1 mt-1 break-all">
+              <p className="font-mono text-xs bg-gray-50 dark:bg-gray-950 rounded px-2 py-1 mt-1 break-all">
                 {lastCreated.form_url}
               </p>
             </div>

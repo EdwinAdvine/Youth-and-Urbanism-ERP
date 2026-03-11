@@ -67,8 +67,8 @@ export default function ManufacturingDashboard() {
       </div>
 
       {/* OEE Gauges */}
-      <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Overall Equipment Effectiveness (OEE)</h3>
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Overall Equipment Effectiveness (OEE)</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="flex flex-col items-center">
             <GaugeChart value={oee} label="OEE Score" size={150} />
@@ -102,8 +102,8 @@ export default function ManufacturingDashboard() {
 
       {/* Production + Defects */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Production Output</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Production Output</h3>
           <p className="text-xs text-gray-400 mb-4">Actual vs target</p>
           <BarChart
             data={productionData}
@@ -116,8 +116,8 @@ export default function ManufacturingDashboard() {
           />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Defect Rate</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Defect Rate</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly defect percentage</p>
           <LineChart
             data={defectData}
@@ -131,14 +131,14 @@ export default function ManufacturingDashboard() {
 
       {/* WO Status + Workstation Utilization */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Work Order Status</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Work Order Status</h3>
           <p className="text-xs text-gray-400 mb-4">Current work order distribution</p>
           <PieChart data={woStatus} innerRadius={50} height={260} />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Workstation Utilization</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Workstation Utilization</h3>
           <p className="text-xs text-gray-400 mb-4">Current capacity usage (%)</p>
           <BarChart
             data={workstations}

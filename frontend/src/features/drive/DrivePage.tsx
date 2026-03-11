@@ -138,17 +138,17 @@ function ContextMenu({ x, y, item, onClose, onAction }: {
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
-        className="fixed z-50 bg-white border border-gray-200 rounded-[10px] shadow-xl py-1 w-44"
+        className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[10px] shadow-xl py-1 w-44"
         style={{ left: Math.min(x, window.innerWidth - 180), top: Math.min(y, window.innerHeight - 200) }}
       >
         {menuItems.map((item2, i) =>
           item2 === null ? (
-            <div key={i} className="my-1 border-t border-gray-100" />
+            <div key={i} className="my-1 border-t border-gray-100 dark:border-gray-800" />
           ) : (
             <button
               key={item2.action}
               onClick={() => { onAction(item2.action, item); onClose() }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left hover:bg-gray-50 transition-colors ${'danger' in item2 && item2.danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700'}`}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${'danger' in item2 && item2.danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700 dark:text-gray-300'}`}
             >
               <span className="w-4 text-center opacity-60">{item2.icon}</span>
               {item2.label}
@@ -172,12 +172,12 @@ function UploadZone({ onUpload }: { onUpload: (files: FileList) => void }) {
       onDragLeave={() => setDragging(false)}
       onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
       onDrop={(e) => { e.preventDefault(); setDragging(false); if (e.dataTransfer.files.length) onUpload(e.dataTransfer.files) }}
-      className={`border-2 border-dashed rounded-[10px] p-8 text-center transition-colors cursor-pointer ${dragging ? 'border-[#51459d] bg-[#51459d]/5' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}
+      className={`border-2 border-dashed rounded-[10px] p-8 text-center transition-colors cursor-pointer ${dragging ? 'border-[#51459d] bg-[#51459d]/5' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
       onClick={() => inputRef.current?.click()}
     >
       <input ref={inputRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && onUpload(e.target.files)} />
       <div className="text-2xl mb-2">☁️</div>
-      <p className="text-sm font-medium text-gray-700">Drop files here or click to upload</p>
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Drop files here or click to upload</p>
       <p className="text-xs text-gray-400 mt-1">Any file type · Max 500 MB per file</p>
     </div>
   )
@@ -185,12 +185,13 @@ function UploadZone({ onUpload }: { onUpload: (files: FileList) => void }) {
 
 // ─── File Grid Item with long-press for touch ────────────────────────────────
 
-function FileGridItem({ item, cfg, isSelected, onSelect, onContextMenu }: {
+function FileGridItem({ item, cfg, isSelected, onSelect, onContextMenu, onOpen }: {
   item: DisplayItem
   cfg: { icon: string; color: string; bg: string }
   isSelected: boolean
   onSelect: (e: React.MouseEvent) => void
   onContextMenu: (x: number, y: number) => void
+  onOpen: () => void
 }) {
   const longPressHandlers = useLongPress((e) => {
     const touch = e.touches[0]
@@ -200,18 +201,19 @@ function FileGridItem({ item, cfg, isSelected, onSelect, onContextMenu }: {
   return (
     <div
       onClick={onSelect}
+      onDoubleClick={onOpen}
       onContextMenu={(e) => { e.preventDefault(); onContextMenu(e.clientX, e.clientY) }}
       {...longPressHandlers}
       draggable
       onDragStart={(e) => { e.dataTransfer.setData('text/drive-file-id', item.id); e.dataTransfer.effectAllowed = 'move' }}
-      className={`relative group flex flex-col items-center gap-2 p-4 bg-white border rounded-[10px] hover:border-[#51459d]/30 hover:shadow-sm transition-all text-center cursor-pointer min-h-[88px] ${isSelected ? 'border-[#51459d] ring-2 ring-[#51459d]/20' : 'border-gray-100'}`}
+      className={`relative group flex flex-col items-center gap-2 p-4 bg-white dark:bg-gray-800 border rounded-[10px] hover:border-[#51459d]/30 hover:shadow-sm transition-all text-center cursor-pointer min-h-[88px] ${isSelected ? 'border-[#51459d] ring-2 ring-[#51459d]/20' : 'border-gray-100 dark:border-gray-800'}`}
     >
       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 sm:transition-opacity touch-device:opacity-100">
         <FavoriteToggle fileId={item.id} />
       </div>
       <span className="text-3xl">{cfg.icon}</span>
       <div className="w-full">
-        <p className="text-xs font-medium text-gray-700 truncate">{item.name}</p>
+        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{item.name}</p>
         <p className="text-[10px] text-gray-400">{item.size}</p>
       </div>
       {item.isPublic && <span className="text-[10px] text-[#51459d] bg-[#51459d]/10 px-1.5 rounded">Public</span>}
@@ -239,6 +241,7 @@ export default function DrivePage() {
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([])
   const [versionsFile, setVersionsFile] = useState<{ id: string; name: string } | null>(null)
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
+  const [globalDragging, setGlobalDragging] = useState(false)
   const [linkTaskTarget, setLinkTaskTarget] = useState<{ id: string; name: string } | null>(null)
   const [linkTaskId, setLinkTaskId] = useState('')
   const [linkProjectId, setLinkProjectId] = useState('')
@@ -311,6 +314,13 @@ export default function DrivePage() {
         window.open(result.download_url, '_blank')
       } catch {
         alert('Download failed.')
+      }
+    } else if (action === 'open' && !item.isFolder) {
+      try {
+        const result = await downloadFile.mutateAsync(item.id)
+        window.open(result.download_url, '_blank')
+      } catch {
+        alert('Cannot open file.')
       }
     } else if (action === 'open' && item.isFolder) {
       setBreadcrumbs((prev) => [...prev, { label: item.name, folderId: item.id }])
@@ -414,8 +424,8 @@ export default function DrivePage() {
   return (
     <div className="h-full flex flex-col md:flex-row overflow-hidden">
       {/* Sidebar - hidden on mobile */}
-      <aside className="hidden md:flex w-52 shrink-0 bg-white border-r border-gray-100 flex-col">
-        <div className="p-3 border-b border-gray-100 space-y-2">
+      <aside className="hidden md:flex w-52 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-800 flex-col">
+        <div className="p-3 border-b border-gray-100 dark:border-gray-800 space-y-2">
           <button
             onClick={() => setShowUpload(true)}
             className="w-full flex items-center justify-center gap-2 bg-[#51459d] hover:bg-[#3d3480] text-white text-sm font-medium rounded-[8px] px-4 py-2.5 transition-colors"
@@ -425,7 +435,7 @@ export default function DrivePage() {
           </button>
           <button
             onClick={() => setShowNewFolder(true)}
-            className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-[8px] px-4 py-2 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-sm font-medium rounded-[8px] px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             New Folder
@@ -442,7 +452,7 @@ export default function DrivePage() {
                 setBreadcrumbs([{ label: link.label }])
               }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-[8px] text-sm transition-colors mb-0.5 ${
-                activeSection === link.id && !activeFolderId ? 'bg-[#51459d]/10 text-[#51459d] font-medium' : 'text-gray-600 hover:bg-gray-100'
+                activeSection === link.id && !activeFolderId ? 'bg-[#51459d]/10 text-[#51459d] font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               <span>{link.icon}</span>
@@ -463,7 +473,7 @@ export default function DrivePage() {
                       setBreadcrumbs([{ label: 'My Files' }, { label: tf.name, folderId: tf.drive_folder_id }])
                     }
                   }}
-                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[6px] text-xs text-gray-600 hover:bg-gray-100 transition-colors"
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[6px] text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <span className="text-sm">{tf.is_company_wide ? '🏢' : '👥'}</span>
                   <span className="truncate">{tf.name}</span>
@@ -487,7 +497,7 @@ export default function DrivePage() {
               <div className="flex justify-between text-xs text-gray-500">
                 <span>Used</span><span>12.4 GB / 100 GB</span>
               </div>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
                 <div className="h-full bg-[#51459d] rounded-full" style={{ width: '12.4%' }} />
               </div>
             </div>
@@ -496,7 +506,7 @@ export default function DrivePage() {
       </aside>
 
       {/* Main area */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+      <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
         {filesError && (
           <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2 shrink-0">
             <svg className="h-4 w-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
@@ -505,7 +515,7 @@ export default function DrivePage() {
         )}
 
         {/* Toolbar */}
-        <div className="bg-white border-b border-gray-100 px-3 sm:px-5 py-3 flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800 px-3 sm:px-5 py-3 flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
           {/* Breadcrumbs */}
           <div className="flex items-center gap-1 text-sm min-w-0">
             {breadcrumbs.map((crumb, i) => (
@@ -518,7 +528,7 @@ export default function DrivePage() {
                     setActiveFolderId(crumb.folderId)
                     if (i === 0) setActiveSection(activeSection)
                   }}
-                  className={`text-sm truncate ${i === breadcrumbs.length - 1 ? 'text-gray-900 font-medium' : 'text-gray-400 hover:text-gray-600 transition-colors'}`}
+                  className={`text-sm truncate ${i === breadcrumbs.length - 1 ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors'}`}
                 >
                   {crumb.label}
                 </button>
@@ -530,19 +540,19 @@ export default function DrivePage() {
 
           <div className="relative">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search files…" className="pl-9 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-[8px] focus:outline-none w-44" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search files…" className="pl-9 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none w-44" />
           </div>
 
-          <div className="flex items-center border border-gray-200 rounded-[8px] overflow-hidden">
-            <button onClick={() => setViewMode('grid')} className={`p-2 sm:p-1.5 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors ${viewMode === 'grid' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50'}`}>
+          <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-[8px] overflow-hidden">
+            <button onClick={() => setViewMode('grid')} className={`p-2 sm:p-1.5 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors ${viewMode === 'grid' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
             </button>
-            <button onClick={() => setViewMode('list')} className={`p-2 sm:p-1.5 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50'}`}>
+            <button onClick={() => setViewMode('list')} className={`p-2 sm:p-1.5 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
             </button>
           </div>
 
-          <button onClick={() => setShowUpload(true)} className="flex items-center justify-center gap-1.5 text-xs border border-gray-200 text-gray-600 px-3 py-1.5 rounded-[8px] hover:bg-gray-50 transition-colors min-h-[44px] min-w-[44px]">
+          <button onClick={() => setShowUpload(true)} className="flex items-center justify-center gap-1.5 text-xs border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 px-3 py-1.5 rounded-[8px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors min-h-[44px] min-w-[44px]">
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
             <span className="hidden sm:inline">Upload</span>
           </button>
@@ -554,10 +564,10 @@ export default function DrivePage() {
             <div className="flex items-center gap-3">
               <svg className="animate-spin h-4 w-4 text-[#51459d] shrink-0" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
               <div className="flex-1">
-                <div className="flex justify-between text-xs text-gray-600 mb-1">
+                <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
                   <span>Uploading…</span><span>{uploadProgress}%</span>
                 </div>
-                <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div className="h-full bg-[#51459d] rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
                 </div>
               </div>
@@ -573,14 +583,14 @@ export default function DrivePage() {
 
         {/* New folder dialog */}
         {showNewFolder && (
-          <div className="px-5 py-3 bg-white border-b border-gray-100 flex items-center gap-3 shrink-0">
+          <div className="px-5 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3 shrink-0">
             <input
               autoFocus
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
               placeholder="Folder name"
-              className="px-3 py-1.5 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d] w-56"
+              className="px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d] w-56"
             />
             <button
               onClick={handleCreateFolder}
@@ -589,7 +599,7 @@ export default function DrivePage() {
             >
               Create
             </button>
-            <button onClick={() => { setShowNewFolder(false); setNewFolderName('') }} className="text-xs text-gray-400 hover:text-gray-600">
+            <button onClick={() => { setShowNewFolder(false); setNewFolderName('') }} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
               Cancel
             </button>
           </div>
@@ -597,20 +607,20 @@ export default function DrivePage() {
 
         {/* Create team folder dialog */}
         {showCreateTeam && (
-          <div className="px-5 py-3 bg-white border-b border-gray-100 flex items-center gap-3 shrink-0">
+          <div className="px-5 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3 shrink-0">
             <input
               autoFocus
               value={newTeamName}
               onChange={(e) => setNewTeamName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreateTeam()}
               placeholder="Team folder name"
-              className="px-3 py-1.5 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d] w-44"
+              className="px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d] w-44"
             />
             <input
               value={newTeamDept}
               onChange={(e) => setNewTeamDept(e.target.value)}
               placeholder="Department (optional)"
-              className="px-3 py-1.5 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d] w-36"
+              className="px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d] w-36"
             />
             <button
               onClick={handleCreateTeam}
@@ -619,7 +629,7 @@ export default function DrivePage() {
             >
               Create
             </button>
-            <button onClick={() => { setShowCreateTeam(false); setNewTeamName(''); setNewTeamDept('') }} className="text-xs text-gray-400 hover:text-gray-600">
+            <button onClick={() => { setShowCreateTeam(false); setNewTeamName(''); setNewTeamDept('') }} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
               Cancel
             </button>
           </div>
@@ -630,8 +640,8 @@ export default function DrivePage() {
           {showUpload && (
             <div className="mb-5">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-semibold text-gray-700">Upload Files</h3>
-                <button onClick={() => setShowUpload(false)} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+                <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300">Upload Files</h3>
+                <button onClick={() => setShowUpload(false)} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">Cancel</button>
               </div>
               <UploadZone onUpload={(fl) => handleUpload(fl)} />
             </div>
@@ -652,7 +662,7 @@ export default function DrivePage() {
               {teamFoldersData.team_folders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 text-center">
                   <div className="text-4xl mb-3">👥</div>
-                  <p className="text-sm font-medium text-gray-700">No team folders yet</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">No team folders yet</p>
                   <button onClick={() => setShowCreateTeam(true)} className="mt-3 text-xs text-[#51459d] hover:underline">Create one →</button>
                 </div>
               ) : (
@@ -667,11 +677,11 @@ export default function DrivePage() {
                           setBreadcrumbs([{ label: 'My Files' }, { label: tf.name, folderId: tf.drive_folder_id }])
                         }
                       }}
-                      className="flex flex-col items-center gap-2 p-4 bg-white border border-gray-100 rounded-[10px] hover:border-[#51459d]/30 hover:shadow-sm transition-all text-center"
+                      className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] hover:border-[#51459d]/30 hover:shadow-sm transition-all text-center"
                     >
                       <span className="text-3xl">{tf.is_company_wide ? '🏢' : '👥'}</span>
                       <div className="w-full">
-                        <p className="text-xs font-medium text-gray-700 truncate">{tf.name}</p>
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{tf.name}</p>
                         {tf.department && (
                           <p className="text-[10px] text-gray-400">{tf.department}</p>
                         )}
@@ -691,7 +701,7 @@ export default function DrivePage() {
           {activeSection === 'starred' ? null : !isTeamView && items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-center">
               <div className="text-4xl mb-3">📭</div>
-              <p className="text-sm font-medium text-gray-700">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {isSharedView ? 'No files shared with you' : 'This folder is empty'}
               </p>
               {!isSharedView && (
@@ -717,10 +727,10 @@ export default function DrivePage() {
                           setDragOverFolderId(null)
                           // File drag-and-drop into folder handled elsewhere if needed
                         }}
-                        className={`flex flex-col items-center gap-2 p-4 bg-white border rounded-[10px] hover:border-yellow-300 hover:shadow-sm transition-all text-center ${dragOverFolderId === item.id ? 'border-[#51459d] bg-[#51459d]/5 border-dashed border-2' : 'border-gray-100'}`}
+                        className={`flex flex-col items-center gap-2 p-4 bg-white dark:bg-gray-800 border rounded-[10px] hover:border-yellow-300 hover:shadow-sm transition-all text-center ${dragOverFolderId === item.id ? 'border-[#51459d] bg-[#51459d]/5 border-dashed border-2' : 'border-gray-100 dark:border-gray-800'}`}
                       >
                         <span className="text-3xl">📁</span>
-                        <p className="text-xs font-medium text-gray-700 truncate w-full">{item.name}</p>
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate w-full">{item.name}</p>
                       </button>
                     ))}
                   </div>
@@ -748,6 +758,7 @@ export default function DrivePage() {
                               )
                             }
                           }}
+                          onOpen={() => handleAction('open', item)}
                           onContextMenu={(x, y) => setContextMenu({ x, y, item })}
                         />
                       )
@@ -757,10 +768,10 @@ export default function DrivePage() {
               )}
             </>
           ) : !isTeamView && items.length > 0 ? (
-            <div className="bg-white rounded-[10px] border border-gray-100 overflow-x-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 overflow-x-auto">
               <table className="w-full text-sm min-w-[500px]">
                 <thead>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Name</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Modified</th>
                     <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">Size</th>
@@ -774,11 +785,11 @@ export default function DrivePage() {
                     return (
                       <tr
                         key={item.id}
-                        className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
-                        onDoubleClick={() => item.isFolder && handleAction('open', item)}
+                        className="border-b border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        onDoubleClick={() => handleAction('open', item)}
                         onClick={() => {
-                          // On touch devices, single tap opens folders
-                          if ('ontouchstart' in window && item.isFolder) handleAction('open', item)
+                          // On touch devices, single tap opens folders/files
+                          if ('ontouchstart' in window) handleAction('open', item)
                         }}
                         onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, item }) }}
                       >
@@ -786,7 +797,7 @@ export default function DrivePage() {
                           <div className="flex items-center gap-3">
                             <span className="text-lg">{cfg.icon}</span>
                             <div>
-                              <p className="text-sm text-gray-800 font-medium">{item.name}</p>
+                              <p className="text-sm text-gray-800 dark:text-gray-200 font-medium">{item.name}</p>
                               {item.isPublic && <span className="text-[10px] text-[#51459d] bg-[#51459d]/10 px-1.5 rounded">Public</span>}
                             </div>
                           </div>
@@ -805,7 +816,7 @@ export default function DrivePage() {
                         <td className="px-4 py-3 text-right">
                           <button
                             onClick={(e) => { e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, item }) }}
-                            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-gray-100 rounded-[4px] text-gray-400"
+                            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[4px] text-gray-400"
                           >
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
                           </button>
@@ -853,26 +864,26 @@ export default function DrivePage() {
       {/* Link to Task dialog */}
       {linkTaskTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setLinkTaskTarget(null)}>
-          <div className="bg-white rounded-[10px] shadow-xl w-96 p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">Link to Task</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-xl w-96 p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Link to Task</h3>
             <p className="text-xs text-gray-400 mb-4">Link "{linkTaskTarget.name}" to a project task.</p>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Project ID</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Project ID</label>
                 <input
                   value={linkProjectId}
                   onChange={(e) => setLinkProjectId(e.target.value)}
                   placeholder="Enter project UUID"
-                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                  className="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Task ID</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Task ID</label>
                 <input
                   value={linkTaskId}
                   onChange={(e) => setLinkTaskId(e.target.value)}
                   placeholder="Enter task UUID"
-                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                  className="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
                 />
               </div>
               <div className="flex gap-2 pt-1">
@@ -885,7 +896,7 @@ export default function DrivePage() {
                 </button>
                 <button
                   onClick={() => { setLinkTaskTarget(null); setLinkTaskId(''); setLinkProjectId('') }}
-                  className="text-xs text-gray-400 hover:text-gray-600 px-3"
+                  className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-3"
                 >
                   Cancel
                 </button>

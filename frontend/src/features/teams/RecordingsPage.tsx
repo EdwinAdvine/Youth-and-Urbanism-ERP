@@ -10,7 +10,7 @@ export default function RecordingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Meeting Recordings</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Meeting Recordings</h1>
         <p className="text-sm text-gray-500 mt-1">Browse and download meeting recordings</p>
       </div>
 
@@ -57,7 +57,7 @@ function MeetingRecordingCard({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
           <div>
-            <h3 className="text-sm font-semibold text-gray-700">{meetingTitle}</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{meetingTitle}</h3>
             <p className="text-xs text-gray-400">{new Date(meetingDate).toLocaleString()}</p>
           </div>
           <Badge variant="info">{recordings.length} recording{recordings.length !== 1 ? 's' : ''}</Badge>
@@ -71,9 +71,9 @@ function MeetingRecordingCard({
       </div>
 
       {expanded && (
-        <div className="mt-4 space-y-2 border-t border-gray-100 pt-4">
+        <div className="mt-4 space-y-2 border-t border-gray-100 dark:border-gray-800 pt-4">
           {recordings.map((rec) => (
-            <div key={rec.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+            <div key={rec.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-950">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-[10px] bg-primary/10 text-primary flex items-center justify-center">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -82,7 +82,7 @@ function MeetingRecordingCard({
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-700">{rec.file_name}</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{rec.file_name}</p>
                   <div className="flex items-center gap-3 text-xs text-gray-400">
                     <span>{Math.round(rec.duration_seconds / 60)} min</span>
                     <span>{(rec.file_size / 1024 / 1024).toFixed(1)} MB</span>

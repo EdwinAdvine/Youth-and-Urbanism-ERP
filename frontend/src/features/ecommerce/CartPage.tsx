@@ -46,7 +46,7 @@ export default function CartPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900">Shopping Cart</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shopping Cart</h1>
 
       {items.length === 0 ? (
         <Card>
@@ -64,7 +64,7 @@ export default function CartPage() {
             {items.map((item) => (
               <Card key={item.id}>
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-gray-100 rounded-[10px] flex items-center justify-center flex-shrink-0">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-900 rounded-[10px] flex items-center justify-center flex-shrink-0">
                     {item.product_image ? (
                       <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover rounded-[10px]" />
                     ) : (
@@ -75,13 +75,13 @@ export default function CartPage() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-gray-900 truncate">{item.product_name}</h3>
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">{item.product_name}</h3>
                     <p className="text-sm text-gray-500">${item.unit_price.toFixed(2)} each</p>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
-                      className="w-8 h-8 rounded-[10px] border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
+                      className="w-8 h-8 rounded-[10px] border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
                       onClick={() => handleQuantityChange(item, -1)}
                       disabled={item.quantity <= 1 || updateItem.isPending}
                     >
@@ -89,7 +89,7 @@ export default function CartPage() {
                     </button>
                     <span className="w-10 text-center font-medium">{item.quantity}</span>
                     <button
-                      className="w-8 h-8 rounded-[10px] border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
+                      className="w-8 h-8 rounded-[10px] border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
                       onClick={() => handleQuantityChange(item, 1)}
                       disabled={updateItem.isPending}
                     >
@@ -98,7 +98,7 @@ export default function CartPage() {
                   </div>
 
                   <div className="text-right min-w-[80px]">
-                    <p className="font-semibold text-gray-900">${item.total.toFixed(2)}</p>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">${item.total.toFixed(2)}</p>
                   </div>
 
                   <button
@@ -117,7 +117,7 @@ export default function CartPage() {
 
           <div className="lg:col-span-1">
             <Card>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Order Summary</h2>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Subtotal</span>
@@ -133,9 +133,9 @@ export default function CartPage() {
                   <span className="text-gray-500">Tax</span>
                   <span className="font-medium">${cart?.tax_amount.toFixed(2)}</span>
                 </div>
-                <div className="border-t border-gray-100 pt-2 flex justify-between">
-                  <span className="font-semibold text-gray-900">Total</span>
-                  <span className="font-bold text-lg text-gray-900">${cart?.total.toFixed(2)}</span>
+                <div className="border-t border-gray-100 dark:border-gray-800 pt-2 flex justify-between">
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">Total</span>
+                  <span className="font-bold text-lg text-gray-900 dark:text-gray-100">${cart?.total.toFixed(2)}</span>
                 </div>
               </div>
               {cart?.coupon_code && (

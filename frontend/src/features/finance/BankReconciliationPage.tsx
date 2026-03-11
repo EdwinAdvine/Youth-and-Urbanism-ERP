@@ -79,7 +79,7 @@ export default function BankReconciliationPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bank Reconciliation</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Bank Reconciliation</h1>
           <p className="text-sm text-gray-500 mt-1">Import statements, match payments, and reconcile</p>
         </div>
         <Button size="sm" onClick={() => setShowImport(!showImport)}>
@@ -90,13 +90,13 @@ export default function BankReconciliationPage() {
       {/* Import Form */}
       {showImport && (
         <Card>
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Import Bank Statement (CSV)</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Import Bank Statement (CSV)</h3>
           <p className="text-xs text-gray-500 mb-4">CSV must have columns: date, description, amount</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Account</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Account</label>
               <select
-                className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm"
+                className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
                 value={importAccountId}
                 onChange={(e) => setImportAccountId(e.target.value)}
               >
@@ -108,7 +108,7 @@ export default function BankReconciliationPage() {
             </div>
             <Input label="Statement Date" type="date" value={importDate} onChange={(e) => setImportDate(e.target.value)} />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">CSV File</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CSV File</label>
               <input
                 type="file"
                 accept=".csv"
@@ -126,8 +126,8 @@ export default function BankReconciliationPage() {
 
       {/* Statements List */}
       <Card padding={false}>
-        <div className="p-4 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Statements</h2>
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Statements</h2>
         </div>
         {!statements || statements.length === 0 ? (
           <div className="text-center py-12 text-gray-400 text-sm">No statements imported yet</div>
@@ -136,17 +136,17 @@ export default function BankReconciliationPage() {
             {statements.map((s) => (
               <div
                 key={s.id}
-                className={`flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${selectedId === s.id ? 'bg-primary/5' : ''}`}
+                className={`flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors ${selectedId === s.id ? 'bg-primary/5' : ''}`}
                 onClick={() => setSelectedId(s.id)}
               >
                 <div>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {new Date(s.statement_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                   </p>
                   <p className="text-xs text-gray-500">{s.line_count} lines, {s.matched_count} matched</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700">{formatCurrency(s.closing_balance)}</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{formatCurrency(s.closing_balance)}</span>
                   {s.is_reconciled ? (
                     <Badge variant="success">Reconciled</Badge>
                   ) : (
@@ -168,7 +168,7 @@ export default function BankReconciliationPage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-base font-semibold text-gray-900">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
                     Statement - {detail.account_name ?? 'Unknown Account'}
                   </h3>
                   <p className="text-xs text-gray-500">
@@ -193,7 +193,7 @@ export default function BankReconciliationPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100">
+                    <tr className="border-b border-gray-100 dark:border-gray-800">
                       <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Date</th>
                       <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Description</th>
                       <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Amount</th>
@@ -202,9 +202,9 @@ export default function BankReconciliationPage() {
                   </thead>
                   <tbody>
                     {(detail.lines ?? []).map((line) => (
-                      <tr key={line.id} className="border-b border-gray-50 hover:bg-gray-50">
-                        <td className="py-2 px-3 text-gray-700">{line.date}</td>
-                        <td className="py-2 px-3 text-gray-700 max-w-xs truncate">{line.description}</td>
+                      <tr key={line.id} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <td className="py-2 px-3 text-gray-700 dark:text-gray-300">{line.date}</td>
+                        <td className="py-2 px-3 text-gray-700 dark:text-gray-300 max-w-xs truncate">{line.description}</td>
                         <td className={`py-2 px-3 text-right font-medium ${Number(line.amount) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {formatCurrency(line.amount)}
                         </td>

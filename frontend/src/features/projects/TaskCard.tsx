@@ -39,13 +39,13 @@ export default function TaskCard({ task, onClick }: TaskCardProps) {
       onDragStart={handleDragStart}
       onClick={() => onClick(task)}
       className={cn(
-        'bg-white rounded-[10px] border border-gray-100 p-3 cursor-pointer',
+        'bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 p-3 cursor-pointer',
         'shadow-sm hover:shadow-md transition-shadow',
         'active:opacity-80 select-none'
       )}
     >
       {/* Title */}
-      <p className="text-sm font-medium text-gray-900 line-clamp-2">{task.title}</p>
+      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2">{task.title}</p>
 
       {/* Tags */}
       {task.tags && task.tags.length > 0 && (

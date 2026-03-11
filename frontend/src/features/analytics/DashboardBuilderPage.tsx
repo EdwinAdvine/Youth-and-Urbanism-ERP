@@ -212,14 +212,14 @@ export default function DashboardBuilderPage() {
   return (
     <div className="h-[calc(100vh-64px)] flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-5 py-3 flex items-center gap-4 shrink-0">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800 px-5 py-3 flex items-center gap-4 shrink-0">
         <Button variant="ghost" size="sm" onClick={() => navigate('/analytics/dashboards')}>
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </Button>
         <input
-          className="text-base font-semibold text-gray-900 bg-transparent border-none outline-none flex-1 min-w-0"
+          className="text-base font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none flex-1 min-w-0"
           value={dashName}
           onChange={(e) => setDashName(e.target.value)}
           onBlur={handleSaveDashboard}
@@ -237,13 +237,13 @@ export default function DashboardBuilderPage() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Widget Library Sidebar */}
-        <div className="w-64 bg-white border-r border-gray-100 p-4 overflow-y-auto shrink-0">
+        <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-800 p-4 overflow-y-auto shrink-0">
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Widget Library</h3>
           <div className="space-y-2 mb-6">
             {WIDGET_TYPES.map((wt) => (
               <button
                 key={wt.value}
-                className="w-full flex items-center gap-3 p-2.5 rounded-[8px] border border-gray-100 hover:bg-gray-50 hover:border-primary/30 transition-colors text-left"
+                className="w-full flex items-center gap-3 p-2.5 rounded-[8px] border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-primary/30 transition-colors text-left"
                 onClick={() => {
                   setForm({ ...emptyForm, widget_type: wt.value, title: wt.label })
                   setEditWidget(null)
@@ -251,7 +251,7 @@ export default function DashboardBuilderPage() {
                 }}
               >
                 <span className="text-gray-500">{WIDGET_ICONS[wt.value]}</span>
-                <span className="text-xs font-medium text-gray-700">{wt.label}</span>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{wt.label}</span>
               </button>
             ))}
           </div>
@@ -263,9 +263,7 @@ export default function DashboardBuilderPage() {
             {widgetList.map((w) => (
               <button
                 key={w.id}
-                className={`w-full text-left text-xs px-2.5 py-2 rounded-[8px] transition-colors ${
-                  selectedId === w.id ? 'bg-primary/10 text-primary font-medium' : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                className={`w-full text-left text-xs px-2.5 py-2 rounded-[8px] transition-colors ${ selectedId === w.id ? 'bg-primary/10 text-primary font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800' }`}
                 onClick={() => setSelectedId(w.id)}
               >
                 {w.title}
@@ -275,7 +273,7 @@ export default function DashboardBuilderPage() {
         </div>
 
         {/* Grid Canvas */}
-        <div className="flex-1 p-5 overflow-y-auto bg-gray-50">
+        <div className="flex-1 p-5 overflow-y-auto bg-gray-50 dark:bg-gray-950">
           {widgetList.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -292,11 +290,7 @@ export default function DashboardBuilderPage() {
               {widgetList.map((w) => (
                 <div
                   key={w.id}
-                  className={`rounded-[10px] border-2 transition-all cursor-pointer ${
-                    selectedId === w.id
-                      ? 'border-primary bg-primary/5 shadow-md'
-                      : 'border-gray-200 bg-white hover:border-primary/30'
-                  }`}
+                  className={`rounded-[10px] border-2 transition-all cursor-pointer ${ selectedId === w.id ? 'border-primary bg-primary/5 shadow-md' : 'border-gray-200 bg-white dark:bg-gray-800 hover:border-primary/30' }`}
                   style={{
                     gridColumn: `span ${Math.min(w.width || 1, 3)}`,
                     gridRow: `span ${Math.min(w.height || 1, 2)}`,
@@ -307,7 +301,7 @@ export default function DashboardBuilderPage() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-gray-400">{WIDGET_ICONS[w.widget_type] || WIDGET_ICONS.text}</span>
-                        <span className="text-xs font-medium text-gray-700">{w.title}</span>
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{w.title}</span>
                       </div>
                       <div className="flex gap-1">
                         <button
@@ -328,7 +322,7 @@ export default function DashboardBuilderPage() {
                         </button>
                       </div>
                     </div>
-                    <div className="flex-1 bg-gray-50 rounded-[8px] border border-dashed border-gray-200 flex items-center justify-center">
+                    <div className="flex-1 bg-gray-50 dark:bg-gray-950 rounded-[8px] border border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center">
                       <div className="text-center">
                         <span className="text-xs text-gray-400 block">{w.widget_type}{w.chart_type ? ` - ${w.chart_type}` : ''}</span>
                         {w.data_source && <span className="text-[10px] text-gray-300 block mt-0.5">{w.data_source}</span>}
@@ -343,40 +337,40 @@ export default function DashboardBuilderPage() {
 
         {/* Config Panel */}
         {selected && (
-          <div className="w-64 bg-white border-l border-gray-100 p-4 overflow-y-auto shrink-0">
+          <div className="w-64 bg-white dark:bg-gray-800 border-l border-gray-100 dark:border-gray-800 p-4 overflow-y-auto shrink-0">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Widget Properties</h3>
             <div className="space-y-3">
               <div>
                 <p className="text-xs text-gray-400 mb-1">Title</p>
-                <p className="text-sm font-medium text-gray-900">{selected.title}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{selected.title}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-400 mb-1">Type</p>
-                <p className="text-sm text-gray-700">{selected.widget_type}</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">{selected.widget_type}</p>
               </div>
               {selected.chart_type && (
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Chart Type</p>
-                  <p className="text-sm text-gray-700">{selected.chart_type}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{selected.chart_type}</p>
                 </div>
               )}
               {selected.data_source && (
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Data Source</p>
-                  <p className="text-sm text-gray-700">{selected.data_source}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{selected.data_source}</p>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Width</p>
-                  <p className="text-sm text-gray-700">{selected.width} col</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{selected.width} col</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Height</p>
-                  <p className="text-sm text-gray-700">{selected.height} row</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{selected.height} row</p>
                 </div>
               </div>
-              <div className="pt-3 border-t border-gray-100 space-y-2">
+              <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
                 <Button size="sm" className="w-full" onClick={() => openEdit(selected)}>Edit Widget</Button>
                 <Button size="sm" variant="danger" className="w-full" onClick={() => handleDeleteWidget(selected.id)}>Remove</Button>
               </div>
@@ -432,9 +426,9 @@ export default function DashboardBuilderPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Config (JSON)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Config (JSON)</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 min-h-[80px]"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 min-h-[80px]"
               value={form.config}
               onChange={(e) => setForm({ ...form, config: e.target.value })}
               placeholder="{}"

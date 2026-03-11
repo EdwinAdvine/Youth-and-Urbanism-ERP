@@ -39,13 +39,13 @@ function ServerTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Mail Server Configuration</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Mail Server Configuration</h2>
       <div className="space-y-4 max-w-lg">
         <Field label="Mail Domain" value={form.domain} onChange={v => setForm({ ...form, domain: v })} />
         <Field label="TLS Certificate Path" value={form.tls_cert_path} onChange={v => setForm({ ...form, tls_cert_path: v })} placeholder="/etc/ssl/certs/mail.pem" />
         <Field label="TLS Key Path" value={form.tls_key_path} onChange={v => setForm({ ...form, tls_key_path: v })} placeholder="/etc/ssl/private/mail.key" />
-        <div className="border-t border-gray-100 pt-4">
-          <p className="text-sm font-medium text-gray-700 mb-3">SMTP Relay</p>
+        <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">SMTP Relay</p>
           <div className="space-y-3">
             <Field label="Relay Host" value={form.smtp_relay_host} onChange={v => setForm({ ...form, smtp_relay_host: v })} placeholder="smtp.relay.example.com" />
             <NumberField label="Relay Port" value={form.smtp_relay_port} onChange={v => setForm({ ...form, smtp_relay_port: v })} />
@@ -83,7 +83,7 @@ function PoliciesTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Mail Policies</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Mail Policies</h2>
       <div className="space-y-4 max-w-lg">
         <NumberField label="Max Attachment Size (MB)" value={form.max_attachment_size_mb} onChange={v => setForm({ ...form, max_attachment_size_mb: v })} />
         <NumberField label="Retention Days" value={form.retention_days} onChange={v => setForm({ ...form, retention_days: v })} />
@@ -119,7 +119,7 @@ function SpamTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Spam Filter Configuration</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Spam Filter Configuration</h2>
       <div className="space-y-4 max-w-lg">
         <NumberField label="Spam Threshold Score" value={form.spam_threshold} onChange={v => setForm({ ...form, spam_threshold: v })} step={0.5} />
         <Toggle label="Reject on Spam" checked={form.reject_on_spam} onChange={v => setForm({ ...form, reject_on_spam: v })} />
@@ -154,7 +154,7 @@ function QuotasTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Mail Storage Quotas</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Mail Storage Quotas</h2>
       <div className="space-y-4 max-w-lg">
         <NumberField label="Default Quota (MB)" value={form.default_quota_mb} onChange={v => setForm({ ...form, default_quota_mb: v })} />
         <NumberField label="Warn at (%)" value={form.warn_at_percent} onChange={v => setForm({ ...form, warn_at_percent: v })} />
@@ -174,13 +174,13 @@ function Field({ label, value, onChange, placeholder, type = 'text' }: {
 }) {
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
       <input
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+        className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
       />
     </div>
   )
@@ -191,13 +191,13 @@ function NumberField({ label, value, onChange, step }: {
 }) {
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
       <input
         type="number"
         value={value}
         step={step}
         onChange={e => onChange(Number(e.target.value))}
-        className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+        className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
       />
     </div>
   )
@@ -214,7 +214,7 @@ function Toggle({ label, checked, onChange }: {
         onChange={e => onChange(e.target.checked)}
         className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30 accent-primary"
       />
-      <span className="text-sm text-gray-700">{label}</span>
+      <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
     </label>
   )
 }
@@ -232,21 +232,21 @@ function ListField({ label, value, onChange, placeholder }: {
   }
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
       <div className="flex gap-2">
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), add())}
           placeholder={placeholder}
-          className="flex-1 rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+          className="flex-1 rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
         />
         <Button onClick={add} variant="secondary">Add</Button>
       </div>
       {value.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {value.map(item => (
-            <span key={item} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-xs text-gray-700">
+            <span key={item} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-900 text-xs text-gray-700 dark:text-gray-300">
               {item}
               <button onClick={() => onChange(value.filter(v => v !== item))} className="text-gray-400 hover:text-gray-600">&times;</button>
             </span>
@@ -265,20 +265,16 @@ export default function MailConfigPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Mail Administration</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Mail Administration</h1>
         <p className="text-sm text-gray-500 mt-1">Configure mail server, policies, spam filtering, and storage quotas</p>
       </div>
 
-      <div className="flex gap-1 mb-6 border-b border-gray-100">
+      <div className="flex gap-1 mb-6 border-b border-gray-100 dark:border-gray-800">
         {TABS.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              tab === t.id
-                ? 'text-primary border-primary'
-                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200'
-            }`}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${ tab === t.id ? 'text-primary border-primary' : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200' }`}
           >
             {t.label}
           </button>

@@ -16,9 +16,11 @@ interface Message {
 interface AIChatProps {
   onClose?: () => void
   context?: string
+  fullPage?: boolean
+  initialMessage?: string
 }
 
-export default function AIChat({ onClose, context }: AIChatProps) {
+export default function AIChat({ onClose, context, fullPage, initialMessage }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
@@ -100,6 +102,20 @@ export default function AIChat({ onClose, context }: AIChatProps) {
     connect()
   }, [connect])
 
+  // Auto-send initial message once WebSocket opens
+  const initialSentRef = useRef(false)
+  useEffect(() => {
+    if (!initialMessage || initialSentRef.current || status !== 'open') return
+    initialSentRef.current = true
+    const text = initialMessage.trim()
+    if (!text) return
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: text, timestamp: new Date() }
+    const assistantMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: '', timestamp: new Date(), streaming: true }
+    setMessages((prev) => [...prev, userMsg, assistantMsg])
+    setIsThinking(true)
+    send({ type: 'chat', content: text, message: text, metadata: { context } })
+  }, [status, initialMessage, context, send])
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
@@ -168,9 +184,14 @@ export default function AIChat({ onClose, context }: AIChatProps) {
   })
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-[10px] sm:rounded-[10px] shadow-sm border border-gray-100 fixed inset-0 sm:static sm:inset-auto z-50 sm:z-auto">
+    <div className={cn(
+      'flex flex-col h-full bg-white dark:bg-gray-800',
+      fullPage
+        ? 'w-full'
+        : 'rounded-[10px] shadow-sm border border-gray-100 dark:border-gray-800 fixed inset-0 sm:static sm:inset-auto z-50 sm:z-auto'
+    )}>
       {/* Header - with swipe-down handle on mobile */}
-      <div {...swipeHandlers} className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+      <div {...swipeHandlers} className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
         {/* Mobile drag handle */}
         <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-300 rounded-full sm:hidden" />
         <div className="flex items-center gap-2.5">
@@ -180,7 +201,7 @@ export default function AIChat({ onClose, context }: AIChatProps) {
             </svg>
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900">Urban AI</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Urban AI</p>
             <p className={cn('text-xs', status === 'open' ? 'text-success' : 'text-gray-400')}>
               {status === 'open' ? 'Connected' : status === 'connecting' ? 'Connecting…' : 'Offline'}
             </p>
@@ -262,7 +283,7 @@ export default function AIChat({ onClose, context }: AIChatProps) {
       </div>
 
       {/* Input - bottom-anchored, safe area padding on mobile */}
-      <div className="shrink-0 border-t border-gray-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="shrink-0 border-t border-gray-100 dark:border-gray-800 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="flex gap-2 items-end">
           {/* Voice input button */}
           {voiceSupported && (
@@ -292,7 +313,7 @@ export default function AIChat({ onClose, context }: AIChatProps) {
             onKeyDown={handleKeyDown}
             placeholder="Ask anything… (Enter to send, Shift+Enter for new line)"
             rows={1}
-            className="flex-1 resize-none rounded-[10px] border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+            className="flex-1 resize-none rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
             style={{ maxHeight: '120px' }}
             onInput={(e) => {
               const el = e.currentTarget

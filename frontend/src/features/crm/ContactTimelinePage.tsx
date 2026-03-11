@@ -42,7 +42,7 @@ export default function ContactTimelinePage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Contact Timeline</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Contact Timeline</h1>
         <p className="text-sm text-gray-500 mt-1">Complete activity history for a contact</p>
       </div>
 
@@ -85,11 +85,11 @@ export default function ContactTimelinePage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-gray-900 text-sm">{event.title}</h3>
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm">{event.title}</h3>
                         <Badge variant="default">{event.event_type.replace(/_/g, ' ')}</Badge>
                       </div>
                       {event.description && (
-                        <p className="text-sm text-gray-600 mt-1">{event.description}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{event.description}</p>
                       )}
                       {event.created_by_name && (
                         <p className="text-xs text-gray-400 mt-1">by {event.created_by_name}</p>

@@ -152,6 +152,48 @@ async def update_ai_config(
     return AIConfigResponse.model_validate(config)
 
 
+@router.post("/ai-config/test", summary="Test AI provider connection")
+async def test_ai_connection(
+    payload: AIConfigUpdate,
+    current_user: SuperAdminUser,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Test connectivity to the configured AI provider without saving changes."""
+    import httpx  # noqa: PLC0415
+
+    provider = payload.provider or settings.AI_PROVIDER
+    base_url = payload.base_url or settings.OLLAMA_URL
+    model = payload.model_name or settings.OLLAMA_MODEL
+
+    try:
+        if provider == "ollama":
+            url = f"{base_url.rstrip('/')}/api/tags"
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+            return {"status": "ok", "provider": provider, "message": "Ollama is reachable"}
+        elif provider in ("openai", "grok"):
+            from app.core.security import decrypt_field  # noqa: PLC0415
+            api_key = payload.api_key
+            if api_key:
+                try:
+                    api_key = decrypt_field(api_key)
+                except Exception:
+                    pass
+            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            test_url = (base_url or "https://api.openai.com/v1").rstrip("/") + "/models"
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(test_url, headers=headers)
+                resp.raise_for_status()
+            return {"status": "ok", "provider": provider, "message": f"{provider} API is reachable"}
+        elif provider == "anthropic":
+            return {"status": "ok", "provider": provider, "message": "Anthropic config saved (connection not tested)"}
+        else:
+            return {"status": "error", "provider": provider, "message": f"Unknown provider: {provider}"}
+    except Exception as exc:
+        return {"status": "error", "provider": provider, "message": str(exc)}
+
+
 # ── Audit Logs ────────────────────────────────────────────────────────────────
 @router.get("/audit-logs", response_model=list[AIAuditLogResponse], summary="Get AI audit logs")
 async def get_audit_logs(

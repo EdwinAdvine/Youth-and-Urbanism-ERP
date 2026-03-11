@@ -77,7 +77,7 @@ export default function BulkImportPage() {
     <div className="p-6 space-y-5 max-w-5xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Bulk User Import</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Bulk User Import</h1>
         <p className="text-gray-500 text-sm mt-0.5">
           Upload a CSV file to import multiple users at once. Required columns: email, full_name. Optional: role, department.
         </p>
@@ -90,7 +90,7 @@ export default function BulkImportPage() {
             className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors ${
               dragActive
                 ? 'border-primary bg-primary/5'
-                : 'border-gray-200 hover:border-gray-300'
+                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -102,7 +102,7 @@ export default function BulkImportPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
             </div>
-            <p className="text-gray-700 font-medium">
+            <p className="text-gray-700 dark:text-gray-300 font-medium">
               {file ? file.name : 'Drop your CSV file here, or click to browse'}
             </p>
             <p className="text-gray-400 text-sm mt-1">
@@ -118,7 +118,7 @@ export default function BulkImportPage() {
             <div className="mt-4 flex gap-3 justify-center">
               <label
                 htmlFor="csv-upload"
-                className="cursor-pointer px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                className="cursor-pointer px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 Browse Files
               </label>
@@ -137,13 +137,13 @@ export default function BulkImportPage() {
           )}
 
           {/* CSV Template */}
-          <div className="mt-4 p-4 bg-gray-50 rounded-[10px]">
+          <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-950 rounded-[10px]">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-gray-700">CSV Template</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">CSV Template</p>
               <button
                 type="button"
                 onClick={downloadTemplateCSV}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-white hover:text-[#51459d] transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 hover:text-[#51459d] transition-colors"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -166,16 +166,16 @@ export default function BulkImportPage() {
           {/* Valid Rows */}
           {validRows.length > 0 && (
             <Card>
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Badge variant="success">{validRows.length} valid</Badge>
-                  <span className="text-sm text-gray-600">Ready to import</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Ready to import</span>
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100 text-left">
+                    <tr className="border-b border-gray-100 dark:border-gray-800 text-left">
                       <th className="px-4 py-3 font-medium text-gray-500">Row</th>
                       <th className="px-4 py-3 font-medium text-gray-500">Email</th>
                       <th className="px-4 py-3 font-medium text-gray-500">Full Name</th>
@@ -185,10 +185,10 @@ export default function BulkImportPage() {
                   </thead>
                   <tbody>
                     {validRows.map((row) => (
-                      <tr key={row.row} className="border-b border-gray-50 hover:bg-gray-50/50">
+                      <tr key={row.row} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800">
                         <td className="px-4 py-2.5 text-gray-400">{row.row}</td>
-                        <td className="px-4 py-2.5 text-gray-900">{row.email}</td>
-                        <td className="px-4 py-2.5 text-gray-700">{row.full_name}</td>
+                        <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100">{row.email}</td>
+                        <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300">{row.full_name}</td>
                         <td className="px-4 py-2.5 text-gray-500">{row.role || '-'}</td>
                         <td className="px-4 py-2.5 text-gray-500">{row.department || '-'}</td>
                       </tr>
@@ -202,14 +202,14 @@ export default function BulkImportPage() {
           {/* Error Rows */}
           {errorRows.length > 0 && (
             <Card>
-              <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
                 <Badge variant="danger">{errorRows.length} errors</Badge>
-                <span className="text-sm text-gray-600">These rows will be skipped</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">These rows will be skipped</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100 text-left">
+                    <tr className="border-b border-gray-100 dark:border-gray-800 text-left">
                       <th className="px-4 py-3 font-medium text-gray-500">Row</th>
                       <th className="px-4 py-3 font-medium text-gray-500">Email</th>
                       <th className="px-4 py-3 font-medium text-gray-500">Full Name</th>
@@ -218,10 +218,10 @@ export default function BulkImportPage() {
                   </thead>
                   <tbody>
                     {errorRows.map((row) => (
-                      <tr key={row.row} className="border-b border-gray-50 hover:bg-red-50/30">
+                      <tr key={row.row} className="border-b border-gray-50 dark:border-gray-800 hover:bg-red-50/30">
                         <td className="px-4 py-2.5 text-gray-400">{row.row}</td>
-                        <td className="px-4 py-2.5 text-gray-900">{row.email || '-'}</td>
-                        <td className="px-4 py-2.5 text-gray-700">{row.full_name || '-'}</td>
+                        <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100">{row.email || '-'}</td>
+                        <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300">{row.full_name || '-'}</td>
                         <td className="px-4 py-2.5 text-red-600 text-xs">{row.errors}</td>
                       </tr>
                     ))}
@@ -254,22 +254,22 @@ export default function BulkImportPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Import Complete</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Import Complete</h2>
             <p className="text-gray-500 mt-1">
               {result.created_count} users created, {result.skipped_count} skipped
             </p>
           </div>
 
           {result.created_users.length > 0 && (
-            <div className="border-t border-gray-100">
+            <div className="border-t border-gray-100 dark:border-gray-800">
               <div className="p-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Created Users (save generated passwords)
                 </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-100 text-left">
+                      <tr className="border-b border-gray-100 dark:border-gray-800 text-left">
                         <th className="px-4 py-2 font-medium text-gray-500">Email</th>
                         <th className="px-4 py-2 font-medium text-gray-500">Full Name</th>
                         <th className="px-4 py-2 font-medium text-gray-500">Generated Password</th>
@@ -277,9 +277,9 @@ export default function BulkImportPage() {
                     </thead>
                     <tbody>
                       {result.created_users.map((u) => (
-                        <tr key={u.id} className="border-b border-gray-50">
-                          <td className="px-4 py-2 text-gray-900">{u.email}</td>
-                          <td className="px-4 py-2 text-gray-700">{u.full_name}</td>
+                        <tr key={u.id} className="border-b border-gray-50 dark:border-gray-800">
+                          <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{u.email}</td>
+                          <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{u.full_name}</td>
                           <td className="px-4 py-2">
                             <code className="bg-yellow-50 text-yellow-800 px-2 py-0.5 rounded text-xs font-mono">
                               {u.generated_password}
@@ -294,7 +294,7 @@ export default function BulkImportPage() {
             </div>
           )}
 
-          <div className="p-4 border-t border-gray-100 flex justify-end">
+          <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end">
             <Button variant="secondary" onClick={handleReset}>Import More</Button>
           </div>
         </Card>

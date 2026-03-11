@@ -38,14 +38,9 @@ function OrderCard({
   onView: () => void
 }) {
   return (
-    <div className="bg-white rounded-[10px] border border-gray-200 overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 overflow-hidden">
       {/* Swipe hint line */}
-      <div className={`h-1 ${
-        order.status === 'delivered' ? 'bg-green-500' :
-        order.status === 'cancelled' ? 'bg-red-500' :
-        order.status === 'shipped' ? 'bg-blue-500' :
-        'bg-yellow-500'
-      }`} />
+      <div className={`h-1 ${ order.status === 'delivered' ? 'bg-green-500' : order.status === 'cancelled' ? 'bg-red-500' : order.status === 'shipped' ? 'bg-blue-500' : 'bg-yellow-500' }`} />
       <div className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div>
@@ -65,23 +60,23 @@ function OrderCard({
         <div className="space-y-2 mb-3">
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Customer</span>
-            <span className="text-gray-900 font-medium truncate ml-4">{order.customer_name || 'Guest'}</span>
+            <span className="text-gray-900 dark:text-gray-100 font-medium truncate ml-4">{order.customer_name || 'Guest'}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Total</span>
-            <span className="text-gray-900 font-bold">{formatCurrency(order.total)}</span>
+            <span className="text-gray-900 dark:text-gray-100 font-bold">{formatCurrency(order.total)}</span>
           </div>
           {order.tracking_number && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Tracking</span>
-              <span className="text-gray-600 font-mono text-xs">{order.tracking_number}</span>
+              <span className="text-gray-600 dark:text-gray-400 font-mono text-xs">{order.tracking_number}</span>
             </div>
           )}
         </div>
 
         <div className="flex gap-2">
           <select
-            className="flex-1 min-h-[44px] border border-gray-200 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-white"
+            className="flex-1 min-h-[44px] border border-gray-200 dark:border-gray-700 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-white dark:bg-gray-800"
             value={order.status}
             onChange={(e) => onStatusChange(e.target.value)}
           >
@@ -139,7 +134,7 @@ export default function OrdersPage() {
       label: 'Customer',
       render: (row: EcomOrder) => (
         <div>
-          <span className="text-gray-700 text-sm">{row.customer_name || '-'}</span>
+          <span className="text-gray-700 dark:text-gray-300 text-sm">{row.customer_name || '-'}</span>
           {row.customer_email && (
             <span className="text-gray-400 text-xs block">{row.customer_email}</span>
           )}
@@ -151,7 +146,7 @@ export default function OrdersPage() {
       label: 'Status',
       render: (row: EcomOrder) => (
         <select
-          className="border border-gray-200 rounded-[10px] px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="border border-gray-200 dark:border-gray-700 rounded-[10px] px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
           value={row.status}
           onChange={(e) => handleStatusChange(row.id, e.target.value)}
         >
@@ -165,7 +160,7 @@ export default function OrdersPage() {
       key: 'total',
       label: 'Total',
       render: (row: EcomOrder) => (
-        <span className="font-medium text-gray-900">{formatCurrency(row.total)}</span>
+        <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(row.total)}</span>
       ),
     },
     {
@@ -199,7 +194,7 @@ export default function OrdersPage() {
     <div className="p-3 sm:p-4 md:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5 md:mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Orders</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Orders</h1>
           <p className="text-sm text-gray-500 mt-0.5">{data?.total ?? 0} orders total</p>
         </div>
       </div>
@@ -209,7 +204,7 @@ export default function OrdersPage() {
         <input
           type="text"
           placeholder="Search orders..."
-          className="min-h-[44px] border border-gray-200 rounded-[10px] px-3 py-2 text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="min-h-[44px] border border-gray-200 dark:border-gray-700 rounded-[10px] px-3 py-2 text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-primary/40"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1) }}
         />
@@ -217,9 +212,7 @@ export default function OrdersPage() {
         <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 sm:hidden">
           <button
             onClick={() => { setStatusFilter(''); setPage(1) }}
-            className={`min-h-[44px] px-4 py-2 rounded-full text-xs font-medium shrink-0 transition-colors active:scale-95 ${
-              !statusFilter ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'
-            }`}
+            className={`min-h-[44px] px-4 py-2 rounded-full text-xs font-medium shrink-0 transition-colors active:scale-95 ${ !statusFilter ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600' }`}
           >
             All
           </button>
@@ -227,16 +220,14 @@ export default function OrdersPage() {
             <button
               key={s}
               onClick={() => { setStatusFilter(s); setPage(1) }}
-              className={`min-h-[44px] px-4 py-2 rounded-full text-xs font-medium shrink-0 transition-colors active:scale-95 ${
-                statusFilter === s ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'
-              }`}
+              className={`min-h-[44px] px-4 py-2 rounded-full text-xs font-medium shrink-0 transition-colors active:scale-95 ${ statusFilter === s ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600' }`}
             >
               {s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
           ))}
         </div>
         <select
-          className="hidden sm:block min-h-[44px] border border-gray-200 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="hidden sm:block min-h-[44px] border border-gray-200 dark:border-gray-700 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
         >
@@ -290,7 +281,7 @@ export default function OrdersPage() {
           <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(page - 1)} className="min-h-[44px]">
             Previous
           </Button>
-          <span className="px-3 py-1.5 text-sm text-gray-600 flex items-center">
+          <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 flex items-center">
             Page {page} of {Math.ceil((data?.total ?? 0) / 20)}
           </span>
           <Button

@@ -87,21 +87,21 @@ export default function QuickActivityLog({ contactId, contactName }: QuickActivi
           <div className="space-y-3">
             {contactName && (
               <p className="text-sm text-gray-500 -mt-1 mb-2">
-                For: <span className="font-medium text-gray-700">{contactName}</span>
+                For: <span className="font-medium text-gray-700 dark:text-gray-300">{contactName}</span>
               </p>
             )}
-            <p className="text-sm text-gray-600 mb-3">What type of activity?</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">What type of activity?</p>
             <div className="grid grid-cols-2 gap-3">
               {ACTIVITY_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => setSelectedType(opt.value)}
-                  className="flex flex-col items-center gap-2 p-4 rounded-[10px] border border-gray-200 hover:border-primary hover:bg-primary/5 transition-colors min-h-[80px] active:scale-95"
+                  className="flex flex-col items-center gap-2 p-4 rounded-[10px] border border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary/5 transition-colors min-h-[80px] active:scale-95"
                 >
                   <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={opt.icon} />
                   </svg>
-                  <span className="text-sm font-medium text-gray-700">{opt.label}</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{opt.label}</span>
                 </button>
               ))}
             </div>
@@ -118,7 +118,7 @@ export default function QuickActivityLog({ contactId, contactName }: QuickActivi
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <span className="text-sm font-medium text-gray-700 capitalize">{selectedType}</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">{selectedType}</span>
               {contactName && (
                 <span className="text-xs text-gray-400 ml-auto truncate max-w-[120px]">{contactName}</span>
               )}
@@ -134,9 +134,9 @@ export default function QuickActivityLog({ contactId, contactName }: QuickActivi
             />
 
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">Details (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Details (optional)</label>
               <textarea
-                className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[88px]"
+                className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[88px]"
                 placeholder="Add any additional details..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}

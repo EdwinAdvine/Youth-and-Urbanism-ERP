@@ -40,9 +40,9 @@ export default function CommentsPanel({ fileId, onClose }: Props) {
   const topLevelComments = (comments ?? []).filter((c) => !c.parent_id)
 
   return (
-    <div className="w-80 border-l border-gray-100 bg-white h-full flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
-        <h3 className="text-sm font-semibold text-gray-900">Comments</h3>
+    <div className="w-80 border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 h-full flex flex-col">
+      <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Comments</h3>
         {onClose && (
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -71,7 +71,7 @@ export default function CommentsPanel({ fileId, onClose }: Props) {
       </div>
 
       {/* New comment input */}
-      <div className="p-3 border-t border-gray-100 shrink-0">
+      <div className="p-3 border-t border-gray-100 dark:border-gray-800 shrink-0">
         {replyTo && (
           <div className="flex items-center justify-between mb-2 text-xs text-gray-500">
             <span>Replying to comment</span>
@@ -83,7 +83,7 @@ export default function CommentsPanel({ fileId, onClose }: Props) {
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder={replyTo ? 'Write a reply...' : 'Add a comment...'}
-            className="flex-1 rounded-[10px] border border-gray-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            className="flex-1 rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             rows={2}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit()
@@ -112,19 +112,19 @@ function CommentItem({
   isResolving: boolean
 }) {
   return (
-    <div className={`rounded-lg p-3 ${comment.resolved ? 'bg-gray-50 opacity-60' : 'bg-white border border-gray-100'}`}>
+    <div className={`rounded-lg p-3 ${comment.resolved ? 'bg-gray-50 dark:bg-gray-950 opacity-60' : 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800'}`}>
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
             {comment.author_name?.charAt(0)?.toUpperCase() ?? '?'}
           </div>
-          <span className="text-xs font-semibold text-gray-700">{comment.author_name}</span>
+          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{comment.author_name}</span>
         </div>
         <span className="text-xs text-gray-400">
           {new Date(comment.created_at).toLocaleDateString()}
         </span>
       </div>
-      <p className="text-sm text-gray-600 mt-2">{comment.content}</p>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{comment.content}</p>
       {comment.resolved && <Badge variant="success" className="mt-2">Resolved</Badge>}
       <div className="flex items-center gap-2 mt-2">
         {!comment.resolved && (
@@ -145,11 +145,11 @@ function CommentItem({
       </div>
       {/* Replies */}
       {comment.replies && comment.replies.length > 0 && (
-        <div className="mt-2 ml-4 space-y-2 border-l-2 border-gray-100 pl-3">
+        <div className="mt-2 ml-4 space-y-2 border-l-2 border-gray-100 dark:border-gray-800 pl-3">
           {comment.replies.map((reply) => (
             <div key={reply.id} className="text-sm">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-semibold text-gray-600">{reply.author_name}</span>
+                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">{reply.author_name}</span>
                 <span className="text-xs text-gray-400">{new Date(reply.created_at).toLocaleDateString()}</span>
               </div>
               <p className="text-gray-500 mt-0.5">{reply.content}</p>

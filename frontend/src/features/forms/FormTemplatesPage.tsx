@@ -79,7 +79,7 @@ export default function FormTemplatesPage() {
                 {tmpl.category && <Badge variant="info">{tmpl.category}</Badge>}
                 <Badge variant="default">{tmpl.fields_config.length} fields</Badge>
               </div>
-              <div className="pt-3 border-t border-gray-100 flex justify-end">
+              <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-end">
                 <Button size="sm" onClick={() => openUse(tmpl)}>Use Template</Button>
               </div>
             </Card>

@@ -151,7 +151,7 @@ export default function LeadsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Leads</h1>
           <p className="text-sm text-gray-500 mt-1">Track and manage sales leads</p>
         </div>
         <div className="flex gap-2">
@@ -173,8 +173,8 @@ export default function LeadsPage() {
               )}
             >
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-sm text-gray-900">{STATUS_LABELS[status]}</span>
-                <span className="text-xs bg-gray-200 text-gray-600 rounded-full px-2 py-0.5">
+                <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{STATUS_LABELS[status]}</span>
+                <span className="text-xs bg-gray-200 text-gray-600 dark:text-gray-400 rounded-full px-2 py-0.5">
                   {grouped[status].length}
                 </span>
               </div>
@@ -183,18 +183,18 @@ export default function LeadsPage() {
             {/* Cards */}
             <div className="space-y-2 mt-2 min-h-[200px]">
               {grouped[status].length === 0 ? (
-                <div className="text-center text-gray-400 text-xs py-8 border-2 border-dashed border-gray-200 rounded-[10px]">
+                <div className="text-center text-gray-400 text-xs py-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[10px]">
                   No leads
                 </div>
               ) : (
                 grouped[status].map((lead) => (
                   <div
                     key={lead.id}
-                    className="bg-white rounded-[10px] border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer"
+                    className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer"
                     onClick={() => openEdit(lead)}
                   >
                     <div className="flex items-start justify-between">
-                      <h3 className="font-medium text-sm text-gray-900 leading-tight">{lead.title}</h3>
+                      <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 leading-tight">{lead.title}</h3>
                     </div>
                     {lead.contact_name && (
                       <p className="text-xs text-gray-500 mt-1">{lead.contact_name}</p>
@@ -296,9 +296,9 @@ export default function LeadsPage() {
             }
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={3}
               value={form.notes ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}

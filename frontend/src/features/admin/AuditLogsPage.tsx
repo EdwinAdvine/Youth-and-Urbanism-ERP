@@ -29,7 +29,7 @@ export default function AuditLogsPage() {
       label: 'Time',
       render: (log: AuditLog) => (
         <div>
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
             {new Date(log.created_at).toLocaleString()}
           </p>
           <p className="text-xs text-gray-400">
@@ -43,7 +43,7 @@ export default function AuditLogsPage() {
       label: 'User',
       render: (log: AuditLog) => (
         <div>
-          <p className="text-sm font-medium text-gray-700">{log.user_email}</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{log.user_email}</p>
           {log.ip_address && (
             <p className="text-xs text-gray-400">{log.ip_address}</p>
           )}
@@ -64,7 +64,7 @@ export default function AuditLogsPage() {
       label: 'Resource',
       render: (log: AuditLog) => (
         <div>
-          <p className="text-sm text-gray-700 capitalize">{log.resource}</p>
+          <p className="text-sm text-gray-700 dark:text-gray-300 capitalize">{log.resource}</p>
           {log.resource_id && (
             <p className="text-xs text-gray-400">ID: {log.resource_id}</p>
           )}
@@ -87,13 +87,13 @@ export default function AuditLogsPage() {
   return (
     <div className="p-6 space-y-5 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Audit Logs</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Audit Logs</h1>
         <p className="text-gray-500 text-sm mt-0.5">Full history of system activity and changes</p>
       </div>
 
       {/* Filters */}
       <Card padding={false}>
-        <div className="p-4 flex gap-3 border-b border-gray-100 flex-wrap">
+        <div className="p-4 flex gap-3 border-b border-gray-100 dark:border-gray-800 flex-wrap">
           <Input
             placeholder="Filter by user email…"
             value={userFilter}
@@ -108,7 +108,7 @@ export default function AuditLogsPage() {
           <select
             value={actionFilter}
             onChange={(e) => { setActionFilter(e.target.value); setPage(1) }}
-            className="rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            className="rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
           >
             <option value="">All Actions</option>
             <option value="create">Create</option>

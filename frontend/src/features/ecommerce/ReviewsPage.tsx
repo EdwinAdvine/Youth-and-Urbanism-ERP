@@ -145,7 +145,7 @@ export default function ReviewsPage() {
           emptyText="No reviews found"
         />
         {data && data.total > limit && (
-          <div className="flex justify-center gap-2 p-4 border-t border-gray-100">
+          <div className="flex justify-center gap-2 p-4 border-t border-gray-100 dark:border-gray-800">
             <Button size="sm" variant="ghost" disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</Button>
             <span className="text-sm text-gray-500 self-center">Page {page} of {Math.ceil(data.total / limit)}</span>
             <Button size="sm" variant="ghost" disabled={page * limit >= data.total} onClick={() => setPage(page + 1)}>Next</Button>

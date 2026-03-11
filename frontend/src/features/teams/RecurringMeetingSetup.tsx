@@ -83,18 +83,18 @@ export default function RecurringMeetingSetup({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-[8px] bg-[#51459d]/10 flex items-center justify-center">
               <svg className="h-4 w-4 text-[#51459d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </div>
-            <h3 className="text-sm font-semibold text-gray-900">Recurring Meeting</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recurring Meeting</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500">
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -104,24 +104,24 @@ export default function RecurringMeetingSetup({
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Title */}
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1.5">Meeting title</label>
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Meeting title</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Weekly Team Sync"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
               autoFocus
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1.5">Description</label>
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Meeting agenda..."
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 resize-none"
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 resize-none"
               rows={2}
             />
           </div>
@@ -129,37 +129,37 @@ export default function RecurringMeetingSetup({
           {/* Date & time */}
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="text-xs font-medium text-gray-700 block mb-1.5">Start date</label>
+              <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Start date</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none"
+                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-700 block mb-1.5">Start</label>
+              <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Start</label>
               <input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none"
+                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-700 block mb-1.5">End</label>
+              <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">End</label>
               <input
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none"
+                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none"
               />
             </div>
           </div>
 
           {/* Recurrence type */}
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-2">Repeats</label>
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-2">Repeats</label>
             <div className="flex flex-wrap gap-1.5">
               {([
                 { value: 'daily', label: 'Daily' },
@@ -174,7 +174,7 @@ export default function RecurringMeetingSetup({
                   className={`px-3 py-1.5 text-xs rounded-[8px] border transition-colors ${
                     recurrence === r.value
                       ? 'bg-[#51459d] text-white border-[#51459d]'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
                 >
                   {r.label}
@@ -186,7 +186,7 @@ export default function RecurringMeetingSetup({
           {/* Custom interval */}
           {(recurrence === 'custom' || recurrence === 'daily' || recurrence === 'monthly') && (
             <div>
-              <label className="text-xs font-medium text-gray-700 block mb-1.5">
+              <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">
                 Every
               </label>
               <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export default function RecurringMeetingSetup({
                   max={52}
                   value={interval}
                   onChange={(e) => setCustomInterval(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-20 px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none"
+                  className="w-20 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none"
                 />
                 <span className="text-xs text-gray-500">
                   {recurrence === 'daily' ? 'day(s)' : recurrence === 'monthly' ? 'month(s)' : 'week(s)'}
@@ -208,7 +208,7 @@ export default function RecurringMeetingSetup({
           {/* Weekday picker */}
           {(recurrence === 'weekly' || recurrence === 'biweekly' || recurrence === 'custom') && (
             <div>
-              <label className="text-xs font-medium text-gray-700 block mb-2">On days</label>
+              <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-2">On days</label>
               <div className="flex gap-1">
                 {WEEKDAY_LABELS.map((label, i) => (
                   <button
@@ -217,7 +217,7 @@ export default function RecurringMeetingSetup({
                     className={`w-9 h-9 rounded-full text-[11px] font-medium transition-colors ${
                       weekdays.includes(i)
                         ? 'bg-[#51459d] text-white'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        : 'bg-gray-100 dark:bg-gray-900 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     {label.charAt(0)}
@@ -229,25 +229,25 @@ export default function RecurringMeetingSetup({
 
           {/* End condition */}
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-2">Ends</label>
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-2">Ends</label>
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="meetEndType" checked={endType === 'never'} onChange={() => setEndType('never')} className="text-[#51459d]" />
-                <span className="text-xs text-gray-600">Never</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400">Never</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="meetEndType" checked={endType === 'on_date'} onChange={() => setEndType('on_date')} className="text-[#51459d]" />
-                <span className="text-xs text-gray-600">On</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400">On</span>
                 {endType === 'on_date' && (
-                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="ml-2 px-2 py-1 text-xs border border-gray-200 rounded-[6px] focus:outline-none" />
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="ml-2 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-[6px] focus:outline-none" />
                 )}
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="meetEndType" checked={endType === 'after'} onChange={() => setEndType('after')} className="text-[#51459d]" />
-                <span className="text-xs text-gray-600">After</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400">After</span>
                 {endType === 'after' && (
                   <>
-                    <input type="number" min={1} max={365} value={endCount} onChange={(e) => setEndCount(parseInt(e.target.value) || 1)} className="w-16 px-2 py-1 text-xs border border-gray-200 rounded-[6px] focus:outline-none" />
+                    <input type="number" min={1} max={365} value={endCount} onChange={(e) => setEndCount(parseInt(e.target.value) || 1)} className="w-16 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-[6px] focus:outline-none" />
                     <span className="text-xs text-gray-500">meetings</span>
                   </>
                 )}
@@ -257,19 +257,19 @@ export default function RecurringMeetingSetup({
 
           {/* Attendees */}
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1.5">Attendees</label>
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Attendees</label>
             <div className="flex gap-2 mb-2">
               <input
                 value={attendeeInput}
                 onChange={(e) => setAttendeeInput(e.target.value)}
                 placeholder="Email address"
-                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
+                className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
                 onKeyDown={(e) => e.key === 'Enter' && addAttendee()}
               />
               <button
                 onClick={addAttendee}
                 disabled={!attendeeInput.trim()}
-                className="px-3 py-2 text-xs border border-gray-200 rounded-[8px] hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="px-3 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
               >
                 Add
               </button>
@@ -291,9 +291,9 @@ export default function RecurringMeetingSetup({
           </div>
 
           {/* Summary */}
-          <div className="bg-gray-50 rounded-[8px] p-3">
+          <div className="bg-gray-50 dark:bg-gray-950 rounded-[8px] p-3">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Summary</p>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-gray-600 dark:text-gray-400">
               {getRecurrenceDescription()}
               {endType === 'on_date' && endDate && <>, until {endDate}</>}
               {endType === 'after' && <>, {endCount} meetings</>}
@@ -303,8 +303,8 @@ export default function RecurringMeetingSetup({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2 shrink-0">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-[8px] transition-colors">
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2 shrink-0">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px] transition-colors">
             Cancel
           </button>
           <button

@@ -77,7 +77,7 @@ export default function TimeLogReport() {
 
       {/* By Task */}
       <Card padding={false}>
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-base font-semibold text-gray-900">Hours by Task</h2>
         </div>
         {report.by_task.length === 0 ? (
@@ -115,7 +115,7 @@ export default function TimeLogReport() {
 
       {/* By User */}
       <Card padding={false}>
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-base font-semibold text-gray-900">Hours by Team Member</h2>
         </div>
         {report.by_user.length === 0 ? (

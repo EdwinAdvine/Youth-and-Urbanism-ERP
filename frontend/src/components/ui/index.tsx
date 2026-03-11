@@ -19,10 +19,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const base = 'inline-flex items-center justify-center gap-2 font-medium rounded-[10px] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none'
     const variants = {
       primary: 'bg-primary text-white hover:bg-primary-600 focus:ring-primary/40',
-      secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-300',
+      secondary: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 focus:ring-gray-300',
       danger: 'bg-danger text-white hover:opacity-90 focus:ring-red-300',
-      ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-200',
-      outline: 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-200',
+      ghost: 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 focus:ring-gray-200',
+      outline: 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-gray-200',
     }
     const sizes = {
       sm: 'px-3 py-1.5 text-xs',
@@ -63,13 +63,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="space-y-1">
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-gray-700">
+          <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             {label}
           </label>
         )}
         <div className="relative">
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
               {leftIcon}
             </div>
           )}
@@ -77,9 +77,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full rounded-[10px] border border-gray-200 bg-white py-2 text-sm transition-colors',
+              'w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-2 text-sm text-gray-900 dark:text-gray-100 transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary',
-              'placeholder:text-gray-400',
+              'placeholder:text-gray-400 dark:placeholder:text-gray-600',
               leftIcon ? 'pl-10 pr-3' : 'px-3',
               error && 'border-danger focus:ring-danger/30',
               className
@@ -99,16 +99,16 @@ Input.displayName = 'Input'
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string
   error?: string
-  options: { value: string; label: string }[]
+  options?: { value: string; label: string }[]
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, options, className, id, ...props }, ref) => {
+  ({ label, error, options, children, className, id, ...props }, ref) => {
     const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-')
     return (
       <div className="space-y-1">
         {label && (
-          <label htmlFor={selectId} className="block text-sm font-medium text-gray-700">
+          <label htmlFor={selectId} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             {label}
           </label>
         )}
@@ -116,16 +116,18 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={selectId}
           className={cn(
-            'w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm transition-colors',
+            'w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary',
             error && 'border-danger',
             className
           )}
           {...props}
         >
-          {options.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
+          {options
+            ? options.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))
+            : children}
         </select>
         {error && <p className="text-xs text-danger">{error}</p>}
       </div>
@@ -144,7 +146,7 @@ interface BadgeProps {
 
 export function Badge({ variant = 'default', children, className }: BadgeProps) {
   const variants = {
-    default: 'bg-gray-100 text-gray-700',
+    default: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
     success: 'bg-green-100 text-green-700',
     warning: 'bg-orange-100 text-orange-700',
     danger: 'bg-red-100 text-red-700',
@@ -170,7 +172,7 @@ interface CardProps {
 export function Card({ children, className, padding = true, onClick }: CardProps) {
   return (
     <div
-      className={cn('bg-white rounded-[10px] shadow-sm border border-gray-100', padding && 'p-6', className)}
+      className={cn('bg-white dark:bg-gray-800 rounded-[10px] shadow-sm border border-gray-100 dark:border-gray-700', padding && 'p-6', className)}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -222,10 +224,10 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={cn('relative bg-white rounded-[10px] shadow-xl w-full mx-4', sizes[size])}>
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+      <div className={cn('relative bg-white dark:bg-gray-800 rounded-[10px] shadow-xl w-full mx-4', sizes[size])}>
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -315,11 +317,11 @@ export function Table<T>({ columns, data, loading, emptyText = 'No data found', 
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-100">
+          <tr className="border-b border-gray-100 dark:border-gray-800">
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={cn('text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide', col.className)}
+                className={cn('text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide', col.className)}
               >
                 {col.label}
               </th>
@@ -341,7 +343,7 @@ export function Table<T>({ columns, data, loading, emptyText = 'No data found', 
             </tr>
           ) : (
             data.map((row) => (
-              <tr key={keyExtractor(row)} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+              <tr key={keyExtractor(row)} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
                 {columns.map((col) => (
                   <td key={col.key} className={cn('py-3 px-4', col.className)}>
                     {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? '')}
@@ -368,11 +370,11 @@ interface PaginationProps {
 export function Pagination({ page, pages, total, onChange }: PaginationProps) {
   if (pages <= 1) return null
   return (
-    <div className="flex items-center justify-between py-3 px-4 border-t border-gray-100 text-sm text-gray-600">
+    <div className="flex items-center justify-between py-3 px-4 border-t border-gray-100 dark:border-gray-800 text-sm text-gray-600 dark:text-gray-400">
       <span>{total} total</span>
       <div className="flex items-center gap-1">
         <button
-          className="px-3 py-1.5 rounded-md hover:bg-gray-100 disabled:opacity-40 disabled:pointer-events-none"
+          className="px-3 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:pointer-events-none"
           disabled={page === 1}
           onClick={() => onChange(page - 1)}
         >
@@ -385,7 +387,7 @@ export function Pagination({ page, pages, total, onChange }: PaginationProps) {
               key={p}
               className={cn(
                 'w-8 h-8 rounded-md text-xs font-medium transition-colors',
-                page === p ? 'bg-primary text-white' : 'hover:bg-gray-100'
+                page === p ? 'bg-primary text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
               )}
               onClick={() => onChange(p)}
             >
@@ -394,7 +396,7 @@ export function Pagination({ page, pages, total, onChange }: PaginationProps) {
           )
         })}
         <button
-          className="px-3 py-1.5 rounded-md hover:bg-gray-100 disabled:opacity-40 disabled:pointer-events-none"
+          className="px-3 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:pointer-events-none"
           disabled={page === pages}
           onClick={() => onChange(page + 1)}
         >

@@ -61,7 +61,7 @@ export default function ManufacturingDashboard() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
-      color: (stats?.wo_in_progress ?? 0) > 0 ? 'text-orange-600 bg-orange-50' : 'text-gray-600 bg-gray-50',
+      color: (stats?.wo_in_progress ?? 0) > 0 ? 'text-orange-600 bg-orange-50' : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-950',
     },
     {
       label: 'Material Cost (WIP)',
@@ -94,7 +94,7 @@ export default function ManufacturingDashboard() {
     {
       key: 'finished_item_name',
       label: 'Product',
-      render: (row: WorkOrder) => <span className="text-gray-700">{row.finished_item_name ?? '-'}</span>,
+      render: (row: WorkOrder) => <span className="text-gray-700 dark:text-gray-300">{row.finished_item_name ?? '-'}</span>,
     },
     {
       key: 'planned_quantity',
@@ -136,7 +136,7 @@ export default function ManufacturingDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Manufacturing</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Manufacturing</h1>
           <p className="text-sm text-gray-500 mt-1">Production planning, BOMs, and work orders</p>
         </div>
         <div className="flex gap-2">
@@ -177,7 +177,7 @@ export default function ManufacturingDashboard() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{stat.label}</p>
-                <p className="text-lg font-bold text-gray-900 truncate mt-1">{stat.value}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate mt-1">{stat.value}</p>
               </div>
             </div>
           </Card>
@@ -186,7 +186,7 @@ export default function ManufacturingDashboard() {
 
       {/* WO Status Summary */}
       <Card className="mb-6">
-        <h2 className="text-base font-semibold text-gray-900 mb-3">Work Order Summary</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">Work Order Summary</h2>
         <div className="flex flex-wrap gap-6">
           {woCounts.map((item) => (
             <div key={item.label} className="flex items-center gap-2">
@@ -199,8 +199,8 @@ export default function ManufacturingDashboard() {
 
       {/* Active Work Orders */}
       <Card padding={false}>
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Active Work Orders</h2>
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Active Work Orders</h2>
           <Button variant="ghost" size="sm" onClick={() => navigate('/manufacturing/work-orders')}>
             View All
           </Button>

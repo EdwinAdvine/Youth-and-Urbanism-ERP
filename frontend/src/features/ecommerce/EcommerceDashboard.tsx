@@ -176,15 +176,15 @@ export default function EcommerceDashboard() {
         <Card>
           <h2 className="text-base font-semibold text-gray-900 mb-4">Products Overview</h2>
           <div className="space-y-3">
-            <div className="flex items-center justify-between py-2 border-b border-gray-50">
+            <div className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800">
               <span className="text-sm font-medium text-gray-700">Total Products</span>
               <Badge variant="primary">{stats?.total_products ?? 0}</Badge>
             </div>
-            <div className="flex items-center justify-between py-2 border-b border-gray-50">
+            <div className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800">
               <span className="text-sm font-medium text-gray-700">Published</span>
               <Badge variant="success">{stats?.published_products ?? 0}</Badge>
             </div>
-            <div className="flex items-center justify-between py-2 border-b border-gray-50">
+            <div className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800">
               <span className="text-sm font-medium text-gray-700">Shipped Orders</span>
               <Badge variant="info">{stats?.shipped_orders ?? 0}</Badge>
             </div>
@@ -196,7 +196,7 @@ export default function EcommerceDashboard() {
           <h2 className="text-base font-semibold text-gray-900 mb-4">Top Selling Products</h2>
           <div className="space-y-3">
             {(stats?.top_products ?? []).map((p, idx) => (
-              <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+              <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800 last:border-0">
                 <span className="text-sm font-medium text-gray-700">{p.name}</span>
                 <span className="text-sm text-gray-500">{p.sold} sold</span>
               </div>
@@ -210,7 +210,7 @@ export default function EcommerceDashboard() {
 
       {/* Recent Orders */}
       <Card padding={false}>
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-base font-semibold text-gray-900">Recent Orders</h2>
           <Button variant="ghost" size="sm" onClick={() => navigate('/ecommerce/orders')}>
             View All

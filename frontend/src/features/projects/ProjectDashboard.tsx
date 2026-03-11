@@ -18,7 +18,7 @@ export default function ProjectDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Project Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Project Dashboard</h1>
           <p className="text-sm text-gray-500 mt-1">Overview of project progress and team performance</p>
         </div>
         <div className="w-64">
@@ -63,7 +63,7 @@ export default function ProjectDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Tasks by Status */}
             <Card>
-              <h2 className="text-base font-semibold text-gray-900 mb-4">Tasks by Status</h2>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Tasks by Status</h2>
               {Object.entries(report.task_by_status).length === 0 ? (
                 <p className="text-sm text-gray-400">No task data</p>
               ) : (
@@ -79,10 +79,10 @@ export default function ProjectDashboard() {
                     return (
                       <div key={status}>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm text-gray-600 capitalize">{status.replace(/_/g, ' ')}</span>
-                          <span className="text-sm font-medium text-gray-700">{count} ({pct}%)</span>
+                          <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">{status.replace(/_/g, ' ')}</span>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{count} ({pct}%)</span>
                         </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2">
+                        <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-full h-2">
                           <div className={`${colors[status] ?? 'bg-primary'} rounded-full h-2 transition-all`} style={{ width: `${pct}%` }} />
                         </div>
                       </div>
@@ -94,7 +94,7 @@ export default function ProjectDashboard() {
 
             {/* Tasks by Priority */}
             <Card>
-              <h2 className="text-base font-semibold text-gray-900 mb-4">Tasks by Priority</h2>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Tasks by Priority</h2>
               {Object.entries(report.task_by_priority).length === 0 ? (
                 <p className="text-sm text-gray-400">No task data</p>
               ) : (
@@ -113,11 +113,11 @@ export default function ProjectDashboard() {
                           {priority}
                         </Badge>
                         <div className="flex-1">
-                          <div className="w-full bg-gray-100 rounded-full h-2">
+                          <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-full h-2">
                             <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${pct}%` }} />
                           </div>
                         </div>
-                        <span className="text-sm font-medium text-gray-700 w-8 text-right">{count}</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-8 text-right">{count}</span>
                       </div>
                     )
                   })}
@@ -127,7 +127,7 @@ export default function ProjectDashboard() {
 
             {/* Team Workload */}
             <Card className="md:col-span-2">
-              <h2 className="text-base font-semibold text-gray-900 mb-4">Team Workload</h2>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Team Workload</h2>
               {report.team_workload.length === 0 ? (
                 <p className="text-sm text-gray-400">No assigned tasks</p>
               ) : (
@@ -139,7 +139,7 @@ export default function ProjectDashboard() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium text-gray-700 truncate">{w.user_name}</span>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{w.user_name}</span>
                           <span className="text-xs text-gray-500">
                             {w.assigned_count} tasks | {w.completed_count} done | {w.hours_logged}h
                           </span>
@@ -188,11 +188,11 @@ function MetricCard({ label, value, suffix, icon }: { label: string; value: numb
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-500">{label}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
             {value}{suffix && <span className="text-sm font-normal text-gray-500 ml-1">{suffix}</span>}
           </p>
         </div>
-        <div className="w-10 h-10 rounded-[10px] bg-gray-50 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-[10px] bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
           {icon}
         </div>
       </div>

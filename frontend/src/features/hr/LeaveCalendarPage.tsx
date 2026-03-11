@@ -82,7 +82,7 @@ export default function LeaveCalendarPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Leave Calendar</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Leave Calendar</h1>
           <p className="text-sm text-gray-500 mt-1">Team leave overview by date</p>
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function LeaveCalendarPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={prevMonth}>&lt;</Button>
-          <h2 className="text-lg font-semibold text-gray-900 min-w-[200px] text-center">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 min-w-[200px] text-center">
             {MONTH_NAMES[month]} {year}
           </h2>
           <Button variant="outline" size="sm" onClick={nextMonth}>&gt;</Button>
@@ -122,13 +122,13 @@ export default function LeaveCalendarPage() {
       <Card padding={false}>
         <div className="grid grid-cols-7">
           {DAY_NAMES.map((day) => (
-            <div key={day} className="py-3 px-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100">
+            <div key={day} className="py-3 px-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100 dark:border-gray-800">
               {day}
             </div>
           ))}
           {calendarCells.map((day, idx) => {
             if (day === null) {
-              return <div key={`empty-${idx}`} className="min-h-[100px] border-b border-r border-gray-50 bg-gray-50/50" />
+              return <div key={`empty-${idx}`} className="min-h-[100px] border-b border-r border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/50" />
             }
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
             const leaves = getLeaveForDate(dateStr)
@@ -138,7 +138,7 @@ export default function LeaveCalendarPage() {
             return (
               <div
                 key={day}
-                className={`min-h-[100px] border-b border-r border-gray-50 p-1.5 ${isWeekend ? 'bg-gray-50/50' : ''}`}
+                className={`min-h-[100px] border-b border-r border-gray-50 dark:border-gray-800 p-1.5 ${isWeekend ? 'bg-gray-50/50 dark:bg-gray-950/50' : ''}`}
               >
                 <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${isToday ? 'bg-primary text-white' : 'text-gray-600'}`}>
                   {day}

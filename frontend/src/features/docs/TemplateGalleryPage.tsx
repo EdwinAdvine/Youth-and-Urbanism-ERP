@@ -88,7 +88,7 @@ export default function TemplateGalleryPage() {
             <Card key={tmpl.id} className="hover:shadow-md transition-shadow cursor-pointer group" onClick={() => openUse(tmpl)}>
               <div className="flex flex-col items-center text-center">
                 {tmpl.thumbnail_url ? (
-                  <img src={tmpl.thumbnail_url} alt={tmpl.name} className="w-20 h-24 object-cover rounded mb-3 border border-gray-100" />
+                  <img src={tmpl.thumbnail_url} alt={tmpl.name} className="w-20 h-24 object-cover rounded mb-3 border border-gray-100 dark:border-gray-800" />
                 ) : (
                   <div className={`w-20 h-24 ${TYPE_COLORS[tmpl.doc_type] ?? 'bg-gray-400'} rounded mb-3 flex items-center justify-center text-white text-2xl font-bold`}>
                     {TYPE_ICONS[tmpl.doc_type] ?? 'D'}

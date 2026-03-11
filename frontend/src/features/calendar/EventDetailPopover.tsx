@@ -66,7 +66,7 @@ export default function EventDetailPopover({
       {/* Popover */}
       <div
         style={style}
-        className="w-80 bg-white rounded-[10px] shadow-xl border border-gray-100 overflow-hidden"
+        className="w-80 bg-white dark:bg-gray-800 rounded-[10px] shadow-xl border border-gray-100 dark:border-gray-800 overflow-hidden"
       >
         {/* Header with color strip */}
         <div className="h-1.5" style={{ backgroundColor: typeConfig.dot }} />
@@ -74,7 +74,7 @@ export default function EventDetailPopover({
           {/* Title + type badge */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1 min-w-0 pr-2">
-              <h3 className="text-sm font-semibold text-gray-900 leading-tight">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight">
                 {event.title}
               </h3>
               <span
@@ -89,7 +89,7 @@ export default function EventDetailPopover({
             </div>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded-[6px] text-gray-400 transition-colors shrink-0"
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-400 transition-colors shrink-0"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -98,14 +98,14 @@ export default function EventDetailPopover({
           </div>
 
           {/* Details */}
-          <div className="space-y-2.5 text-xs text-gray-600">
+          <div className="space-y-2.5 text-xs text-gray-600 dark:text-gray-400">
             {/* Date & time */}
             <div className="flex items-start gap-2">
               <svg className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
-                <p className="font-medium text-gray-700">{formatDate(event.start_time)}</p>
+                <p className="font-medium text-gray-700 dark:text-gray-300">{formatDate(event.start_time)}</p>
                 {event.all_day ? (
                   <p className="text-gray-400">All day</p>
                 ) : (
@@ -148,7 +148,7 @@ export default function EventDetailPopover({
                   {event.attendees.map((a, i) => (
                     <span
                       key={i}
-                      className="inline-flex items-center gap-1 bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded-full"
+                      className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 text-[10px] px-2 py-0.5 rounded-full"
                     >
                       <span className="w-4 h-4 rounded-full bg-[#51459d]/10 text-[#51459d] flex items-center justify-center text-[8px] font-bold">
                         {a.charAt(0).toUpperCase()}
@@ -188,7 +188,7 @@ export default function EventDetailPopover({
         </div>
 
         {/* Actions */}
-        <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-end gap-2">
+        <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-2">
           <button
             onClick={() => {
               if (window.confirm('Delete this event?')) {

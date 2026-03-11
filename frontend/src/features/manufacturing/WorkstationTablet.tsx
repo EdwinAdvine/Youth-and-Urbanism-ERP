@@ -51,26 +51,26 @@ function WorkstationCard({
           ? 'border-primary bg-primary/5 shadow-md'
           : currentOrder
             ? 'border-yellow-300 bg-yellow-50/50 hover:border-primary'
-            : 'border-gray-200 bg-white hover:border-gray-300'
+            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
       }`}
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className={`w-3 h-3 rounded-full ${currentOrder ? 'bg-yellow-500 animate-pulse' : station.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
-          <span className="font-mono text-sm font-bold text-gray-900">{station.code}</span>
+          <span className="font-mono text-sm font-bold text-gray-900 dark:text-gray-100">{station.code}</span>
         </div>
         <Badge variant={station.is_active ? 'success' : 'default'}>
           {currentOrder ? 'Running' : station.is_active ? 'Idle' : 'Inactive'}
         </Badge>
       </div>
-      <p className="text-base font-semibold text-gray-900">{station.name}</p>
+      <p className="text-base font-semibold text-gray-900 dark:text-gray-100">{station.name}</p>
       {station.description && (
         <p className="text-xs text-gray-500 mt-1 truncate">{station.description}</p>
       )}
       {currentOrder && (
-        <div className="mt-3 bg-white rounded-lg p-2 border border-yellow-200">
-          <p className="text-xs text-gray-500">Current: <span className="font-medium text-gray-900">{currentOrder.wo_number}</span></p>
-          <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
+        <div className="mt-3 bg-white dark:bg-gray-800 rounded-lg p-2 border border-yellow-200">
+          <p className="text-xs text-gray-500">Current: <span className="font-medium text-gray-900 dark:text-gray-100">{currentOrder.wo_number}</span></p>
+          <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-full h-1.5 mt-1">
             <div
               className="h-full rounded-full bg-primary"
               style={{ width: `${Math.min(100, (currentOrder.completed_quantity / currentOrder.planned_quantity) * 100)}%` }}
@@ -100,33 +100,33 @@ function WorkstationDetail({
   return (
     <div className="space-y-4">
       {/* Station header */}
-      <div className="bg-white rounded-[10px] border border-gray-200 p-5">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className={`w-4 h-4 rounded-full ${currentOrder ? 'bg-yellow-500 animate-pulse' : station.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
-            <h2 className="text-xl font-bold text-gray-900">{station.name}</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{station.name}</h2>
           </div>
           <span className="font-mono text-sm text-primary font-medium">{station.code}</span>
         </div>
         <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="bg-gray-50 rounded-lg p-3">
+          <div className="bg-gray-50 dark:bg-gray-950 rounded-lg p-3">
             <p className="text-xs text-gray-500">Capacity/hr</p>
-            <p className="text-lg font-bold text-gray-900">{station.capacity_per_hour ?? '--'}</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{station.capacity_per_hour ?? '--'}</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-3">
+          <div className="bg-gray-50 dark:bg-gray-950 rounded-lg p-3">
             <p className="text-xs text-gray-500">Hourly Rate</p>
-            <p className="text-lg font-bold text-gray-900">{formatCurrency(station.hourly_rate)}</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatCurrency(station.hourly_rate)}</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-3">
+          <div className="bg-gray-50 dark:bg-gray-950 rounded-lg p-3">
             <p className="text-xs text-gray-500">Queue</p>
-            <p className="text-lg font-bold text-gray-900">{queuedOrders.length}</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{queuedOrders.length}</p>
           </div>
         </div>
       </div>
 
       {/* Current work order */}
       {currentOrder ? (
-        <div className="bg-white rounded-[10px] border-2 border-yellow-300 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-[10px] border-2 border-yellow-300 p-5">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
             <h3 className="text-sm font-bold text-yellow-800">CURRENTLY RUNNING</h3>
@@ -139,7 +139,7 @@ function WorkstationDetail({
             </span>
           </div>
 
-          <p className="text-base font-semibold text-gray-900 mb-3">
+          <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">
             {currentOrder.finished_item_name ?? 'Product'}
           </p>
 
@@ -147,11 +147,11 @@ function WorkstationDetail({
           <div className="mb-4">
             <div className="flex justify-between text-sm mb-1">
               <span className="text-gray-500">Progress</span>
-              <span className="font-bold text-gray-900">
+              <span className="font-bold text-gray-900 dark:text-gray-100">
                 {currentOrder.completed_quantity} / {currentOrder.planned_quantity}
               </span>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-4">
+            <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-full h-4">
               <div
                 className="h-full rounded-full bg-primary transition-all flex items-center justify-center"
                 style={{ width: `${Math.min(100, (currentOrder.completed_quantity / currentOrder.planned_quantity) * 100)}%` }}
@@ -178,9 +178,9 @@ function WorkstationDetail({
               <p className="text-xs text-red-600">Rejected</p>
               <p className="text-lg font-bold text-red-900">{currentOrder.rejected_quantity}</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-2">
+            <div className="bg-gray-50 dark:bg-gray-950 rounded-lg p-2">
               <p className="text-xs text-gray-500">Remaining</p>
-              <p className="text-lg font-bold text-gray-900">
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                 {currentOrder.planned_quantity - currentOrder.completed_quantity}
               </p>
             </div>
@@ -196,7 +196,7 @@ function WorkstationDetail({
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-[10px] border border-gray-200 p-8 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 p-8 text-center">
           <svg className="h-12 w-12 mx-auto text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
           </svg>
@@ -208,18 +208,18 @@ function WorkstationDetail({
       {/* Queued orders */}
       {queuedOrders.length > 0 && (
         <div>
-          <h3 className="text-sm font-bold text-gray-700 mb-2">Queue ({queuedOrders.length})</h3>
+          <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Queue ({queuedOrders.length})</h3>
           <div className="space-y-2">
             {queuedOrders.map((wo, idx) => (
-              <div key={wo.id} className="bg-white rounded-[10px] border border-gray-200 p-3 flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-bold flex items-center justify-center">
+              <div key={wo.id} className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 p-3 flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-900 text-gray-500 text-xs font-bold flex items-center justify-center">
                   {idx + 1}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{wo.wo_number}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{wo.wo_number}</p>
                   <p className="text-xs text-gray-500 truncate">{wo.finished_item_name ?? 'Product'}</p>
                 </div>
-                <span className="text-sm font-semibold text-gray-700">{wo.planned_quantity} units</span>
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{wo.planned_quantity} units</span>
                 <Badge variant={wo.priority === 'high' ? 'danger' : wo.priority === 'medium' ? 'warning' : 'default'}>
                   {wo.priority}
                 </Badge>
@@ -271,20 +271,20 @@ export default function WorkstationTablet() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/manufacturing/workstations')}
-            className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-[10px] text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-[10px] text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-700 transition-colors"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Workstation Dashboard</h1>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Workstation Dashboard</h1>
             <p className="text-xs text-gray-400">
               Auto-refreshes every 30s | Last: {lastRefresh.toLocaleTimeString()}
             </p>
@@ -306,7 +306,7 @@ export default function WorkstationTablet() {
       {/* Content: Side-by-side on tablet, stacked on phone */}
       <div className="flex flex-col md:flex-row h-[calc(100vh-64px)]">
         {/* Station list */}
-        <div className={`${selectedStation ? 'hidden md:block' : ''} md:w-80 lg:w-96 overflow-auto p-4 border-r border-gray-200 bg-white`}>
+        <div className={`${selectedStation ? 'hidden md:block' : ''} md:w-80 lg:w-96 overflow-auto p-4 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800`}>
           <p className="text-sm text-gray-500 font-medium mb-3">
             {(workstations ?? []).length} workstation(s)
           </p>

@@ -77,9 +77,7 @@ export default function ContactPicker({ value, onChange, placeholder = 'Recipien
         <span className="text-xs text-gray-400 w-12 shrink-0">{label}</span>
       )}
       <div
-        className={`flex flex-wrap items-center gap-1 px-2 py-1.5 min-h-[36px] border rounded-[8px] transition-colors cursor-text ${
-          focused ? 'border-[#51459d] ring-1 ring-[#51459d]/20' : 'border-gray-200'
-        }`}
+        className={`flex flex-wrap items-center gap-1 px-2 py-1.5 min-h-[36px] border rounded-[8px] transition-colors cursor-text ${ focused ? 'border-[#51459d] ring-1 ring-[#51459d]/20' : 'border-gray-200' }`}
         onClick={() => inputRef.current?.focus()}
       >
         {chips.map((email) => (
@@ -103,15 +101,19 @@ export default function ContactPicker({ value, onChange, placeholder = 'Recipien
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
           onFocus={() => setFocused(true)}
+          onBlur={() => {
+            if (inputVal.trim()) addChip(inputVal.trim())
+            setFocused(false)
+          }}
           onKeyDown={handleKeyDown}
           placeholder={chips.length === 0 ? placeholder : ''}
-          className="flex-1 min-w-[120px] text-sm text-gray-900 focus:outline-none placeholder:text-gray-400 bg-transparent"
+          className="flex-1 min-w-[120px] text-sm text-gray-900 dark:text-gray-100 focus:outline-none placeholder:text-gray-400 bg-transparent"
         />
       </div>
 
       {/* Autocomplete dropdown */}
       {showDropdown && (
-        <div className="absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-[8px] shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-30 left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[8px] shadow-lg max-h-48 overflow-y-auto">
           {filteredContacts.map((contact) => (
             <button
               key={contact.email}
@@ -123,7 +125,7 @@ export default function ContactPicker({ value, onChange, placeholder = 'Recipien
               </div>
               <div className="min-w-0 flex-1">
                 {contact.name && (
-                  <p className="text-xs font-medium text-gray-800 truncate">{contact.name}</p>
+                  <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{contact.name}</p>
                 )}
                 <p className="text-[11px] text-gray-500 truncate">{contact.email}</p>
               </div>

@@ -92,7 +92,7 @@ export default function ConditionalLogicBuilder({ fields, rules, onChange }: Pro
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Conditional Logic</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Conditional Logic</h3>
           <p className="text-[11px] text-gray-400 mt-0.5">
             Show or hide fields based on other field values
           </p>
@@ -110,7 +110,7 @@ export default function ConditionalLogicBuilder({ fields, rules, onChange }: Pro
       </div>
 
       {rules.length === 0 ? (
-        <div className="text-center py-6 bg-gray-50 rounded-[10px] border border-dashed border-gray-200">
+        <div className="text-center py-6 bg-gray-50 dark:bg-gray-950 rounded-[10px] border border-dashed border-gray-200 dark:border-gray-700">
           <svg className="h-6 w-6 text-gray-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
           </svg>
@@ -123,22 +123,22 @@ export default function ConditionalLogicBuilder({ fields, rules, onChange }: Pro
             return (
               <div
                 key={rule.id}
-                className="border border-gray-200 rounded-[10px] bg-white overflow-hidden"
+                className="border border-gray-200 dark:border-gray-700 rounded-[10px] bg-white dark:bg-gray-800 overflow-hidden"
               >
                 {/* Rule header */}
                 <div
-                  className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   onClick={() => setExpandedRule(isExpanded ? null : rule.id)}
                 >
                   <div className="flex items-center gap-2 text-xs">
                     <span className={`px-1.5 py-0.5 rounded font-medium ${rule.action === 'show' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                       {rule.action.toUpperCase()}
                     </span>
-                    <span className="text-gray-600">
+                    <span className="text-gray-600 dark:text-gray-400">
                       "{getFieldLabel(rule.targetFieldId)}"
                     </span>
                     <span className="text-gray-400">when</span>
-                    <span className="text-gray-600">
+                    <span className="text-gray-600 dark:text-gray-400">
                       {rule.conditions.length} condition{rule.conditions.length !== 1 ? 's' : ''}
                     </span>
                   </div>
@@ -162,7 +162,7 @@ export default function ConditionalLogicBuilder({ fields, rules, onChange }: Pro
 
                 {/* Rule body */}
                 {isExpanded && (
-                  <div className="px-4 pb-4 border-t border-gray-100 pt-3 space-y-3">
+                  <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-800 pt-3 space-y-3">
                     {/* Target field + action */}
                     <div className="grid grid-cols-2 gap-2">
                       <div>
@@ -170,7 +170,7 @@ export default function ConditionalLogicBuilder({ fields, rules, onChange }: Pro
                         <select
                           value={rule.action}
                           onChange={(e) => updateRule(rule.id, { action: e.target.value as 'show' | 'hide' })}
-                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-[8px] bg-white focus:outline-none focus:border-[#51459d]"
+                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] bg-white dark:bg-gray-800 focus:outline-none focus:border-[#51459d]"
                         >
                           <option value="show">Show field</option>
                           <option value="hide">Hide field</option>
@@ -181,7 +181,7 @@ export default function ConditionalLogicBuilder({ fields, rules, onChange }: Pro
                         <select
                           value={rule.targetFieldId}
                           onChange={(e) => updateRule(rule.id, { targetFieldId: e.target.value })}
-                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-[8px] bg-white focus:outline-none focus:border-[#51459d]"
+                          className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] bg-white dark:bg-gray-800 focus:outline-none focus:border-[#51459d]"
                         >
                           {fields.map((f) => (
                             <option key={f.id} value={f.id}>{f.label}</option>
@@ -193,13 +193,13 @@ export default function ConditionalLogicBuilder({ fields, rules, onChange }: Pro
                     {/* Logic toggle */}
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] text-gray-500">Match</span>
-                      <div className="flex border border-gray-200 rounded-[6px] overflow-hidden">
+                      <div className="flex border border-gray-200 dark:border-gray-700 rounded-[6px] overflow-hidden">
                         {(['all', 'any'] as const).map((l) => (
                           <button
                             key={l}
                             onClick={() => updateRule(rule.id, { logic: l })}
                             className={`px-2.5 py-1 text-[10px] font-medium transition-colors ${
-                              rule.logic === l ? 'bg-[#51459d] text-white' : 'text-gray-500 hover:bg-gray-50'
+                              rule.logic === l ? 'bg-[#51459d] text-white' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'
                             }`}
                           >
                             {l.toUpperCase()}
@@ -211,13 +211,13 @@ export default function ConditionalLogicBuilder({ fields, rules, onChange }: Pro
 
                     {/* Conditions */}
                     {rule.conditions.map((cond, idx) => (
-                      <div key={idx} className="flex items-end gap-2 bg-gray-50 p-2.5 rounded-[8px]">
+                      <div key={idx} className="flex items-end gap-2 bg-gray-50 dark:bg-gray-950 p-2.5 rounded-[8px]">
                         <div className="flex-1">
                           <label className="block text-[10px] text-gray-500 mb-1">Field</label>
                           <select
                             value={cond.fieldId}
                             onChange={(e) => updateCondition(rule.id, idx, { fieldId: e.target.value })}
-                            className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-[6px] bg-white focus:outline-none focus:border-[#51459d]"
+                            className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[6px] bg-white dark:bg-gray-800 focus:outline-none focus:border-[#51459d]"
                           >
                             {fields.filter((f) => f.id !== rule.targetFieldId).map((f) => (
                               <option key={f.id} value={f.id}>{f.label}</option>
@@ -229,7 +229,7 @@ export default function ConditionalLogicBuilder({ fields, rules, onChange }: Pro
                           <select
                             value={cond.operator}
                             onChange={(e) => updateCondition(rule.id, idx, { operator: e.target.value as ConditionEntry['operator'] })}
-                            className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-[6px] bg-white focus:outline-none focus:border-[#51459d]"
+                            className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[6px] bg-white dark:bg-gray-800 focus:outline-none focus:border-[#51459d]"
                           >
                             {OPERATORS.map((op) => (
                               <option key={op.value} value={op.value}>{op.label}</option>
@@ -243,7 +243,7 @@ export default function ConditionalLogicBuilder({ fields, rules, onChange }: Pro
                               value={cond.value}
                               onChange={(e) => updateCondition(rule.id, idx, { value: e.target.value })}
                               placeholder="Value"
-                              className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-[6px] focus:outline-none focus:border-[#51459d]"
+                              className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[6px] focus:outline-none focus:border-[#51459d]"
                             />
                           </div>
                         )}

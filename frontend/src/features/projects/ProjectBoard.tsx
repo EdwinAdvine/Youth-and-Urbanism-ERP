@@ -188,7 +188,7 @@ export default function ProjectBoard() {
   return (
     <div className="flex flex-col h-full">
       {/* Project Header */}
-      <div className="shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-white">
+      <div className="shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800">
         <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
           <button onClick={() => navigate('/projects')} className="text-gray-400 hover:text-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center sm:min-h-0 sm:min-w-0">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -198,7 +198,7 @@ export default function ProjectBoard() {
           {project.color && (
             <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: project.color }} />
           )}
-          <h1 className="text-lg sm:text-xl font-bold text-gray-900">{project.name}</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">{project.name}</h1>
           <Badge variant={project.status === 'active' ? 'success' : 'default'}>{project.status}</Badge>
           <div className="flex items-center gap-2 ml-auto">
             <Button variant="ghost" size="sm" onClick={() => setCustomizeOpen(true)} title="Customize board columns">
@@ -231,7 +231,7 @@ export default function ProjectBoard() {
             <span className="text-xs font-medium text-gray-500">
               Milestones: {completedMilestones}/{totalMilestones}
             </span>
-            <div className="flex-1 max-w-xs h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="flex-1 max-w-xs h-2 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary rounded-full transition-all duration-300"
                 style={{ width: `${milestonePercent}%` }}
@@ -262,7 +262,7 @@ export default function ProjectBoard() {
                 <div className="flex items-center justify-between px-3 py-3">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full" style={col.rawColor ? { backgroundColor: col.rawColor } : undefined} />
-                    <span className="text-sm font-semibold text-gray-700">{col.label}</span>
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{col.label}</span>
                     <span className="text-xs font-medium text-gray-400 bg-gray-200 rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                       {tasks.length}
                     </span>
@@ -340,12 +340,12 @@ export default function ProjectBoard() {
         <div className="space-y-4">
           <Input label="Title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Task title" autoFocus />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
             <textarea
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               rows={3}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
               placeholder="Optional description..."
             />
           </div>

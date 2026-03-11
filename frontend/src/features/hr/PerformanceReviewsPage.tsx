@@ -101,7 +101,7 @@ export default function PerformanceReviewsPage() {
       label: 'Employee',
       render: (r: PerformanceReview) => (
         <div>
-          <p className="font-medium text-gray-900">{r.employee_name ?? 'Unknown'}</p>
+          <p className="font-medium text-gray-900 dark:text-gray-100">{r.employee_name ?? 'Unknown'}</p>
           <p className="text-xs text-gray-400">{r.review_period}</p>
         </div>
       ),
@@ -150,7 +150,7 @@ export default function PerformanceReviewsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Performance Reviews</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Performance Reviews</h1>
           <p className="text-sm text-gray-500 mt-1">Employee performance evaluations and ratings</p>
         </div>
         <Button onClick={openCreate}>Create Review</Button>
@@ -201,40 +201,40 @@ export default function PerformanceReviewsPage() {
             onChange={(e) => setForm((p) => ({ ...p, review_period: e.target.value }))}
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Rating</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Rating</label>
             <StarRating value={form.rating} onChange={(v) => setForm((p) => ({ ...p, rating: v }))} />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Goals</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Goals</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={3}
               value={form.goals ?? ''}
               onChange={(e) => setForm((p) => ({ ...p, goals: e.target.value }))}
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Strengths</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Strengths</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={3}
               value={form.strengths ?? ''}
               onChange={(e) => setForm((p) => ({ ...p, strengths: e.target.value }))}
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Areas for Improvement</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Areas for Improvement</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={3}
               value={form.areas_for_improvement ?? ''}
               onChange={(e) => setForm((p) => ({ ...p, areas_for_improvement: e.target.value }))}
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Comments</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Comments</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={2}
               value={form.comments ?? ''}
               onChange={(e) => setForm((p) => ({ ...p, comments: e.target.value }))}

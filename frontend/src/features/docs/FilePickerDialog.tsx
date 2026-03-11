@@ -71,13 +71,13 @@ export default function FilePickerDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-lg">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-lg">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {mode === 'create' ? 'Create New Document' : 'Open Document'}
           </h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500">
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -85,16 +85,12 @@ export default function FilePickerDialog({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-100">
+        <div className="flex border-b border-gray-100 dark:border-gray-800">
           {(['create', 'open'] as const).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
-              className={`flex-1 py-2.5 text-xs font-medium capitalize transition-colors ${
-                mode === m
-                  ? 'text-[#51459d] border-b-2 border-[#51459d]'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+              className={`flex-1 py-2.5 text-xs font-medium capitalize transition-colors ${ mode === m ? 'text-[#51459d] border-b-2 border-[#51459d]' : 'text-gray-500 hover:text-gray-700' }`}
             >
               {m === 'create' ? 'Create New' : 'Open Existing'}
             </button>
@@ -106,7 +102,7 @@ export default function FilePickerDialog({
             <div className="space-y-4">
               {/* Type selection */}
               <div>
-                <label className="text-xs font-medium text-gray-700 block mb-2">
+                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-2">
                   Document type
                 </label>
                 <div className="grid grid-cols-3 gap-3">
@@ -114,11 +110,7 @@ export default function FilePickerDialog({
                     <button
                       key={t.value}
                       onClick={() => setSelectedType(t.value)}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-[10px] border-2 transition-all ${
-                        selectedType === t.value
-                          ? 'border-[#51459d] bg-[#51459d]/5 shadow-sm'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-[10px] border-2 transition-all ${ selectedType === t.value ? 'border-[#51459d] bg-[#51459d]/5 shadow-sm' : 'border-gray-200 hover:border-gray-300' }`}
                     >
                       <div
                         className={`w-10 h-10 rounded-[8px] border flex items-center justify-center text-base font-bold ${t.color}`}
@@ -126,7 +118,7 @@ export default function FilePickerDialog({
                         {t.icon}
                       </div>
                       <div className="text-center">
-                        <p className="text-xs font-semibold text-gray-800">{t.label}</p>
+                        <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">{t.label}</p>
                         <p className="text-[10px] text-gray-400">{t.description}</p>
                       </div>
                     </button>
@@ -136,14 +128,14 @@ export default function FilePickerDialog({
 
               {/* File name */}
               <div>
-                <label className="text-xs font-medium text-gray-700 block mb-1.5">
+                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">
                   File name
                 </label>
                 <input
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder={`Untitled.${selectedType}`}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
                   onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                   autoFocus
                 />
@@ -170,7 +162,7 @@ export default function FilePickerDialog({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search documents..."
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
                   autoFocus
                 />
               </div>
@@ -191,7 +183,7 @@ export default function FilePickerDialog({
                           onOpenFile?.(doc)
                           onClose()
                         }}
-                        className="w-full flex items-center gap-3 p-2.5 rounded-[8px] hover:bg-gray-50 transition-colors text-left"
+                        className="w-full flex items-center gap-3 p-2.5 rounded-[8px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
                       >
                         <div
                           className={`w-8 h-8 rounded-[6px] border flex items-center justify-center text-xs font-bold shrink-0 ${cfg.color}`}
@@ -199,7 +191,7 @@ export default function FilePickerDialog({
                           {cfg.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-gray-800 truncate">
+                          <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
                             {doc.name}
                           </p>
                           <p className="text-[10px] text-gray-400">

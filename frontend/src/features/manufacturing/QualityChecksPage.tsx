@@ -195,7 +195,7 @@ export default function QualityChecksPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quality Checks</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Quality Checks</h1>
           <p className="text-sm text-gray-500 mt-1">Inspection records for production work orders</p>
         </div>
         <div className="flex gap-2">
@@ -222,7 +222,7 @@ export default function QualityChecksPage() {
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Checks</p>
-              <p className="text-lg font-bold text-gray-900 mt-0.5">{data?.total ?? 0}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-0.5">{data?.total ?? 0}</p>
             </div>
           </div>
         </Card>
@@ -235,7 +235,7 @@ export default function QualityChecksPage() {
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Inspected</p>
-              <p className="text-lg font-bold text-gray-900 mt-0.5">{totalInspected}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-0.5">{totalInspected}</p>
             </div>
           </div>
         </Card>
@@ -256,7 +256,7 @@ export default function QualityChecksPage() {
         </Card>
         <Card>
           <div className="flex items-start gap-3">
-            <div className={cn('p-2.5 rounded-[10px]', totalFailed > 0 ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-gray-600')}>
+            <div className={cn('p-2.5 rounded-[10px]', totalFailed > 0 ? 'bg-red-50 text-red-600' : 'bg-gray-50 dark:bg-gray-950 text-gray-600 dark:text-gray-400')}>
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
@@ -295,7 +295,7 @@ export default function QualityChecksPage() {
           keyExtractor={(row) => row.id}
         />
         {(data?.total ?? 0) > limit && (
-          <div className="flex justify-center p-4 border-t border-gray-100">
+          <div className="flex justify-center p-4 border-t border-gray-100 dark:border-gray-800">
             <div className="flex gap-2">
               <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
                 Previous
@@ -320,9 +320,9 @@ export default function QualityChecksPage() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="New Quality Check">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Work Order *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Work Order *</label>
             <select
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               value={form.work_order_id}
               onChange={(e) => setForm({ ...form, work_order_id: e.target.value })}
             >
@@ -358,16 +358,16 @@ export default function QualityChecksPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
               placeholder="Optional inspection notes"
             />
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" size="sm" onClick={() => setModalOpen(false)}>Cancel</Button>
             <Button size="sm" onClick={handleCreate} loading={createQC.isPending}>
               Create Quality Check

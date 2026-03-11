@@ -91,7 +91,7 @@ export default function ProjectIntegrations() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate(`/projects/${projectId}`)} className="text-gray-400 hover:text-gray-600">
+        <button onClick={() => navigate(`/projects/${projectId}`)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -100,13 +100,13 @@ export default function ProjectIntegrations() {
           <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: project.color }} />
         )}
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{project.name}</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{project.name}</h1>
           <p className="text-sm text-gray-500">Cross-module integrations</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200">
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -114,7 +114,7 @@ export default function ProjectIntegrations() {
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab.key
                 ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
             {tab.icon}
@@ -161,7 +161,7 @@ function FilesTab({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-gray-900">Project Files</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Project Files</h2>
         <div className="flex gap-2">
           {!hasFolder && (
             <Button size="sm" onClick={handleLinkDrive} loading={linkDrive.isPending}>
@@ -207,7 +207,7 @@ function FilesTab({ projectId }: { projectId: string }) {
                 <FileIcon contentType={file.content_type} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{file.name}</p>
                 <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
               </div>
             </Card>
@@ -252,7 +252,7 @@ function DocumentsTab({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-gray-900">Project Documents</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Project Documents</h2>
         <Button size="sm" onClick={() => setShowCreate(true)}>
           <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -279,7 +279,7 @@ function DocumentsTab({ projectId }: { projectId: string }) {
                 <DocTypeIcon docType={doc.doc_type} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 truncate">{doc.title}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{doc.title}</p>
                 <p className="text-xs text-gray-400 capitalize">{doc.doc_type} &middot; {new Date(doc.created_at).toLocaleDateString()}</p>
               </div>
               <Button variant="ghost" size="sm" onClick={() => window.open(`/docs?file=${doc.file_id}`, '_blank')}>
@@ -361,7 +361,7 @@ function DealsTab({ projectId }: { projectId: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-semibold text-gray-900">Linked Deals</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Linked Deals</h2>
           {deals.length > 0 && (
             <p className="text-xs text-gray-500 mt-0.5">
               {deals.length} deal{deals.length !== 1 ? 's' : ''} &middot; Total value: ${totalValue.toLocaleString()}
@@ -396,9 +396,9 @@ function DealsTab({ projectId }: { projectId: string }) {
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">{deal.deal_title || 'Untitled Deal'}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{deal.deal_title || 'Untitled Deal'}</p>
                 <div className="flex items-center gap-3 mt-0.5">
-                  <span className="text-sm text-gray-600">${(deal.deal_value ?? 0).toLocaleString()}</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">${(deal.deal_value ?? 0).toLocaleString()}</span>
                   <Badge variant={deal.deal_status === 'active' ? 'success' : 'default'} className="text-xs">
                     {deal.deal_status}
                   </Badge>
@@ -420,12 +420,12 @@ function DealsTab({ projectId }: { projectId: string }) {
         <div className="space-y-4">
           <Input label="Deal ID" value={dealId} onChange={(e) => setDealId(e.target.value)} placeholder="Paste the Deal UUID" autoFocus />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes (optional)</label>
             <textarea
               value={linkNotes}
               onChange={(e) => setLinkNotes(e.target.value)}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               placeholder="Why is this deal linked?"
             />
           </div>
@@ -483,7 +483,7 @@ function CostsTab({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-gray-900">Budget / Costs</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Budget / Costs</h2>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500">Hourly Rate:</label>
@@ -491,7 +491,7 @@ function CostsTab({ projectId }: { projectId: string }) {
               type="number"
               value={hourlyRate}
               onChange={(e) => setHourlyRate(Number(e.target.value) || 0)}
-              className="w-20 rounded-[10px] border border-gray-200 px-2 py-1 text-sm text-center"
+              className="w-20 rounded-[10px] border border-gray-200 dark:border-gray-700 px-2 py-1 text-sm text-center"
               min={0}
             />
           </div>
@@ -519,13 +519,13 @@ function CostsTab({ projectId }: { projectId: string }) {
           {/* Time by User */}
           {costs.time_by_user.length > 0 && (
             <Card>
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Labor Breakdown</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Labor Breakdown</h3>
               <div className="space-y-2">
                 {costs.time_by_user.map((u) => (
-                  <div key={u.user_id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-                    <span className="text-sm text-gray-600">{u.user_id.slice(0, 8)}...</span>
+                  <div key={u.user_id} className="flex items-center justify-between py-1.5 border-b border-gray-50 dark:border-gray-900 last:border-0">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{u.user_id.slice(0, 8)}...</span>
                     <div className="text-sm text-right">
-                      <span className="font-medium text-gray-900">{u.hours.toFixed(1)} hrs</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{u.hours.toFixed(1)} hrs</span>
                       <span className="text-gray-400 ml-2">(${u.cost.toFixed(2)})</span>
                     </div>
                   </div>
@@ -537,12 +537,12 @@ function CostsTab({ projectId }: { projectId: string }) {
           {/* Linked Expenses */}
           {costs.expenses.length > 0 && (
             <Card>
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Linked Expenses</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Linked Expenses</h3>
               <div className="space-y-2">
                 {costs.expenses.map((exp) => (
-                  <div key={exp.expense_id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <div key={exp.expense_id} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-900 last:border-0">
                     <div>
-                      <p className="text-sm text-gray-900">{exp.description}</p>
+                      <p className="text-sm text-gray-900 dark:text-gray-100">{exp.description}</p>
                       <p className="text-xs text-gray-400">
                         {exp.category} &middot; {exp.expense_date ? new Date(exp.expense_date).toLocaleDateString() : ''}
                         {exp.status && (
@@ -551,7 +551,7 @@ function CostsTab({ projectId }: { projectId: string }) {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900">${exp.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">${exp.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                       <button
                         onClick={() => handleUnlinkExpense(exp.expense_id)}
                         className="text-gray-400 hover:text-red-500 transition-colors"

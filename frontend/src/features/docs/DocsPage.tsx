@@ -35,9 +35,9 @@ function LinkedTasksPanel({ fileId }: { fileId: string }) {
   const [entityId, setEntityId] = useState('')
 
   return (
-    <div className="border-t border-gray-100 px-4 py-3 bg-gray-50 shrink-0">
+    <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-3 bg-gray-50 dark:bg-gray-950 shrink-0">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold text-gray-700">Linked Tasks</span>
+        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Linked Tasks</span>
         <button
           onClick={() => setShowForm(!showForm)}
           className="text-[10px] text-[#51459d] hover:underline"
@@ -51,13 +51,13 @@ function LinkedTasksPanel({ fileId }: { fileId: string }) {
             value={entityType}
             onChange={(e) => setEntityType(e.target.value)}
             placeholder="Type (e.g. task)"
-            className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded-[6px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30"
+            className="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-[6px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30"
           />
           <input
             value={entityId}
             onChange={(e) => setEntityId(e.target.value)}
             placeholder="Entity ID"
-            className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded-[6px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30"
+            className="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-[6px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30"
           />
           <button
             onClick={async () => {
@@ -81,7 +81,7 @@ function LinkedTasksPanel({ fileId }: { fileId: string }) {
       ) : (
         <ul className="space-y-1">
           {(links ?? []).map((link: { id: string; entity_type: string; entity_id: string }) => (
-            <li key={link.id} className="flex items-center justify-between text-xs text-gray-600">
+            <li key={link.id} className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
               <span>{link.entity_type}: {link.entity_id.slice(0, 8)}...</span>
               <button
                 className="text-[#ff3a6e] hover:underline text-[10px]"
@@ -178,16 +178,16 @@ function OnlyOfficeEditor({ file, onClose }: { file: Document; onClose: () => vo
         {sidePanel === 'versions' && <VersionPanel fileId={file.id} onClose={() => setSidePanel(null)} />}
         {sidePanel === 'ai' && <AIGenerationPanel fileId={file.id} onClose={() => setSidePanel(null)} />}
         {loading && !error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 z-10">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 z-10">
             <svg className="animate-spin h-6 w-6 text-[#51459d] mb-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
             <p className="text-sm text-gray-500">Loading ONLYOFFICE editor...</p>
           </div>
         )}
         {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 z-10">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 z-10">
             <div className="text-center max-w-sm">
               <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center text-2xl mx-auto mb-3">📄</div>
-              <h3 className="text-base font-semibold text-gray-900 mb-1">ONLYOFFICE not available</h3>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">ONLYOFFICE not available</h3>
               <p className="text-sm text-gray-500 mb-4">The document server is not reachable. Check your configuration in Settings.</p>
             </div>
           </div>
@@ -224,24 +224,24 @@ function CommentsPanel({ fileId, onClose }: { fileId: string; onClose: () => voi
   }
 
   return (
-    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white border-l border-gray-200 shadow-lg z-20 flex flex-col">
-      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between shrink-0">
-        <h3 className="text-sm font-semibold text-gray-900">Comments</h3>
-        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-[6px] text-gray-400">
+    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg z-20 flex flex-col">
+      <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Comments</h3>
+        <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-400">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {isLoading && <p className="text-xs text-gray-400 text-center py-4">Loading...</p>}
         {(comments ?? []).map((c: { id: string; author_name?: string; content: string; created_at: string }) => (
-          <div key={c.id} className="bg-gray-50 rounded-[8px] p-3">
+          <div key={c.id} className="bg-gray-50 dark:bg-gray-950 rounded-[8px] p-3">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium text-gray-700">{c.author_name ?? 'User'}</span>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{c.author_name ?? 'User'}</span>
               <span className="text-[10px] text-gray-400">{new Date(c.created_at).toLocaleString()}</span>
             </div>
             {editingId === c.id ? (
               <div className="space-y-2">
-                <textarea value={editText} onChange={(e) => setEditText(e.target.value)} className="w-full text-xs border border-gray-200 rounded-[6px] p-2 focus:outline-none focus:ring-1 focus:ring-[#51459d]/40" rows={2} />
+                <textarea value={editText} onChange={(e) => setEditText(e.target.value)} className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-[6px] p-2 focus:outline-none focus:ring-1 focus:ring-[#51459d]/40" rows={2} />
                 <div className="flex gap-1">
                   <button onClick={() => { updateComment.mutate({ commentId: c.id, content: editText }); setEditingId(null) }} className="text-[10px] text-[#51459d] hover:underline">Save</button>
                   <button onClick={() => setEditingId(null)} className="text-[10px] text-gray-400 hover:underline">Cancel</button>
@@ -249,7 +249,7 @@ function CommentsPanel({ fileId, onClose }: { fileId: string; onClose: () => voi
               </div>
             ) : (
               <>
-                <p className="text-xs text-gray-600">{c.content}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{c.content}</p>
                 <div className="flex gap-2 mt-1.5">
                   <button onClick={() => { setEditingId(c.id); setEditText(c.content) }} className="text-[10px] text-gray-400 hover:text-[#51459d]">Edit</button>
                   <button onClick={() => { if (window.confirm('Delete this comment?')) deleteComment.mutate(c.id) }} className="text-[10px] text-gray-400 hover:text-[#ff3a6e]">Delete</button>
@@ -262,12 +262,12 @@ function CommentsPanel({ fileId, onClose }: { fileId: string; onClose: () => voi
           <p className="text-xs text-gray-400 text-center py-4">No comments yet</p>
         )}
       </div>
-      <div className="border-t border-gray-100 p-3 shrink-0">
+      <div className="border-t border-gray-100 dark:border-gray-800 p-3 shrink-0">
         <textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           placeholder="Add a comment..."
-          className="w-full text-xs border border-gray-200 rounded-[8px] p-2 focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 resize-none"
+          className="w-full text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] p-2 focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 resize-none"
           rows={3}
         />
         <button
@@ -290,26 +290,26 @@ function VersionPanel({ fileId, onClose }: { fileId: string; onClose: () => void
   const restoreVersion = useRestoreVersion(fileId)
 
   return (
-    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white border-l border-gray-200 shadow-lg z-20 flex flex-col">
-      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between shrink-0">
-        <h3 className="text-sm font-semibold text-gray-900">Version History</h3>
-        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-[6px] text-gray-400">
+    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg z-20 flex flex-col">
+      <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Version History</h3>
+        <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-400">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {isLoading && <p className="text-xs text-gray-400 text-center py-4">Loading...</p>}
         {(versions ?? []).map((v: { id: string; version_number: number; created_at: string; size?: number }) => (
-          <div key={v.id} className="bg-gray-50 rounded-[8px] p-3">
+          <div key={v.id} className="bg-gray-50 dark:bg-gray-950 rounded-[8px] p-3">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-semibold text-gray-900">Version {v.version_number}</span>
+              <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">Version {v.version_number}</span>
               <span className="text-[10px] text-gray-400">{new Date(v.created_at).toLocaleString()}</span>
             </div>
             {v.size !== undefined && <p className="text-[10px] text-gray-400 mb-2">{formatFileSize(v.size)}</p>}
             <div className="flex gap-2">
               <button
                 onClick={() => downloadVersion.mutate(v.id)}
-                className="text-[10px] px-2 py-1 border border-gray-200 rounded-[4px] text-gray-600 hover:bg-gray-100 transition-colors"
+                className="text-[10px] px-2 py-1 border border-gray-200 dark:border-gray-700 rounded-[4px] text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 Download
               </button>
@@ -344,44 +344,44 @@ function CreateFileModal({ onClose, onCreate }: { onClose: () => void; onCreate:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-md">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">Create New Document</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-md">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Create New Document</h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1.5">Document type</label>
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Document type</label>
             <div className="grid grid-cols-3 gap-2">
               {types.map((t) => (
                 <button
                   key={t.value}
                   onClick={() => setType(t.value)}
                   className={`flex flex-col items-center gap-2 p-3 rounded-[8px] border-2 text-center transition-colors ${
-                    type === t.value ? `border-[#51459d] bg-[#51459d]/5` : 'border-gray-200 hover:border-gray-300'
+                    type === t.value ? `border-[#51459d] bg-[#51459d]/5` : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                   }`}
                 >
                   <div className={`w-8 h-8 rounded-[6px] border flex items-center justify-center text-sm font-bold ${t.color}`}>{t.icon}</div>
-                  <span className="text-[10px] text-gray-600 leading-tight">{t.label}</span>
+                  <span className="text-[10px] text-gray-600 dark:text-gray-400 leading-tight">{t.label}</span>
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1.5">File name</label>
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">File name</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={`Untitled.${type}`}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
               onKeyDown={(e) => e.key === 'Enter' && name && onCreate(name, type)}
             />
           </div>
         </div>
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-[8px] transition-colors">Cancel</button>
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px] transition-colors">Cancel</button>
           <button
             onClick={() => name && onCreate(name.endsWith(`.${type}`) ? name : `${name}.${type}`, type)}
             disabled={!name}
@@ -435,18 +435,18 @@ export default function DocsPage() {
       )}
 
       {/* Toolbar */}
-      <div className="bg-white border-b border-gray-100 px-3 sm:px-5 py-3 flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
-        <h1 className="text-base font-semibold text-gray-900">Documents</h1>
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800 px-3 sm:px-5 py-3 flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+        <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">Documents</h1>
         <div className="flex-1" />
         <div className="relative w-full sm:w-auto order-last sm:order-none mt-2 sm:mt-0">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search documents..." className="w-full sm:w-48 pl-9 pr-3 py-2 sm:py-1.5 text-sm sm:text-xs bg-gray-50 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30 min-h-[44px] sm:min-h-0" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search documents..." className="w-full sm:w-48 pl-9 pr-3 py-2 sm:py-1.5 text-sm sm:text-xs bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30 min-h-[44px] sm:min-h-0" />
         </div>
-        <div className="flex items-center border border-gray-200 rounded-[8px] overflow-hidden">
-          <button onClick={() => setViewMode('grid')} className={`p-2 sm:p-1.5 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors ${viewMode === 'grid' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50'}`}>
+        <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-[8px] overflow-hidden">
+          <button onClick={() => setViewMode('grid')} className={`p-2 sm:p-1.5 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors ${viewMode === 'grid' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
           </button>
-          <button onClick={() => setViewMode('list')} className={`p-2 sm:p-1.5 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50'}`}>
+          <button onClick={() => setViewMode('list')} className={`p-2 sm:p-1.5 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
           </button>
         </div>
@@ -460,8 +460,8 @@ export default function DocsPage() {
       <div className="flex-1 overflow-y-auto p-5">
         {documents.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center text-2xl mb-3">📄</div>
-            <p className="text-sm font-medium text-gray-700">No documents found</p>
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-900 flex items-center justify-center text-2xl mb-3">📄</div>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">No documents found</p>
             <p className="text-xs text-gray-400 mt-1">Create a new document to get started</p>
             <button onClick={() => setShowCreate(true)} className="mt-4 px-4 py-2 bg-[#51459d] text-white text-sm rounded-[8px] hover:bg-[#3d3480] transition-colors">Create Document</button>
           </div>
@@ -478,13 +478,13 @@ export default function DocsPage() {
                     // On touch devices, single tap opens
                     if ('ontouchstart' in window) setOpenFile(doc)
                   }}
-                  className="flex flex-col items-center gap-2.5 p-4 bg-white border border-gray-100 rounded-[10px] hover:border-[#51459d]/30 hover:shadow-md transition-all text-center group min-h-[88px]"
+                  className="flex flex-col items-center gap-2.5 p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] hover:border-[#51459d]/30 hover:shadow-md transition-all text-center group min-h-[88px]"
                 >
                   <div className={`w-14 h-16 rounded-[8px] border-2 flex items-center justify-center text-xl font-bold ${cfg.bg} ${cfg.color}`}>
                     {cfg.icon}
                   </div>
                   <div className="w-full">
-                    <p className="text-xs font-medium text-gray-800 truncate group-hover:text-[#51459d] transition-colors">{doc.name}</p>
+                    <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate group-hover:text-[#51459d] transition-colors">{doc.name}</p>
                     <p className="text-[10px] text-gray-400 mt-0.5">{formatFileSize(doc.size)} · {new Date(doc.updated_at).toLocaleDateString()}</p>
                   </div>
                 </button>
@@ -492,10 +492,10 @@ export default function DocsPage() {
             })}
           </div>
         ) : (
-          <div className="bg-white rounded-[10px] border border-gray-100 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
+                <tr className="border-b border-gray-100 dark:border-gray-800">
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Name</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Modified</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">Size</th>
@@ -507,11 +507,11 @@ export default function DocsPage() {
                   const ext = doc.extension.replace(/^\./, '')
                   const cfg = FILE_CONFIG[ext] ?? FILE_CONFIG.docx
                   return (
-                    <tr key={doc.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setOpenFile(doc)}>
+                    <tr key={doc.id} className="border-b border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer" onClick={() => setOpenFile(doc)}>
                       <td className="px-4 py-3 min-h-[48px]">
                         <div className="flex items-center gap-3">
                           <div className={`w-7 h-7 rounded-[6px] border flex items-center justify-center text-xs font-bold ${cfg.bg} ${cfg.color}`}>{cfg.icon}</div>
-                          <span className="text-sm text-gray-800 font-medium">{doc.name}</span>
+                          <span className="text-sm text-gray-800 dark:text-gray-200 font-medium">{doc.name}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-500 hidden sm:table-cell">{new Date(doc.updated_at).toLocaleDateString()}</td>

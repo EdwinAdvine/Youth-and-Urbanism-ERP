@@ -80,9 +80,7 @@ export default function SupplierRatingsPage() {
                     <p className="text-xs text-gray-500">Period: {latest.period}</p>
                   </div>
                   <div className="text-center">
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg ${
-                      latest.overall_score >= 4 ? 'bg-green-500' : latest.overall_score >= 3 ? 'bg-yellow-500' : 'bg-red-500'
-                    }`}>
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg ${ latest.overall_score >= 4 ? 'bg-green-500' : latest.overall_score >= 3 ? 'bg-yellow-500' : 'bg-red-500' }`}>
                       {latest.overall_score.toFixed(1)}
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Overall</p>
@@ -94,7 +92,7 @@ export default function SupplierRatingsPage() {
                   <ScoreBar label="Pricing" score={latest.price_score} />
                   <ScoreBar label="Communication" score={latest.communication_score} />
                 </div>
-                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between text-sm text-gray-500">
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between text-sm text-gray-500">
                   <span>Orders: {latest.total_orders}</span>
                   <span>On-time: {latest.on_time_deliveries}</span>
                   <span>Defect: {(latest.defect_rate * 100).toFixed(1)}%</span>

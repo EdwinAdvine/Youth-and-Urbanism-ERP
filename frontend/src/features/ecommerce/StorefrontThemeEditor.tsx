@@ -132,13 +132,13 @@ export default function StorefrontThemeEditor() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Storefront Theme Editor</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Storefront Theme Editor</h1>
           <p className="text-sm text-gray-500 mt-1">Customize your storefront appearance</p>
         </div>
         <div className="flex items-center gap-3">
           {stores && stores.length > 1 && (
             <select
-              className="rounded-[10px] border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               value={selectedStoreId}
               onChange={(e) => setSelectedStoreId(e.target.value)}
             >
@@ -159,20 +159,20 @@ export default function StorefrontThemeEditor() {
         <div className="space-y-6">
           {/* Color Presets */}
           <Card>
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Quick Presets</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Quick Presets</h2>
             <div className="grid grid-cols-3 gap-2">
               {PRESET_THEMES.map((preset) => (
                 <button
                   key={preset.name}
                   onClick={() => applyPreset(preset)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-[10px] border border-gray-100 hover:border-primary/40 transition-colors text-left"
+                  className="flex items-center gap-2 px-3 py-2 rounded-[10px] border border-gray-100 dark:border-gray-800 hover:border-primary/40 transition-colors text-left"
                 >
                   <div className="flex -space-x-1">
                     <div className="w-4 h-4 rounded-full border-2 border-white" style={{ backgroundColor: preset.primary }} />
                     <div className="w-4 h-4 rounded-full border-2 border-white" style={{ backgroundColor: preset.secondary }} />
                     <div className="w-4 h-4 rounded-full border-2 border-white" style={{ backgroundColor: preset.accent }} />
                   </div>
-                  <span className="text-xs text-gray-600">{preset.name}</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{preset.name}</span>
                 </button>
               ))}
             </div>
@@ -180,7 +180,7 @@ export default function StorefrontThemeEditor() {
 
           {/* Colors */}
           <Card>
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Colors</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Colors</h2>
             <div className="grid grid-cols-2 gap-4">
               <ColorField label="Primary" value={theme.primary_color} onChange={(v) => update('primary_color', v)} />
               <ColorField label="Secondary" value={theme.secondary_color} onChange={(v) => update('secondary_color', v)} />
@@ -192,11 +192,11 @@ export default function StorefrontThemeEditor() {
 
           {/* Typography */}
           <Card>
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Typography</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Typography</h2>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Font Family</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Font Family</label>
               <select
-                className="w-full rounded-[10px] border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={theme.font_family}
                 onChange={(e) => update('font_family', e.target.value)}
               >
@@ -209,7 +209,7 @@ export default function StorefrontThemeEditor() {
 
           {/* Logo & Branding */}
           <Card>
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Branding</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Branding</h2>
             <div className="space-y-3">
               <Input
                 label="Logo URL"
@@ -218,7 +218,7 @@ export default function StorefrontThemeEditor() {
                 placeholder="https://example.com/logo.png"
               />
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Button Style</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Button Style</label>
                 <div className="flex gap-2">
                   {(['rounded', 'pill', 'square'] as const).map((style) => (
                     <button
@@ -231,7 +231,7 @@ export default function StorefrontThemeEditor() {
                         style === 'square' && 'rounded-none',
                         theme.button_style === style
                           ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
                       )}
                     >
                       {style.charAt(0).toUpperCase() + style.slice(1)}
@@ -250,25 +250,25 @@ export default function StorefrontThemeEditor() {
 
           {/* Content */}
           <Card>
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Header & Footer Content</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Header & Footer Content</h2>
             <div className="space-y-3">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Header Content</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Header Content</label>
                 <textarea
                   value={theme.header_content}
                   onChange={(e) => update('header_content', e.target.value)}
                   rows={2}
-                  className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+                  className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
                   placeholder="Welcome banner text..."
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Footer Content</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Footer Content</label>
                 <textarea
                   value={theme.footer_content}
                   onChange={(e) => update('footer_content', e.target.value)}
                   rows={2}
-                  className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+                  className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
                   placeholder="Copyright notice, links..."
                 />
               </div>
@@ -279,9 +279,9 @@ export default function StorefrontThemeEditor() {
         {/* Preview Panel */}
         <div className="lg:sticky lg:top-6 lg:self-start">
           <Card>
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Preview</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Preview</h2>
             <div
-              className="rounded-[10px] border border-gray-200 overflow-hidden"
+              className="rounded-[10px] border border-gray-200 dark:border-gray-700 overflow-hidden"
               style={{ fontFamily: theme.font_family, color: theme.text_color, backgroundColor: theme.background_color }}
             >
               {/* Header */}
@@ -358,19 +358,19 @@ export default function StorefrontThemeEditor() {
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-gray-600">{label}</label>
+      <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{label}</label>
       <div className="flex items-center gap-2">
         <input
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+          className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer p-0.5"
         />
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 rounded-lg border border-gray-200 px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
     </div>

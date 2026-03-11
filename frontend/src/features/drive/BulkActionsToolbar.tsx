@@ -99,7 +99,7 @@ export default function BulkActionsToolbar({
         {showMoveMenu && (
           <>
             <div className="fixed inset-0 z-30" onClick={() => setShowMoveMenu(false)} />
-            <div className="absolute top-full left-0 mt-1 z-40 bg-white border border-gray-200 rounded-[8px] shadow-lg py-1 w-48 max-h-48 overflow-y-auto">
+            <div className="absolute top-full left-0 mt-1 z-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[8px] shadow-lg py-1 w-48 max-h-48 overflow-y-auto">
               {folders.length === 0 ? (
                 <p className="px-3 py-2 text-xs text-gray-400">No folders available</p>
               ) : (
@@ -107,7 +107,7 @@ export default function BulkActionsToolbar({
                   <button
                     key={folder.id}
                     onClick={() => handleMove(folder.id)}
-                    className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
                     {folder.name}
                   </button>

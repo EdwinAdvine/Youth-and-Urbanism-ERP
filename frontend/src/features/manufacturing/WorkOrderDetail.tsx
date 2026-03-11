@@ -195,14 +195,14 @@ export default function WorkOrderDetail() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/manufacturing/work-orders')}
-            className="p-2 rounded-md hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{wo.wo_number}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{wo.wo_number}</h1>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant={STATUS_BADGE[wo.status] ?? 'default'} className="capitalize">
                 {wo.status.replace('_', ' ')}
@@ -266,11 +266,11 @@ export default function WorkOrderDetail() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Product</p>
-            <p className="text-sm font-semibold text-gray-900 mt-1">{wo.finished_item_name ?? wo.finished_item_id}</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mt-1">{wo.finished_item_name ?? wo.finished_item_id}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">BOM</p>
-            <p className="text-sm text-gray-900 mt-1">
+            <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">
               {wo.bom_name ? (
                 <button className="text-primary hover:underline" onClick={() => navigate(`/manufacturing/bom/${wo.bom_id}`)}>
                   {wo.bom_name}
@@ -280,7 +280,7 @@ export default function WorkOrderDetail() {
           </div>
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Planned Qty</p>
-            <p className="text-sm font-semibold text-gray-900 mt-1">{wo.planned_quantity}</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mt-1">{wo.planned_quantity}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Completed / Rejected</p>
@@ -292,42 +292,42 @@ export default function WorkOrderDetail() {
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-4 pt-4 border-t border-gray-100">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Planned Start</p>
-            <p className="text-sm text-gray-900 mt-1">{formatDateTime(wo.planned_start)}</p>
+            <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{formatDateTime(wo.planned_start)}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Planned End</p>
-            <p className="text-sm text-gray-900 mt-1">{formatDateTime(wo.planned_end)}</p>
+            <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{formatDateTime(wo.planned_end)}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Actual Start</p>
-            <p className="text-sm text-gray-900 mt-1">{formatDateTime(wo.actual_start)}</p>
+            <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{formatDateTime(wo.actual_start)}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Actual End</p>
-            <p className="text-sm text-gray-900 mt-1">{formatDateTime(wo.actual_end)}</p>
+            <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{formatDateTime(wo.actual_end)}</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mt-4 pt-4 border-t border-gray-100">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Material Cost</p>
-            <p className="text-lg font-bold text-gray-900 mt-1">{formatCurrency(wo.total_material_cost)}</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">{formatCurrency(wo.total_material_cost)}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Labor Cost</p>
-            <p className="text-lg font-bold text-gray-900 mt-1">{formatCurrency(wo.total_labor_cost)}</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">{formatCurrency(wo.total_labor_cost)}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created</p>
-            <p className="text-sm text-gray-900 mt-1">{formatDate(wo.created_at)}</p>
+            <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{formatDate(wo.created_at)}</p>
           </div>
         </div>
         {wo.notes && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Notes</p>
-            <p className="text-sm text-gray-700">{wo.notes}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{wo.notes}</p>
           </div>
         )}
       </Card>
@@ -336,9 +336,9 @@ export default function WorkOrderDetail() {
         {/* Material Availability */}
         {canStart && availability && (
           <Card padding={false}>
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold text-gray-900">Material Availability</h2>
+                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Material Availability</h2>
                 <Badge variant={allAvailable ? 'success' : 'danger'}>
                   {allAvailable ? 'All Available' : 'Shortages'}
                 </Badge>
@@ -347,7 +347,7 @@ export default function WorkOrderDetail() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
                     <th className="text-left py-2 px-4 text-xs font-semibold text-gray-500 uppercase">Item</th>
                     <th className="text-right py-2 px-4 text-xs font-semibold text-gray-500 uppercase w-20">Required</th>
                     <th className="text-right py-2 px-4 text-xs font-semibold text-gray-500 uppercase w-20">Available</th>
@@ -356,8 +356,8 @@ export default function WorkOrderDetail() {
                 </thead>
                 <tbody>
                   {availability.map((m: MaterialAvailability) => (
-                    <tr key={m.item_id} className="border-b border-gray-50">
-                      <td className="py-2 px-4 text-gray-700">{m.item_name ?? m.item_id}</td>
+                    <tr key={m.item_id} className="border-b border-gray-50 dark:border-gray-800">
+                      <td className="py-2 px-4 text-gray-700 dark:text-gray-300">{m.item_name ?? m.item_id}</td>
                       <td className="py-2 px-4 text-right font-medium">{m.required}</td>
                       <td className="py-2 px-4 text-right font-medium">{m.available}</td>
                       <td className="py-2 px-4 text-center">
@@ -377,13 +377,13 @@ export default function WorkOrderDetail() {
 
         {/* Material Consumption */}
         <Card padding={false}>
-          <div className="p-5 border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">Material Consumption</h2>
+          <div className="p-5 border-b border-gray-100 dark:border-gray-800">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Material Consumption</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
+                <tr className="border-b border-gray-100 dark:border-gray-800">
                   <th className="text-left py-2 px-4 text-xs font-semibold text-gray-500 uppercase">Item</th>
                   <th className="text-right py-2 px-4 text-xs font-semibold text-gray-500 uppercase w-24">Planned</th>
                   <th className="text-right py-2 px-4 text-xs font-semibold text-gray-500 uppercase w-24">Actual</th>
@@ -397,8 +397,8 @@ export default function WorkOrderDetail() {
                   </tr>
                 ) : (
                   consumption.map((mc: MaterialConsumption) => (
-                    <tr key={mc.id} className="border-b border-gray-50">
-                      <td className="py-2 px-4 text-gray-700">{mc.item_name ?? mc.item_id}</td>
+                    <tr key={mc.id} className="border-b border-gray-50 dark:border-gray-800">
+                      <td className="py-2 px-4 text-gray-700 dark:text-gray-300">{mc.item_name ?? mc.item_id}</td>
                       <td className="py-2 px-4 text-right">{mc.planned_quantity}</td>
                       <td className="py-2 px-4 text-right font-medium">
                         {mc.actual_quantity > 0 ? (
@@ -422,8 +422,8 @@ export default function WorkOrderDetail() {
 
         {/* Quality Checks */}
         <Card padding={false} className={canStart && availability ? '' : 'lg:col-span-2'}>
-          <div className="flex items-center justify-between p-5 border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">Quality Checks</h2>
+          <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Quality Checks</h2>
             {isInProgress && (
               <Button size="sm" variant="outline" onClick={() => setQcOpen(true)}>
                 Add Check
@@ -433,7 +433,7 @@ export default function WorkOrderDetail() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
+                <tr className="border-b border-gray-100 dark:border-gray-800">
                   <th className="text-left py-2 px-4 text-xs font-semibold text-gray-500 uppercase">Check #</th>
                   <th className="text-right py-2 px-4 text-xs font-semibold text-gray-500 uppercase w-20">Inspected</th>
                   <th className="text-right py-2 px-4 text-xs font-semibold text-gray-500 uppercase w-20">Passed</th>
@@ -449,7 +449,7 @@ export default function WorkOrderDetail() {
                   </tr>
                 ) : (
                   qualityChecks.quality_checks.map((qc: QualityCheck) => (
-                    <tr key={qc.id} className="border-b border-gray-50">
+                    <tr key={qc.id} className="border-b border-gray-50 dark:border-gray-800">
                       <td className="py-2 px-4 font-mono text-xs text-primary">{qc.check_number}</td>
                       <td className="py-2 px-4 text-right">{qc.quantity_inspected}</td>
                       <td className="py-2 px-4 text-right text-green-600 font-medium">{qc.quantity_passed}</td>
@@ -470,19 +470,19 @@ export default function WorkOrderDetail() {
       {/* Cost Breakdown (Finance Integration) */}
       {costBreakdown && (
         <Card className="mt-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Production Cost Breakdown</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Production Cost Breakdown</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Material Cost</p>
-              <p className="text-lg font-bold text-gray-900">{formatCurrency(costBreakdown.total_material_cost)}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatCurrency(costBreakdown.total_material_cost)}</p>
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Labor Cost</p>
-              <p className="text-lg font-bold text-gray-900">{formatCurrency(costBreakdown.total_labor_cost)}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatCurrency(costBreakdown.total_labor_cost)}</p>
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Overhead ({costBreakdown.overhead_rate})</p>
-              <p className="text-lg font-bold text-gray-900">{formatCurrency(costBreakdown.overhead_cost)}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatCurrency(costBreakdown.overhead_cost)}</p>
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total / Unit Cost</p>
@@ -491,11 +491,11 @@ export default function WorkOrderDetail() {
             </div>
           </div>
           {costBreakdown.material_costs.length > 0 && (
-            <div className="overflow-x-auto border-t border-gray-100 pt-3">
+            <div className="overflow-x-auto border-t border-gray-100 dark:border-gray-800 pt-3">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Material Details</p>
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
                     <th className="text-left py-1 px-2 text-gray-500">Item</th>
                     <th className="text-right py-1 px-2 text-gray-500">Qty</th>
                     <th className="text-right py-1 px-2 text-gray-500">Unit Cost</th>
@@ -504,8 +504,8 @@ export default function WorkOrderDetail() {
                 </thead>
                 <tbody>
                   {costBreakdown.material_costs.map((m) => (
-                    <tr key={m.item_id} className="border-b border-gray-50">
-                      <td className="py-1 px-2 text-gray-700">{m.item_name}</td>
+                    <tr key={m.item_id} className="border-b border-gray-50 dark:border-gray-800">
+                      <td className="py-1 px-2 text-gray-700 dark:text-gray-300">{m.item_name}</td>
                       <td className="py-1 px-2 text-right">{m.quantity}</td>
                       <td className="py-1 px-2 text-right">{formatCurrency(m.unit_cost)}</td>
                       <td className="py-1 px-2 text-right font-medium">{formatCurrency(m.total_cost)}</td>
@@ -521,12 +521,12 @@ export default function WorkOrderDetail() {
       {/* Assigned Operators (HR Integration) */}
       {operators?.operators && operators.operators.length > 0 && (
         <Card className="mt-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Assigned Operators</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Assigned Operators</h2>
           <div className="space-y-2">
             {operators.operators.map((op: WorkOrderOperator) => (
-              <div key={op.employee_id} className="flex items-center justify-between py-2 px-3 rounded-[10px] bg-gray-50">
+              <div key={op.employee_id} className="flex items-center justify-between py-2 px-3 rounded-[10px] bg-gray-50 dark:bg-gray-950">
                 <div>
-                  <span className="text-sm font-medium text-gray-900">{op.name}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{op.name}</span>
                   <span className="text-xs text-gray-500 ml-2">({op.employee_number})</span>
                 </div>
                 <div className="text-xs text-gray-500">{op.job_title || 'No title'}</div>
@@ -540,9 +540,9 @@ export default function WorkOrderDetail() {
       <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Assign Operators" size="sm">
         <div className="space-y-4">
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Employee IDs</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Employee IDs</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[80px]"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[80px]"
               placeholder="Paste employee UUIDs, one per line"
               value={employeeIdsInput}
               onChange={(e) => setEmployeeIdsInput(e.target.value)}
@@ -576,7 +576,7 @@ export default function WorkOrderDetail() {
       {/* Start Confirmation Modal */}
       <Modal open={confirmStart} onClose={() => setConfirmStart(false)} title="Start Work Order" size="sm">
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Starting <span className="font-semibold">{wo.wo_number}</span> will consume raw materials from the source warehouse. This cannot be undone.
           </p>
           {!allAvailable && availability && (
@@ -603,7 +603,7 @@ export default function WorkOrderDetail() {
       {/* Complete Modal */}
       <Modal open={completeOpen} onClose={() => setCompleteOpen(false)} title="Complete Work Order" size="sm">
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Enter the quantity of finished goods produced for <span className="font-semibold">{wo.wo_number}</span>.
           </p>
           <div className="grid grid-cols-2 gap-4">
@@ -634,7 +634,7 @@ export default function WorkOrderDetail() {
       {/* Cancel Confirmation Modal */}
       <Modal open={confirmCancel} onClose={() => setConfirmCancel(false)} title="Cancel Work Order" size="sm">
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Are you sure you want to cancel <span className="font-semibold">{wo.wo_number}</span>? This action cannot be undone.
           </p>
           <div className="flex justify-end gap-2">
@@ -673,12 +673,12 @@ export default function WorkOrderDetail() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
             <textarea
               value={qcForm.notes}
               onChange={(e) => setQcForm({ ...qcForm, notes: e.target.value })}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
               placeholder="Optional notes"
             />
           </div>

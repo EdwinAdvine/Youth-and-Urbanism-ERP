@@ -169,7 +169,7 @@ export default function AppAdminDashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <div className="w-20 h-20 rounded-3xl bg-red-50 flex items-center justify-center text-4xl mb-4">?</div>
-        <h1 className="text-2xl font-bold text-gray-900">Unknown Application</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Unknown Application</h1>
         <p className="text-gray-500 mt-2">The app "{appName}" is not recognized.</p>
         <Button variant="secondary" className="mt-4" onClick={() => navigate('/admin')}>
           Back to Admin
@@ -211,7 +211,7 @@ export default function AppAdminDashboard() {
       <div className="flex items-center gap-4">
         <button
           onClick={() => navigate('/admin')}
-          className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors"
+          className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -221,7 +221,7 @@ export default function AppAdminDashboard() {
           {meta.icon}
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{meta.label} Admin</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{meta.label} Admin</h1>
           <p className="text-gray-500 text-sm mt-0.5">{meta.description}</p>
         </div>
         <Badge variant="primary" className="ml-auto">{appName}</Badge>
@@ -229,7 +229,7 @@ export default function AppAdminDashboard() {
 
       {/* Stats Section */}
       <div>
-        <h2 className="text-base font-semibold text-gray-900 mb-4">Statistics</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Statistics</h2>
         {statsLoading ? (
           <div className="flex justify-center py-12">
             <Spinner size="lg" />
@@ -247,7 +247,7 @@ export default function AppAdminDashboard() {
                     <p className="text-sm text-gray-500 font-medium">
                       {STAT_LABELS[key] ?? formatConfigKey(key)}
                     </p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                       {formatStatValue(key, value)}
                     </p>
                   </div>
@@ -268,7 +268,7 @@ export default function AppAdminDashboard() {
       {/* Configuration Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-900">Configuration</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Configuration</h2>
           {!editingConfig ? (
             <Button variant="outline" size="sm" onClick={handleStartEdit}>
               Edit Config
@@ -294,11 +294,11 @@ export default function AppAdminDashboard() {
           </Card>
         ) : (
           <Card>
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-gray-50 dark:divide-gray-800">
               {Object.entries(editingConfig ? configDraft : config).map(([key, value]) => (
                 <div key={key} className="flex items-center justify-between py-3">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-700">{formatConfigKey(key)}</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{formatConfigKey(key)}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{key}</p>
                   </div>
                   <div className="ml-4">
@@ -321,32 +321,32 @@ export default function AppAdminDashboard() {
 
       {/* Quick Links */}
       <Card>
-        <h2 className="text-base font-semibold text-gray-900 mb-4">Quick Links</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Quick Links</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <button
             onClick={() => navigate('/admin')}
-            className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 hover:border-[#51459d]/30 hover:bg-[#51459d]/5 transition-colors text-left group"
+            className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 dark:border-gray-800 hover:border-[#51459d]/30 hover:bg-[#51459d]/5 transition-colors text-left group"
           >
             <span className="text-xl">{'<'}</span>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-[#51459d] transition-colors">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-[#51459d] transition-colors">
               Admin Dashboard
             </span>
           </button>
           <button
             onClick={() => navigate('/admin/app-admins')}
-            className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 hover:border-[#51459d]/30 hover:bg-[#51459d]/5 transition-colors text-left group"
+            className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 dark:border-gray-800 hover:border-[#51459d]/30 hover:bg-[#51459d]/5 transition-colors text-left group"
           >
             <span className="text-xl">{'\ud83d\udee1\ufe0f'}</span>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-[#51459d] transition-colors">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-[#51459d] transition-colors">
               App Admins
             </span>
           </button>
           <button
             onClick={() => navigate('/admin/audit-logs')}
-            className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 hover:border-[#51459d]/30 hover:bg-[#51459d]/5 transition-colors text-left group"
+            className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 dark:border-gray-800 hover:border-[#51459d]/30 hover:bg-[#51459d]/5 transition-colors text-left group"
           >
             <span className="text-xl">{'\ud83d\udccb'}</span>
-            <span className="text-sm font-medium text-gray-700 group-hover:text-[#51459d] transition-colors">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-[#51459d] transition-colors">
               Audit Logs
             </span>
           </button>
@@ -368,12 +368,12 @@ function ConfigValue({ value }: { value: unknown }) {
   }
   if (Array.isArray(value)) {
     return (
-      <span className="text-sm text-gray-600">
+      <span className="text-sm text-gray-600 dark:text-gray-400">
         {value.length === 0 ? 'None' : value.join(', ')}
       </span>
     )
   }
-  return <span className="text-sm font-medium text-gray-900">{String(value)}</span>
+  return <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{String(value)}</span>
 }
 
 function ConfigEditor({
@@ -407,7 +407,7 @@ function ConfigEditor({
         type="number"
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-24 rounded-[10px] border border-gray-200 px-3 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d]"
+        className="w-24 rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d]"
       />
     )
   }
@@ -417,7 +417,7 @@ function ConfigEditor({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-40 rounded-[10px] border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d]"
+        className="w-40 rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d]"
       />
     )
   }

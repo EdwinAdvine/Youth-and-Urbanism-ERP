@@ -68,8 +68,8 @@ export default function SupportDashboard() {
 
       {/* Volume + Resolution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Ticket Volume</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Ticket Volume</h3>
           <p className="text-xs text-gray-400 mb-4">New vs Resolved tickets</p>
           <BarChart
             data={volumeData}
@@ -82,8 +82,8 @@ export default function SupportDashboard() {
           />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Resolution Time</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Resolution Time</h3>
           <p className="text-xs text-gray-400 mb-4">Average hours to resolve</p>
           <LineChart
             data={resolutionData}
@@ -97,14 +97,14 @@ export default function SupportDashboard() {
 
       {/* Categories + Priorities */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Ticket Categories</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Ticket Categories</h3>
           <p className="text-xs text-gray-400 mb-4">Distribution by type</p>
           <PieChart data={categories} innerRadius={50} height={260} />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Priority Breakdown</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Priority Breakdown</h3>
           <p className="text-xs text-gray-400 mb-4">Tickets by priority level</p>
           <BarChart
             data={priorities}
@@ -117,8 +117,8 @@ export default function SupportDashboard() {
 
       {/* CSAT + SLA Gauge */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Customer Satisfaction</h3>
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Customer Satisfaction</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly CSAT score trend</p>
           <LineChart
             data={csatData}
@@ -129,8 +129,8 @@ export default function SupportDashboard() {
           />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm flex flex-col items-center justify-center">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">SLA Compliance</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm flex flex-col items-center justify-center">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">SLA Compliance</h3>
           <GaugeChart
             value={92}
             label="SLA Met"

@@ -25,7 +25,7 @@ function StatCard({ label, value, color, icon }: { label: string; value: string 
       </div>
       <div>
         <p className="text-sm text-gray-500">{label}</p>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
       </div>
     </Card>
   )
@@ -136,7 +136,7 @@ export default function HRDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">HR Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">HR Dashboard</h1>
           <p className="text-sm text-gray-500 mt-1">Human Resources overview and quick actions</p>
         </div>
         <div className="flex items-center gap-3">
@@ -180,19 +180,19 @@ export default function HRDashboard() {
       {/* Quick Navigation */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/employees')}>
-          <p className="text-sm font-medium text-gray-700">Employees</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Employees</p>
           <p className="text-xs text-gray-400 mt-1">Manage employee records</p>
         </Card>
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/departments')}>
-          <p className="text-sm font-medium text-gray-700">Departments</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Departments</p>
           <p className="text-xs text-gray-400 mt-1">Org structure</p>
         </Card>
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/leave')}>
-          <p className="text-sm font-medium text-gray-700">Leave Requests</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Leave Requests</p>
           <p className="text-xs text-gray-400 mt-1">Review and manage</p>
         </Card>
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/attendance')}>
-          <p className="text-sm font-medium text-gray-700">Attendance</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Attendance</p>
           <p className="text-xs text-gray-400 mt-1">Check in/out logs</p>
         </Card>
       </div>
@@ -200,7 +200,7 @@ export default function HRDashboard() {
       {/* Recent Leave Requests */}
       <Card>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Leave Requests</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Leave Requests</h2>
           <Button variant="ghost" size="sm" onClick={() => navigate('/hr/leave')}>
             View All
           </Button>
@@ -327,9 +327,9 @@ export default function HRDashboard() {
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Reason</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reason</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={3}
               required
               value={leaveForm.reason}

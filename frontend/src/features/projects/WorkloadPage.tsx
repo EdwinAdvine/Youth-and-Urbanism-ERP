@@ -21,7 +21,7 @@ export default function WorkloadPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Team Workload</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Team Workload</h1>
           <p className="text-sm text-gray-500 mt-1">View task distribution across team members</p>
         </div>
         <div className="w-64">
@@ -45,7 +45,7 @@ export default function WorkloadPage() {
         <>
           {/* Bar Chart */}
           <Card>
-            <h2 className="text-base font-semibold text-gray-900 mb-6">Task Distribution</h2>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-6">Task Distribution</h2>
             <div className="space-y-4">
               {workload.map((w) => {
                 const assignedPct = (w.assigned_count / maxAssigned) * 100
@@ -56,10 +56,10 @@ export default function WorkloadPage() {
                       <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
                         {w.user_name.charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-sm font-medium text-gray-700 truncate">{w.user_name}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{w.user_name}</span>
                     </div>
                     <div className="flex-1">
-                      <div className="relative h-8 bg-gray-100 rounded-[10px] overflow-hidden">
+                      <div className="relative h-8 bg-gray-100 dark:bg-gray-900 rounded-[10px] overflow-hidden">
                         <div
                           className="absolute inset-y-0 left-0 bg-primary/20 rounded-[10px] transition-all"
                           style={{ width: `${assignedPct}%` }}
@@ -69,14 +69,14 @@ export default function WorkloadPage() {
                           style={{ width: `${(w.completed_count / maxAssigned) * 100}%` }}
                         />
                         <div className="absolute inset-0 flex items-center px-3">
-                          <span className="text-xs font-medium text-gray-700">
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                             {w.completed_count} / {w.assigned_count} tasks
                           </span>
                         </div>
                       </div>
                     </div>
                     <div className="w-20 text-right">
-                      <span className="text-sm font-semibold text-gray-700">{w.hours_logged}h</span>
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{w.hours_logged}h</span>
                     </div>
                   </div>
                 )
@@ -86,11 +86,11 @@ export default function WorkloadPage() {
 
           {/* Summary Table */}
           <Card>
-            <h2 className="text-base font-semibold text-gray-900 mb-4">Detailed Breakdown</h2>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Detailed Breakdown</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
                     <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Team Member</th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Assigned</th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Completed</th>
@@ -105,26 +105,26 @@ export default function WorkloadPage() {
                     const statusVariant = rate >= 75 ? 'success' : rate >= 50 ? 'warning' : 'danger'
                     const statusLabel = rate >= 75 ? 'On Track' : rate >= 50 ? 'At Risk' : 'Behind'
                     return (
-                      <tr key={w.user_id} className="border-b border-gray-50 hover:bg-gray-50">
+                      <tr key={w.user_id} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
                               {w.user_name.charAt(0).toUpperCase()}
                             </div>
-                            <span className="font-medium text-gray-700">{w.user_name}</span>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">{w.user_name}</span>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-gray-600">{w.assigned_count}</td>
-                        <td className="py-3 px-4 text-gray-600">{w.completed_count}</td>
+                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{w.assigned_count}</td>
+                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{w.completed_count}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
-                            <div className="w-16 bg-gray-100 rounded-full h-1.5">
+                            <div className="w-16 bg-gray-100 dark:bg-gray-900 rounded-full h-1.5">
                               <div className="bg-primary rounded-full h-1.5" style={{ width: `${rate}%` }} />
                             </div>
-                            <span className="text-gray-600">{rate}%</span>
+                            <span className="text-gray-600 dark:text-gray-400">{rate}%</span>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-gray-600">{w.hours_logged}h</td>
+                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{w.hours_logged}h</td>
                         <td className="py-3 px-4">
                           <Badge variant={statusVariant}>{statusLabel}</Badge>
                         </td>

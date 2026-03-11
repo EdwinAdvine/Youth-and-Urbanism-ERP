@@ -50,12 +50,12 @@ function OpenSessionModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-[10px] shadow-xl w-full max-w-md p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Open POS Session</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-xl w-full max-w-md p-6">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Open POS Session</h2>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Warehouse / Location</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Warehouse / Location</label>
             <select
               value={warehouseId}
               onChange={(e) => setWarehouseId(e.target.value)}
@@ -70,7 +70,7 @@ function OpenSessionModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Opening Cash Balance</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Opening Cash Balance</label>
             <input
               type="number"
               step="0.01"
@@ -116,22 +116,22 @@ function CloseSessionModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-[10px] shadow-xl w-full max-w-md p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Close Session</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-xl w-full max-w-md p-6">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Close Session</h2>
         <p className="text-sm text-gray-500 mb-4">
           Session <span className="font-medium">{session.session_number}</span> - Opened{' '}
           {formatDateTime(session.opened_at)}
         </p>
 
-        <div className="bg-gray-50 rounded-[10px] p-3 mb-4">
-          <p className="text-sm text-gray-600">
+        <div className="bg-gray-50 dark:bg-gray-950 rounded-[10px] p-3 mb-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Opening Balance: <span className="font-semibold">{formatCurrency(session.opening_balance)}</span>
           </p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Closing Cash Balance</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Closing Cash Balance</label>
             <input
               type="number"
               step="0.01"
@@ -143,7 +143,7 @@ function CloseSessionModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes (optional)</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -273,7 +273,7 @@ export default function POSSessions() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">POS Sessions</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">POS Sessions</h1>
           <p className="text-sm text-gray-500 mt-1">Manage register sessions and cash reconciliation</p>
         </div>
         <div className="flex gap-2">

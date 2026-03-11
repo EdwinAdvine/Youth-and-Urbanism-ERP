@@ -178,14 +178,14 @@ export default function ReturnsPage() {
       key: 'reason',
       label: 'Reason',
       render: (row: SupplierReturn) => (
-        <span className="text-gray-700 truncate max-w-[200px] block text-sm">{row.reason}</span>
+        <span className="text-gray-700 dark:text-gray-300 truncate max-w-[200px] block text-sm">{row.reason}</span>
       ),
     },
     {
       key: 'total_value',
       label: 'Value',
       render: (row: SupplierReturn) => (
-        <span className="text-gray-700 font-medium">{formatCurrency(row.total_value)}</span>
+        <span className="text-gray-700 dark:text-gray-300 font-medium">{formatCurrency(row.total_value)}</span>
       ),
     },
     {
@@ -246,7 +246,7 @@ export default function ReturnsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Supplier Returns</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Supplier Returns</h1>
           <p className="text-sm text-gray-500 mt-1">{data?.total ?? 0} total returns</p>
         </div>
         <div className="flex gap-2">
@@ -314,12 +314,12 @@ export default function ReturnsPage() {
             placeholder="GRN UUID (if returning from a specific GRN)"
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Reason *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reason *</label>
             <textarea
               value={formReason}
               onChange={(e) => setFormReason(e.target.value)}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] placeholder:text-gray-400"
               placeholder="Reason for return..."
             />
           </div>
@@ -327,14 +327,14 @@ export default function ReturnsPage() {
           {/* Line Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">Return Lines *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Return Lines *</label>
               <Button variant="ghost" size="sm" onClick={addLine}>
                 + Add Line
               </Button>
             </div>
             <div className="space-y-3">
               {formLines.map((line, idx) => (
-                <div key={idx} className="flex gap-2 items-start p-3 bg-gray-50 rounded-[10px]">
+                <div key={idx} className="flex gap-2 items-start p-3 bg-gray-50 dark:bg-gray-950 rounded-[10px]">
                   <div className="flex-1">
                     <Input
                       placeholder="Item ID (UUID)"
@@ -383,7 +383,7 @@ export default function ReturnsPage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" size="sm" onClick={() => { setShowCreate(false); resetForm() }}>
               Cancel
             </Button>
@@ -402,7 +402,7 @@ export default function ReturnsPage() {
         size="sm"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             {confirmAction?.action === 'approve'
               ? 'Are you sure you want to approve this supplier return?'
               : 'Completing this return will deduct stock from inventory. Continue?'}

@@ -116,12 +116,12 @@ export function KeyboardShortcutsHelp() {
   ]
 
   return (
-    <div className="bg-white border border-gray-200 rounded-[10px] shadow-lg p-4 w-56">
-      <h3 className="text-xs font-semibold text-gray-900 mb-3">Keyboard Shortcuts</h3>
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[10px] shadow-lg p-4 w-56">
+      <h3 className="text-xs font-semibold text-gray-900 dark:text-gray-100 mb-3">Keyboard Shortcuts</h3>
       <div className="space-y-1.5">
         {shortcuts.map((s) => (
           <div key={s.key} className="flex items-center justify-between">
-            <kbd className="text-[10px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded font-mono border border-gray-200">
+            <kbd className="text-[10px] bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded font-mono border border-gray-200 dark:border-gray-700">
               {s.key}
             </kbd>
             <span className="text-[11px] text-gray-500">{s.desc}</span>

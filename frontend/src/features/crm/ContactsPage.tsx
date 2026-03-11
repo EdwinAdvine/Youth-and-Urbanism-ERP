@@ -167,7 +167,7 @@ export default function ContactsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Contacts</h1>
           <p className="text-sm text-gray-500 mt-1">Manage your CRM contacts</p>
         </div>
         <div className="flex items-center gap-2">
@@ -266,9 +266,9 @@ export default function ContactsPage() {
             onChange={(e) => setForm((f) => ({ ...f, contact_type: e.target.value as ContactType }))}
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={3}
               value={form.notes ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}

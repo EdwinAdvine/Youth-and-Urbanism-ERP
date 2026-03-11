@@ -105,7 +105,7 @@ export default function PayrollReportsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
                     <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Period</th>
                     <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Gross</th>
                     <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Deductions</th>
@@ -114,7 +114,7 @@ export default function PayrollReportsPage() {
                 </thead>
                 <tbody>
                   {reports.payroll_summary.map((row, i) => (
-                    <tr key={i} className="border-b border-gray-50">
+                    <tr key={i} className="border-b border-gray-50 dark:border-gray-800">
                       <td className="py-2 px-3 font-medium">{row.period}</td>
                       <td className="py-2 px-3 text-right">{formatCurrency(row.gross)}</td>
                       <td className="py-2 px-3 text-right text-danger">{formatCurrency(row.deductions)}</td>
@@ -136,14 +136,14 @@ export default function PayrollReportsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
                     <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Tax</th>
                     <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {reports.tax_summary.map((row, i) => (
-                    <tr key={i} className="border-b border-gray-50">
+                    <tr key={i} className="border-b border-gray-50 dark:border-gray-800">
                       <td className="py-2 px-3">{row.tax_name}</td>
                       <td className="py-2 px-3 text-right font-medium">{formatCurrency(row.total)}</td>
                     </tr>
@@ -162,7 +162,7 @@ export default function PayrollReportsPage() {
           {reports?.leave_summary && reports.leave_summary.length > 0 ? (
             <div className="space-y-2">
               {reports.leave_summary.map((row, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800 last:border-0">
                   <div className="flex items-center gap-2">
                     <Badge variant="primary">{row.leave_type}</Badge>
                     <span className="text-xs text-gray-500">{row.count} requests</span>

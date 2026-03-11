@@ -49,9 +49,9 @@ export default function PrintView({ year, month, onClose }: PrintViewProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-white overflow-auto">
+    <div className="fixed inset-0 z-50 bg-white dark:bg-gray-800 overflow-auto">
       {/* Controls (hidden in print) */}
-      <div className="print:hidden sticky top-0 bg-white border-b border-gray-100 px-6 py-3 flex items-center gap-3 z-10">
+      <div className="print:hidden sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800 px-6 py-3 flex items-center gap-3 z-10">
         <button
           onClick={onClose}
           className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
@@ -77,7 +77,7 @@ export default function PrintView({ year, month, onClose }: PrintViewProps) {
       <div className="max-w-[1100px] mx-auto p-8">
         {/* Title */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100" style={{ fontFamily: 'Open Sans, sans-serif' }}>
             {MONTHS[month]} {year}
           </h1>
           <p className="text-xs text-gray-400 mt-1">Urban ERP Calendar</p>
@@ -90,7 +90,7 @@ export default function PrintView({ year, month, onClose }: PrintViewProps) {
               {DAYS.map((day) => (
                 <th
                   key={day}
-                  className="border border-gray-300 px-2 py-2 text-xs font-semibold text-gray-600 bg-gray-50 text-center"
+                  className="border border-gray-300 px-2 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-950 text-center"
                 >
                   {day}
                 </th>
@@ -107,7 +107,7 @@ export default function PrintView({ year, month, onClose }: PrintViewProps) {
                     return (
                       <td
                         key={dayIdx}
-                        className="border border-gray-300 bg-gray-50 h-24 align-top p-1"
+                        className="border border-gray-300 bg-gray-50 dark:bg-gray-950 h-24 align-top p-1"
                       />
                     )
                   }
@@ -119,13 +119,13 @@ export default function PrintView({ year, month, onClose }: PrintViewProps) {
                       key={dayIdx}
                       className="border border-gray-300 h-24 align-top p-1"
                     >
-                      <div className="text-xs font-semibold text-gray-700 mb-1">
+                      <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                         {dayNum}
                       </div>
                       {dayEvents.slice(0, 4).map((ev) => (
                         <div
                           key={ev.id}
-                          className="text-[9px] leading-tight text-gray-600 mb-0.5 truncate"
+                          className="text-[9px] leading-tight text-gray-600 dark:text-gray-400 mb-0.5 truncate"
                         >
                           {!ev.all_day && (
                             <span className="font-medium text-gray-500">
@@ -150,7 +150,7 @@ export default function PrintView({ year, month, onClose }: PrintViewProps) {
 
         {/* Events list for the month */}
         <div className="mt-8 print:break-before-page">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3 border-b border-gray-200 pb-1">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 border-b border-gray-200 dark:border-gray-700 pb-1">
             Events in {MONTHS[month]} {year}
           </h2>
           {events
@@ -160,14 +160,14 @@ export default function PrintView({ year, month, onClose }: PrintViewProps) {
             })
             .sort((a, b) => a.start_time.localeCompare(b.start_time))
             .map((ev) => (
-              <div key={ev.id} className="flex items-baseline gap-3 py-1 text-xs border-b border-gray-50">
+              <div key={ev.id} className="flex items-baseline gap-3 py-1 text-xs border-b border-gray-50 dark:border-gray-800">
                 <span className="w-20 text-gray-400 shrink-0">
                   {new Date(ev.start_time).toLocaleDateString('en-KE', { month: 'short', day: 'numeric' })}
                 </span>
                 <span className="w-16 text-gray-400 shrink-0">
                   {ev.all_day ? 'All day' : formatTime(ev.start_time)}
                 </span>
-                <span className="text-gray-700 font-medium">{ev.title}</span>
+                <span className="text-gray-700 dark:text-gray-300 font-medium">{ev.title}</span>
                 {ev.location && (
                   <span className="text-gray-400 ml-auto">@ {ev.location}</span>
                 )}

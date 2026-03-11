@@ -5,14 +5,10 @@ interface MarkdownToggleProps {
 
 export default function MarkdownToggle({ mode, onChange }: MarkdownToggleProps) {
   return (
-    <div className="flex items-center border border-gray-200 rounded-[8px] overflow-hidden">
+    <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-[8px] overflow-hidden">
       <button
         onClick={() => onChange('wysiwyg')}
-        className={`px-2.5 py-1 text-[10px] font-medium transition-colors ${
-          mode === 'wysiwyg'
-            ? 'bg-[#51459d] text-white'
-            : 'text-gray-500 hover:bg-gray-50'
-        }`}
+        className={`px-2.5 py-1 text-[10px] font-medium transition-colors ${ mode === 'wysiwyg' ? 'bg-[#51459d] text-white' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800' }`}
         title="WYSIWYG editor"
       >
         <div className="flex items-center gap-1">
@@ -24,11 +20,7 @@ export default function MarkdownToggle({ mode, onChange }: MarkdownToggleProps) 
       </button>
       <button
         onClick={() => onChange('markdown')}
-        className={`px-2.5 py-1 text-[10px] font-medium transition-colors ${
-          mode === 'markdown'
-            ? 'bg-[#51459d] text-white'
-            : 'text-gray-500 hover:bg-gray-50'
-        }`}
+        className={`px-2.5 py-1 text-[10px] font-medium transition-colors ${ mode === 'markdown' ? 'bg-[#51459d] text-white' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800' }`}
         title="Markdown editor"
       >
         <div className="flex items-center gap-1">
@@ -94,7 +86,7 @@ export function MarkdownEditor({
     <textarea
       value={mdText}
       onChange={(e) => onChange(markdownToHtml(e.target.value))}
-      className="flex-1 w-full px-6 py-4 text-sm text-gray-700 font-mono leading-relaxed focus:outline-none resize-none bg-gray-50 min-h-0"
+      className="flex-1 w-full px-6 py-4 text-sm text-gray-700 dark:text-gray-300 font-mono leading-relaxed focus:outline-none resize-none bg-gray-50 dark:bg-gray-950 min-h-0"
       placeholder="Write in Markdown..."
       spellCheck={false}
     />

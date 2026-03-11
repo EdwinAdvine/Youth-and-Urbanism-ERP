@@ -179,7 +179,7 @@ export default function SSOConfigPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">SSO Configuration</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">SSO Configuration</h1>
           <p className="text-gray-500 text-sm mt-0.5">
             Configure Single Sign-On providers for OAuth2/OIDC authentication
           </p>
@@ -196,12 +196,12 @@ export default function SSOConfigPage() {
       {!providers?.length ? (
         <Card>
           <div className="p-10 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-900 flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">No SSO Providers</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">No SSO Providers</h3>
             <p className="text-gray-500 text-sm mt-1">Add an OAuth2/OIDC provider to enable single sign-on.</p>
           </div>
         </Card>
@@ -211,12 +211,12 @@ export default function SSOConfigPage() {
             <Card key={provider.id}>
               <div className="p-5 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
                     {providerIcon(provider.provider_type)}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900">{provider.name}</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">{provider.name}</h3>
                       <Badge variant={provider.is_active ? 'success' : 'default'} className="capitalize">
                         {provider.is_active ? 'Active' : 'Inactive'}
                       </Badge>
@@ -324,7 +324,7 @@ export default function SSOConfigPage() {
             {...form.register('scopes')}
           />
 
-          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" {...form.register('is_active')} className="rounded border-gray-300 text-primary" />
             Active
           </label>
@@ -348,7 +348,7 @@ export default function SSOConfigPage() {
         size="sm"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Are you sure you want to delete <strong>{deleteConfirm?.name}</strong>?
             Users who signed in with this provider will need to use password login.
           </p>

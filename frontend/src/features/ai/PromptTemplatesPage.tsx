@@ -166,7 +166,7 @@ export default function PromptTemplatesPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Prompt Templates</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Prompt Templates</h1>
           <p className="text-sm text-gray-500 mt-1">Manage reusable AI prompt templates</p>
         </div>
         <Button onClick={openCreate}>New Template</Button>
@@ -202,9 +202,9 @@ export default function PromptTemplatesPage() {
           </div>
           <Input label="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Brief description" />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Template Content</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Template Content</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[160px] font-mono"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[160px] font-mono"
               value={form.prompt}
               onChange={(e) => setForm({ ...form, prompt: e.target.value })}
               placeholder="Write your prompt template here. Use {{variable_name}} for dynamic values..."
@@ -212,7 +212,7 @@ export default function PromptTemplatesPage() {
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={form.is_public} onChange={(e) => setForm({ ...form, is_public: e.target.checked })} className="rounded border-gray-300 text-primary" />
-            <span className="text-sm text-gray-700">Make public (visible to all users)</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Make public (visible to all users)</span>
           </label>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>

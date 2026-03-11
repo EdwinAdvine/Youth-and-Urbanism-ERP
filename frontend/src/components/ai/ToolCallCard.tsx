@@ -77,7 +77,7 @@ export default function ToolCallCard({ toolName, args, result, status }: ToolCal
         </span>
 
         {/* Tool name */}
-        <span className="font-medium text-gray-800 truncate flex-1">
+        <span className="font-medium text-gray-800 dark:text-gray-200 truncate flex-1">
           {friendlyName(toolName)}
         </span>
 
@@ -102,7 +102,7 @@ export default function ToolCallCard({ toolName, args, result, status }: ToolCal
 
       {/* Result preview (always visible when complete) */}
       {!expanded && status === 'complete' && result !== undefined && (
-        <div className="px-3 pb-2 text-xs text-gray-500 truncate">
+        <div className="px-3 pb-2 text-xs text-gray-500 dark:text-gray-400 truncate">
           {typeof result === 'string' ? result.slice(0, 120) : JSON.stringify(result).slice(0, 120)}
           {(typeof result === 'string' ? result.length : JSON.stringify(result).length) > 120 && '...'}
         </div>
@@ -110,10 +110,10 @@ export default function ToolCallCard({ toolName, args, result, status }: ToolCal
 
       {/* Expanded details */}
       {expanded && (
-        <div className="border-t border-gray-200/50 px-3 py-2 space-y-2">
+        <div className="border-t border-gray-200/50 dark:border-gray-700 px-3 py-2 space-y-2">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Arguments</p>
-            <pre className="text-xs bg-white/60 rounded-md p-2 overflow-x-auto max-h-40 text-gray-700">
+            <pre className="text-xs bg-white/60 dark:bg-gray-800 rounded-md p-2 overflow-x-auto max-h-40 text-gray-700 dark:text-gray-300">
               {JSON.stringify(args, null, 2)}
             </pre>
           </div>
@@ -122,7 +122,7 @@ export default function ToolCallCard({ toolName, args, result, status }: ToolCal
               <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Result</p>
               <pre className={cn(
                 'text-xs rounded-md p-2 overflow-x-auto max-h-40',
-                status === 'error' ? 'bg-[#ff3a6e]/5 text-[#ff3a6e]' : 'bg-white/60 text-gray-700'
+                status === 'error' ? 'bg-[#ff3a6e]/5 text-[#ff3a6e]' : 'bg-white/60 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
               )}>
                 {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
               </pre>

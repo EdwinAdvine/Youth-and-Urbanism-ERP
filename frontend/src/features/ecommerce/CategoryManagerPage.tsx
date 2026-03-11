@@ -207,7 +207,7 @@ export default function CategoryManagerPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Product Categories</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Product Categories</h1>
           <p className="text-sm text-gray-500 mt-1">{totalCount} categories total</p>
         </div>
         <Button onClick={() => openAddModal(null)}>
@@ -271,12 +271,12 @@ export default function CategoryManagerPage() {
             placeholder="e.g. electronics"
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
             <textarea
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
               placeholder="Optional category description..."
             />
           </div>
@@ -287,7 +287,7 @@ export default function CategoryManagerPage() {
               onChange={(e) => setFormActive(e.target.checked)}
               className="rounded border-gray-300 text-primary focus:ring-primary"
             />
-            <span className="text-sm text-gray-700">Active</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Active</span>
           </label>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" size="sm" onClick={() => setEditModal(null)}>Cancel</Button>
@@ -392,7 +392,7 @@ function CategoryNode({
         {!category.is_active && <Badge variant="default" className="text-[9px]">Inactive</Badge>}
 
         {hasChildren && (
-          <span className="text-[10px] text-gray-400 bg-gray-100 rounded-full px-1.5 py-0.5">
+          <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-900 rounded-full px-1.5 py-0.5">
             {category.children.length}
           </span>
         )}

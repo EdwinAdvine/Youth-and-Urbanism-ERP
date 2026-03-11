@@ -6,6 +6,7 @@ import {
   useMarkRead,
   useMarkAllRead,
   useDeleteNotification,
+  useCreateTestNotification,
 } from '../../api/notifications'
 import type { Notification } from '../../api/notifications'
 
@@ -73,11 +74,7 @@ function NotificationRow({ notification }: { notification: Notification }) {
   return (
     <div
       onClick={handleClick}
-      className={`group flex items-start gap-4 p-4 rounded-[10px] transition-colors cursor-pointer ${
-        notification.is_read
-          ? 'hover:bg-gray-50'
-          : 'bg-primary/5 hover:bg-primary/10'
-      }`}
+      className={`group flex items-start gap-4 p-4 rounded-[10px] transition-colors cursor-pointer ${ notification.is_read ? 'hover:bg-gray-50 dark:hover:bg-gray-800' : 'bg-primary/5 hover:bg-primary/10' }`}
     >
       {/* Type icon */}
       <span className="text-xl shrink-0 mt-0.5">{notifTypeIcon(notification.type)}</span>
@@ -125,6 +122,7 @@ type FilterTab = 'all' | 'unread'
 export default function NotificationsPage() {
   const [filter, setFilter] = useState<FilterTab>('all')
   const markAllRead = useMarkAllRead()
+  const createTest = useCreateTestNotification()
 
   const queryParams = filter === 'unread' ? { is_read: false } : {}
   const { data: notifications, isLoading } = useNotifications(queryParams)
@@ -136,36 +134,51 @@ export default function NotificationsPage() {
     })
   }
 
+  const handleSendTest = () => {
+    createTest.mutate(undefined, {
+      onSuccess: () => toast('success', 'Test notification created'),
+      onError: () => toast('error', 'Failed to create test notification'),
+    })
+  }
+
   return (
     <div className="p-6 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Notifications</h1>
           <p className="text-sm text-gray-500 mt-1">Stay up to date with activity across your workspace</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleMarkAllRead}
-          loading={markAllRead.isPending}
-          disabled={markAllRead.isPending}
-        >
-          Mark all read
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSendTest}
+            loading={createTest.isPending}
+            disabled={createTest.isPending}
+            title="Send a test notification to verify the system is working"
+          >
+            Send test
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleMarkAllRead}
+            loading={markAllRead.isPending}
+            disabled={markAllRead.isPending}
+          >
+            Mark all read
+          </Button>
+        </div>
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 mb-5 border-b border-gray-100">
+      <div className="flex gap-1 mb-5 border-b border-gray-100 dark:border-gray-800">
         {(['all', 'unread'] as FilterTab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setFilter(tab)}
-            className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
-              filter === tab
-                ? 'text-primary border-primary'
-                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200'
-            }`}
+            className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${ filter === tab ? 'text-primary border-primary' : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200' }`}
           >
             {tab}
           </button>
@@ -182,7 +195,7 @@ export default function NotificationsPage() {
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-3xl mb-4">
             🔔
           </div>
-          <h3 className="text-base font-semibold text-gray-900">You&apos;re all caught up!</h3>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">You&apos;re all caught up!</h3>
           <p className="text-sm text-gray-500 mt-1">
             {filter === 'unread' ? 'No unread notifications.' : 'No notifications yet.'}
           </p>

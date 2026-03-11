@@ -37,7 +37,7 @@ function QuotasTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Storage Quotas</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Storage Quotas</h2>
       <div className="space-y-4 max-w-lg">
         <NumberField label="Default Storage Quota (MB)" value={form.default_storage_quota_mb} onChange={v => setForm({ ...form, default_storage_quota_mb: v })} />
         <NumberField label="Warn at (%)" value={form.warn_at_percent} onChange={v => setForm({ ...form, warn_at_percent: v })} />
@@ -70,7 +70,7 @@ function FileTypesTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Allowed / Blocked File Types</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Allowed / Blocked File Types</h2>
       <div className="space-y-4 max-w-lg">
         <NumberField label="Max File Size (MB)" value={form.max_file_size_mb} onChange={v => setForm({ ...form, max_file_size_mb: v })} />
         <ListField label="Allowed MIME Types (empty = all allowed)" value={form.allowed_mime_types} onChange={v => setForm({ ...form, allowed_mime_types: v })} placeholder="e.g. application/pdf" />
@@ -103,7 +103,7 @@ function RetentionTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Retention Policies</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Retention Policies</h2>
       <div className="space-y-4 max-w-lg">
         <NumberField label="Auto-delete Trash After (days)" value={form.auto_delete_trash_days} onChange={v => setForm({ ...form, auto_delete_trash_days: v })} />
         <NumberField label="Max Version Count" value={form.version_retention_count} onChange={v => setForm({ ...form, version_retention_count: v })} />
@@ -126,7 +126,7 @@ function HealthTab() {
   return (
     <Card>
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-base font-semibold text-gray-900">MinIO Health Check</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">MinIO Health Check</h2>
         <Button variant="secondary" onClick={() => refetch()}>Refresh</Button>
       </div>
       <div className="space-y-3 max-w-lg">
@@ -147,9 +147,9 @@ function HealthTab() {
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-gray-50">
+    <div className="flex items-center justify-between py-3 border-b border-gray-50 dark:border-gray-800">
       <span className="text-sm text-gray-500 font-medium">{label}</span>
-      <span className="text-sm text-gray-900">{value}</span>
+      <span className="text-sm text-gray-900 dark:text-gray-100">{value}</span>
     </div>
   )
 }
@@ -159,9 +159,9 @@ function NumberField({ label, value, onChange }: {
 }) {
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
       <input type="number" value={value} onChange={e => onChange(Number(e.target.value))}
-        className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" />
+        className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" />
     </div>
   )
 }
@@ -176,18 +176,18 @@ function ListField({ label, value, onChange, placeholder }: {
   }
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
       <div className="flex gap-2">
         <input value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), add())}
           placeholder={placeholder}
-          className="flex-1 rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" />
+          className="flex-1 rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" />
         <Button onClick={add} variant="secondary">Add</Button>
       </div>
       {value.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {value.map(item => (
-            <span key={item} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-xs text-gray-700">
+            <span key={item} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-900 text-xs text-gray-700 dark:text-gray-300">
               {item}
               <button onClick={() => onChange(value.filter(v => v !== item))} className="text-gray-400 hover:text-gray-600">&times;</button>
             </span>
@@ -206,16 +206,14 @@ export default function DriveConfigPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Drive Administration</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Drive Administration</h1>
         <p className="text-sm text-gray-500 mt-1">Configure storage quotas, file type restrictions, retention policies, and check MinIO health</p>
       </div>
 
-      <div className="flex gap-1 mb-6 border-b border-gray-100">
+      <div className="flex gap-1 mb-6 border-b border-gray-100 dark:border-gray-800">
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              tab === t.id ? 'text-primary border-primary' : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200'
-            }`}>
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${ tab === t.id ? 'text-primary border-primary' : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200' }`}>
             {t.label}
           </button>
         ))}

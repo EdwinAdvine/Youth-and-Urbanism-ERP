@@ -37,7 +37,7 @@ export default function StorageWidget({ className }: Props) {
 
   return (
     <Card className={className}>
-      <h3 className="text-base font-semibold text-gray-900 mb-4">Storage</h3>
+      <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Storage</h3>
 
       {/* Usage bar */}
       <div className="mb-4">
@@ -45,13 +45,11 @@ export default function StorageWidget({ className }: Props) {
           <span className="text-sm text-gray-500">
             {usage.used_formatted} of {usage.total_formatted} used
           </span>
-          <span className="text-sm font-semibold text-gray-700">{usage.percentage}%</span>
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{usage.percentage}%</span>
         </div>
-        <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+        <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-full h-3 overflow-hidden">
           <div
-            className={`h-3 rounded-full transition-all ${
-              usage.percentage > 90 ? 'bg-red-500' : usage.percentage > 70 ? 'bg-orange-500' : 'bg-primary'
-            }`}
+            className={`h-3 rounded-full transition-all ${ usage.percentage > 90 ? 'bg-red-500' : usage.percentage > 70 ? 'bg-orange-500' : 'bg-primary' }`}
             style={{ width: `${Math.min(usage.percentage, 100)}%` }}
           />
         </div>
@@ -69,10 +67,10 @@ export default function StorageWidget({ className }: Props) {
                 <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: color }} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-gray-600 capitalize">{t.type}</span>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400 capitalize">{t.type}</span>
                     <span className="text-xs text-gray-400">{t.count} files</span>
                   </div>
-                  <div className="w-full bg-gray-50 rounded-full h-1 mt-1">
+                  <div className="w-full bg-gray-50 dark:bg-gray-950 rounded-full h-1 mt-1">
                     <div className="rounded-full h-1" style={{ width: `${pct}%`, backgroundColor: color }} />
                   </div>
                 </div>

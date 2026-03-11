@@ -114,7 +114,7 @@ export default function TicketsPage() {
       key: 'subject',
       label: 'Subject',
       render: (row: Ticket) => (
-        <span className="text-gray-700 truncate max-w-[280px] block">{row.subject}</span>
+        <span className="text-gray-700 dark:text-gray-300 truncate max-w-[280px] block">{row.subject}</span>
       ),
     },
     {
@@ -141,12 +141,12 @@ export default function TicketsPage() {
     {
       key: 'customer_name',
       label: 'Customer',
-      render: (row: Ticket) => <span className="text-gray-600">{row.customer_name || row.customer_email || '-'}</span>,
+      render: (row: Ticket) => <span className="text-gray-600 dark:text-gray-400">{row.customer_name || row.customer_email || '-'}</span>,
     },
     {
       key: 'assignee_name',
       label: 'Assigned To',
-      render: (row: Ticket) => <span className="text-gray-600">{row.assignee_name || 'Unassigned'}</span>,
+      render: (row: Ticket) => <span className="text-gray-600 dark:text-gray-400">{row.assignee_name || 'Unassigned'}</span>,
     },
     {
       key: 'created_at',
@@ -173,7 +173,7 @@ export default function TicketsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Support Tickets</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Support Tickets</h1>
           <p className="text-sm text-gray-500 mt-0.5">{data?.total ?? 0} total tickets</p>
         </div>
         <div className="flex gap-2">
@@ -250,9 +250,9 @@ export default function TicketsPage() {
             placeholder="Brief summary of the issue"
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[100px]"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[100px]"
               value={form.description || ''}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Detailed description of the issue..."

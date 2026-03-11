@@ -120,7 +120,7 @@ export default function SQLEditorPage() {
                   placeholder="Query name..."
                   value={queryName}
                   onChange={(e) => setQueryName(e.target.value)}
-                  className="text-xs border border-gray-200 rounded-[8px] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 w-40"
+                  className="text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 w-40"
                 />
                 <Button size="sm" variant="outline" onClick={handleSave} loading={createSavedQuery.isPending}>
                   Save
@@ -128,7 +128,7 @@ export default function SQLEditorPage() {
               </div>
             </div>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 min-h-[200px] bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 resize-y"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 min-h-[200px] bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 resize-y"
               value={sql}
               onChange={(e) => setSql(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -175,7 +175,7 @@ export default function SQLEditorPage() {
               {EXAMPLE_QUERIES.map((eq) => (
                 <button
                   key={eq.label}
-                  className="w-full text-left text-xs px-2.5 py-2 rounded-[8px] text-gray-600 hover:bg-gray-50 hover:text-[#51459d] transition-colors"
+                  className="w-full text-left text-xs px-2.5 py-2 rounded-[8px] text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-[#51459d] transition-colors"
                   onClick={() => handleLoadQuery(eq.query)}
                 >
                   {eq.label}
@@ -194,7 +194,7 @@ export default function SQLEditorPage() {
             ) : (
               <div className="space-y-1.5 max-h-64 overflow-y-auto">
                 {savedQueries.map((sq) => (
-                  <div key={sq.id} className="flex items-center justify-between p-2 rounded-[8px] bg-gray-50 border border-gray-100">
+                  <div key={sq.id} className="flex items-center justify-between p-2 rounded-[8px] bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800">
                     <button
                       className="text-xs text-[#51459d] hover:underline truncate flex-1 text-left"
                       onClick={() => handleLoadQuery(sq.query_text)}
@@ -229,7 +229,7 @@ export default function SQLEditorPage() {
               ].map((t) => (
                 <button
                   key={t}
-                  className="block w-full text-left px-1.5 py-1 rounded hover:bg-gray-50 hover:text-[#51459d] transition-colors"
+                  className="block w-full text-left px-1.5 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-[#51459d] transition-colors"
                   onClick={() => setSql((prev) => prev + (prev ? ' ' : '') + t)}
                 >
                   {t}

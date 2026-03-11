@@ -138,7 +138,7 @@ export default function QuotesPage() {
     {
       key: 'quote_number',
       label: 'Quote #',
-      render: (q: Quote) => <span className="font-medium text-gray-900">{q.quote_number}</span>,
+      render: (q: Quote) => <span className="font-medium text-gray-900 dark:text-gray-100">{q.quote_number}</span>,
     },
     {
       key: 'contact_name',
@@ -192,7 +192,7 @@ export default function QuotesPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quotes</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Quotes</h1>
           <p className="text-sm text-gray-500 mt-1">Create and manage sales quotes</p>
         </div>
         <Button onClick={openCreate}>Create Quote</Button>
@@ -245,7 +245,7 @@ export default function QuotesPage() {
           {/* Line Items */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-gray-700">Line Items</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Line Items</label>
               <Button variant="ghost" size="sm" type="button" onClick={addLine}>+ Add Item</Button>
             </div>
             {form.items.map((item, idx) => (
@@ -278,15 +278,15 @@ export default function QuotesPage() {
                 </div>
               </div>
             ))}
-            <div className="text-right text-sm font-semibold text-gray-700 pt-2 border-t border-gray-100">
+            <div className="text-right text-sm font-semibold text-gray-700 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-800">
               Subtotal: {formatCurrency(subtotal)}
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={2}
               value={form.notes}
               onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}

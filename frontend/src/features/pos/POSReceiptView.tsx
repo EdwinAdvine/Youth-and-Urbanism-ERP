@@ -58,7 +58,7 @@ export default function POSReceiptView() {
         <Button size="sm" variant="outline" onClick={() => setEmailOpen(true)}>Email Receipt</Button>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6 font-mono text-sm">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 font-mono text-sm">
         <div className="text-center mb-4">
           <h2 className="text-lg font-bold">Urban ERP</h2>
           <p className="text-gray-500 text-xs">Point of Sale Receipt</p>
@@ -117,7 +117,7 @@ export default function POSReceiptView() {
             <span>Tax</span>
             <span>{formatCurrency(receipt.tax_amount)}</span>
           </div>
-          <div className="flex justify-between font-bold text-sm pt-1 border-t border-gray-200">
+          <div className="flex justify-between font-bold text-sm pt-1 border-t border-gray-200 dark:border-gray-700">
             <span>TOTAL</span>
             <span>{formatCurrency(receipt.total_amount)}</span>
           </div>

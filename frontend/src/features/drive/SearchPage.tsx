@@ -25,7 +25,7 @@ export default function DriveSearchPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Drive Search</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Drive Search</h1>
         <p className="text-sm text-gray-500 mt-1">Find files across your drive</p>
       </div>
 
@@ -73,21 +73,21 @@ export default function DriveSearchPage() {
             <div className="text-center py-16 text-gray-400">No files found for "{submitted.query}"</div>
           ) : (
             <>
-              <div className="px-4 py-3 border-b border-gray-100">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                 <span className="text-sm text-gray-500">{data.total} result{data.total !== 1 ? 's' : ''}</span>
               </div>
               <div className="divide-y divide-gray-50">
                 {data.files.map((file) => {
                   const type = getFileType(file.content_type, file.name)
                   return (
-                    <div key={file.id} className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 transition-colors">
-                      <div className="w-10 h-10 rounded-[10px] bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
+                    <div key={file.id} className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                      <div className="w-10 h-10 rounded-[10px] bg-gray-100 dark:bg-gray-900 flex items-center justify-center text-gray-500 shrink-0">
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-700 truncate">{file.name}</p>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{file.name}</p>
                         <p className="text-xs text-gray-400">{file.folder_path || '/'}</p>
                       </div>
                       <Badge variant="default">{type.toUpperCase()}</Badge>

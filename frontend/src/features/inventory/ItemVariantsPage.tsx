@@ -25,28 +25,26 @@ export default function ItemVariantsPage() {
 
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<ItemVariant | null>(null)
-  const [form, setForm] = useState<{ name: string; sku: string; cost_price: number; selling_price: number; attributes: { key: string; value: string }[] }>({
-    name: '',
+  const [form, setForm] = useState<{ variant_name: string; sku: string; price_adjustment: number; attributes: { key: string; value: string }[] }>({
+    variant_name: '',
     sku: '',
-    cost_price: 0,
-    selling_price: 0,
+    price_adjustment: 0,
     attributes: [{ key: '', value: '' }],
   })
 
   function openCreate() {
     setEditing(null)
-    setForm({ name: '', sku: '', cost_price: 0, selling_price: 0, attributes: [{ key: '', value: '' }] })
+    setForm({ variant_name: '', sku: '', price_adjustment: 0, attributes: [{ key: '', value: '' }] })
     setShowModal(true)
   }
 
   function openEdit(v: ItemVariant) {
     setEditing(v)
-    const attrs = Object.entries(v.attributes).map(([key, value]) => ({ key, value }))
+    const attrs = Object.entries(v.attributes ?? {}).map(([key, value]) => ({ key, value }))
     setForm({
-      name: v.name,
+      variant_name: v.variant_name,
       sku: v.sku,
-      cost_price: v.cost_price,
-      selling_price: v.selling_price,
+      price_adjustment: v.price_adjustment,
       attributes: attrs.length > 0 ? attrs : [{ key: '', value: '' }],
     })
     setShowModal(true)
@@ -74,7 +72,7 @@ export default function ItemVariantsPage() {
 
     if (editing) {
       updateVariant.mutate(
-        { id: editing.id, item_id: selectedItemId, name: form.name, sku: form.sku, cost_price: form.cost_price, selling_price: form.selling_price, attributes },
+        { id: editing.id, item_id: selectedItemId, variant_name: form.variant_name, sku: form.sku, price_adjustment: form.price_adjustment, attributes },
         {
           onSuccess: () => { toast('success', 'Variant updated'); setShowModal(false) },
           onError: () => toast('error', 'Failed to update variant'),
@@ -83,10 +81,9 @@ export default function ItemVariantsPage() {
     } else {
       const payload: CreateItemVariantPayload = {
         item_id: selectedItemId,
-        name: form.name,
+        variant_name: form.variant_name,
         sku: form.sku || undefined,
-        cost_price: form.cost_price,
-        selling_price: form.selling_price,
+        price_adjustment: form.price_adjustment,
         attributes,
       }
       createVariant.mutate(payload, {
@@ -97,7 +94,7 @@ export default function ItemVariantsPage() {
   }
 
   function handleDelete(v: ItemVariant) {
-    if (!window.confirm(`Delete variant "${v.name}"?`)) return
+    if (!window.confirm(`Delete variant "${v.variant_name}"?`)) return
     deleteVariant.mutate(
       { itemId: selectedItemId, variantId: v.id },
       {
@@ -109,11 +106,11 @@ export default function ItemVariantsPage() {
 
   const columns = [
     {
-      key: 'name',
+      key: 'variant_name',
       label: 'Variant',
       render: (v: ItemVariant) => (
         <div>
-          <p className="font-medium text-gray-900">{v.name}</p>
+          <p className="font-medium text-gray-900">{v.variant_name}</p>
           <p className="text-xs text-gray-400">SKU: {v.sku}</p>
         </div>
       ),
@@ -123,21 +120,20 @@ export default function ItemVariantsPage() {
       label: 'Attributes',
       render: (v: ItemVariant) => (
         <div className="flex flex-wrap gap-1">
-          {Object.entries(v.attributes).map(([key, val]) => (
+          {Object.entries(v.attributes ?? {}).map(([key, val]) => (
             <Badge key={key} variant="primary">{key}: {val}</Badge>
           ))}
         </div>
       ),
     },
     {
-      key: 'cost_price',
-      label: 'Cost',
-      render: (v: ItemVariant) => formatCurrency(v.cost_price),
-    },
-    {
-      key: 'selling_price',
-      label: 'Selling',
-      render: (v: ItemVariant) => formatCurrency(v.selling_price),
+      key: 'price_adjustment',
+      label: 'Price Adj.',
+      render: (v: ItemVariant) => (
+        <span className={v.price_adjustment >= 0 ? 'text-green-600' : 'text-red-600'}>
+          {v.price_adjustment >= 0 ? '+' : ''}{formatCurrency(v.price_adjustment)}
+        </span>
+      ),
     },
     {
       key: 'is_active',
@@ -205,11 +201,10 @@ export default function ItemVariantsPage() {
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Variant' : 'Add Variant'} size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input label="Name" required value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="e.g., Large Red" />
-          <Input label="SKU" value={form.sku} onChange={(e) => setForm((p) => ({ ...p, sku: e.target.value }))} />
+          <Input label="Variant Name" required value={form.variant_name} onChange={(e) => setForm((p) => ({ ...p, variant_name: e.target.value }))} placeholder="e.g., Large Red" />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Cost Price" type="number" step="0.01" required value={form.cost_price} onChange={(e) => setForm((p) => ({ ...p, cost_price: Number(e.target.value) }))} />
-            <Input label="Selling Price" type="number" step="0.01" required value={form.selling_price} onChange={(e) => setForm((p) => ({ ...p, selling_price: Number(e.target.value) }))} />
+            <Input label="SKU" value={form.sku} onChange={(e) => setForm((p) => ({ ...p, sku: e.target.value }))} />
+            <Input label="Price Adjustment" type="number" step="0.01" value={form.price_adjustment} onChange={(e) => setForm((p) => ({ ...p, price_adjustment: Number(e.target.value) }))} placeholder="e.g., 5.00 or -2.50" />
           </div>
 
           <div className="space-y-2">

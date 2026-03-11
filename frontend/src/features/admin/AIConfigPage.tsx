@@ -107,7 +107,7 @@ export default function AIConfigPage() {
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">AI Configuration</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">AI Configuration</h1>
         <p className="text-gray-500 text-sm mt-1">Configure the AI provider powering Urban AI assistant</p>
       </div>
 
@@ -134,14 +134,14 @@ export default function AIConfigPage() {
           {/* API Key — for non-ollama providers */}
           {provider !== 'ollama' && (
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 API Key
               </label>
               <div className="relative">
                 <input
                   type={showKey ? 'text' : 'password'}
                   placeholder="sk-…"
-                  className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                   {...register('api_key')}
                 />
                 <button
@@ -170,10 +170,10 @@ export default function AIConfigPage() {
             control={control}
             render={({ field }) => (
               <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700">Model</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Model</label>
                 <select
                   {...field}
-                  className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                 >
                   {modelOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -195,7 +195,7 @@ export default function AIConfigPage() {
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+          <div className="flex items-center gap-3 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button
               type="button"
               variant="secondary"
@@ -222,11 +222,11 @@ export default function AIConfigPage() {
         ].map((p) => (
           <div
             key={p.id}
-            className={`p-3 rounded-[10px] border transition-colors cursor-pointer ${provider === p.id ? 'border-primary bg-primary/5' : 'border-gray-100 bg-white hover:border-gray-200'}`}
+            className={`p-3 rounded-[10px] border transition-colors cursor-pointer ${provider === p.id ? 'border-primary bg-primary/5' : 'border-gray-100 bg-white dark:bg-gray-800 hover:border-gray-200'}`}
             onClick={() => reset({ ...watch(), provider: p.id as FormData['provider'] })}
           >
             <div className="flex items-center justify-between mb-1">
-              <p className="text-sm font-semibold text-gray-800">{p.name}</p>
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{p.name}</p>
               <Badge variant={p.badgeVariant}>{p.badge}</Badge>
             </div>
             <p className="text-xs text-gray-500">{p.desc}</p>

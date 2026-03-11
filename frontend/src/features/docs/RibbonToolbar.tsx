@@ -83,11 +83,11 @@ function DropdownMenu({ items, onClose }: { items: MenuItem[]; onClose: () => vo
   return (
     <div
       ref={ref}
-      className="absolute top-full left-0 mt-0.5 w-56 bg-white border border-gray-200 rounded-[8px] shadow-xl z-50 py-1"
+      className="absolute top-full left-0 mt-0.5 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[8px] shadow-xl z-50 py-1"
     >
       {items.map((item, i) =>
         item.divider ? (
-          <div key={i} className="h-px bg-gray-100 my-1" />
+          <div key={i} className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
         ) : (
           <button
             key={i}
@@ -101,7 +101,7 @@ function DropdownMenu({ items, onClose }: { items: MenuItem[]; onClose: () => vo
             className={`w-full text-left px-4 py-2 text-xs flex items-center justify-between transition-colors ${
               item.disabled
                 ? 'text-gray-300 cursor-not-allowed'
-                : 'text-gray-700 hover:bg-[#51459d]/5 hover:text-[#51459d]'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-[#51459d]/5 hover:text-[#51459d]'
             }`}
           >
             <span>{item.label}</span>
@@ -124,10 +124,10 @@ function ConvertDialog({ fileId, fileName, onClose }: { fileId: string; fileName
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-sm">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">Convert Document</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-sm">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Convert Document</h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
@@ -141,7 +141,7 @@ function ConvertDialog({ fileId, fileName, onClose }: { fileId: string; fileName
                 className={`px-3 py-2 text-xs font-medium rounded-[6px] border-2 transition-colors uppercase ${
                   format === f
                     ? 'border-[#51459d] bg-[#51459d]/5 text-[#51459d]'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 {f}
@@ -165,8 +165,8 @@ function ConvertDialog({ fileId, fileName, onClose }: { fileId: string; fileName
             <p className="text-xs text-[#ff3a6e]">Conversion failed. The document server may be unavailable.</p>
           )}
         </div>
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-[8px] transition-colors">
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px] transition-colors">
             Cancel
           </button>
           <button
@@ -190,21 +190,21 @@ function LinkToNoteDialog({ fileId, onClose }: { fileId: string; onClose: () => 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-sm">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">Link to Note</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-sm">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Link to Note</h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
         <div className="p-5 space-y-3">
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1.5">Note ID</label>
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">Note ID</label>
             <input
               value={noteId}
               onChange={(e) => setNoteId(e.target.value)}
               placeholder="Paste note UUID..."
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
             />
           </div>
           {linkToNote.isSuccess && (
@@ -214,8 +214,8 @@ function LinkToNoteDialog({ fileId, onClose }: { fileId: string; onClose: () => 
             <p className="text-xs text-[#ff3a6e]">Failed to link. Note may not exist or document is already linked.</p>
           )}
         </div>
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-[8px] transition-colors">
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px] transition-colors">
             Cancel
           </button>
           <button
@@ -324,23 +324,23 @@ export default function RibbonToolbar({
   return (
     <>
       {/* Top bar: branding + file info + editor avatars + action buttons */}
-      <div className="bg-white border-b border-gray-100 shrink-0">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800 shrink-0">
         {/* Row 1: File name + actions */}
         <div className="px-4 py-2 flex items-center gap-3">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back
           </button>
-          <div className="h-4 w-px bg-gray-200" />
+          <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
           <div className={`px-2 py-0.5 rounded border text-[10px] font-bold ${cfg.bg} ${cfg.color}`}>
             {cfg.icon}
           </div>
-          <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{fileName}</span>
+          <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[200px]">{fileName}</span>
 
           <div className="flex-1" />
 
@@ -353,7 +353,7 @@ export default function RibbonToolbar({
             className={`px-3 py-1.5 text-xs border rounded-[6px] transition-colors ${
               commentsActive
                 ? 'border-[#51459d] bg-[#51459d]/10 text-[#51459d]'
-                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
             }`}
           >
             Comments
@@ -363,7 +363,7 @@ export default function RibbonToolbar({
             className={`px-3 py-1.5 text-xs border rounded-[6px] transition-colors ${
               versionsActive
                 ? 'border-[#51459d] bg-[#51459d]/10 text-[#51459d]'
-                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
             }`}
           >
             History
@@ -373,7 +373,7 @@ export default function RibbonToolbar({
             className={`px-3 py-1.5 text-xs border rounded-[6px] transition-colors ${
               aiActive
                 ? 'border-[#51459d] bg-[#51459d]/10 text-[#51459d]'
-                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
             }`}
           >
             AI Assist
@@ -386,20 +386,20 @@ export default function RibbonToolbar({
           </button>
           <button
             onClick={onShare}
-            className="px-3 py-1.5 text-xs border border-gray-200 text-gray-600 rounded-[6px] hover:bg-gray-50 transition-colors"
+            className="px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 rounded-[6px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             Share
           </button>
           <button
             onClick={onPrint}
-            className="px-3 py-1.5 text-xs border border-gray-200 text-gray-600 rounded-[6px] hover:bg-gray-50 transition-colors"
+            className="px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 rounded-[6px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             Print
           </button>
         </div>
 
         {/* Row 2: Ribbon menus (File, Edit, Insert, Format) */}
-        <div className="px-4 py-1 flex items-center gap-0.5 border-t border-gray-50 bg-gray-50/50">
+        <div className="px-4 py-1 flex items-center gap-0.5 border-t border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
           {menus.map(({ key, label, items }) => (
             <div key={key} className="relative">
               <button
@@ -408,7 +408,7 @@ export default function RibbonToolbar({
                 className={`px-3 py-1.5 text-xs font-medium rounded-[4px] transition-colors ${
                   activeMenu === key
                     ? 'bg-[#51459d]/10 text-[#51459d]'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
               >
                 {label}

@@ -41,48 +41,48 @@ export default function LobbyCustomization() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">
         Lobby / Waiting Room Customization
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Form */}
         <div className="space-y-4">
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Logo URL</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Logo URL</label>
             <input
               type="url"
               value={form.logo_url}
               onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
               placeholder="https://your-domain.com/logo.png"
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
             />
             <p className="text-xs text-gray-400">Displayed at the top of the waiting room</p>
           </div>
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Welcome Message</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Welcome Message</label>
             <textarea
               value={form.welcome_message}
               onChange={(e) => setForm({ ...form, welcome_message: e.target.value })}
               rows={3}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors resize-none"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors resize-none"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Background Color</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Background Color</label>
             <div className="flex items-center gap-3">
               <input
                 type="color"
                 value={form.background_color}
                 onChange={(e) => setForm({ ...form, background_color: e.target.value })}
-                className="h-10 w-16 rounded-[8px] border border-gray-200 cursor-pointer"
+                className="h-10 w-16 rounded-[8px] border border-gray-200 dark:border-gray-700 cursor-pointer"
               />
               <input
                 type="text"
                 value={form.background_color}
                 onChange={(e) => setForm({ ...form, background_color: e.target.value })}
-                className="w-32 rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                className="w-32 rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               />
             </div>
           </div>
@@ -95,7 +95,7 @@ export default function LobbyCustomization() {
               className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30 accent-primary"
             />
             <div>
-              <span className="text-sm text-gray-700 font-medium">Require host approval</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Require host approval</span>
               <p className="text-xs text-gray-400">Participants must wait for the host to admit them</p>
             </div>
           </label>

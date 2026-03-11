@@ -94,11 +94,7 @@ export default function MobileAttendance() {
 
         {/* Geolocation indicator */}
         <div className="flex items-center justify-center gap-2 mt-3">
-          <div className={`w-2 h-2 rounded-full ${
-            geoStatus === 'found' ? 'bg-green-500' :
-            geoStatus === 'locating' ? 'bg-yellow-500 animate-pulse' :
-            'bg-gray-300'
-          }`} />
+          <div className={`w-2 h-2 rounded-full ${ geoStatus === 'found' ? 'bg-green-500' : geoStatus === 'locating' ? 'bg-yellow-500 animate-pulse' : 'bg-gray-300' }`} />
           <span className="text-xs text-gray-500">
             {geoStatus === 'found' && location
               ? `Location: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
@@ -114,11 +110,7 @@ export default function MobileAttendance() {
         <div className="text-center space-y-3">
           {/* Current status */}
           <div className="flex items-center justify-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${
-              isCheckedOut ? 'bg-gray-400' :
-              isCheckedIn ? 'bg-green-500 animate-pulse' :
-              'bg-orange-400'
-            }`} />
+            <div className={`w-3 h-3 rounded-full ${ isCheckedOut ? 'bg-gray-400' : isCheckedIn ? 'bg-green-500 animate-pulse' : 'bg-orange-400' }`} />
             <span className="text-sm font-medium text-gray-700">
               {isCheckedOut
                 ? 'Shift completed'
@@ -207,7 +199,7 @@ export default function MobileAttendance() {
             {(attendance?.items ?? []).slice(0, 5).map((record) => (
               <div
                 key={record.id}
-                className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"
+                className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800 last:border-0"
               >
                 <div>
                   <p className="text-sm font-medium text-gray-900">

@@ -75,7 +75,7 @@ export default function MultiPageForm({
       {/* Header with title */}
       {formTitle && (
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">{formTitle}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formTitle}</h1>
           {formDescription && (
             <p className="text-sm text-gray-500 mt-1">{formDescription}</p>
           )}
@@ -88,7 +88,7 @@ export default function MultiPageForm({
           <span>Page {currentPage + 1} of {totalPages}</span>
           <span>{Math.round(((currentPage + 1) / totalPages) * 100)}% complete</span>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-2 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
           <div
             className="h-full bg-[#51459d] rounded-full transition-all duration-300"
             style={{ width: `${((currentPage + 1) / totalPages) * 100}%` }}
@@ -104,23 +104,17 @@ export default function MultiPageForm({
             onClick={() => {
               if (i < currentPage || validateCurrentPage()) setCurrentPage(i)
             }}
-            className={`w-2.5 h-2.5 rounded-full transition-colors ${
-              i === currentPage
-                ? 'bg-[#51459d]'
-                : i < currentPage
-                  ? 'bg-[#51459d]/40'
-                  : 'bg-gray-200'
-            }`}
+            className={`w-2.5 h-2.5 rounded-full transition-colors ${ i === currentPage ? 'bg-[#51459d]' : i < currentPage ? 'bg-[#51459d]/40' : 'bg-gray-200' }`}
           />
         ))}
       </div>
 
       {/* Fields */}
       <form onSubmit={handleSubmit}>
-        <div className="bg-white rounded-[10px] border border-gray-100 shadow-sm p-6 space-y-5">
+        <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 shadow-sm p-6 space-y-5">
           {pageFields.map((field) => (
             <div key={field.id} className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 {field.label}
                 {field.is_required && <span className="text-[#ff3a6e] ml-1">*</span>}
               </label>
@@ -184,7 +178,7 @@ export default function MultiPageForm({
               {field.field_type === 'radio' && (
                 <div className="space-y-2 pt-1">
                   {field.options?.map((opt) => (
-                    <label key={opt} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <label key={opt} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
                       <input
                         type="radio"
                         name={`field-${field.id}`}
@@ -202,7 +196,7 @@ export default function MultiPageForm({
               {field.field_type === 'checkbox' && (
                 <div className="space-y-2 pt-1">
                   {field.options?.map((opt) => (
-                    <label key={opt} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <label key={opt} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={((answers[field.id] as string[]) ?? []).includes(opt)}
@@ -233,7 +227,7 @@ export default function MultiPageForm({
             type="button"
             onClick={handleBack}
             disabled={isFirstPage}
-            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

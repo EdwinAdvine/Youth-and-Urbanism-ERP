@@ -66,7 +66,7 @@ export default function StockAdjustmentPage() {
     {
       key: 'item_name',
       label: 'Item',
-      render: (a: StockAdjustment) => <span className="font-medium text-gray-900">{a.item_name ?? 'Unknown'}</span>,
+      render: (a: StockAdjustment) => <span className="font-medium text-gray-900 dark:text-gray-100">{a.item_name ?? 'Unknown'}</span>,
     },
     {
       key: 'warehouse_name',
@@ -85,12 +85,15 @@ export default function StockAdjustmentPage() {
     {
       key: 'reason',
       label: 'Reason',
-      render: (a: StockAdjustment) => <Badge variant={reasonVariant[a.reason]}>{a.reason}</Badge>,
+      render: (a: StockAdjustment) => {
+        const r = (a.reason ?? '').split(':')[0].trim() as AdjustmentReason
+        return <Badge variant={reasonVariant[r] ?? 'default'}>{a.reason ?? '-'}</Badge>
+      },
     },
     {
       key: 'notes',
       label: 'Notes',
-      render: (a: StockAdjustment) => a.notes ? <span className="text-sm text-gray-600 truncate max-w-xs block">{a.notes}</span> : '-',
+      render: (a: StockAdjustment) => a.notes ? <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-xs block">{a.notes}</span> : '-',
     },
     {
       key: 'adjusted_by_name',
@@ -116,7 +119,7 @@ export default function StockAdjustmentPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Stock Adjustments</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Stock Adjustments</h1>
           <p className="text-sm text-gray-500 mt-1">Record and track inventory adjustments</p>
         </div>
         <Button onClick={() => setShowModal(true)}>New Adjustment</Button>
@@ -191,9 +194,9 @@ export default function StockAdjustmentPage() {
             onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value as AdjustmentReason }))}
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={3}
               value={form.notes ?? ''}
               onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}

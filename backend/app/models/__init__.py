@@ -58,6 +58,7 @@ from app.models.docs import DocumentComment, DocumentTemplate, RecentDocument
 from app.models.analytics import Dashboard, DashboardWidget, SavedQuery, Report, DataAlert
 from app.models.project_links import ProjectDealLink, ProjectExpenseLink, ProjectDriveFolder, ProjectDocument
 from app.models.agent import AgentRun, AgentRunStep, AgentApproval
+from app.models.handbook import HandbookCategory, HandbookArticle, HandbookFeedback, HandbookProgress, HandbookViewLog
 
 __all__ = [
     "Base",
@@ -126,4 +127,6 @@ __all__ = [
     "ProjectDealLink", "ProjectExpenseLink", "ProjectDriveFolder", "ProjectDocument",
     # Agent (Urban Bad AI)
     "AgentRun", "AgentRunStep", "AgentApproval",
+    # Handbook
+    "HandbookCategory", "HandbookArticle", "HandbookFeedback", "HandbookProgress", "HandbookViewLog",
 ]

@@ -144,7 +144,7 @@ export default function PipelinePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Pipeline</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Pipeline</h1>
           <p className="text-sm text-gray-500 mt-0.5">Manage opportunities through your sales pipeline</p>
         </div>
         <Button onClick={openCreate} className="w-full sm:w-auto min-h-[44px] sm:min-h-0">+ New Opportunity</Button>
@@ -167,13 +167,13 @@ export default function PipelinePage() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-gray-900">{STAGE_LABELS[stage]}</span>
-                      <span className="text-xs bg-gray-200 text-gray-600 rounded-full px-2 py-0.5">
+                      <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{STAGE_LABELS[stage]}</span>
+                      <span className="text-xs bg-gray-200 text-gray-600 dark:text-gray-400 rounded-full px-2 py-0.5">
                         {stageData.count}
                       </span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-600 mt-1 font-medium">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
                     {formatCurrency(stageData.total_value)}
                   </p>
                 </div>
@@ -181,17 +181,17 @@ export default function PipelinePage() {
                 {/* Cards */}
                 <div className="space-y-2 mt-2 min-h-[200px]">
                   {stageData.items.length === 0 ? (
-                    <div className="text-center text-gray-400 text-xs py-8 border-2 border-dashed border-gray-200 rounded-[10px]">
+                    <div className="text-center text-gray-400 text-xs py-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-[10px]">
                       No opportunities
                     </div>
                   ) : (
                     stageData.items.map((opp) => (
                       <div
                         key={opp.id}
-                        className="bg-white rounded-[10px] border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]"
+                        className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]"
                         onClick={() => openEdit(opp)}
                       >
-                        <h3 className="font-medium text-sm text-gray-900 leading-tight">{opp.title}</h3>
+                        <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 leading-tight">{opp.title}</h3>
                         {opp.contact_name && (
                           <p className="text-xs text-gray-500 mt-1">{opp.contact_name}</p>
                         )}
@@ -315,9 +315,9 @@ export default function PipelinePage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={3}
               value={form.notes ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}

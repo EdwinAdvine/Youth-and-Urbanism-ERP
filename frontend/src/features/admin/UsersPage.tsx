@@ -162,7 +162,7 @@ export default function UsersPage() {
 
       {/* Filters */}
       <Card padding={false}>
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
           <Input
             placeholder="Search by name or email…"
             value={search}

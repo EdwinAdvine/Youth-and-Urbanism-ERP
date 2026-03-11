@@ -53,12 +53,10 @@ export default function MultiCalendarSidebar({
           <button
             key={cal.id}
             onClick={() => toggle(cal.id)}
-            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-[6px] hover:bg-gray-50 transition-colors text-left group"
+            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-[6px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left group"
           >
             <div
-              className={`w-4 h-4 rounded-[4px] border-2 flex items-center justify-center transition-colors ${
-                cal.enabled ? 'border-transparent' : 'border-gray-300'
-              }`}
+              className={`w-4 h-4 rounded-[4px] border-2 flex items-center justify-center transition-colors ${ cal.enabled ? 'border-transparent' : 'border-gray-300' }`}
               style={cal.enabled ? { backgroundColor: cal.color } : undefined}
             >
               {cal.enabled && (
@@ -68,9 +66,7 @@ export default function MultiCalendarSidebar({
               )}
             </div>
             <span
-              className={`text-xs transition-colors ${
-                cal.enabled ? 'text-gray-700 font-medium' : 'text-gray-400'
-              }`}
+              className={`text-xs transition-colors ${ cal.enabled ? 'text-gray-700 font-medium' : 'text-gray-400' }`}
             >
               {cal.name}
             </span>

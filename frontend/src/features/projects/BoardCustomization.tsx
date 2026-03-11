@@ -160,7 +160,7 @@ export default function BoardCustomization({
               key={col.key}
               className={cn(
                 'flex items-center gap-2 px-3 py-2 rounded-[10px] border transition-colors',
-                editingIndex === index ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50'
+                editingIndex === index ? 'border-primary bg-primary/5' : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950'
               )}
             >
               {editingIndex === index ? (
@@ -180,7 +180,7 @@ export default function BoardCustomization({
                     ))}
                   </div>
                   <input
-                    className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="flex-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
                     value={editLabel}
                     onChange={(e) => setEditLabel(e.target.value)}
                     autoFocus
@@ -196,7 +196,7 @@ export default function BoardCustomization({
                 <>
                   {/* Display mode */}
                   <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: col.color }} />
-                  <span className="flex-1 text-sm font-medium text-gray-700">{col.label}</span>
+                  <span className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-300">{col.label}</span>
                   <span className="text-[10px] text-gray-400 font-mono">{col.key}</span>
 
                   {/* Reorder buttons */}
@@ -262,7 +262,7 @@ export default function BoardCustomization({
               placeholder="Auto-generated from label"
             />
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Color</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Color</label>
               <div className="flex gap-1.5">
                 {PRESET_COLORS.map((c) => (
                   <button
@@ -292,7 +292,7 @@ export default function BoardCustomization({
         )}
 
         {/* Actions */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+        <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
           <Button variant="ghost" size="sm" onClick={handleReset}>
             Reset to Default
           </Button>

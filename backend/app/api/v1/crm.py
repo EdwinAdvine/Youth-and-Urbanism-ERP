@@ -183,7 +183,7 @@ async def list_contacts(
     source: str | None = Query(None, description="Filter by source"),
     search: str | None = Query(None, description="Search first_name, last_name, or email"),
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=500),
 ) -> dict[str, Any]:
     query = select(Contact).where(Contact.is_active == True)  # noqa: E712
 
@@ -313,7 +313,7 @@ async def list_leads(
     status_filter: str | None = Query(None, alias="status", description="Filter by lead status"),
     assigned_to: uuid.UUID | None = Query(None, description="Filter by assigned user"),
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=500),
 ) -> dict[str, Any]:
     query = select(Lead)
 
@@ -692,7 +692,7 @@ async def pipeline_view(
 
 # ── Dashboard ──────────────────────────────────────────────────────────────────
 
-@router.get("/dashboard", summary="CRM dashboard stats")
+@router.get("/dashboard/stats", summary="CRM dashboard stats")
 async def dashboard(
     current_user: CurrentUser,
     db: DBSession,
@@ -724,6 +724,12 @@ async def dashboard(
     )
     pipeline_value = float(pipeline_result.scalar() or 0)
 
+    # Total opportunities
+    total_opps_result = await db.execute(
+        select(func.count()).select_from(Opportunity)
+    )
+    total_opportunities = total_opps_result.scalar() or 0
+
     # Deals closed this month (count + value)
     deals_this_month_result = await db.execute(
         select(
@@ -735,12 +741,8 @@ async def dashboard(
         )
     )
     deals_row = deals_this_month_result.one()
-    deals_closed_this_month = {
-        "count": deals_row.count,
-        "value": float(deals_row.value),
-    }
 
-    # Conversion rate (leads converted / total leads * 100)
+    # Conversion rate as decimal (0.0–1.0) to match frontend expectation
     total_leads_result = await db.execute(
         select(func.count()).select_from(Lead)
     )
@@ -751,14 +753,17 @@ async def dashboard(
     )
     converted_leads = converted_leads_result.scalar() or 0
 
-    conversion_rate = round((converted_leads / total_leads * 100), 2) if total_leads > 0 else 0.0
+    conversion_rate = round(converted_leads / total_leads, 4) if total_leads > 0 else 0.0
 
     return {
         "total_contacts": total_contacts,
         "new_leads_this_month": new_leads_this_month,
         "pipeline_value": pipeline_value,
-        "deals_closed_this_month": deals_closed_this_month,
+        "deals_closed_this_month": deals_row.count,
+        "deals_closed_value": float(deals_row.value),
         "conversion_rate": conversion_rate,
+        "total_leads": total_leads,
+        "total_opportunities": total_opportunities,
     }
 
 

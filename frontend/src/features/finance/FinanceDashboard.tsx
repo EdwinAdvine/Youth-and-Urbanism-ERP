@@ -133,7 +133,7 @@ export default function FinanceDashboard() {
 
       {/* Recent Invoices */}
       <Card padding={false}>
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-base font-semibold text-gray-900">Recent Invoices</h2>
           <Button variant="ghost" size="sm" onClick={() => navigate('/finance/invoices')}>
             View All

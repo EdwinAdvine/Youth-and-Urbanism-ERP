@@ -77,14 +77,14 @@ export default function CRMDashboard() {
 
       {/* Pipeline Funnel + Lead Sources */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Sales Pipeline</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Sales Pipeline</h3>
           <p className="text-xs text-gray-400 mb-4">Funnel conversion by stage</p>
           <FunnelChart data={pipelineStages} height={260} />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Lead Sources</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Lead Sources</h3>
           <p className="text-xs text-gray-400 mb-4">Where leads come from</p>
           <PieChart data={leadSources} innerRadius={50} height={260} />
         </div>
@@ -92,8 +92,8 @@ export default function CRMDashboard() {
 
       {/* Conversion Rate + Deal Velocity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Conversion Rate Trend</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Conversion Rate Trend</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly lead-to-deal conversion</p>
           <LineChart
             data={conversionData}
@@ -104,8 +104,8 @@ export default function CRMDashboard() {
           />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Deal Velocity</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Deal Velocity</h3>
           <p className="text-xs text-gray-400 mb-4">Average days to close</p>
           <BarChart
             data={velocityData}
@@ -118,8 +118,8 @@ export default function CRMDashboard() {
       </div>
 
       {/* Deal Size Distribution */}
-      <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-900 mb-1">Deal Size Distribution</h3>
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Deal Size Distribution</h3>
         <p className="text-xs text-gray-400 mb-4">Number of deals by value range</p>
         <BarChart
           data={dealSizes}

@@ -76,7 +76,7 @@ export default function PublicSharePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <Spinner size="lg" />
       </div>
     )
@@ -84,12 +84,12 @@ export default function PublicSharePage() {
 
   if (!share && !needsPassword) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm text-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 max-w-sm text-center">
           <svg className="h-12 w-12 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
           </svg>
-          <h2 className="text-lg font-bold text-gray-900">Link not found</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Link not found</h2>
           <p className="text-sm text-gray-500 mt-1">This shared link may have expired or been revoked.</p>
         </div>
       </div>
@@ -99,13 +99,13 @@ export default function PublicSharePage() {
   // Password gate
   if (needsPassword) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 max-w-sm w-full">
           <div className="text-center mb-6">
             <svg className="h-12 w-12 mx-auto text-[#51459d] mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
-            <h2 className="text-lg font-bold text-gray-900">Password Required</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Password Required</h2>
             <p className="text-sm text-gray-500 mt-1">Enter the password to access this shared file.</p>
           </div>
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
@@ -114,7 +114,7 @@ export default function PublicSharePage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter password"
-              className="w-full border border-gray-200 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               required
               autoFocus
             />
@@ -137,12 +137,12 @@ export default function PublicSharePage() {
   // File-drop upload zone
   if (isFileDrop) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
           <svg className="h-12 w-12 mx-auto text-[#51459d] mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
-          <h2 className="text-lg font-bold text-gray-900 mb-1">File Drop</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">File Drop</h2>
           <p className="text-sm text-gray-500 mb-6">Upload a file to this shared folder.</p>
 
           {uploadSuccess ? (
@@ -155,11 +155,11 @@ export default function PublicSharePage() {
               onDragLeave={() => setDragActive(false)}
               onDrop={handleDrop}
               className={`border-2 border-dashed rounded-[10px] p-8 transition-colors cursor-pointer ${
-                dragActive ? 'border-[#51459d] bg-purple-50' : 'border-gray-300 hover:border-gray-400'
+                dragActive ? 'border-[#51459d] bg-purple-50' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
               }`}
               onClick={() => document.getElementById('filedrop-input')?.click()}
             >
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {fileDropUpload.isPending
                   ? 'Uploading...'
                   : 'Drag and drop a file here, or click to browse'}
@@ -179,15 +179,15 @@ export default function PublicSharePage() {
 
   // Normal file share - show info + download
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full text-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 max-w-sm w-full text-center">
         <svg className="h-12 w-12 mx-auto text-[#51459d] mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
         </svg>
 
         {share && (
           <>
-            <h2 className="text-lg font-bold text-gray-900 mb-1">{share.name}</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{share.name}</h2>
             <div className="text-sm text-gray-500 space-y-1 mb-6">
               <p>{share.content_type}</p>
               <p>{formatFileSize(share.size)}</p>

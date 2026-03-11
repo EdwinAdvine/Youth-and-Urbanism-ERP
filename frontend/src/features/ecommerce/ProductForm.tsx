@@ -77,7 +77,7 @@ export default function ProductForm() {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {isEdit ? 'Edit Product' : 'New Product'}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -92,13 +92,13 @@ export default function ProductForm() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info */}
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Basic Information</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Basic Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {!isEdit && (
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Store</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Store</label>
                 <select
-                  className="w-full border border-gray-200 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   value={form.store_id}
                   onChange={(e) => setForm({ ...form, store_id: e.target.value })}
                   required
@@ -111,29 +111,29 @@ export default function ProductForm() {
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Display Name</label>
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={form.display_name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug</label>
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={form.slug}
                 onChange={(e) => setForm({ ...form, slug: e.target.value })}
                 required
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
               <textarea
-                className="w-full border border-gray-200 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 min-h-[100px]"
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 min-h-[100px]"
                 value={form.description || ''}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
@@ -143,27 +143,27 @@ export default function ProductForm() {
 
         {/* Pricing */}
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Pricing</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Pricing</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price</label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
-                className="w-full border border-gray-200 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={form.price}
                 onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Compare at Price (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Compare at Price (optional)</label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
-                className="w-full border border-gray-200 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={form.compare_at_price || ''}
                 onChange={(e) =>
                   setForm({ ...form, compare_at_price: e.target.value ? parseFloat(e.target.value) : undefined })
@@ -175,21 +175,21 @@ export default function ProductForm() {
 
         {/* SEO */}
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-4">SEO</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">SEO</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">SEO Title</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SEO Title</label>
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={form.seo_title || ''}
                 onChange={(e) => setForm({ ...form, seo_title: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">SEO Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SEO Description</label>
               <textarea
-                className="w-full border border-gray-200 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 min-h-[80px]"
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 min-h-[80px]"
                 value={form.seo_description || ''}
                 onChange={(e) => setForm({ ...form, seo_description: e.target.value })}
               />
@@ -201,7 +201,7 @@ export default function ProductForm() {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-gray-900">Publish</h2>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Publish</h2>
               <p className="text-sm text-gray-500 mt-1">Make this product visible on the storefront</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -211,7 +211,7 @@ export default function ProductForm() {
                 checked={form.is_published}
                 onChange={(e) => setForm({ ...form, is_published: e.target.checked })}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/40 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/40 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
         </Card>

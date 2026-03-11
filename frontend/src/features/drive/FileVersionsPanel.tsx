@@ -17,14 +17,14 @@ export default function FileVersionsPanel({ fileId, fileName, onClose }: Props) 
   }
 
   return (
-    <div className="w-80 border-l border-gray-100 bg-white flex flex-col h-full">
+    <div className="w-80 border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-gray-900">Version History</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Version History</h3>
           <p className="text-[11px] text-gray-400 truncate mt-0.5">{fileName}</p>
         </div>
-        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-[6px] text-gray-400 shrink-0">
+        <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-400 shrink-0">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -56,15 +56,11 @@ export default function FileVersionsPanel({ fileId, fileName, onClose }: Props) 
               return (
                 <div
                   key={version.id}
-                  className={`p-3 rounded-[8px] border transition-colors ${
-                    isCurrent
-                      ? 'border-[#51459d]/20 bg-[#51459d]/5'
-                      : 'border-gray-100 hover:border-gray-200'
-                  }`}
+                  className={`p-3 rounded-[8px] border transition-colors ${ isCurrent ? 'border-[#51459d]/20 bg-[#51459d]/5' : 'border-gray-100 hover:border-gray-200' }`}
                 >
                   <div className="flex items-start justify-between mb-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-semibold text-gray-800">
+                      <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
                         v{version.version_number}
                       </span>
                       {isCurrent && (
@@ -95,7 +91,7 @@ export default function FileVersionsPanel({ fileId, fileName, onClose }: Props) 
                   )}
 
                   {version.comment && (
-                    <p className="text-[11px] text-gray-600 mt-1 italic">
+                    <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 italic">
                       "{version.comment}"
                     </p>
                   )}

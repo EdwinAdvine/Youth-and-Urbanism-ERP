@@ -198,14 +198,14 @@ export default function InvoiceDetail() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/finance/invoices')}
-            className="p-2 rounded-md hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {isNew ? 'New Invoice' : invoice?.invoice_number ?? 'Invoice'}
             </h1>
             {invoice && (
@@ -291,7 +291,7 @@ export default function InvoiceDetail() {
               <>
                 <div>
                   <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Customer</p>
-                  <p className="text-sm font-semibold text-gray-900 mt-1">{invoice?.customer_name}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mt-1">{invoice?.customer_name}</p>
                   {invoice?.customer_email && (
                     <p className="text-xs text-gray-500">{invoice.customer_email}</p>
                   )}
@@ -299,13 +299,13 @@ export default function InvoiceDetail() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Issue Date</p>
-                    <p className="text-sm text-gray-900 mt-1">
+                    <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">
                       {invoice?.issue_date && new Date(invoice.issue_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Due Date</p>
-                    <p className="text-sm text-gray-900 mt-1">
+                    <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">
                       {invoice?.due_date && new Date(invoice.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
@@ -317,7 +317,7 @@ export default function InvoiceDetail() {
           {/* Line Items */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-900">Line Items</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Line Items</h3>
               {editing && (
                 <Button variant="ghost" size="sm" onClick={addLine}>
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -331,7 +331,7 @@ export default function InvoiceDetail() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
                     <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Description</th>
                     <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Qty</th>
                     <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Unit Price</th>
@@ -342,12 +342,12 @@ export default function InvoiceDetail() {
                 <tbody>
                   {editing ? (
                     lines.map((line, i) => (
-                      <tr key={i} className="border-b border-gray-50">
+                      <tr key={i} className="border-b border-gray-50 dark:border-gray-950">
                         <td className="py-2 px-3">
                           <input
                             value={line.description}
                             onChange={(e) => updateLine(i, 'description', e.target.value)}
-                            className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                            className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                             placeholder="Item description"
                           />
                         </td>
@@ -357,7 +357,7 @@ export default function InvoiceDetail() {
                             value={line.quantity}
                             onChange={(e) => updateLine(i, 'quantity', Number(e.target.value))}
                             min={1}
-                            className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                            className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                           />
                         </td>
                         <td className="py-2 px-3">
@@ -367,7 +367,7 @@ export default function InvoiceDetail() {
                             onChange={(e) => updateLine(i, 'unit_price', Number(e.target.value))}
                             min={0}
                             step={0.01}
-                            className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                            className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                           />
                         </td>
                         <td className="py-2 px-3 text-right font-medium">
@@ -389,7 +389,7 @@ export default function InvoiceDetail() {
                     ))
                   ) : (
                     (invoice?.line_items ?? []).map((li, i) => (
-                      <tr key={i} className="border-b border-gray-50">
+                      <tr key={i} className="border-b border-gray-50 dark:border-gray-950">
                         <td className="py-2 px-3">{li.description}</td>
                         <td className="py-2 px-3 text-right">{li.quantity}</td>
                         <td className="py-2 px-3 text-right">{formatCurrency(li.unit_price)}</td>
@@ -417,7 +417,7 @@ export default function InvoiceDetail() {
                       onChange={(e) => setTaxAmount(Number(e.target.value))}
                       min={0}
                       step={0.01}
-                      className="w-24 rounded-md border border-gray-200 px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="w-24 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     />
                   </div>
                 ) : (
@@ -426,7 +426,7 @@ export default function InvoiceDetail() {
                     <span>{formatCurrency(invoice?.tax_amount ?? 0)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm font-bold border-t border-gray-200 pt-2">
+                <div className="flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700 pt-2">
                   <span>Total</span>
                   <span>{formatCurrency(editing ? total : (invoice?.total ?? 0))}</span>
                 </div>
@@ -437,12 +437,12 @@ export default function InvoiceDetail() {
           {/* Notes */}
           {editing ? (
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">Notes</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+                className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
                 placeholder="Additional notes..."
               />
             </div>
@@ -450,14 +450,14 @@ export default function InvoiceDetail() {
             invoice?.notes && (
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Notes</p>
-                <p className="text-sm text-gray-700">{invoice.notes}</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">{invoice.notes}</p>
               </div>
             )
           )}
 
           {/* Actions */}
           {editing && (
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
               <Button
                 variant="secondary"
                 size="sm"

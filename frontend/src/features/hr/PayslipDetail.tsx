@@ -37,7 +37,7 @@ function KVTable({ data }: { data: Record<string, number> }) {
     <table className="w-full text-sm">
       <tbody>
         {entries.map(([key, val]) => (
-          <tr key={key} className="border-b border-gray-50 last:border-0">
+          <tr key={key} className="border-b border-gray-50 dark:border-gray-800 last:border-0">
             <td className="py-2 text-gray-600 capitalize">{key}</td>
             <td className="py-2 text-right font-medium text-gray-900">{formatCurrency(val)}</td>
           </tr>
@@ -191,7 +191,7 @@ export default function PayslipDetail() {
         </div>
 
         {/* Net Pay footer */}
-        <div className="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center">
+        <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
           <span className="text-sm font-semibold text-gray-700">Net Pay</span>
           <span className="text-xl font-bold text-green-600">{formatCurrency(payslip.net_pay)}</span>
         </div>

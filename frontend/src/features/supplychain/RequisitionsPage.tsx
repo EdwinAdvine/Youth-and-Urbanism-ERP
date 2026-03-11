@@ -196,7 +196,7 @@ export default function RequisitionsPage() {
       key: 'title',
       label: 'Title',
       render: (row: ProcurementRequisition) => (
-        <span className="text-gray-700 truncate max-w-[240px] block">{row.title}</span>
+        <span className="text-gray-700 dark:text-gray-300 truncate max-w-[240px] block">{row.title}</span>
       ),
     },
     {
@@ -219,7 +219,7 @@ export default function RequisitionsPage() {
       key: 'total_estimated',
       label: 'Est. Value',
       render: (row: ProcurementRequisition) => (
-        <span className="text-gray-700">{formatCurrency(row.total_estimated)}</span>
+        <span className="text-gray-700 dark:text-gray-300">{formatCurrency(row.total_estimated)}</span>
       ),
     },
     {
@@ -304,7 +304,7 @@ export default function RequisitionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Procurement Requisitions</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Procurement Requisitions</h1>
           <p className="text-sm text-gray-500 mt-1">{data?.total ?? 0} total requisitions</p>
         </div>
         <div className="flex gap-2">
@@ -366,12 +366,12 @@ export default function RequisitionsPage() {
             placeholder="Requisition title"
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
             <textarea
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] placeholder:text-gray-400"
               placeholder="Description..."
             />
           </div>
@@ -398,14 +398,14 @@ export default function RequisitionsPage() {
           {/* Line Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">Line Items *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Line Items *</label>
               <Button variant="ghost" size="sm" onClick={addLine}>
                 + Add Line
               </Button>
             </div>
             <div className="space-y-3">
               {formLines.map((line, idx) => (
-                <div key={idx} className="flex gap-2 items-start p-3 bg-gray-50 rounded-[10px]">
+                <div key={idx} className="flex gap-2 items-start p-3 bg-gray-50 dark:bg-gray-950 rounded-[10px]">
                   <div className="flex-1">
                     <Input
                       placeholder="Item ID (UUID)"
@@ -448,17 +448,17 @@ export default function RequisitionsPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
               value={formNotes}
               onChange={(e) => setFormNotes(e.target.value)}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] placeholder:text-gray-400"
               placeholder="Optional notes"
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" size="sm" onClick={() => { setShowCreate(false); resetForm() }}>
               Cancel
             </Button>
@@ -483,7 +483,7 @@ export default function RequisitionsPage() {
         size="sm"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             {confirmAction?.action === 'approve' && 'Are you sure you want to approve this requisition?'}
             {confirmAction?.action === 'reject' && 'Are you sure you want to reject this requisition?'}
             {confirmAction?.action === 'convert' && 'This will create a new purchase order from the approved requisition. Continue?'}

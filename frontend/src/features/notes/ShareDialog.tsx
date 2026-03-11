@@ -45,7 +45,7 @@ export default function ShareDialog({ open, onClose, noteId, sharedWith = [] }: 
       <div className="space-y-5">
         {/* Add person */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Share with</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Share with</label>
           <div className="flex gap-2">
             <Input
               value={userId}
@@ -68,19 +68,19 @@ export default function ShareDialog({ open, onClose, noteId, sharedWith = [] }: 
 
         {/* Current shares */}
         <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-2">People with access</h3>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">People with access</h3>
           {sharedWith.length === 0 ? (
             <p className="text-sm text-gray-400">Not shared with anyone yet</p>
           ) : (
             <div className="space-y-2">
               {sharedWith.map((share) => (
-                <div key={share.user_id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50">
+                <div key={share.user_id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-950">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
                       {share.user_name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-700">{share.user_name}</p>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{share.user_name}</p>
                       <Badge variant={share.permission === 'edit' ? 'info' : 'default'} className="mt-0.5">
                         {share.permission === 'edit' ? 'Can edit' : 'Can view'}
                       </Badge>

@@ -41,7 +41,7 @@ export default function MyModulesPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
           {getGreeting()}, {firstName}
         </h1>
         <p className="text-gray-500 text-sm mt-1">
@@ -62,7 +62,7 @@ export default function MyModulesPage() {
             <button
               key={scope}
               onClick={() => navigate(`/${scope}`)}
-              className="bg-white rounded-[10px] border border-gray-100 p-5 shadow-sm hover:shadow-md transition-all text-left group"
+              className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 p-5 shadow-sm hover:shadow-md transition-all text-left group"
             >
               <div className="flex items-start gap-4">
                 <div
@@ -71,7 +71,7 @@ export default function MyModulesPage() {
                   {meta.icon}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-gray-900">{meta.label}</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">{meta.label}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{meta.description}</p>
                   <p className="text-[10px] text-primary font-medium mt-2 group-hover:underline">
                     Open Dashboard →

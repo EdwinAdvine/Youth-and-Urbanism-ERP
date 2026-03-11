@@ -72,7 +72,7 @@ export default function ProjectsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Projects</h1>
           <p className="text-sm text-gray-500 mt-1">Manage your projects and track progress</p>
         </div>
         <Button onClick={() => setModalOpen(true)}>
@@ -97,7 +97,7 @@ export default function ProjectsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-gray-900">No projects yet</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">No projects yet</h2>
           <p className="text-sm text-gray-500 mt-1 mb-4">Create your first project to get started</p>
           <Button size="sm" onClick={() => setModalOpen(true)}>Create Project</Button>
         </div>
@@ -109,12 +109,12 @@ export default function ProjectsPage() {
           <Input label="Project Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Website Redesign" autoFocus />
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
               placeholder="Brief project description..."
             />
           </div>
@@ -126,7 +126,7 @@ export default function ProjectsPage() {
 
           {/* Color Picker */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Color</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Color</label>
             <div className="flex gap-2">
               {COLOR_PRESETS.map((c) => (
                 <button
@@ -179,7 +179,7 @@ function ProjectCard({ project, onClick }: { project: Project; onClick: () => vo
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="text-sm font-semibold text-gray-900 group-hover:text-primary transition-colors line-clamp-1">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary transition-colors line-clamp-1">
             {project.name}
           </h3>
           <Badge variant={badgeVariant} className="shrink-0">{project.status}</Badge>

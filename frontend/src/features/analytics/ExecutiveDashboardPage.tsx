@@ -4,7 +4,7 @@ import { useExecutiveSummary, useModuleKPIs, useModuleTrends } from '../../api/a
 
 function KPICard({ label, value, change, color }: { label: string; value: string; change?: number; color: string }) {
   return (
-    <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
       <div className="flex items-start justify-between mb-3">
         <div className="w-3 h-8 rounded-full" style={{ backgroundColor: color }} />
         {change !== undefined && (
@@ -13,7 +13,7 @@ function KPICard({ label, value, change, color }: { label: string; value: string
           </span>
         )}
       </div>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
+      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
       <p className="text-xs text-gray-500 mt-1">{label}</p>
     </div>
   )
@@ -49,7 +49,7 @@ export default function ExecutiveDashboardPage() {
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Executive Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Executive Dashboard</h1>
           <p className="text-sm text-gray-500 mt-1">High-level business overview across all modules</p>
         </div>
         <Badge variant="primary" className="text-xs">Live Data</Badge>
@@ -88,7 +88,7 @@ export default function ExecutiveDashboardPage() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Module Activity Trend</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Module Activity Trend</h3>
               <p className="text-xs text-gray-400 mt-0.5">Monthly activity across modules</p>
             </div>
           </div>
@@ -101,7 +101,7 @@ export default function ExecutiveDashboardPage() {
                   <div className="w-20 shrink-0">
                     <Badge variant="primary">{t.module}</Badge>
                   </div>
-                  <div className="flex-1 bg-gray-100 rounded-full h-4">
+                  <div className="flex-1 bg-gray-100 dark:bg-gray-900 rounded-full h-4">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
@@ -110,7 +110,7 @@ export default function ExecutiveDashboardPage() {
                       }}
                     />
                   </div>
-                  <span className="text-sm font-medium text-gray-700 w-20 text-right">{t.value.toLocaleString()}</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-20 text-right">{t.value.toLocaleString()}</span>
                 </div>
               )
             })}
@@ -125,13 +125,13 @@ export default function ExecutiveDashboardPage() {
             <Card key={mk.module}>
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-2 h-6 rounded-full" style={{ backgroundColor: MODULE_COLORS[mk.module] || '#51459d' }} />
-                <h3 className="text-sm font-semibold text-gray-900 capitalize">{mk.module}</h3>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 capitalize">{mk.module}</h3>
               </div>
               <div className="space-y-3">
                 {Object.entries(mk.kpis).map(([key, val]) => (
                   <div key={key} className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">{key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</span>
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {typeof val === 'number' ? val.toLocaleString() : String(val)}
                     </span>
                   </div>
@@ -150,7 +150,7 @@ export default function ExecutiveDashboardPage() {
             <div className="space-y-2">
               {Object.entries(executive.pending_actions).map(([label, count]) => (
                 <div key={label} className="flex items-center justify-between py-1.5">
-                  <span className="text-xs text-gray-600">
+                  <span className="text-xs text-gray-600 dark:text-gray-400">
                     {label.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                   </span>
                   <Badge variant={Number(count) > 5 ? 'danger' : Number(count) > 0 ? 'warning' : 'success'}>
@@ -170,11 +170,11 @@ export default function ExecutiveDashboardPage() {
                 <div key={label} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
                       {label.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                     </span>
                   </div>
-                  <span className="text-xs font-semibold text-gray-900">{String(value)}</span>
+                  <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{String(value)}</span>
                 </div>
               ))}
             </div>

@@ -156,7 +156,7 @@ export function useContacts(params: {
   return useQuery({
     queryKey: ['crm', 'contacts', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<Contact>>('/crm/contacts', {
+      const { data } = await apiClient.get<any>('/crm/contacts', {
         params: {
           page: params.page ?? 1,
           limit: params.limit ?? 20,
@@ -165,7 +165,7 @@ export function useContacts(params: {
           ...(params.is_active !== undefined && { is_active: params.is_active }),
         },
       })
-      return data
+      return { total: data.total ?? 0, items: data.contacts ?? data.items ?? [] } as PaginatedResponse<Contact>
     },
   })
 }
@@ -224,7 +224,7 @@ export function useLeads(params: {
   return useQuery({
     queryKey: ['crm', 'leads', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<Lead>>('/crm/leads', {
+      const { data } = await apiClient.get<any>('/crm/leads', {
         params: {
           page: params.page ?? 1,
           limit: params.limit ?? 100,
@@ -232,7 +232,7 @@ export function useLeads(params: {
           ...(params.assigned_to && { assigned_to: params.assigned_to }),
         },
       })
-      return data
+      return { total: data.total ?? 0, items: data.leads ?? data.items ?? [] } as PaginatedResponse<Lead>
     },
   })
 }

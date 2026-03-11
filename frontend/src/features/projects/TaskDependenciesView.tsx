@@ -114,9 +114,9 @@ export default function TaskDependenciesView({ task, projectId }: TaskDependenci
   }
 
   return (
-    <div className="border-t border-gray-100 pt-4">
+    <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-900">Dependencies</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Dependencies</h3>
         {isBlocked && (
           <Badge variant="warning">Blocked by {blockedBy.length} task{blockedBy.length > 1 ? 's' : ''}</Badge>
         )}
@@ -230,10 +230,10 @@ export default function TaskDependenciesView({ task, projectId }: TaskDependenci
                 <button
                   key={t.id}
                   onClick={() => addDependency(t.id)}
-                  className="w-full text-left px-3 py-2 rounded-[10px] hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-3 py-2 rounded-[10px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-2"
                 >
                   <div className={cn('w-2 h-2 rounded-full shrink-0', STATUS_COLORS[t.status])} />
-                  <span className="text-sm text-gray-900 flex-1 truncate">{t.title}</span>
+                  <span className="text-sm text-gray-900 dark:text-gray-100 flex-1 truncate">{t.title}</span>
                   <span className="text-xs text-gray-400">{STATUS_LABELS[t.status]}</span>
                 </button>
               ))
@@ -270,7 +270,7 @@ function DependencyRow({
     <div
       className={cn(
         'flex items-center gap-2 px-2.5 py-1.5 rounded-[10px] border text-xs',
-        isBlocking ? 'border-orange-200 bg-orange-50' : 'border-gray-100 bg-gray-50'
+        isBlocking ? 'border-orange-200 bg-orange-50' : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950'
       )}
     >
       {/* Direction arrow */}
@@ -285,7 +285,7 @@ function DependencyRow({
       )}
 
       <div className={cn('w-1.5 h-1.5 rounded-full shrink-0', STATUS_COLORS[task.status])} />
-      <span className="flex-1 truncate text-gray-700 font-medium">{task.title}</span>
+      <span className="flex-1 truncate text-gray-700 dark:text-gray-300 font-medium">{task.title}</span>
 
       {isBlocking && (
         <Badge variant="warning" className="text-[9px] py-0">Blocking</Badge>

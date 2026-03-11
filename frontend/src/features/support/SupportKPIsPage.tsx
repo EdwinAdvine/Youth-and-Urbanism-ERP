@@ -76,7 +76,7 @@ export default function SupportKPIsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-100">
+                      <tr className="border-b border-gray-100 dark:border-gray-800">
                         <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Agent</th>
                         <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Resolved</th>
                         <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Avg Response</th>
@@ -84,7 +84,7 @@ export default function SupportKPIsPage() {
                     </thead>
                     <tbody>
                       {kpis.agent_performance.map((a) => (
-                        <tr key={a.name} className="border-b border-gray-50">
+                        <tr key={a.name} className="border-b border-gray-50 dark:border-gray-800">
                           <td className="py-2 px-3 font-medium text-gray-900">{a.name}</td>
                           <td className="py-2 px-3 text-right">{a.resolved}</td>
                           <td className="py-2 px-3 text-right">{a.avg_response_hours.toFixed(1)}h</td>

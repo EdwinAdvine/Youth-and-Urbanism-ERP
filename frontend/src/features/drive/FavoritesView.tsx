@@ -41,7 +41,7 @@ export default function FavoritesView() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="text-4xl mb-3">⭐</div>
-        <h3 className="text-sm font-semibold text-gray-700">No favorites yet</h3>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">No favorites yet</h3>
         <p className="text-xs text-gray-400 mt-1">
           Star files and folders to quickly access them here
         </p>
@@ -64,7 +64,7 @@ export default function FavoritesView() {
           return (
             <div
               key={file.id}
-              className="relative group flex flex-col items-center gap-2 p-4 bg-white border border-gray-100 rounded-[10px] hover:border-[#51459d]/30 hover:shadow-sm transition-all text-center"
+              className="relative group flex flex-col items-center gap-2 p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] hover:border-[#51459d]/30 hover:shadow-sm transition-all text-center"
             >
               {/* Favorite star button */}
               <button
@@ -79,7 +79,7 @@ export default function FavoritesView() {
 
               <span className="text-3xl">{icon}</span>
               <div className="w-full">
-                <p className="text-xs font-medium text-gray-700 truncate">{file.name}</p>
+                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{file.name}</p>
                 <p className="text-[10px] text-gray-400">{formatFileSize(file.size)}</p>
               </div>
 
@@ -87,7 +87,7 @@ export default function FavoritesView() {
               <div className="absolute bottom-2 left-2 right-2 flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => handleDownload(file.id)}
-                  className="p-1 bg-white border border-gray-200 rounded-[6px] hover:bg-gray-50 text-gray-500 transition-colors"
+                  className="p-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[6px] hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-500 transition-colors"
                   title="Download"
                 >
                   <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -121,9 +121,7 @@ export function FavoriteToggle({
         e.stopPropagation()
         toggleFavorite.mutate(fileId)
       }}
-      className={`p-1 transition-colors ${
-        isFavorited ? 'text-yellow-400 hover:text-yellow-500' : 'text-gray-300 hover:text-yellow-400'
-      } ${className ?? ''}`}
+      className={`p-1 transition-colors ${ isFavorited ? 'text-yellow-400 hover:text-yellow-500' : 'text-gray-300 hover:text-yellow-400' } ${className ?? ''}`}
       title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
     >
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill={isFavorited ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={isFavorited ? 0 : 2}>

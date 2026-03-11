@@ -204,7 +204,7 @@ export default function PurchaseOrdersPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Purchase Orders</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Purchase Orders</h1>
           <p className="text-sm text-gray-500 mt-1">Manage supplier purchase orders</p>
         </div>
         <Button onClick={openCreate}>
@@ -278,12 +278,12 @@ export default function PurchaseOrdersPage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
               placeholder="Optional notes"
             />
           </div>
@@ -291,7 +291,7 @@ export default function PurchaseOrdersPage() {
           {/* Line Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-gray-900">Line Items</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Line Items</h3>
               <Button variant="ghost" size="sm" onClick={addLine}>
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -302,7 +302,7 @@ export default function PurchaseOrdersPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
                     <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Item</th>
                     <th className="text-right py-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Qty</th>
                     <th className="text-right py-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">Unit Price</th>
@@ -312,12 +312,12 @@ export default function PurchaseOrdersPage() {
                 </thead>
                 <tbody>
                   {lines.map((line, i) => (
-                    <tr key={i} className="border-b border-gray-50">
+                    <tr key={i} className="border-b border-gray-50 dark:border-gray-800">
                       <td className="py-1.5 px-2">
                         <select
                           value={line.item_id}
                           onChange={(e) => updateLine(i, 'item_id', e.target.value)}
-                          className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                          className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         >
                           {itemOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -330,7 +330,7 @@ export default function PurchaseOrdersPage() {
                           min="1"
                           value={line.quantity}
                           onChange={(e) => updateLine(i, 'quantity', e.target.value)}
-                          className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                          className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         />
                       </td>
                       <td className="py-1.5 px-2">
@@ -340,7 +340,7 @@ export default function PurchaseOrdersPage() {
                           step="0.01"
                           value={line.unit_price}
                           onChange={(e) => updateLine(i, 'unit_price', e.target.value)}
-                          className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                          className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         />
                       </td>
                       <td className="py-1.5 px-2 text-right font-medium">
@@ -364,14 +364,14 @@ export default function PurchaseOrdersPage() {
               </table>
             </div>
             <div className="flex justify-end mt-3">
-              <div className="flex items-center gap-3 text-sm font-bold text-gray-900">
+              <div className="flex items-center gap-3 text-sm font-bold text-gray-900 dark:text-gray-100">
                 <span>Total:</span>
                 <span className="text-base">{formatCurrency(lineTotal)}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" size="sm" onClick={() => setModalOpen(false)}>Cancel</Button>
             <Button size="sm" onClick={handleSubmit} loading={createPO.isPending}>
               Create Purchase Order

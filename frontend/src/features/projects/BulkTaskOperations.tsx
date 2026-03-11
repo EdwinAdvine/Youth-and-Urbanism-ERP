@@ -104,7 +104,7 @@ export default function BulkTaskOperations({
     <>
       {/* Floating toolbar */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4">
-        <div className="flex items-center gap-2 bg-white rounded-[10px] shadow-lg border border-gray-200 px-4 py-2.5">
+        <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-[10px] shadow-lg border border-gray-200 dark:border-gray-700 px-4 py-2.5">
           <Badge variant="primary" className="mr-1">
             {count} selected
           </Badge>
@@ -225,9 +225,9 @@ export default function BulkTaskOperations({
       >
         <div className="space-y-4">
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Assignee User ID</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Assignee User ID</label>
             <input
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
               value={bulkAssigneeId}
               onChange={(e) => setBulkAssigneeId(e.target.value)}
               placeholder="Enter user ID or leave empty to unassign"

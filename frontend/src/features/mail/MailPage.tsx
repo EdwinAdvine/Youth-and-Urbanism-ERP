@@ -42,12 +42,12 @@ function ComposeModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-2xl flex flex-col" style={{ maxHeight: '80vh' }}>
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-2xl flex flex-col" style={{ maxHeight: '80vh' }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
-          <h3 className="text-sm font-semibold text-gray-900">New Message</h3>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">New Message</h3>
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500">
+            <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
@@ -55,7 +55,7 @@ function ComposeModal({ onClose }: { onClose: () => void }) {
 
         {/* Fields */}
         <div className="flex-1 overflow-y-auto">
-          <div className="border-b border-gray-100 px-4 py-2">
+          <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-2">
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-400 w-12 shrink-0">To</span>
               <div className="flex-1"><ContactPicker value={to} onChange={setTo} placeholder="Recipients" /></div>
@@ -63,17 +63,17 @@ function ComposeModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
           {showCc && (
-            <div className="border-b border-gray-100 px-4 py-2">
+            <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 w-12 shrink-0">Cc</span>
                 <div className="flex-1"><ContactPicker value={cc} onChange={setCc} placeholder="Cc recipients" /></div>
               </div>
             </div>
           )}
-          <div className="border-b border-gray-100">
+          <div className="border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center px-4 py-2 gap-2">
               <span className="text-xs text-gray-400 w-12 shrink-0">Subject</span>
-              <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Message subject" className="flex-1 text-sm text-gray-900 focus:outline-none placeholder:text-gray-400" />
+              <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Message subject" className="flex-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none placeholder:text-gray-400 bg-transparent" />
             </div>
           </div>
           <div className="p-4">
@@ -82,20 +82,20 @@ function ComposeModal({ onClose }: { onClose: () => void }) {
               onChange={(e) => setBody(e.target.value)}
               placeholder="Compose your message…"
               rows={10}
-              className="w-full text-sm text-gray-900 focus:outline-none resize-none placeholder:text-gray-400"
+              className="w-full text-sm text-gray-900 dark:text-gray-100 focus:outline-none resize-none placeholder:text-gray-400 bg-transparent"
             />
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-800 shrink-0">
           <div className="flex items-center gap-2">
-            <button className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Attach file">
+            <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Attach file">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-[8px] transition-colors">Discard</button>
+            <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px] transition-colors">Discard</button>
             <button
               onClick={handleSend}
               disabled={!to || !subject || send.isPending}
@@ -121,16 +121,16 @@ function ComposeModal({ onClose }: { onClose: () => void }) {
 
 function MessageSkeleton() {
   return (
-    <div className="px-3 py-3 border-b border-gray-50 animate-pulse">
+    <div className="px-3 py-3 border-b border-gray-50 dark:border-gray-950 animate-pulse">
       <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-full bg-gray-200 shrink-0" />
+        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0" />
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex justify-between">
-            <div className="h-3 bg-gray-200 rounded w-24" />
-            <div className="h-3 bg-gray-200 rounded w-12" />
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-12" />
           </div>
-          <div className="h-3 bg-gray-200 rounded w-48" />
-          <div className="h-3 bg-gray-100 rounded w-full" />
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-48" />
+          <div className="h-3 bg-gray-100 dark:bg-gray-900 rounded w-full" />
         </div>
       </div>
     </div>
@@ -216,7 +216,7 @@ function SwipeableMailItem({ msg, isSelected, onSelect, onArchive, onDelete, onS
         <span className="text-white text-xs font-medium ml-2">Archive</span>
       </div>
       {/* Left swipe background (delete/snooze) */}
-      <div className="absolute inset-y-0 right-0 flex items-center gap-1 px-2 bg-white">
+      <div className="absolute inset-y-0 right-0 flex items-center gap-1 px-2 bg-white dark:bg-gray-800">
         <button
           onClick={() => { onSnooze(msg.id); resetSwipe() }}
           className="flex items-center gap-1 px-3 py-2 bg-[#ffa21d] text-white text-xs font-medium rounded-[6px] min-h-[36px]"
@@ -240,11 +240,11 @@ function SwipeableMailItem({ msg, isSelected, onSelect, onArchive, onDelete, onS
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         style={{ transform: `translateX(${revealed === 'left' ? -120 : offset}px)`, transition: swiping.current ? 'none' : 'transform 0.2s ease-out' }}
-        className="relative bg-white"
+        className="relative bg-white dark:bg-gray-800"
       >
         <button
           onClick={() => { if (!revealed) onSelect(msg.id); else resetSwipe() }}
-          className={`w-full text-left px-3 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
+          className={`w-full text-left px-3 py-3 border-b border-gray-50 dark:border-gray-950 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
             isSelected ? 'bg-[#51459d]/5 border-l-2 border-l-[#51459d]' : ''
           }`}
         >
@@ -254,10 +254,10 @@ function SwipeableMailItem({ msg, isSelected, onSelect, onArchive, onDelete, onS
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-0.5">
-                <span className={`text-xs truncate ${msg.read ? 'text-gray-600' : 'text-gray-900 font-semibold'}`}>{msg.from.name ?? msg.from.email}</span>
+                <span className={`text-xs truncate ${msg.read ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100 font-semibold'}`}>{msg.from.name ?? msg.from.email}</span>
                 <span className="text-[10px] text-gray-400 shrink-0 ml-1">{msg.date}</span>
               </div>
-              <p className={`text-xs truncate ${msg.read ? 'text-gray-500' : 'text-gray-800 font-medium'}`}>{msg.subject}</p>
+              <p className={`text-xs truncate ${msg.read ? 'text-gray-500' : 'text-gray-800 dark:text-gray-200 font-medium'}`}>{msg.subject}</p>
             </div>
             {!msg.read && <div className="w-2 h-2 rounded-full bg-[#51459d] mt-1 shrink-0" />}
           </div>
@@ -375,8 +375,8 @@ export default function MailPage() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Folder sidebar - hidden on mobile */}
-        <aside className="hidden md:flex w-52 shrink-0 bg-white border-r border-gray-100 flex-col">
-          <div className="p-3 border-b border-gray-100">
+        <aside className="hidden md:flex w-52 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex-col">
+          <div className="p-3 border-b border-gray-100 dark:border-gray-800">
             <button
               onClick={() => setComposeOpen(true)}
               className="w-full flex items-center justify-center gap-2 bg-[#51459d] hover:bg-[#3d3480] text-white text-sm font-medium rounded-[8px] px-4 py-2.5 transition-colors shadow-sm"
@@ -404,7 +404,7 @@ export default function MailPage() {
                     ? 'bg-[#51459d]/20 border-2 border-dashed border-[#51459d]'
                     : selectedFolder === folder.id
                       ? 'bg-[#51459d]/10 text-[#51459d] font-medium'
-                      : 'text-gray-600 hover:bg-gray-100'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -424,7 +424,7 @@ export default function MailPage() {
             <div className="mt-4 px-3">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Labels</p>
               {['Important', 'Work', 'Personal', 'Invoices'].map((label) => (
-                <button key={label} className="w-full flex items-center gap-2 px-1 py-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors rounded-[6px] hover:bg-gray-50">
+                <button key={label} className="w-full flex items-center gap-2 px-1 py-1.5 text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors rounded-[6px] hover:bg-gray-50 dark:hover:bg-gray-800">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${label === 'Important' ? 'bg-red-400' : label === 'Work' ? 'bg-blue-400' : label === 'Personal' ? 'bg-green-400' : 'bg-yellow-400'}`} />
                   {label}
                 </button>
@@ -434,21 +434,21 @@ export default function MailPage() {
         </aside>
 
         {/* Middle: Message list - full width on mobile, fixed width on desktop */}
-        <div className={`${selectedMessage ? 'hidden md:flex' : 'flex'} w-full md:w-80 shrink-0 bg-white border-r border-gray-100 flex-col`}>
-          <div className="p-3 border-b border-gray-100 shrink-0">
+        <div className={`${selectedMessage ? 'hidden md:flex' : 'flex'} w-full md:w-80 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex-col`}>
+          <div className="p-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
             <div className="relative">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search mail…"
-                className="w-full pl-9 pr-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/30"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 shrink-0">
-            <h2 className="text-sm font-semibold text-gray-900 capitalize">{selectedFolder}</h2>
+          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-800 shrink-0">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 capitalize">{selectedFolder}</h2>
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-400">{messages.length}</span>
               <button
@@ -485,7 +485,7 @@ export default function MailPage() {
         </div>
 
         {/* Right: Message detail - full width on mobile when message selected */}
-        <div className={`${selectedMessage ? 'flex' : 'hidden md:flex'} flex-1 bg-gray-50 flex-col overflow-hidden`}>
+        <div className={`${selectedMessage ? 'flex' : 'hidden md:flex'} flex-1 bg-gray-50 dark:bg-gray-950 flex-col overflow-hidden`}>
           {!selectedMessage ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center">
               <svg className="h-12 w-12 text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
@@ -498,41 +498,41 @@ export default function MailPage() {
           ) : detail ? (
             <div className="flex-1 overflow-y-auto">
               {/* Detail header */}
-              <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-4">
+              <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800 px-4 sm:px-6 py-4">
                 <button
                   onClick={() => setSelectedMessage(null)}
-                  className="md:hidden flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-3 min-h-[44px]"
+                  className="md:hidden flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-3 min-h-[44px]"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                   Back to inbox
                 </button>
                 <div className="flex items-start justify-between mb-4">
-                  <h2 className="text-base sm:text-lg font-semibold text-gray-900 pr-4">{detail.subject}</h2>
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 pr-4">{detail.subject}</h2>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={handleReply} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Reply">
+                    <button onClick={handleReply} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Reply">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                     </button>
-                    <button onClick={handleForward} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Forward">
+                    <button onClick={handleForward} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Forward">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a8 8 0 00-8 8v2m18-10l-6-6m6 6l-6 6" /></svg>
                     </button>
-                    <button onClick={handleDelete} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Delete">
+                    <button onClick={handleDelete} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Delete">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
-                    <button onClick={() => setSnoozeMessageId(selectedMessage)} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Snooze">
+                    <button onClick={() => setSnoozeMessageId(selectedMessage)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Snooze">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </button>
-                    <span className="w-px h-4 bg-gray-200" />
+                    <span className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
                     {/* Cross-module actions */}
-                    <button onClick={() => setShowSaveToDrive(true)} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Save attachments to Drive">
+                    <button onClick={() => setShowSaveToDrive(true)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Save attachments to Drive">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
                     </button>
-                    <button onClick={() => setShowLinkCRM(true)} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Link to CRM">
+                    <button onClick={() => setShowLinkCRM(true)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Link to CRM">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </button>
-                    <button onClick={() => setShowConvertToTask(true)} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Convert to Task">
+                    <button onClick={() => setShowConvertToTask(true)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Convert to Task">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
                     </button>
-                    <button onClick={() => setShowSaveAsNote(true)} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500" title="Save as Note">
+                    <button onClick={() => setShowSaveAsNote(true)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Save as Note">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                     </button>
                   </div>
@@ -545,7 +545,7 @@ export default function MailPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="text-sm font-semibold text-gray-900">{detail.from[0]?.name ?? detail.from[0]?.email}</span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{detail.from[0]?.name ?? detail.from[0]?.email}</span>
                         <span className="text-xs text-gray-400 ml-2">&lt;{detail.from[0]?.email}&gt;</span>
                       </div>
                       <span className="text-xs text-gray-400 shrink-0">{detail.date}</span>
@@ -561,7 +561,7 @@ export default function MailPage() {
               {/* Body */}
               <div className="px-6 py-5">
                 <div
-                  className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                  className="prose prose-sm max-w-none text-gray-700 dark:text-gray-300 leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(detail.html_body || detail.text_body) }}
                 />
               </div>
@@ -572,10 +572,10 @@ export default function MailPage() {
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Attachments</p>
                   <div className="flex flex-wrap gap-2">
                     {detail.attachments.map((att: MailAttachment) => (
-                      <div key={att.name} className="flex items-center gap-2 bg-white border border-gray-200 rounded-[8px] px-3 py-2 text-xs">
+                      <div key={att.name} className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[8px] px-3 py-2 text-xs">
                         <svg className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                         <div>
-                          <p className="font-medium text-gray-700">{att.name}</p>
+                          <p className="font-medium text-gray-700 dark:text-gray-300">{att.name}</p>
                           <p className="text-gray-400">{att.size}</p>
                         </div>
                         <button className="ml-1 text-[#51459d] hover:underline">Download</button>
@@ -612,7 +612,7 @@ export default function MailPage() {
       <div className="fixed bottom-4 right-4 z-30">
         <button
           onClick={() => setShowShortcutsHelp(!showShortcutsHelp)}
-          className="w-8 h-8 bg-white border border-gray-200 rounded-full shadow-md flex items-center justify-center text-gray-400 hover:text-[#51459d] transition-colors"
+          className="w-8 h-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-md flex items-center justify-center text-gray-400 hover:text-[#51459d] transition-colors"
           title="Keyboard shortcuts"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

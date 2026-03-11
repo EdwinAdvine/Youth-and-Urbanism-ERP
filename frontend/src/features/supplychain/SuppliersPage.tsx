@@ -129,27 +129,27 @@ export default function SuppliersPage() {
     {
       key: 'name',
       label: 'Name',
-      render: (row: Supplier) => <span className="font-medium text-gray-900">{row.name}</span>,
+      render: (row: Supplier) => <span className="font-medium text-gray-900 dark:text-gray-100">{row.name}</span>,
     },
     {
       key: 'contact_name',
       label: 'Contact',
-      render: (row: Supplier) => <span className="text-gray-600">{row.contact_name || '-'}</span>,
+      render: (row: Supplier) => <span className="text-gray-600 dark:text-gray-400">{row.contact_name || '-'}</span>,
     },
     {
       key: 'email',
       label: 'Email',
-      render: (row: Supplier) => <span className="text-gray-600">{row.email || '-'}</span>,
+      render: (row: Supplier) => <span className="text-gray-600 dark:text-gray-400">{row.email || '-'}</span>,
     },
     {
       key: 'phone',
       label: 'Phone',
-      render: (row: Supplier) => <span className="text-gray-600">{row.phone || '-'}</span>,
+      render: (row: Supplier) => <span className="text-gray-600 dark:text-gray-400">{row.phone || '-'}</span>,
     },
     {
       key: 'payment_terms_days',
       label: 'Terms',
-      render: (row: Supplier) => <span className="text-gray-600">{row.payment_terms_days} days</span>,
+      render: (row: Supplier) => <span className="text-gray-600 dark:text-gray-400">{row.payment_terms_days} days</span>,
     },
     {
       key: 'rating',
@@ -202,7 +202,7 @@ export default function SuppliersPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Suppliers</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Suppliers</h1>
           <p className="text-sm text-gray-500 mt-1">{data?.total ?? 0} total suppliers</p>
         </div>
         <div className="flex items-center gap-2">
@@ -315,16 +315,16 @@ export default function SuppliersPage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] placeholder:text-gray-400"
               placeholder="Optional notes"
             />
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" size="sm" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button size="sm" onClick={handleCreate} loading={createMutation.isPending}>
               Create Supplier
@@ -341,7 +341,7 @@ export default function SuppliersPage() {
         size="sm"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Are you sure you want to deactivate <span className="font-semibold">{confirmDelete?.name}</span>?
             The supplier will be marked as inactive.
           </p>

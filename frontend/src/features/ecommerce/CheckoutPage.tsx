@@ -97,11 +97,7 @@ export default function CheckoutPage() {
         {STEPS.map((s, i) => (
           <div key={s} className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
-              className={`w-9 h-9 sm:w-8 sm:h-8 min-w-[36px] sm:min-w-[32px] rounded-full text-sm font-medium flex items-center justify-center transition-colors active:scale-95 ${
-                i < currentIdx ? 'bg-primary text-white' :
-                i === currentIdx ? 'bg-primary text-white ring-2 ring-primary/30 ring-offset-2' :
-                'bg-gray-100 text-gray-400'
-              }`}
+              className={`w-9 h-9 sm:w-8 sm:h-8 min-w-[36px] sm:min-w-[32px] rounded-full text-sm font-medium flex items-center justify-center transition-colors active:scale-95 ${ i < currentIdx ? 'bg-primary text-white' : i === currentIdx ? 'bg-primary text-white ring-2 ring-primary/30 ring-offset-2' : 'bg-gray-100 text-gray-400' }`}
               onClick={() => i < currentIdx && setStep(s)}
               disabled={i > currentIdx}
             >
@@ -151,9 +147,7 @@ export default function CheckoutPage() {
                   {(shippingMethods ?? []).map((m) => (
                     <label
                       key={m.id}
-                      className={`flex items-center gap-4 p-4 rounded-[10px] border cursor-pointer transition-colors min-h-[56px] active:scale-[0.98] ${
-                        selectedShipping === m.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      className={`flex items-center gap-4 p-4 rounded-[10px] border cursor-pointer transition-colors min-h-[56px] active:scale-[0.98] ${ selectedShipping === m.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300' }`}
                     >
                       <input
                         type="radio"
@@ -186,9 +180,7 @@ export default function CheckoutPage() {
                 {['card', 'mpesa', 'bank_transfer', 'cash_on_delivery'].map((method) => (
                   <label
                     key={method}
-                    className={`flex items-center gap-4 p-4 rounded-[10px] border cursor-pointer transition-colors min-h-[56px] active:scale-[0.98] ${
-                      paymentMethod === method ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className={`flex items-center gap-4 p-4 rounded-[10px] border cursor-pointer transition-colors min-h-[56px] active:scale-[0.98] ${ paymentMethod === method ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300' }`}
                   >
                     <input
                       type="radio"
@@ -299,7 +291,7 @@ export default function CheckoutPage() {
                   <span>${item.total.toFixed(2)}</span>
                 </div>
               ))}
-              <div className="border-t border-gray-100 pt-2 flex justify-between">
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-2 flex justify-between">
                 <span className="text-gray-500">Subtotal</span>
                 <span>${cart.subtotal.toFixed(2)}</span>
               </div>
@@ -319,7 +311,7 @@ export default function CheckoutPage() {
                 <span className="text-gray-500">Tax</span>
                 <span>${cart.tax_amount.toFixed(2)}</span>
               </div>
-              <div className="border-t border-gray-100 pt-2 flex justify-between font-semibold text-gray-900">
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-2 flex justify-between font-semibold text-gray-900">
                 <span>Total</span>
                 <span className="text-lg">
                   ${(cart.total + (selectedMethodObj?.base_cost ?? 0) - (couponDiscount ?? 0)).toFixed(2)}

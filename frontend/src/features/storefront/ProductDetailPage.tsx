@@ -28,7 +28,7 @@ export default function ProductDetailPage() {
         &larr; Back
       </button>
 
-      <div className="bg-white rounded-[10px] border p-6 grid md:grid-cols-2 gap-8">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] border p-6 grid md:grid-cols-2 gap-8">
         {/* Image */}
         <div>
           {product.images?.[0] ? (
@@ -38,7 +38,7 @@ export default function ProductDetailPage() {
               className="w-full rounded-[10px] object-cover max-h-96"
             />
           ) : (
-            <div className="w-full h-72 bg-gray-100 rounded-[10px] flex items-center justify-center text-gray-400">
+            <div className="w-full h-72 bg-gray-100 dark:bg-gray-900 rounded-[10px] flex items-center justify-center text-gray-400">
               No image
             </div>
           )}
@@ -60,7 +60,7 @@ export default function ProductDetailPage() {
           </div>
 
           {product.description && (
-            <p className="mt-4 text-sm text-gray-600 leading-relaxed">
+            <p className="mt-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
               {product.description}
             </p>
           )}
@@ -71,7 +71,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center border rounded-[10px]">
               <button
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="px-3 py-1 text-lg hover:bg-gray-50"
+                className="px-3 py-1 text-lg hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 -
               </button>
@@ -80,7 +80,7 @@ export default function ProductDetailPage() {
               </span>
               <button
                 onClick={() => setQty((q) => q + 1)}
-                className="px-3 py-1 text-lg hover:bg-gray-50"
+                className="px-3 py-1 text-lg hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 +
               </button>

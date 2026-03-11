@@ -54,6 +54,7 @@ from app.api.v1 import projects_integrations as projects_integrations_mod
 from app.api.v1 import cross_module_links as cross_module_links_mod
 from app.api.v1 import admin_mail_dns
 from app.api.v1 import agent as agent_mod
+from app.api.v1 import handbook
 
 api_router = APIRouter()
 
@@ -129,3 +130,4 @@ api_router.include_router(projects_integrations_mod.router, prefix="/projects", 
 api_router.include_router(cross_module_links_mod.router, tags=["Cross-Module Links"])
 api_router.include_router(admin_mail_dns.router, prefix="/admin/mail", tags=["Admin Mail DNS"])
 api_router.include_router(agent_mod.router, prefix="/agent", tags=["Agent (Urban Bad AI)"])
+api_router.include_router(handbook.router, prefix="/handbook", tags=["Handbook"])

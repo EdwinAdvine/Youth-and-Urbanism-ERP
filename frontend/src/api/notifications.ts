@@ -30,8 +30,8 @@ export function useNotifications(params: NotificationsParams = {}) {
   return useQuery({
     queryKey: ['notifications', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<Notification[]>('/notifications', { params })
-      return data
+      const { data } = await apiClient.get<{ total: number; items: Notification[] }>('/notifications', { params })
+      return data.items
     },
   })
 }
@@ -80,6 +80,20 @@ export function useDeleteNotification() {
   return useMutation({
     mutationFn: async (id: string) => {
       await apiClient.delete(`/notifications/${id}`)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+      qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
+    },
+  })
+}
+
+export function useCreateTestNotification() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post<Notification>('/notifications/test')
+      return data
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['notifications'] })

@@ -37,10 +37,10 @@ function InspectionItemCard({
     <div className={`rounded-[10px] border p-4 space-y-3 transition-colors ${
       item.result === 'pass' ? 'border-green-300 bg-green-50/50' :
       item.result === 'fail' ? 'border-red-300 bg-red-50/50' :
-      'border-gray-200 bg-white'
+      'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
     }`}>
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-gray-900">{item.name}</span>
+        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{item.name}</span>
         {item.result !== 'pending' && (
           <Badge variant={item.result === 'pass' ? 'success' : 'danger'}>
             {item.result === 'pass' ? 'PASS' : 'FAIL'}
@@ -82,7 +82,7 @@ function InspectionItemCard({
         onChange={(e) => onNotesChange(e.target.value)}
         placeholder="Notes (optional)..."
         rows={2}
-        className="w-full rounded-[10px] border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400 min-h-[48px]"
+        className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400 min-h-[48px]"
       />
     </div>
   )
@@ -154,7 +154,7 @@ function NewInspectionForm({ onClose }: { onClose: () => void }) {
   return (
     <div className="space-y-4">
       {/* Reference info */}
-      <div className="bg-white rounded-[10px] border border-gray-200 p-4 space-y-3">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 p-4 space-y-3">
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Reference Type</label>
           <div className="grid grid-cols-3 gap-2">
@@ -165,7 +165,7 @@ function NewInspectionForm({ onClose }: { onClose: () => void }) {
                 className={`min-h-[48px] rounded-[10px] text-sm font-medium border transition-all active:scale-95 ${
                   refType === rt
                     ? 'border-primary bg-primary text-white'
-                    : 'border-gray-200 bg-white text-gray-700 active:bg-gray-50'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 active:bg-gray-50 dark:active:bg-gray-700'
                 }`}
               >
                 {rt.toUpperCase()}
@@ -180,17 +180,17 @@ function NewInspectionForm({ onClose }: { onClose: () => void }) {
             value={refId}
             onChange={(e) => setRefId(e.target.value)}
             placeholder="Enter GRN / Shipment / Production ID"
-            className="w-full min-h-[48px] rounded-[10px] border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full min-h-[48px] rounded-[10px] border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
         </div>
       </div>
 
       {/* Summary counters */}
-      <div className="bg-white rounded-[10px] border border-gray-200 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 p-4">
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <p className="text-xs text-gray-500">Inspected</p>
-            <p className="text-2xl font-bold text-gray-900">{totalInspected}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalInspected}</p>
           </div>
           <div>
             <p className="text-xs text-green-600">Passed</p>
@@ -203,7 +203,7 @@ function NewInspectionForm({ onClose }: { onClose: () => void }) {
         </div>
         {totalInspected > 0 && (
           <div className="mt-3">
-            <div className="w-full bg-gray-100 rounded-full h-3">
+            <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-3">
               <div
                 className="h-full rounded-full bg-green-500 transition-all"
                 style={{ width: `${(totalPassed / totalInspected) * 100}%` }}
@@ -228,7 +228,7 @@ function NewInspectionForm({ onClose }: { onClose: () => void }) {
 
       <button
         onClick={addItem}
-        className="w-full min-h-[48px] rounded-[10px] border-2 border-dashed border-gray-300 text-gray-500 text-sm font-medium hover:border-primary hover:text-primary active:bg-primary/5 transition-colors"
+        className="w-full min-h-[48px] rounded-[10px] border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-500 text-sm font-medium hover:border-primary hover:text-primary active:bg-primary/5 transition-colors"
       >
         + Add Item
       </button>
@@ -241,7 +241,7 @@ function NewInspectionForm({ onClose }: { onClose: () => void }) {
           onChange={(e) => setGeneralNotes(e.target.value)}
           placeholder="Overall inspection notes..."
           rows={3}
-          className="w-full rounded-[10px] border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-gray-400 min-h-[56px]"
+          className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-gray-400 min-h-[56px]"
         />
       </div>
 
@@ -288,9 +288,9 @@ function RecentInspections({ onNewInspection }: { onNewInspection: () => void })
           {(data?.inspections ?? []).map((insp) => {
             const passRate = insp.total_inspected > 0 ? (insp.total_passed / insp.total_inspected) * 100 : 0
             return (
-              <div key={insp.id} className="bg-white rounded-[10px] border border-gray-200 p-4">
+              <div key={insp.id} className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-bold text-gray-900">{insp.inspection_number}</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{insp.inspection_number}</span>
                   <Badge variant={statusColors[insp.status]}>{insp.status.replace(/_/g, ' ')}</Badge>
                 </div>
                 <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
@@ -299,7 +299,7 @@ function RecentInspections({ onNewInspection }: { onNewInspection: () => void })
                   <span className="text-green-600">{insp.total_passed} pass</span>
                   <span className="text-red-600">{insp.total_failed} fail</span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
                   <div
                     className={`h-full rounded-full transition-all ${passRate >= 80 ? 'bg-green-500' : passRate >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
                     style={{ width: `${passRate}%` }}
@@ -321,18 +321,18 @@ export default function MobileQualityInspection() {
   const [mode, setMode] = useState<'list' | 'new'>('list')
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center gap-3">
         <button
           onClick={() => mode === 'new' ? setMode('list') : navigate('/supply-chain/quality-inspections')}
-          className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-[10px] text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+          className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-[10px] text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-700 transition-colors"
         >
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="text-lg font-bold text-gray-900">
+        <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">
           {mode === 'new' ? 'New Inspection' : 'Quality Inspection'}
         </h1>
       </div>

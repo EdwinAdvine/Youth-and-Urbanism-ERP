@@ -32,17 +32,9 @@ function formatCurrency(value: number) {
 }
 
 export default function CRMDashboard() {
-  const { data: stats, isLoading: statsLoading } = useCRMStats()
+  const { data: stats } = useCRMStats()
   const { data: pipeline, isLoading: pipelineLoading } = usePipeline()
   const { data: recentLeads, isLoading: leadsLoading } = useLeads({ page: 1, limit: 5 })
-
-  if (statsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Spinner size="lg" />
-      </div>
-    )
-  }
 
   const statCards = [
     {
@@ -82,12 +74,12 @@ export default function CRMDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">CRM Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">CRM Dashboard</h1>
           <p className="text-sm text-gray-500 mt-1">Overview of your sales pipeline and activity</p>
         </div>
         <div className="flex gap-2">
           <Link to="/crm/contacts">
-            <button className="px-4 py-2 text-sm rounded-[10px] border border-gray-200 bg-white text-gray-700 hover:bg-gray-50">
+            <button className="px-4 py-2 text-sm rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
               Contacts
             </button>
           </Link>
@@ -97,7 +89,7 @@ export default function CRMDashboard() {
             </button>
           </Link>
           <Link to="/crm/pipeline">
-            <button className="px-4 py-2 text-sm rounded-[10px] border border-gray-200 bg-white text-gray-700 hover:bg-gray-50">
+            <button className="px-4 py-2 text-sm rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
               Pipeline
             </button>
           </Link>
@@ -128,7 +120,7 @@ export default function CRMDashboard() {
 
       {/* Pipeline Funnel */}
       <Card>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Pipeline Funnel</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Pipeline Funnel</h2>
         {pipelineLoading ? (
           <div className="flex justify-center py-8">
             <Spinner />
@@ -141,7 +133,7 @@ export default function CRMDashboard() {
               const width = Math.max((stage.total_value / maxStageValue) * 100, 8)
               return (
                 <div key={stage.stage} className="flex items-center gap-4">
-                  <div className="w-28 text-sm font-medium text-gray-700 text-right shrink-0">
+                  <div className="w-28 text-sm font-medium text-gray-700 dark:text-gray-300 text-right shrink-0">
                     {STAGE_LABELS[stage.stage] ?? stage.stage}
                   </div>
                   <div className="flex-1">
@@ -165,7 +157,7 @@ export default function CRMDashboard() {
       {/* Recent Leads */}
       <Card padding={false}>
         <div className="flex items-center justify-between p-6 pb-0">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Leads</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Leads</h2>
           <Link to="/crm/leads" className="text-sm text-primary hover:underline">
             View all
           </Link>
@@ -180,7 +172,7 @@ export default function CRMDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
+                <tr className="border-b border-gray-100 dark:border-gray-800">
                   <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     Title
                   </th>
@@ -200,15 +192,15 @@ export default function CRMDashboard() {
               </thead>
               <tbody>
                 {recentLeads.items.map((lead) => (
-                  <tr key={lead.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-6 font-medium text-gray-900">{lead.title}</td>
-                    <td className="py-3 px-6 text-gray-600">{lead.contact_name ?? '---'}</td>
+                  <tr key={lead.id} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    <td className="py-3 px-6 font-medium text-gray-900 dark:text-gray-100">{lead.title}</td>
+                    <td className="py-3 px-6 text-gray-600 dark:text-gray-400">{lead.contact_name ?? '---'}</td>
                     <td className="py-3 px-6">
                       <Badge variant={STATUS_BADGE[lead.status] ?? 'default'}>
                         {lead.status}
                       </Badge>
                     </td>
-                    <td className="py-3 px-6 text-right text-gray-700">
+                    <td className="py-3 px-6 text-right text-gray-700 dark:text-gray-300">
                       {lead.estimated_value != null ? formatCurrency(lead.estimated_value) : '---'}
                     </td>
                     <td className="py-3 px-6 text-gray-500">

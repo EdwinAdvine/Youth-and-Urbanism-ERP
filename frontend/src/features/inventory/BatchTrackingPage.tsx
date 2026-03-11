@@ -19,18 +19,16 @@ const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'default'
 
 const defaultForm: CreateItemBatchPayload = {
   item_id: '',
-  batch_number: '',
-  serial_number: '',
+  batch_no: '',
   quantity: 1,
-  manufacturing_date: '',
+  manufacture_date: '',
   expiry_date: '',
   warehouse_id: '',
 }
 
 export default function BatchTrackingPage() {
-  const [statusFilter, setStatusFilter] = useState('')
   const [itemFilter, setItemFilter] = useState('')
-  const { data: batches, isLoading } = useItemBatches({ item_id: itemFilter || undefined, status: statusFilter || undefined })
+  const { data: batches, isLoading } = useItemBatches({ item_id: itemFilter || undefined })
   const { data: itemsData } = useInventoryItems({ limit: 500 })
   const { data: warehouses } = useWarehouses()
   const createBatch = useCreateItemBatch()
@@ -60,14 +58,9 @@ export default function BatchTrackingPage() {
 
   const columns = [
     {
-      key: 'batch_number',
+      key: 'batch_no',
       label: 'Batch #',
-      render: (b: BatchNumber) => (
-        <div>
-          <p className="font-medium text-gray-900">{b.batch_number}</p>
-          {b.serial_number && <p className="text-xs text-gray-400">SN: {b.serial_number}</p>}
-        </div>
-      ),
+      render: (b: BatchNumber) => <p className="font-medium text-gray-900">{b.batch_no}</p>,
     },
     {
       key: 'item_name',
@@ -85,9 +78,9 @@ export default function BatchTrackingPage() {
       render: (b: BatchNumber) => b.warehouse_name ?? '-',
     },
     {
-      key: 'manufacturing_date',
+      key: 'manufacture_date',
       label: 'Mfg Date',
-      render: (b: BatchNumber) => b.manufacturing_date ? new Date(b.manufacturing_date).toLocaleDateString() : '-',
+      render: (b: BatchNumber) => b.manufacture_date ? new Date(b.manufacture_date).toLocaleDateString() : '-',
     },
     {
       key: 'expiry_date',
@@ -141,18 +134,6 @@ export default function BatchTrackingPage() {
           onChange={(e) => setItemFilter(e.target.value)}
           className="w-64"
         />
-        <Select
-          options={[
-            { value: '', label: 'All Statuses' },
-            { value: 'active', label: 'Active' },
-            { value: 'expired', label: 'Expired' },
-            { value: 'recalled', label: 'Recalled' },
-            { value: 'consumed', label: 'Consumed' },
-          ]}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-48"
-        />
       </div>
 
       <Card padding={false}>
@@ -177,25 +158,23 @@ export default function BatchTrackingPage() {
             onChange={(e) => setForm((p) => ({ ...p, item_id: e.target.value }))}
           />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Batch Number" required value={form.batch_number} onChange={(e) => setForm((p) => ({ ...p, batch_number: e.target.value }))} />
-            <Input label="Serial Number (optional)" value={form.serial_number ?? ''} onChange={(e) => setForm((p) => ({ ...p, serial_number: e.target.value }))} />
+            <Input label="Batch Number" required value={form.batch_no} onChange={(e) => setForm((p) => ({ ...p, batch_no: e.target.value }))} />
+            <Input label="Quantity" type="number" min="1" required value={form.quantity} onChange={(e) => setForm((p) => ({ ...p, quantity: Number(e.target.value) }))} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Quantity" type="number" min="1" required value={form.quantity} onChange={(e) => setForm((p) => ({ ...p, quantity: Number(e.target.value) }))} />
             <Select
               label="Warehouse"
+              required
               options={[
                 { value: '', label: 'Select warehouse...' },
                 ...(warehouses?.map((w) => ({ value: w.id, label: w.name })) ?? []),
               ]}
-              value={form.warehouse_id ?? ''}
+              value={form.warehouse_id}
               onChange={(e) => setForm((p) => ({ ...p, warehouse_id: e.target.value }))}
             />
+            <Input label="Manufacturing Date" type="date" required value={form.manufacture_date} onChange={(e) => setForm((p) => ({ ...p, manufacture_date: e.target.value }))} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Manufacturing Date" type="date" value={form.manufacturing_date ?? ''} onChange={(e) => setForm((p) => ({ ...p, manufacturing_date: e.target.value }))} />
-            <Input label="Expiry Date" type="date" value={form.expiry_date ?? ''} onChange={(e) => setForm((p) => ({ ...p, expiry_date: e.target.value }))} />
-          </div>
+          <Input label="Expiry Date" type="date" value={form.expiry_date ?? ''} onChange={(e) => setForm((p) => ({ ...p, expiry_date: e.target.value }))} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setShowModal(false)}>Cancel</Button>
             <Button type="submit" loading={createBatch.isPending}>Create Batch</Button>

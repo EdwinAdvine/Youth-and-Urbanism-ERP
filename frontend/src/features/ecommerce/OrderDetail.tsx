@@ -108,22 +108,22 @@ export default function OrderDetail() {
     {
       key: 'product_name',
       label: 'Product',
-      render: (row: EcomOrderLine) => <span className="font-medium text-gray-900">{row.product_name}</span>,
+      render: (row: EcomOrderLine) => <span className="font-medium text-gray-900 dark:text-gray-100">{row.product_name}</span>,
     },
     {
       key: 'quantity',
       label: 'Qty',
-      render: (row: EcomOrderLine) => <span className="text-gray-700">{row.quantity}</span>,
+      render: (row: EcomOrderLine) => <span className="text-gray-700 dark:text-gray-300">{row.quantity}</span>,
     },
     {
       key: 'unit_price',
       label: 'Unit Price',
-      render: (row: EcomOrderLine) => <span className="text-gray-700">{formatCurrency(row.unit_price)}</span>,
+      render: (row: EcomOrderLine) => <span className="text-gray-700 dark:text-gray-300">{formatCurrency(row.unit_price)}</span>,
     },
     {
       key: 'total',
       label: 'Total',
-      render: (row: EcomOrderLine) => <span className="font-medium text-gray-900">{formatCurrency(row.total)}</span>,
+      render: (row: EcomOrderLine) => <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(row.total)}</span>,
     },
   ]
 
@@ -132,7 +132,7 @@ export default function OrderDetail() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Order {order.order_number}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Order {order.order_number}</h1>
           <p className="text-sm text-gray-500 mt-1">
             Placed on {formatDate(order.created_at)}
           </p>
@@ -191,7 +191,7 @@ export default function OrderDetail() {
       {/* Status Timeline */}
       {order.status !== 'cancelled' && (
         <Card className="mb-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Order Progress</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Order Progress</h2>
           <div className="flex items-center justify-between">
             {STATUS_TIMELINE.map((step, idx) => {
               const isActive = ORDER_STATUSES.indexOf(step.key) <= currentStatusIdx
@@ -203,7 +203,7 @@ export default function OrderDetail() {
                       'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors',
                       isActive
                         ? `${step.color} text-white`
-                        : 'bg-gray-200 text-gray-400'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
                     )}
                   >
                     {isActive ? (
@@ -217,7 +217,7 @@ export default function OrderDetail() {
                   <span
                     className={cn(
                       'text-xs mt-1',
-                      isCurrent ? 'font-semibold text-gray-900' : 'text-gray-400'
+                      isCurrent ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-400'
                     )}
                   >
                     {step.label}
@@ -232,18 +232,18 @@ export default function OrderDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Customer Info */}
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-3">Customer</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">Customer</h2>
           <div className="space-y-2 text-sm">
-            <p className="text-gray-700">{order.customer_name || '-'}</p>
+            <p className="text-gray-700 dark:text-gray-300">{order.customer_name || '-'}</p>
             <p className="text-gray-500">{order.customer_email || '-'}</p>
           </div>
         </Card>
 
         {/* Shipping Address */}
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-3">Shipping Address</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">Shipping Address</h2>
           {order.shipping_address ? (
-            <div className="space-y-1 text-sm text-gray-600">
+            <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
               <p>{order.shipping_address.address_line1}</p>
               {order.shipping_address.address_line2 && <p>{order.shipping_address.address_line2}</p>}
               <p>{order.shipping_address.city}{order.shipping_address.state ? `, ${order.shipping_address.state}` : ''}</p>
@@ -256,23 +256,23 @@ export default function OrderDetail() {
 
         {/* Order Summary */}
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-3">Summary</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">Summary</h2>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">Subtotal</span>
-              <span className="text-gray-700">{formatCurrency(order.subtotal)}</span>
+              <span className="text-gray-700 dark:text-gray-300">{formatCurrency(order.subtotal)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Tax</span>
-              <span className="text-gray-700">{formatCurrency(order.tax)}</span>
+              <span className="text-gray-700 dark:text-gray-300">{formatCurrency(order.tax)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Shipping</span>
-              <span className="text-gray-700">{formatCurrency(order.shipping_cost)}</span>
+              <span className="text-gray-700 dark:text-gray-300">{formatCurrency(order.shipping_cost)}</span>
             </div>
-            <div className="flex justify-between border-t border-gray-100 pt-2">
-              <span className="font-semibold text-gray-900">Total</span>
-              <span className="font-bold text-gray-900">{formatCurrency(order.total)}</span>
+            <div className="flex justify-between border-t border-gray-100 dark:border-gray-800 pt-2">
+              <span className="font-semibold text-gray-900 dark:text-gray-100">Total</span>
+              <span className="font-bold text-gray-900 dark:text-gray-100">{formatCurrency(order.total)}</span>
             </div>
           </div>
         </Card>
@@ -280,8 +280,8 @@ export default function OrderDetail() {
 
       {/* Order Lines */}
       <Card padding={false} className="mb-6">
-        <div className="p-5 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Order Items</h2>
+        <div className="p-5 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Order Items</h2>
         </div>
         <Table<EcomOrderLine>
           columns={lineColumns}
@@ -295,13 +295,13 @@ export default function OrderDetail() {
       {/* Status Update */}
       {order.status !== 'delivered' && order.status !== 'cancelled' && (
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Update Order</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Update Order</h2>
           <div className="flex flex-wrap gap-3 items-end">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tracking Number</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tracking Number</label>
               <input
                 type="text"
-                className="border border-gray-200 rounded-[10px] px-3 py-2 text-sm w-60 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="border border-gray-200 dark:border-gray-700 rounded-[10px] px-3 py-2 text-sm w-60 focus:outline-none focus:ring-2 focus:ring-primary/40"
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
                 placeholder="Enter tracking number..."
@@ -327,7 +327,7 @@ export default function OrderDetail() {
           </div>
           {order.tracking_number && (
             <p className="text-sm text-gray-500 mt-3">
-              Current tracking: <span className="font-medium text-gray-700">{order.tracking_number}</span>
+              Current tracking: <span className="font-medium text-gray-700 dark:text-gray-300">{order.tracking_number}</span>
             </p>
           )}
         </Card>
@@ -336,8 +336,8 @@ export default function OrderDetail() {
       {/* Notes */}
       {order.notes && (
         <Card className="mt-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-2">Notes</h2>
-          <p className="text-sm text-gray-600">{order.notes}</p>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">Notes</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{order.notes}</p>
         </Card>
       )}
     </div>

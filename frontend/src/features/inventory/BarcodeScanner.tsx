@@ -144,7 +144,7 @@ function CameraBarcodeScanner({ onDetected, onClose }: CameraBarcodeScannerProps
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="relative w-full max-w-md rounded-[10px] overflow-hidden bg-white shadow-2xl">
+      <div className="relative w-full max-w-md rounded-[10px] overflow-hidden bg-white dark:bg-gray-800 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-primary text-white">
           <div className="flex items-center gap-2">
@@ -233,7 +233,7 @@ function CameraBarcodeScanner({ onDetected, onClose }: CameraBarcodeScannerProps
         </div>
 
         {/* Footer hint */}
-        <div className="px-4 py-3 bg-gray-50 text-center">
+        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-950 text-center">
           <p className="text-xs text-gray-500">
             Point your camera at a barcode. Detection is automatic.
           </p>
@@ -538,7 +538,7 @@ export function ManualBarcodeInput({ onSubmit, placeholder = 'Scan or enter barc
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
-        className="flex-1 rounded-[10px] border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+        className="flex-1 rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
       />
       <button
         type="submit"

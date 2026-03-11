@@ -171,22 +171,22 @@ function StructureModal({ open, onClose, editing }: StructureModalProps) {
           placeholder="0.00"
         />
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Allowances <span className="text-gray-400 font-normal">(one per line: key: value)</span>
           </label>
           <textarea
-            className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[80px] resize-y"
+            className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[80px] resize-y"
             value={allowancesText}
             onChange={(e) => setAllowancesText(e.target.value)}
             placeholder={'Housing: 500\nTransport: 200'}
           />
         </div>
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Deductions <span className="text-gray-400 font-normal">(one per line: key: value)</span>
           </label>
           <textarea
-            className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[80px] resize-y"
+            className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[80px] resize-y"
             value={deductionsText}
             onChange={(e) => setDeductionsText(e.target.value)}
             placeholder={'NHIF: 150\nNSSF: 200'}
@@ -199,7 +199,7 @@ function StructureModal({ open, onClose, editing }: StructureModalProps) {
             onChange={(e) => setIsActive(e.target.checked)}
             className="rounded border-gray-300 text-primary focus:ring-primary"
           />
-          <span className="text-sm font-medium text-gray-700">Active</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
         </label>
         <div className="flex items-center justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>
@@ -303,7 +303,7 @@ function GeneratePayslipsModal({ open, onClose }: GenerateModalProps) {
           onChange={(e) => setStructureId(e.target.value)}
         />
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Employee IDs <span className="text-gray-400 font-normal">(optional, comma-separated)</span>
           </label>
           <input
@@ -311,7 +311,7 @@ function GeneratePayslipsModal({ open, onClose }: GenerateModalProps) {
             value={employeeIds}
             onChange={(e) => setEmployeeIds(e.target.value)}
             placeholder="Leave empty for all active employees"
-            className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+            className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
           />
           <p className="text-xs text-gray-500">Leave empty to generate for all active employees</p>
         </div>
@@ -361,7 +361,7 @@ function SalaryStructuresTab() {
     {
       key: 'name',
       label: 'Name',
-      render: (row: SalaryStructure) => <span className="font-medium text-gray-900">{row.name}</span>,
+      render: (row: SalaryStructure) => <span className="font-medium text-gray-900 dark:text-gray-100">{row.name}</span>,
     },
     {
       key: 'base_salary',
@@ -374,7 +374,7 @@ function SalaryStructuresTab() {
       render: (row: SalaryStructure) => {
         const count = row.allowances ? Object.keys(row.allowances).length : 0
         return count > 0 ? (
-          <span className="text-gray-700">{count} item{count !== 1 ? 's' : ''}</span>
+          <span className="text-gray-700 dark:text-gray-300">{count} item{count !== 1 ? 's' : ''}</span>
         ) : (
           <span className="text-gray-400">None</span>
         )
@@ -386,7 +386,7 @@ function SalaryStructuresTab() {
       render: (row: SalaryStructure) => {
         const count = row.deductions ? Object.keys(row.deductions).length : 0
         return count > 0 ? (
-          <span className="text-gray-700">{count} item{count !== 1 ? 's' : ''}</span>
+          <span className="text-gray-700 dark:text-gray-300">{count} item{count !== 1 ? 's' : ''}</span>
         ) : (
           <span className="text-gray-400">None</span>
         )
@@ -512,7 +512,7 @@ function PayslipsTab() {
       key: 'employee_id',
       label: 'Employee',
       render: (row: Payslip) => (
-        <span className="font-medium text-gray-900">
+        <span className="font-medium text-gray-900 dark:text-gray-100">
           {employeeMap[row.employee_id] ?? row.employee_id}
         </span>
       ),
@@ -521,7 +521,7 @@ function PayslipsTab() {
       key: 'period',
       label: 'Period',
       render: (row: Payslip) => (
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-gray-600 dark:text-gray-400">
           {formatDate(row.period_start)} – {formatDate(row.period_end)}
         </span>
       ),
@@ -658,12 +658,12 @@ export default function PayrollPage() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Payroll</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Payroll</h1>
         <p className="text-sm text-gray-500 mt-1">Manage salary structures and payslips</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <div className="flex gap-1 mb-6 border-b border-gray-200 dark:border-gray-700">
         {(
           [
             { key: 'structures', label: 'Salary Structures' },

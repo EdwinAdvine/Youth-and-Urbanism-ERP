@@ -114,7 +114,7 @@ export default function POSDashboard() {
       key: 'customer_name',
       label: 'Customer',
       render: (row: POSTransactionData) => (
-        <span className="text-gray-700">{row.customer_name || 'Walk-in'}</span>
+        <span className="text-gray-700 dark:text-gray-300">{row.customer_name || 'Walk-in'}</span>
       ),
     },
     {
@@ -145,7 +145,7 @@ export default function POSDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Point of Sale</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Point of Sale</h1>
           <p className="text-sm text-gray-500 mt-1">Sales terminal and session management</p>
         </div>
         <div className="flex gap-2">
@@ -189,7 +189,7 @@ export default function POSDashboard() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{stat.label}</p>
-                <p className="text-lg font-bold text-gray-900 truncate mt-1">{stat.value}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate mt-1">{stat.value}</p>
               </div>
             </div>
           </Card>
@@ -200,8 +200,8 @@ export default function POSDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Transactions */}
         <Card padding={false}>
-          <div className="flex items-center justify-between p-5 border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">Recent Transactions</h2>
+          <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Recent Transactions</h2>
           </div>
           <Table<POSTransactionData>
             columns={txnColumns}
@@ -214,8 +214,8 @@ export default function POSDashboard() {
 
         {/* Top Products */}
         <Card padding={false}>
-          <div className="flex items-center justify-between p-5 border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">Top Products Today</h2>
+          <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Top Products Today</h2>
           </div>
           <div className="p-4">
             {(stats?.top_products ?? []).length === 0 ? (
@@ -225,13 +225,13 @@ export default function POSDashboard() {
                 {stats?.top_products.map((product, i) => (
                   <div
                     key={product.item_sku}
-                    className="flex items-center gap-3 p-3 rounded-[10px] bg-gray-50"
+                    className="flex items-center gap-3 p-3 rounded-[10px] bg-gray-50 dark:bg-gray-950"
                   >
                     <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">
                       {i + 1}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{product.item_name}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{product.item_name}</p>
                       <p className="text-xs text-gray-500">{product.item_sku}</p>
                     </div>
                     <div className="text-right">
@@ -254,12 +254,12 @@ export default function POSDashboard() {
           title="Sync Products from E-Commerce"
         >
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Import your e-commerce product catalog into the POS system. Products will be created
               as inventory items in the selected warehouse.
             </p>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Target Warehouse
               </label>
               <select

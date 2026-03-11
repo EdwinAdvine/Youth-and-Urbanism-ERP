@@ -83,10 +83,10 @@ function EventModal({ date, event, onClose, onSave, onDelete }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-md">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">{event ? 'Edit Event' : 'New Event'}</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-md">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{event ? 'Edit Event' : 'New Event'}</h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
@@ -97,7 +97,7 @@ function EventModal({ date, event, onClose, onSave, onDelete }: {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Event title"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 font-medium"
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 font-medium bg-transparent"
               autoFocus
             />
           </div>
@@ -105,11 +105,11 @@ function EventModal({ date, event, onClose, onSave, onDelete }: {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-xs text-gray-500 block mb-1">Date</label>
-              <input type="date" defaultValue={date} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none" readOnly />
+              <input type="date" defaultValue={date} className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none bg-transparent" readOnly />
             </div>
             <div>
               <label className="text-xs text-gray-500 block mb-1">Type</label>
-              <select value={type} onChange={(e) => setType(e.target.value as EventType)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none">
+              <select value={type} onChange={(e) => setType(e.target.value as EventType)} className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none bg-white dark:bg-gray-800">
                 <option value="meeting">Meeting</option>
                 <option value="task">Task</option>
                 <option value="reminder">Reminder</option>
@@ -121,33 +121,33 @@ function EventModal({ date, event, onClose, onSave, onDelete }: {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-xs text-gray-500 block mb-1">Start time</label>
-              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none" />
+              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none bg-transparent" />
             </div>
             <div>
               <label className="text-xs text-gray-500 block mb-1">End time</label>
-              <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none" />
+              <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none bg-transparent" />
             </div>
           </div>
 
           <div>
             <label className="text-xs text-gray-500 block mb-1">Attendees</label>
-            <input value={attendees} onChange={(e) => setAttendees(e.target.value)} placeholder="Alice, James, Grace…" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none" />
+            <input value={attendees} onChange={(e) => setAttendees(e.target.value)} placeholder="Alice, James, Grace…" className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none bg-transparent" />
           </div>
 
           <div>
             <label className="text-xs text-gray-500 block mb-1">Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Optional description…" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none resize-none" />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Optional description…" className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none resize-none bg-transparent" />
           </div>
         </div>
 
-        <div className="px-5 py-3 border-t border-gray-100 flex items-center gap-2">
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center gap-2">
           {event && onDelete && (
             <button onClick={() => { onDelete(event.id); onClose() }} className="p-2 text-red-500 hover:bg-red-50 rounded-[8px] transition-colors">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
             </button>
           )}
           <div className="flex-1" />
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-[8px] transition-colors">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px] transition-colors">Cancel</button>
           <button
             onClick={() => {
               if (title) {
@@ -192,19 +192,19 @@ function WeekView({ events, weekStart, onDayClick, onEventClick }: {
 
   return (
     <div className="flex-1 overflow-auto">
-      <div className="grid grid-cols-7 border-b border-gray-100">
+      <div className="grid grid-cols-7 border-b border-gray-100 dark:border-gray-800">
         {days.map((day, i) => {
           const dateStr = toDateStr(day)
           const isToday = dateStr === toDateStr(today)
           const dayEvents = events.filter((e) => getDateFromIso(e.start_time) === dateStr)
           return (
-            <div key={i} className="border-r border-gray-100 last:border-r-0 min-h-32 p-2">
+            <div key={i} className="border-r border-gray-100 dark:border-gray-800 last:border-r-0 min-h-32 p-2">
               <div
                 className={`text-center mb-2 cursor-pointer`}
                 onClick={() => onDayClick(dateStr)}
               >
                 <p className="text-[10px] text-gray-400 uppercase">{DAYS_OF_WEEK[day.getDay()]}</p>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold mx-auto ${isToday ? 'bg-[#51459d] text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold mx-auto ${isToday ? 'bg-[#51459d] text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
                   {day.getDate()}
                 </div>
               </div>
@@ -304,7 +304,7 @@ function MonthView({ events, year, month, onDayClick, onEventClick, onEventDrop 
   return (
     <div className="flex-1 overflow-auto">
       {/* Day headers */}
-      <div className="grid grid-cols-7 border-b border-gray-100">
+      <div className="grid grid-cols-7 border-b border-gray-100 dark:border-gray-800">
         {DAYS_OF_WEEK.map((d) => (
           <div key={d} className="py-2 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
             {d}
@@ -316,7 +316,7 @@ function MonthView({ events, year, month, onDayClick, onEventClick, onEventDrop 
       <div className="grid grid-cols-7 flex-1">
         {cells.map((dateStr, i) => {
           if (!dateStr) {
-            return <div key={i} className="border-r border-b border-gray-50 bg-gray-50/50 min-h-24" />
+            return <div key={i} className="border-r border-b border-gray-50 dark:border-gray-950 bg-gray-50/50 dark:bg-gray-950/50 min-h-24" />
           }
           const dayEvents = events.filter((e) => getDateFromIso(e.start_time) === dateStr)
           const isToday = dateStr === todayStr
@@ -325,7 +325,7 @@ function MonthView({ events, year, month, onDayClick, onEventClick, onEventDrop 
           return (
             <div
               key={i}
-              className={`border-r border-b border-gray-100 min-h-24 p-1.5 cursor-pointer hover:bg-gray-50 transition-colors ${isToday ? 'bg-[#51459d]/3' : ''}`}
+              className={`border-r border-b border-gray-100 dark:border-gray-800 min-h-24 p-1.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${isToday ? 'bg-[#51459d]/3' : ''}`}
               onClick={() => onDayClick(dateStr)}
               onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }}
               onDrop={(e) => {
@@ -338,7 +338,7 @@ function MonthView({ events, year, month, onDayClick, onEventClick, onEventDrop 
               }}
             >
               <div className="flex items-center justify-between mb-1">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${isToday ? 'bg-[#51459d] text-white' : 'text-gray-700'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${isToday ? 'bg-[#51459d] text-white' : 'text-gray-700 dark:text-gray-300'}`}>
                   {dayNum}
                 </div>
               </div>
@@ -459,7 +459,7 @@ export default function CalendarPage() {
   return (
     <div className="h-full flex flex-col md:flex-row overflow-hidden">
       {/* Mobile new event button */}
-      <div className="md:hidden shrink-0 p-3 bg-white border-b border-gray-100">
+      <div className="md:hidden shrink-0 p-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
         <button
           onClick={() => setModal({ date: toDateStr(today) })}
           className="w-full flex items-center justify-center gap-2 bg-[#51459d] hover:bg-[#3d3480] text-white text-sm font-medium rounded-[8px] px-4 py-2.5 min-h-[44px] transition-colors"
@@ -470,8 +470,8 @@ export default function CalendarPage() {
       </div>
 
       {/* Left sidebar - hidden on mobile */}
-      <aside className="hidden md:flex w-64 shrink-0 bg-white border-r border-gray-100 flex-col">
-        <div className="p-4 border-b border-gray-100">
+      <aside className="hidden md:flex w-64 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex-col">
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
           <button
             onClick={() => setModal({ date: toDateStr(today) })}
             className="w-full flex items-center justify-center gap-2 bg-[#51459d] hover:bg-[#3d3480] text-white text-sm font-medium rounded-[8px] px-4 py-2.5 transition-colors"
@@ -482,7 +482,7 @@ export default function CalendarPage() {
         </div>
 
         {/* Mini Calendar */}
-        <div className="p-3 border-b border-gray-100">
+        <div className="p-3 border-b border-gray-100 dark:border-gray-800">
           <MiniCalendar
             selectedDate={viewDate}
             onDateSelect={(date) => {
@@ -503,11 +503,11 @@ export default function CalendarPage() {
                 <button
                   key={ev.id}
                   onClick={() => setModal({ date: getDateFromIso(ev.start_time), event: ev })}
-                  className="w-full flex items-start gap-2.5 px-2 py-2 rounded-[8px] hover:bg-gray-50 transition-colors text-left"
+                  className="w-full flex items-start gap-2.5 px-2 py-2 rounded-[8px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
                 >
                   <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: EVENT_COLORS[ev.event_type].dot }} />
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-gray-800 truncate">{ev.title}</p>
+                    <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{ev.title}</p>
                     <p className="text-[10px] text-gray-400">
                       {new Date(getDateFromIso(ev.start_time) + 'T12:00:00').toLocaleDateString('en-KE', { month: 'short', day: 'numeric' })}
                       {!ev.all_day && ` · ${formatTime(ev.start_time)}`}
@@ -518,54 +518,54 @@ export default function CalendarPage() {
             </div>
           )}
 
-          <div className="mt-4 pt-3 border-t border-gray-100">
+          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
             <MultiCalendarSidebar />
           </div>
         </div>
       </aside>
 
       {/* Main calendar */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-white">
+      <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
         {/* Toolbar */}
-        <div className="border-b border-gray-100 px-3 sm:px-5 py-2 sm:py-3 flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+        <div className="border-b border-gray-100 dark:border-gray-800 px-3 sm:px-5 py-2 sm:py-3 flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
           <div className="flex items-center gap-1">
-            <button onClick={() => navigate(-1)} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500 transition-colors">
+            <button onClick={() => navigate(-1)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500 transition-colors">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
             <button
               onClick={() => setViewDate(new Date())}
-              className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-[8px] transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px] transition-colors"
             >
               Today
             </button>
-            <button onClick={() => navigate(1)} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500 transition-colors">
+            <button onClick={() => navigate(1)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500 transition-colors">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
           </div>
 
-          <h2 className="text-sm sm:text-base font-semibold text-gray-900 flex-1">{headerLabel()}</h2>
+          <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 flex-1">{headerLabel()}</h2>
 
           <button
             onClick={() => setShowShare(true)}
-            className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500 transition-colors"
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500 transition-colors"
             title="Share calendar"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
           </button>
           <button
             onClick={() => setShowPrint(true)}
-            className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-500 transition-colors"
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500 transition-colors"
             title="Print view"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2z" /></svg>
           </button>
 
-          <div className="flex items-center border border-gray-200 rounded-[8px] overflow-hidden">
+          <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-[8px] overflow-hidden">
             {(['month', 'week', 'day'] as CalView[]).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-3 py-2 sm:py-1.5 text-xs font-medium capitalize transition-colors min-w-[44px] sm:min-w-0 ${view === v ? 'bg-[#51459d] text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`px-3 py-2 sm:py-1.5 text-xs font-medium capitalize transition-colors min-w-[44px] sm:min-w-0 ${view === v ? 'bg-[#51459d] text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
               >
                 {v}
               </button>

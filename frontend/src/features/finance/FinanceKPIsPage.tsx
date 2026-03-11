@@ -42,7 +42,7 @@ interface KPICardProps {
   colorClass?: string
 }
 
-function KPICard({ label, value, change, subtitle, colorClass = 'text-gray-900' }: KPICardProps) {
+function KPICard({ label, value, change, subtitle, colorClass = 'text-gray-900 dark:text-gray-100' }: KPICardProps) {
   const isPositive = change >= 0
   return (
     <Card>
@@ -68,7 +68,7 @@ function KPICard({ label, value, change, subtitle, colorClass = 'text-gray-900' 
       </div>
 
       {/* Mini sparkline placeholder bar */}
-      <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className="mt-4 h-2 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
         <div
           className={cn(
             'h-full rounded-full transition-all',
@@ -90,7 +90,7 @@ function RatioCard({ label, value, description }: { label: string; value: number
       <p className="text-sm text-gray-500">{label}</p>
       <p className={cn('text-3xl font-bold mt-1', color)}>{value.toFixed(2)}</p>
       <p className="text-xs text-gray-400 mt-2">{description}</p>
-      <div className="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className="mt-3 h-2 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
         <div
           className={cn(
             'h-full rounded-full transition-all',
@@ -116,7 +116,7 @@ export default function FinanceKPIsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Finance KPIs</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Finance KPIs</h1>
           <p className="text-sm text-gray-500 mt-1">Key performance indicators and financial health metrics</p>
         </div>
       </div>
@@ -205,12 +205,12 @@ export default function FinanceKPIsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <p className="text-sm text-gray-500">Accounts Receivable</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(data.accounts_receivable)}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{formatCurrency(data.accounts_receivable)}</p>
               <p className="text-xs text-gray-400 mt-1">Money owed to you</p>
             </Card>
             <Card>
               <p className="text-sm text-gray-500">Accounts Payable</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(data.accounts_payable)}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{formatCurrency(data.accounts_payable)}</p>
               <p className="text-xs text-gray-400 mt-1">Money you owe</p>
             </Card>
             <Card>
@@ -221,7 +221,7 @@ export default function FinanceKPIsPage() {
               )}>
                 {data.gross_margin_pct.toFixed(1)}%
               </p>
-              <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="mt-2 h-2 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
                 <div
                   className={cn(
                     'h-full rounded-full',
@@ -239,7 +239,7 @@ export default function FinanceKPIsPage() {
               )}>
                 {data.net_margin_pct.toFixed(1)}%
               </p>
-              <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="mt-2 h-2 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
                 <div
                   className={cn(
                     'h-full rounded-full',
@@ -253,7 +253,7 @@ export default function FinanceKPIsPage() {
 
           {/* Financial ratios */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Financial Ratios</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Financial Ratios</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <RatioCard
                 label="Current Ratio"
@@ -270,25 +270,25 @@ export default function FinanceKPIsPage() {
 
           {/* P&L Summary Bar */}
           <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Profit & Loss Summary</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Profit & Loss Summary</h3>
             <div className="space-y-3">
               {/* Revenue bar */}
               <div>
                 <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="text-gray-600">Revenue</span>
+                  <span className="text-gray-600 dark:text-gray-400">Revenue</span>
                   <span className="font-medium text-green-700">{formatCurrency(data.revenue)}</span>
                 </div>
-                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-3 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
                   <div className="h-full bg-green-400 rounded-full" style={{ width: '100%' }} />
                 </div>
               </div>
               {/* Expenses bar */}
               <div>
                 <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="text-gray-600">Expenses</span>
+                  <span className="text-gray-600 dark:text-gray-400">Expenses</span>
                   <span className="font-medium text-danger">{formatCurrency(data.expenses)}</span>
                 </div>
-                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-3 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-red-400 rounded-full"
                     style={{ width: `${data.revenue > 0 ? (data.expenses / data.revenue) * 100 : 0}%` }}
@@ -298,12 +298,12 @@ export default function FinanceKPIsPage() {
               {/* Profit bar */}
               <div>
                 <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="text-gray-600">Net Profit</span>
+                  <span className="text-gray-600 dark:text-gray-400">Net Profit</span>
                   <span className={cn('font-bold', data.profit >= 0 ? 'text-green-700' : 'text-danger')}>
                     {formatCurrency(data.profit)}
                   </span>
                 </div>
-                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-3 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
                   <div
                     className={cn('h-full rounded-full', data.profit >= 0 ? 'bg-green-500' : 'bg-red-500')}
                     style={{ width: `${data.revenue > 0 ? Math.abs(data.profit / data.revenue) * 100 : 0}%` }}

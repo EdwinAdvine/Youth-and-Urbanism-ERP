@@ -81,11 +81,14 @@ def _register_event_handlers() -> None:
         if not user_id:
             return
         try:
+            import uuid as _uuid  # noqa: PLC0415
             from app.core.database import AsyncSessionLocal  # noqa: PLC0415
             from app.models.notification import Notification  # noqa: PLC0415
+            # asyncpg requires uuid.UUID objects — never raw strings
+            uid = _uuid.UUID(str(user_id)) if not isinstance(user_id, _uuid.UUID) else user_id
             async with AsyncSessionLocal() as db:
                 notif = Notification(
-                    user_id=user_id,
+                    user_id=uid,
                     title=title,
                     message=message,
                     type=notif_type,

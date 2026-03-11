@@ -20,6 +20,7 @@ import {
   FormsPage,
   AdminDashboard,
   SettingsPage,
+  HandbookDashboard,
 } from './preloadableRoutes'
 
 const preloadMap: Record<string, PreloadableComponent> = {
@@ -43,6 +44,7 @@ const preloadMap: Record<string, PreloadableComponent> = {
   '/forms': FormsPage,
   '/admin': AdminDashboard,
   '/settings': SettingsPage,
+  '/handbook': HandbookDashboard,
 }
 
 export function preloadRoute(href: string) {

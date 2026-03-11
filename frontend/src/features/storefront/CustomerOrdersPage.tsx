@@ -35,7 +35,7 @@ export default function CustomerOrdersPage() {
             <Link
               key={o.id}
               to={`/store/${storeSlug}/orders/${o.id}`}
-              className="block bg-white rounded-[10px] border p-4 hover:border-[#51459d] transition"
+              className="block bg-white dark:bg-gray-800 rounded-[10px] border p-4 hover:border-[#51459d] transition"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -46,9 +46,7 @@ export default function CustomerOrdersPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${
-                      statusColor[o.status] ?? 'bg-gray-100 text-gray-600'
-                    }`}
+                    className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${ statusColor[o.status] ?? 'bg-gray-100 text-gray-600' }`}
                   >
                     {o.status}
                   </span>

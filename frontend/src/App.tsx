@@ -57,6 +57,17 @@ const FormBuilder      = lazy(() => import('./features/forms/FormBuilder'))
 const FormResponses    = lazy(() => import('./features/forms/FormResponses'))
 const FormSubmit       = lazy(() => import('./features/forms/FormSubmit'))
 
+// Handbook
+const HandbookPage           = lazy(() => import('./features/handbook/HandbookPage'))
+const HandbookArticlePage    = lazy(() => import('./features/handbook/ArticlePage'))
+const HandbookCategoryPage   = lazy(() => import('./features/handbook/CategoryPage'))
+const HandbookSearchPage     = lazy(() => import('./features/handbook/SearchPage'))
+const HandbookGettingStarted = lazy(() => import('./features/handbook/GettingStartedPage'))
+const HandbookAdminPage      = lazy(() => import('./features/handbook/HandbookAdminPage'))
+const HandbookArticleEditor  = lazy(() => import('./features/handbook/ArticleEditor'))
+const HandbookCategoryManager = lazy(() => import('./features/handbook/CategoryManager'))
+const HandbookAnalyticsPage  = lazy(() => import('./features/handbook/HandbookAnalytics'))
+
 const ProjectBoard     = lazy(() => import('./features/projects/ProjectBoard'))
 const TimeLogReport    = lazy(() => import('./features/projects/TimeLogReport'))
 
@@ -297,8 +308,8 @@ function ComingSoon({ title }: { title: string }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
       <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center text-4xl mb-4">🚧</div>
-      <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-      <p className="text-gray-500 mt-2">This module is under development. Coming soon!</p>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{title}</h1>
+      <p className="text-gray-500 dark:text-gray-400 mt-2">This module is under development. Coming soon!</p>
     </div>
   )
 }
@@ -550,6 +561,18 @@ export default function App() {
             <Route path="forms/:id/edit" element={<S><FormBuilder /></S>} />
             <Route path="forms/:id/responses" element={<S><FormResponses /></S>} />
             <Route path="forms/:id/submit" element={<S><FormSubmit /></S>} />
+
+            {/* Handbook */}
+            <Route path="handbook" element={<S><HandbookPage /></S>} />
+            <Route path="handbook/getting-started" element={<S><HandbookGettingStarted /></S>} />
+            <Route path="handbook/search" element={<S><HandbookSearchPage /></S>} />
+            <Route path="handbook/category/:slug" element={<S><HandbookCategoryPage /></S>} />
+            <Route path="handbook/articles/:slug" element={<S><HandbookArticlePage /></S>} />
+            <Route path="handbook/admin" element={<RequireAdmin><S><HandbookAdminPage /></S></RequireAdmin>} />
+            <Route path="handbook/admin/articles/new" element={<RequireAdmin><S><HandbookArticleEditor /></S></RequireAdmin>} />
+            <Route path="handbook/admin/articles/:id/edit" element={<RequireAdmin><S><HandbookArticleEditor /></S></RequireAdmin>} />
+            <Route path="handbook/admin/categories" element={<RequireAdmin><S><HandbookCategoryManager /></S></RequireAdmin>} />
+            <Route path="handbook/admin/analytics" element={<RequireAdmin><S><HandbookAnalyticsPage /></S></RequireAdmin>} />
 
             {/* Admin section */}
             <Route

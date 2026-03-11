@@ -70,8 +70,8 @@ export default function ECommerceDashboard() {
 
       {/* Revenue + Orders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Revenue Trend</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Revenue Trend</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly e-commerce revenue</p>
           <LineChart
             data={revenuePoints.map((r) => ({ month: r.month, Revenue: r.revenue }))}
@@ -82,8 +82,8 @@ export default function ECommerceDashboard() {
           />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Order Volume</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Order Volume</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly order count</p>
           <BarChart
             data={orderData}
@@ -96,14 +96,14 @@ export default function ECommerceDashboard() {
 
       {/* Status + Channel */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Order Status</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Order Status</h3>
           <p className="text-xs text-gray-400 mb-4">Distribution of order statuses</p>
           <PieChart data={orderStatus} innerRadius={50} height={260} />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Revenue by Channel</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Revenue by Channel</h3>
           <p className="text-xs text-gray-400 mb-4">Sales across channels</p>
           <PieChart
             data={channelData}

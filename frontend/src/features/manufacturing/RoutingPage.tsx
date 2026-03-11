@@ -264,7 +264,7 @@ export default function RoutingPage() {
               placeholder="0.00"
             />
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" size="sm" onClick={() => { setShowCreate(false); setEditItem(null) }}>
               Cancel
             </Button>

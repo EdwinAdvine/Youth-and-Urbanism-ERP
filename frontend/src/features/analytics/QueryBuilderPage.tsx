@@ -177,12 +177,12 @@ export default function QueryBuilderPage() {
         render: (row: Record<string, unknown>) => {
           const val = row[col]
           if (val === null || val === undefined) return <span className="text-gray-300">null</span>
-          if (typeof val === 'number') return <span className="font-medium text-gray-700">{val.toLocaleString()}</span>
+          if (typeof val === 'number') return <span className="font-medium text-gray-700 dark:text-gray-300">{val.toLocaleString()}</span>
           const str = String(val)
           if (['status', 'state', 'priority'].includes(col.toLowerCase())) {
             return <Badge variant="primary">{str}</Badge>
           }
-          return <span className="text-gray-600">{str}</span>
+          return <span className="text-gray-600 dark:text-gray-400">{str}</span>
         },
       }))
     : []
@@ -191,7 +191,7 @@ export default function QueryBuilderPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Query Builder</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Query Builder</h1>
           <p className="text-sm text-gray-500 mt-1">Build and run custom queries across your data</p>
         </div>
         <div className="flex gap-2">
@@ -201,13 +201,11 @@ export default function QueryBuilderPage() {
       </div>
 
       {/* Tab Switcher */}
-      <div className="flex gap-1 bg-gray-100 rounded-[10px] p-1 w-fit">
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-900 rounded-[10px] p-1 w-fit">
         {(['visual', 'sql'] as TabMode[]).map((t) => (
           <button
             key={t}
-            className={`px-4 py-1.5 text-sm rounded-[8px] transition-colors ${
-              tab === t ? 'bg-white text-gray-900 font-medium shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className={`px-4 py-1.5 text-sm rounded-[8px] transition-colors ${ tab === t ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' : 'text-gray-500 hover:text-gray-700' }`}
             onClick={() => setTab(t)}
           >
             {t === 'visual' ? 'Visual Builder' : 'SQL Editor'}
@@ -244,7 +242,7 @@ export default function QueryBuilderPage() {
             </div>
             <div className="space-y-3">
               {filters.map((filter) => (
-                <div key={filter.id} className="space-y-2 p-2 rounded-[8px] bg-gray-50 border border-gray-100">
+                <div key={filter.id} className="space-y-2 p-2 rounded-[8px] bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800">
                   <Input
                     placeholder="Field name..."
                     value={filter.field}
@@ -311,7 +309,7 @@ export default function QueryBuilderPage() {
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {savedQueries.map((sq) => (
-                  <div key={sq.id} className="flex items-center justify-between p-2 rounded-[8px] bg-gray-50 border border-gray-100">
+                  <div key={sq.id} className="flex items-center justify-between p-2 rounded-[8px] bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800">
                     <button className="text-xs text-primary hover:underline truncate flex-1 text-left" onClick={() => handleLoadQuery(sq.query)}>
                       {sq.name}
                     </button>
@@ -330,7 +328,7 @@ export default function QueryBuilderPage() {
         /* SQL Editor */
         <Card>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-900">SQL Query</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">SQL Query</h3>
             <div className="flex gap-2">
               <Input
                 placeholder="Query name..."
@@ -342,7 +340,7 @@ export default function QueryBuilderPage() {
             </div>
           </div>
           <textarea
-            className="w-full rounded-[10px] border border-gray-200 px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 min-h-[200px] bg-gray-50"
+            className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 min-h-[200px] bg-gray-50 dark:bg-gray-950"
             value={sqlQuery}
             onChange={(e) => setSqlQuery(e.target.value)}
             placeholder="SELECT * FROM finance.invoices WHERE status = 'overdue' LIMIT 100"
@@ -355,16 +353,16 @@ export default function QueryBuilderPage() {
       {tab === 'visual' && (module || table) && (
         <Card>
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Generated Query</h3>
-          <pre className="text-xs text-gray-600 bg-gray-50 rounded-[8px] p-3 overflow-x-auto font-mono">{buildQuery()}</pre>
+          <pre className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-950 rounded-[8px] p-3 overflow-x-auto font-mono">{buildQuery()}</pre>
         </Card>
       )}
 
       {/* Results */}
       {result && (
         <Card padding={false}>
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Query Results</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Query Results</h3>
               <p className="text-xs text-gray-400 mt-0.5">
                 {result.rows.length} rows returned in {result.execution_time_ms}ms
               </p>

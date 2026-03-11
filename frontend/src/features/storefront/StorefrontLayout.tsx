@@ -8,9 +8,9 @@ export default function StorefrontLayout() {
   const base = `/store/${storeSlug}`
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
       {/* Top bar */}
-      <header className="bg-white border-b sticky top-0 z-30">
+      <header className="bg-white dark:bg-gray-800 border-b sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link to={base} className="text-lg font-bold text-[#51459d]">
             {storeSlug}

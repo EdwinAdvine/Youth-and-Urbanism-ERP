@@ -157,7 +157,7 @@ export default function TicketDetail() {
                 <Badge variant="danger">SLA Breached</Badge>
               )}
             </div>
-            <h1 className="text-xl font-bold text-gray-900">{ticket.subject}</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{ticket.subject}</h1>
           </div>
 
           {/* Workflow Buttons */}
@@ -202,14 +202,14 @@ export default function TicketDetail() {
           {/* Description */}
           {ticket.description && (
             <Card>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Description</h3>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{ticket.description}</p>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{ticket.description}</p>
             </Card>
           )}
 
           {/* Comment Timeline */}
           <Card>
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
               Comments ({ticket.comments?.length ?? 0})
             </h3>
 
@@ -232,7 +232,7 @@ export default function TicketDetail() {
                         <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
                           {(c.author_name || 'U')[0].toUpperCase()}
                         </div>
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                           {c.author_name || 'Unknown'}
                         </span>
                         {c.is_internal && (
@@ -244,7 +244,7 @@ export default function TicketDetail() {
                     {editingCommentId === c.id ? (
                       <div className="space-y-2">
                         <textarea
-                          className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[60px]"
+                          className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[60px]"
                           value={editingContent}
                           onChange={(e) => setEditingContent(e.target.value)}
                         />
@@ -275,7 +275,7 @@ export default function TicketDetail() {
                       </div>
                     ) : (
                       <>
-                        <p className="text-sm text-gray-600 whitespace-pre-wrap">{c.content}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{c.content}</p>
                         <div className="flex gap-2 mt-2">
                           <button
                             className="text-xs text-primary hover:underline"
@@ -312,15 +312,15 @@ export default function TicketDetail() {
             )}
 
             {/* Add Comment */}
-            <div className="border-t border-gray-100 pt-4">
+            <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
               <textarea
-                className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[80px]"
+                className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[80px]"
                 placeholder="Write a comment..."
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
               />
               <div className="flex items-center justify-between mt-2">
-                <label className="flex items-center gap-2 text-sm text-gray-600">
+                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <input
                     type="checkbox"
                     checked={isInternal}
@@ -345,7 +345,7 @@ export default function TicketDetail() {
         <div className="space-y-6">
           {/* Details card */}
           <Card>
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Details</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Details</h3>
             <dl className="space-y-3">
               <div>
                 <dt className="text-xs text-gray-400 uppercase tracking-wide">Status</dt>
@@ -363,15 +363,15 @@ export default function TicketDetail() {
               </div>
               <div>
                 <dt className="text-xs text-gray-400 uppercase tracking-wide">Category</dt>
-                <dd className="text-sm text-gray-700 mt-0.5">{ticket.category_name || 'Uncategorized'}</dd>
+                <dd className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{ticket.category_name || 'Uncategorized'}</dd>
               </div>
               <div>
                 <dt className="text-xs text-gray-400 uppercase tracking-wide">Assigned To</dt>
-                <dd className="text-sm text-gray-700 mt-0.5">{ticket.assignee_name || 'Unassigned'}</dd>
+                <dd className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{ticket.assignee_name || 'Unassigned'}</dd>
               </div>
               <div>
                 <dt className="text-xs text-gray-400 uppercase tracking-wide">Created By</dt>
-                <dd className="text-sm text-gray-700 mt-0.5">{ticket.creator_name || '-'}</dd>
+                <dd className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{ticket.creator_name || '-'}</dd>
               </div>
               {ticket.tags && ticket.tags.length > 0 && (
                 <div>
@@ -388,15 +388,15 @@ export default function TicketDetail() {
 
           {/* Customer card */}
           <Card>
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Customer</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Customer</h3>
             <dl className="space-y-3">
               <div>
                 <dt className="text-xs text-gray-400 uppercase tracking-wide">Name</dt>
-                <dd className="text-sm text-gray-700 mt-0.5">{ticket.customer_name || '-'}</dd>
+                <dd className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{ticket.customer_name || '-'}</dd>
               </div>
               <div>
                 <dt className="text-xs text-gray-400 uppercase tracking-wide">Email</dt>
-                <dd className="text-sm text-gray-700 mt-0.5">
+                <dd className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
                   {ticket.customer_email ? (
                     <a href={`mailto:${ticket.customer_email}`} className="text-primary hover:underline">
                       {ticket.customer_email}
@@ -409,10 +409,10 @@ export default function TicketDetail() {
 
           {/* CRM Link card */}
           <Card>
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">CRM Contact</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">CRM Contact</h3>
             {linkedContact?.contact ? (
               <dl className="space-y-2">
-                <dd className="text-sm font-medium text-gray-900">
+                <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {linkedContact.contact.first_name || ''} {linkedContact.contact.last_name || linkedContact.contact.company_name || 'Unnamed'}
                 </dd>
                 {linkedContact.contact.email && (
@@ -435,7 +435,7 @@ export default function TicketDetail() {
           {/* Escalate to Project Task */}
           {isOpenOrInProgress && (
             <Card>
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">Escalate</h3>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Escalate</h3>
               <Button size="sm" variant="outline" onClick={() => setEscalateOpen(true)}>
                 Escalate to Project Task
               </Button>
@@ -444,11 +444,11 @@ export default function TicketDetail() {
 
           {/* SLA card */}
           <Card>
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">SLA</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">SLA</h3>
             <dl className="space-y-3">
               <div>
                 <dt className="text-xs text-gray-400 uppercase tracking-wide">Response Due</dt>
-                <dd className="text-sm text-gray-700 mt-0.5">
+                <dd className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
                   {ticket.sla_response_due ? formatDate(ticket.sla_response_due) : 'N/A'}
                   {ticket.sla_response_breached && (
                     <Badge variant="danger" className="ml-2">Breached</Badge>
@@ -457,7 +457,7 @@ export default function TicketDetail() {
               </div>
               <div>
                 <dt className="text-xs text-gray-400 uppercase tracking-wide">Resolution Due</dt>
-                <dd className="text-sm text-gray-700 mt-0.5">
+                <dd className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
                   {ticket.sla_resolution_due ? formatDate(ticket.sla_resolution_due) : 'N/A'}
                   {ticket.sla_resolution_breached && (
                     <Badge variant="danger" className="ml-2">Breached</Badge>
@@ -466,7 +466,7 @@ export default function TicketDetail() {
               </div>
               <div>
                 <dt className="text-xs text-gray-400 uppercase tracking-wide">First Response</dt>
-                <dd className="text-sm text-gray-700 mt-0.5">
+                <dd className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
                   {ticket.first_response_at ? formatDate(ticket.first_response_at) : 'Awaiting'}
                 </dd>
               </div>
@@ -475,22 +475,22 @@ export default function TicketDetail() {
 
           {/* Timestamps card */}
           <Card>
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Timestamps</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Timestamps</h3>
             <dl className="space-y-3">
               <div>
                 <dt className="text-xs text-gray-400 uppercase tracking-wide">Created</dt>
-                <dd className="text-sm text-gray-700 mt-0.5">{formatDate(ticket.created_at)}</dd>
+                <dd className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{formatDate(ticket.created_at)}</dd>
               </div>
               {ticket.resolved_at && (
                 <div>
                   <dt className="text-xs text-gray-400 uppercase tracking-wide">Resolved</dt>
-                  <dd className="text-sm text-gray-700 mt-0.5">{formatDate(ticket.resolved_at)}</dd>
+                  <dd className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{formatDate(ticket.resolved_at)}</dd>
                 </div>
               )}
               {ticket.closed_at && (
                 <div>
                   <dt className="text-xs text-gray-400 uppercase tracking-wide">Closed</dt>
-                  <dd className="text-sm text-gray-700 mt-0.5">{formatDate(ticket.closed_at)}</dd>
+                  <dd className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{formatDate(ticket.closed_at)}</dd>
                 </div>
               )}
             </dl>
@@ -539,9 +539,9 @@ export default function TicketDetail() {
             onChange={(e) => setProjectIdInput(e.target.value)}
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Priority</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Priority</label>
             <select
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               value={escalatePriority}
               onChange={(e) => setEscalatePriority(e.target.value)}
             >

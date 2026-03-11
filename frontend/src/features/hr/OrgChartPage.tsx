@@ -11,7 +11,7 @@ function OrgNode({ node, depth = 0, isMobile = false }: { node: OrgChartNode; de
     return (
       <div className="w-full">
         <button
-          className="w-full text-left bg-white border border-gray-200 rounded-[10px] shadow-sm px-4 py-3 active:bg-gray-50 transition-colors min-h-[56px] flex items-center gap-3"
+          className="w-full text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[10px] shadow-sm px-4 py-3 active:bg-gray-50 transition-colors min-h-[56px] flex items-center gap-3"
           style={{ marginLeft: depth * 16 }}
           onClick={() => hasChildren && setExpanded(!expanded)}
         >
@@ -23,7 +23,7 @@ function OrgNode({ node, depth = 0, isMobile = false }: { node: OrgChartNode; de
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-gray-900 text-sm truncate">{node.name}</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm truncate">{node.name}</p>
             <p className="text-xs text-gray-500 truncate">{node.job_title}</p>
             {node.department_name && (
               <p className="text-xs text-primary/70 truncate">{node.department_name}</p>
@@ -59,7 +59,7 @@ function OrgNode({ node, depth = 0, isMobile = false }: { node: OrgChartNode; de
   return (
     <div className="flex flex-col items-center">
       <div
-        className="bg-white border border-gray-200 rounded-[10px] shadow-sm px-5 py-4 min-w-[200px] cursor-pointer hover:shadow-md transition-shadow"
+        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[10px] shadow-sm px-5 py-4 min-w-[200px] cursor-pointer hover:shadow-md transition-shadow"
         onClick={() => hasChildren && setExpanded(!expanded)}
       >
         <div className="flex items-center gap-3">
@@ -71,7 +71,7 @@ function OrgNode({ node, depth = 0, isMobile = false }: { node: OrgChartNode; de
             )}
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-gray-900 text-sm truncate">{node.name}</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm truncate">{node.name}</p>
             <p className="text-xs text-gray-500 truncate">{node.job_title}</p>
             {node.department_name && (
               <p className="text-xs text-primary/70 truncate">{node.department_name}</p>
@@ -127,7 +127,7 @@ export default function OrgChartPage() {
   return (
     <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Organization Chart</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Organization Chart</h1>
         <p className="text-sm text-gray-500 mt-1">Visual hierarchy of your organization</p>
       </div>
 

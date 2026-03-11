@@ -70,7 +70,7 @@ export default function DepartmentsPage() {
       label: 'Department',
       render: (d: Department) => (
         <div>
-          <p className="font-medium text-gray-900">{d.name}</p>
+          <p className="font-medium text-gray-900 dark:text-gray-100">{d.name}</p>
           {d.description && <p className="text-xs text-gray-400 mt-0.5">{d.description}</p>}
         </div>
       ),
@@ -119,7 +119,7 @@ export default function DepartmentsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Departments</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Departments</h1>
           <p className="text-sm text-gray-500 mt-1">Manage organizational departments</p>
         </div>
         <Button onClick={openCreate}>Create Department</Button>
@@ -148,9 +148,9 @@ export default function DepartmentsPage() {
             onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={3}
               value={form.description ?? ''}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}

@@ -65,10 +65,10 @@ export default function LinkedItemsSidebar({ noteId, onClose }: Props) {
   const getModuleConfig = (module: string) => MODULE_ICONS[module] ?? MODULE_ICONS.default
 
   return (
-    <div className="w-72 border-l border-gray-100 bg-white flex flex-col h-full">
+    <div className="w-72 border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
-        <h3 className="text-sm font-semibold text-gray-900">Linked Items</h3>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Linked Items</h3>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setShowAddForm(!showAddForm)}
@@ -79,7 +79,7 @@ export default function LinkedItemsSidebar({ noteId, onClose }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </button>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-[6px] text-gray-400">
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-400">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -89,11 +89,11 @@ export default function LinkedItemsSidebar({ noteId, onClose }: Props) {
 
       {/* Add link form */}
       {showAddForm && (
-        <div className="p-3 border-b border-gray-100 space-y-2 bg-gray-50">
+        <div className="p-3 border-b border-gray-100 dark:border-gray-800 space-y-2 bg-gray-50 dark:bg-gray-950">
           <select
             value={linkType}
             onChange={(e) => setLinkType(e.target.value)}
-            className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-[8px] bg-white focus:outline-none focus:border-[#51459d]"
+            className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] bg-white dark:bg-gray-800 focus:outline-none focus:border-[#51459d]"
           >
             {LINKABLE_TYPES.map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -103,7 +103,7 @@ export default function LinkedItemsSidebar({ noteId, onClose }: Props) {
             value={linkId}
             onChange={(e) => setLinkId(e.target.value)}
             placeholder="Item ID or search..."
-            className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+            className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
             onKeyDown={(e) => e.key === 'Enter' && handleLink()}
           />
           <div className="flex gap-2">
@@ -150,13 +150,13 @@ export default function LinkedItemsSidebar({ noteId, onClose }: Props) {
               return (
                 <div
                   key={item.id}
-                  className="group flex items-center gap-2.5 p-2.5 rounded-[8px] hover:bg-gray-50 transition-colors"
+                  className="group flex items-center gap-2.5 p-2.5 rounded-[8px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <div className={`w-7 h-7 rounded-[6px] ${cfg.color} flex items-center justify-center text-xs font-bold shrink-0`}>
                     {cfg.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-800 truncate">{item.title}</p>
+                    <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{item.title}</p>
                     <p className="text-[10px] text-gray-400 capitalize">{item.module}</p>
                   </div>
                   <button

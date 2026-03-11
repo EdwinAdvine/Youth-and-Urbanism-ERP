@@ -119,7 +119,7 @@ export default function TicketsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">CRM Tickets</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">CRM Tickets</h1>
           <p className="text-sm text-gray-500 mt-1">
             {total} ticket{total !== 1 ? 's' : ''} total
           </p>
@@ -163,22 +163,22 @@ export default function TicketsPage() {
           No tickets found. Create your first ticket to get started.
         </div>
       ) : (
-        <div className="bg-white rounded-[10px] border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/50">
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Subject</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Priority</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Created</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
+              <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50">
+                <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Subject</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Status</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Priority</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Created</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Actions</th>
               </tr>
             </thead>
             <tbody>
               {tickets.map((ticket) => (
-                <tr key={ticket.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                <tr key={ticket.id} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 transition-colors">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">{ticket.subject}</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">{ticket.subject}</div>
                     {ticket.description && (
                       <div className="text-xs text-gray-400 mt-0.5 line-clamp-1">{ticket.description}</div>
                     )}
@@ -231,9 +231,9 @@ export default function TicketsPage() {
             required
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 min-h-[80px]"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 min-h-[80px]"
               value={form.description ?? ''}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Describe the issue..."
@@ -241,7 +241,7 @@ export default function TicketsPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
               <Select
                 value={form.status ?? 'open'}
                 onChange={(e) => setForm({ ...form, status: e.target.value as TicketStatus })}
@@ -252,7 +252,7 @@ export default function TicketsPage() {
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">Priority</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Priority</label>
               <Select
                 value={form.priority ?? 'medium'}
                 onChange={(e) => setForm({ ...form, priority: e.target.value as TicketPriority })}

@@ -58,7 +58,7 @@ export default function InventoryDashboard() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
       ),
-      color: (stats?.low_stock_count ?? 0) > 0 ? 'text-red-600 bg-red-50' : 'text-gray-600 bg-gray-50',
+      color: (stats?.low_stock_count ?? 0) > 0 ? 'text-red-600 bg-red-50' : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-950',
       badge: (stats?.low_stock_count ?? 0) > 0 ? 'danger' : null,
     },
     {
@@ -86,7 +86,7 @@ export default function InventoryDashboard() {
   ]
 
   const alertColumns = [
-    { key: 'name', label: 'Item' },
+    { key: 'item_name', label: 'Item' },
     { key: 'sku', label: 'SKU' },
     {
       key: 'quantity_on_hand',
@@ -121,7 +121,7 @@ export default function InventoryDashboard() {
     {
       key: 'item_name',
       label: 'Item',
-      render: (row: StockMovement) => <span className="text-gray-700">{row.item_name ?? row.item_id}</span>,
+      render: (row: StockMovement) => <span className="text-gray-700 dark:text-gray-300">{row.item_name ?? row.item_id}</span>,
     },
     {
       key: 'quantity',
@@ -144,7 +144,7 @@ export default function InventoryDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Inventory</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Inventory</h1>
           <p className="text-sm text-gray-500 mt-1">Stock management and purchase orders</p>
         </div>
         <div className="flex gap-2">
@@ -159,7 +159,7 @@ export default function InventoryDashboard() {
 
       {/* Mobile Stock Check (visible on small screens only) */}
       <div className="block md:hidden mb-6">
-        <h2 className="text-base font-semibold text-gray-900 mb-3">Quick Stock Check</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">Quick Stock Check</h2>
         <MobileStockCheck />
       </div>
 
@@ -189,7 +189,7 @@ export default function InventoryDashboard() {
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{stat.label}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <p className="text-lg font-bold text-gray-900 truncate">{stat.value}</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">{stat.value}</p>
                   {stat.badge === 'danger' && (
                     <Badge variant="danger">Alert</Badge>
                   )}
@@ -204,9 +204,9 @@ export default function InventoryDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Reorder Alerts */}
         <Card padding={false}>
-          <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-gray-900">Reorder Alerts</h2>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Reorder Alerts</h2>
               {(alerts?.length ?? 0) > 0 && (
                 <Badge variant="danger">{alerts?.length}</Badge>
               )}
@@ -226,8 +226,8 @@ export default function InventoryDashboard() {
 
         {/* Recent Stock Movements */}
         <Card padding={false}>
-          <div className="flex items-center justify-between p-5 border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">Recent Movements</h2>
+          <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Recent Movements</h2>
             <Button variant="ghost" size="sm" onClick={() => navigate('/inventory/stock-movements')}>
               View All
             </Button>

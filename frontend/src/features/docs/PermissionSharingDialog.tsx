@@ -73,16 +73,16 @@ export default function PermissionSharingDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-md">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-md">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-900">Share "{fileName}"</h3>
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Share "{fileName}"</h3>
         </div>
 
         <div className="p-5 space-y-4">
           {/* Add people */}
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1.5">
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1.5">
               Add people or teams
             </label>
             <div className="flex gap-2">
@@ -90,13 +90,13 @@ export default function PermissionSharingDialog({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email or team name"
-                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
+                className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
                 onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
               />
               <select
                 value={permission}
                 onChange={(e) => setPermission(e.target.value as PermissionLevel)}
-                className="px-2 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none bg-white"
+                className="px-2 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none bg-white dark:bg-gray-800"
               >
                 <option value="view">Viewer</option>
                 <option value="comment">Commenter</option>
@@ -125,7 +125,7 @@ export default function PermissionSharingDialog({
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Hey, check out this document..."
-                className="mt-2 w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 resize-none"
+                className="mt-2 w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 resize-none"
                 rows={2}
               />
             )}
@@ -143,13 +143,13 @@ export default function PermissionSharingDialog({
                   return (
                     <div
                       key={r.id}
-                      className="flex items-center gap-2 p-2 bg-gray-50 rounded-[8px]"
+                      className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-950 rounded-[8px]"
                     >
                       <div className="w-8 h-8 rounded-full bg-[#51459d]/10 text-[#51459d] flex items-center justify-center text-xs font-bold shrink-0">
                         {r.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-700 truncate">{r.name}</p>
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{r.name}</p>
                         <p className="text-[10px] text-gray-400 truncate">{r.email}</p>
                       </div>
                       <select
@@ -177,14 +177,14 @@ export default function PermissionSharingDialog({
           )}
 
           {/* Link access */}
-          <div className="border-t border-gray-100 pt-4">
-            <label className="text-xs font-medium text-gray-700 block mb-2">
+          <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-2">
               Link access
             </label>
             <select
               value={linkAccess}
               onChange={(e) => setLinkAccess(e.target.value as typeof linkAccess)}
-              className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none bg-white"
+              className="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none bg-white dark:bg-gray-800"
             >
               <option value="restricted">Restricted - Only people added above</option>
               <option value="anyone_view">Anyone with the link can view</option>
@@ -195,7 +195,7 @@ export default function PermissionSharingDialog({
           {/* Copy link */}
           <button
             onClick={handleCopyLink}
-            className="w-full flex items-center justify-center gap-2 py-2 text-xs border border-gray-200 rounded-[8px] hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             {copied ? (
               <>
@@ -209,17 +209,17 @@ export default function PermissionSharingDialog({
                 <svg className="h-3.5 w-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
-                <span className="text-gray-600">Copy link</span>
+                <span className="text-gray-600 dark:text-gray-400">Copy link</span>
               </>
             )}
           </button>
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
+        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-[8px] transition-colors"
+            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px] transition-colors"
           >
             Cancel
           </button>

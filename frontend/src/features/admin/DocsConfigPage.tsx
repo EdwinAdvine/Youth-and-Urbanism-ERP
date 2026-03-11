@@ -38,7 +38,7 @@ function ServerTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">ONLYOFFICE Server Configuration</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">ONLYOFFICE Server Configuration</h2>
       <div className="space-y-4 max-w-lg">
         <Field label="ONLYOFFICE Server URL" value={form.onlyoffice_url} onChange={v => setForm({ ...form, onlyoffice_url: v })} />
         <Field label="JWT Secret" value={form.jwt_secret} onChange={v => setForm({ ...form, jwt_secret: v })} type="password" />
@@ -83,14 +83,14 @@ function TemplatesTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">System Document Templates</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">System Document Templates</h2>
       <div className="space-y-4 max-w-lg">
         {templates.length > 0 && (
           <div className="space-y-2">
             {templates.map((t, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-[10px] border border-gray-100 bg-gray-50">
+              <div key={i} className="flex items-center justify-between p-3 rounded-[10px] border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{t.name}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t.name}</p>
                   <p className="text-xs text-gray-500">{t.type} &mdash; {t.url}</p>
                 </div>
                 <button onClick={() => removeTemplate(i)} className="text-sm text-red-500 hover:text-red-700">Remove</button>
@@ -99,14 +99,14 @@ function TemplatesTab() {
           </div>
         )}
 
-        <div className="border-t border-gray-100 pt-4">
-          <p className="text-sm font-medium text-gray-700 mb-3">Add Template</p>
+        <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Add Template</p>
           <div className="space-y-3">
             <Field label="Template Name" value={newName} onChange={setNewName} placeholder="e.g. Invoice Template" />
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">Type</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
               <select value={newType} onChange={e => setNewType(e.target.value)}
-                className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors">
+                className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors">
                 {['docx', 'xlsx', 'pptx', 'odt', 'ods', 'odp'].map(t => <option key={t} value={t}>{t.toUpperCase()}</option>)}
               </select>
             </div>
@@ -143,7 +143,7 @@ function QuotasTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Document Storage Quotas</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Document Storage Quotas</h2>
       <div className="space-y-4 max-w-lg">
         <NumberField label="Default Storage Quota (MB)" value={form.default_storage_quota_mb} onChange={v => setForm({ ...form, default_storage_quota_mb: v })} />
         <NumberField label="Max Concurrent Editors" value={form.max_concurrent_editors} onChange={v => setForm({ ...form, max_concurrent_editors: v })} />
@@ -178,7 +178,7 @@ function FileTypesTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Allowed Document Types</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Allowed Document Types</h2>
       <div className="space-y-4 max-w-lg">
         <ListField label="Document Types" value={form.allowed_document_types} onChange={v => setForm({ ...form, allowed_document_types: v })} placeholder="e.g. docx" />
         <ListField label="Image Types" value={form.allowed_image_types} onChange={v => setForm({ ...form, allowed_image_types: v })} placeholder="e.g. png" />
@@ -198,9 +198,9 @@ function Field({ label, value, onChange, placeholder, type = 'text' }: {
 }) {
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
       <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" />
+        className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" />
     </div>
   )
 }
@@ -210,9 +210,9 @@ function NumberField({ label, value, onChange }: {
 }) {
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
       <input type="number" value={value} onChange={e => onChange(Number(e.target.value))}
-        className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" />
+        className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" />
     </div>
   )
 }
@@ -223,8 +223,8 @@ function Toggle({ label, checked, onChange }: {
   return (
     <label className="flex items-center gap-3 cursor-pointer">
       <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30 accent-primary" />
-      <span className="text-sm text-gray-700">{label}</span>
+        className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary/30 accent-primary" />
+      <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
     </label>
   )
 }
@@ -239,20 +239,20 @@ function ListField({ label, value, onChange, placeholder }: {
   }
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
       <div className="flex gap-2">
         <input value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), add())}
           placeholder={placeholder}
-          className="flex-1 rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" />
+          className="flex-1 rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" />
         <Button onClick={add} variant="secondary">Add</Button>
       </div>
       {value.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {value.map(item => (
-            <span key={item} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-xs text-gray-700">
+            <span key={item} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-900 text-xs text-gray-700 dark:text-gray-300">
               {item}
-              <button onClick={() => onChange(value.filter(v => v !== item))} className="text-gray-400 hover:text-gray-600">&times;</button>
+              <button onClick={() => onChange(value.filter(v => v !== item))} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">&times;</button>
             </span>
           ))}
         </div>
@@ -269,15 +269,15 @@ export default function DocsConfigPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Docs Administration</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Docs Administration</h1>
         <p className="text-sm text-gray-500 mt-1">Configure ONLYOFFICE document server, templates, quotas, and file type restrictions</p>
       </div>
 
-      <div className="flex gap-1 mb-6 border-b border-gray-100">
+      <div className="flex gap-1 mb-6 border-b border-gray-100 dark:border-gray-800">
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              tab === t.id ? 'text-primary border-primary' : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200'
+              tab === t.id ? 'text-primary border-primary' : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-200 dark:hover:border-gray-700'
             }`}>
             {t.label}
           </button>

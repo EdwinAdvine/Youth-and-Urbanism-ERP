@@ -45,7 +45,7 @@ export default function FormsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Forms</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Forms</h1>
           <p className="text-sm text-gray-500 mt-1">Create and manage forms, collect responses</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="w-full sm:w-auto min-h-[44px] sm:min-h-0">
@@ -68,7 +68,7 @@ export default function FormsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-gray-900">No forms yet</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">No forms yet</h2>
           <p className="text-sm text-gray-500 mt-1 mb-4">Create your first form to start collecting responses</p>
           <Button onClick={() => setShowCreate(true)} size="sm">Create Form</Button>
         </Card>
@@ -85,11 +85,11 @@ export default function FormsPage() {
                 onClick={() => navigate(`/forms/${form.id}/edit`)}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-900 line-clamp-1 group-hover:text-primary transition-colors">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 group-hover:text-primary transition-colors">
                     {form.title}
                   </h3>
                   <div className="flex items-center gap-1.5">
-                    {form.settings?.crm_lead_capture && (
+                    {!!form.settings?.crm_lead_capture && (
                       <Badge variant="info">Lead Capture</Badge>
                     )}
                     <Badge variant={form.is_published ? 'success' : 'default'}>
@@ -105,7 +105,7 @@ export default function FormsPage() {
                   <span>{new Date(form.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
-              <div className="border-t border-gray-100 px-5 py-2.5 flex items-center justify-end gap-2">
+              <div className="border-t border-gray-100 dark:border-gray-800 px-5 py-2.5 flex items-center justify-end gap-2">
                 <button
                   className="text-xs text-gray-400 hover:text-primary transition-colors"
                   onClick={() => navigate(`/forms/${form.id}/responses`)}
@@ -142,9 +142,9 @@ export default function FormsPage() {
             required
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400 resize-none"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400 resize-none"
               rows={3}
               placeholder="Optional description..."
               value={description}

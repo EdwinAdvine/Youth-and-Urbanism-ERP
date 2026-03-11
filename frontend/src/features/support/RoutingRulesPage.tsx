@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Card, Table, Modal, Input, Badge, toast } from '../../components/ui'
+import { Button, Card, Modal, Input, Badge, toast } from '../../components/ui'
 import {
   useRoutingRules,
   useCreateRoutingRule,
@@ -98,7 +98,7 @@ export default function RoutingRulesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Ticket Routing Rules</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Ticket Routing Rules</h1>
           <p className="text-sm text-gray-500 mt-1">
             Configure automatic ticket assignment and prioritization based on conditions.
             Rules are evaluated in priority order; the first match wins.
@@ -120,50 +120,52 @@ export default function RoutingRulesPage() {
         ) : rules.length === 0 ? (
           <p className="p-4 text-gray-500">No routing rules configured yet.</p>
         ) : (
-          <Table>
-            <thead>
-              <tr>
-                <th className="text-left p-3">Order</th>
-                <th className="text-left p-3">Name</th>
-                <th className="text-left p-3">Conditions</th>
-                <th className="text-left p-3">Assign To</th>
-                <th className="text-left p-3">Priority Override</th>
-                <th className="text-left p-3">Status</th>
-                <th className="text-left p-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rules.map((rule) => (
-                <tr key={rule.id} className="border-t">
-                  <td className="p-3 text-sm">{rule.priority_order}</td>
-                  <td className="p-3">
-                    <div className="font-medium text-sm">{rule.name}</div>
-                    {rule.description && (
-                      <div className="text-xs text-gray-500 mt-0.5">{rule.description}</div>
-                    )}
-                  </td>
-                  <td className="p-3 text-xs font-mono text-gray-600 max-w-xs truncate">
-                    {JSON.stringify(rule.conditions)}
-                  </td>
-                  <td className="p-3 text-sm">{rule.assign_to || '--'}</td>
-                  <td className="p-3 text-sm">{rule.priority_override || '--'}</td>
-                  <td className="p-3">
-                    <Badge variant={rule.is_active ? 'success' : 'default'}>
-                      {rule.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </td>
-                  <td className="p-3 space-x-2">
-                    <Button size="sm" variant="ghost" onClick={() => handleEdit(rule)}>
-                      Edit
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDelete(rule.id)}>
-                      Delete
-                    </Button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-gray-800">
+                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Order</th>
+                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</th>
+                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Conditions</th>
+                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Assign To</th>
+                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Priority Override</th>
+                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
+              </thead>
+              <tbody>
+                {rules.map((rule) => (
+                  <tr key={rule.id} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    <td className="p-3 text-sm">{rule.priority_order}</td>
+                    <td className="p-3">
+                      <div className="font-medium text-sm">{rule.name}</div>
+                      {rule.description && (
+                        <div className="text-xs text-gray-500 mt-0.5">{rule.description}</div>
+                      )}
+                    </td>
+                    <td className="p-3 text-xs font-mono text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                      {JSON.stringify(rule.conditions)}
+                    </td>
+                    <td className="p-3 text-sm">{rule.assign_to || '--'}</td>
+                    <td className="p-3 text-sm">{rule.priority_override || '--'}</td>
+                    <td className="p-3">
+                      <Badge variant={rule.is_active ? 'success' : 'default'}>
+                        {rule.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </td>
+                    <td className="p-3 space-x-2">
+                      <Button size="sm" variant="ghost" onClick={() => handleEdit(rule)}>
+                        Edit
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleDelete(rule.id)}>
+                        Delete
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
 
@@ -182,7 +184,7 @@ export default function RoutingRulesPage() {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Conditions (JSON)
               </label>
               <textarea

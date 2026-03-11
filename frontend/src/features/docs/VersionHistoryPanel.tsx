@@ -20,9 +20,9 @@ export default function VersionHistoryPanel({ fileId, onClose }: Props) {
   }
 
   return (
-    <div className="w-80 border-l border-gray-100 bg-white h-full overflow-y-auto">
-      <div className="flex items-center justify-between p-4 border-b border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-900">Version History</h3>
+    <div className="w-80 border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 h-full overflow-y-auto">
+      <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Version History</h3>
         {onClose && (
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -41,12 +41,12 @@ export default function VersionHistoryPanel({ fileId, onClose }: Props) {
           {versions.map((v, idx) => (
             <div
               key={v.id}
-              className="p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+              className="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
             >
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Version {v.version_number}
                     </span>
                     {idx === 0 && <Badge variant="primary">Current</Badge>}

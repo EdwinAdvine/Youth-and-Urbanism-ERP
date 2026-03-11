@@ -15,7 +15,7 @@ export default function ThreadView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mail Threads</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Mail Threads</h1>
           <p className="text-sm text-gray-500 mt-1">Gmail-style threaded conversation view</p>
         </div>
         <div className="flex gap-2">
@@ -76,9 +76,7 @@ function ThreadItem({
     <div>
       {/* Thread header */}
       <div
-        className={`flex items-center gap-4 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${
-          thread.has_unread ? 'bg-primary/5' : ''
-        }`}
+        className={`flex items-center gap-4 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${ thread.has_unread ? 'bg-primary/5' : '' }`}
         onClick={onToggle}
       >
         <div className="flex items-center gap-2 w-40 shrink-0">
@@ -124,7 +122,7 @@ function ThreadItem({
 
       {/* Expanded messages */}
       {expanded && thread.messages && (
-        <div className="border-t border-gray-100 bg-gray-50/50">
+        <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/50">
           {thread.messages.map((msg, idx) => (
             <MessageItem key={msg.id} message={msg} isLast={idx === thread.messages.length - 1} />
           ))}
@@ -138,7 +136,7 @@ function MessageItem({ message, isLast }: { message: MailThreadMessage; isLast: 
   const [collapsed, setCollapsed] = useState(!isLast)
 
   return (
-    <div className="px-6 py-3 border-b border-gray-100 last:border-0">
+    <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-800 last:border-0">
       <div
         className="flex items-center justify-between cursor-pointer"
         onClick={() => setCollapsed(!collapsed)}
@@ -148,7 +146,7 @@ function MessageItem({ message, isLast }: { message: MailThreadMessage; isLast: 
             {(message.from.name || message.from.email).charAt(0).toUpperCase()}
           </div>
           <div>
-            <span className={`text-sm ${!message.read ? 'font-semibold' : ''} text-gray-700`}>
+            <span className={`text-sm ${!message.read ? 'font-semibold' : ''} text-gray-700 dark:text-gray-300`}>
               {message.from.name || message.from.email}
             </span>
             {message.has_attachments && (
@@ -170,11 +168,11 @@ function MessageItem({ message, isLast }: { message: MailThreadMessage; isLast: 
           </div>
           {message.html_body ? (
             <div
-              className="text-sm text-gray-600 prose prose-sm max-w-none"
+              className="text-sm text-gray-600 dark:text-gray-400 prose prose-sm max-w-none"
               dangerouslySetInnerHTML={{ __html: message.html_body }}
             />
           ) : (
-            <p className="text-sm text-gray-600 whitespace-pre-wrap">{message.text_body}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{message.text_body}</p>
           )}
         </div>
       )}

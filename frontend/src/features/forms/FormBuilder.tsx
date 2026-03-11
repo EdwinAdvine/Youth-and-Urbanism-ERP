@@ -130,7 +130,7 @@ export default function FormBuilder() {
   if (!form) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <h2 className="text-lg font-semibold text-gray-900">Form not found</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Form not found</h2>
         <Button variant="ghost" className="mt-4" onClick={() => navigate('/forms')}>Back to Forms</Button>
       </div>
     )
@@ -143,14 +143,14 @@ export default function FormBuilder() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/forms')}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{form.title}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{form.title}</h1>
             <p className="text-sm text-gray-500 mt-0.5">Form Builder</p>
           </div>
         </div>
@@ -172,7 +172,7 @@ export default function FormBuilder() {
         {/* Left Panel - Settings */}
         <div className="space-y-4">
           <Card>
-            <h2 className="text-sm font-semibold text-gray-900 mb-4">Form Settings</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Form Settings</h2>
             <div className="space-y-3">
               <Input
                 label="Title"
@@ -180,9 +180,9 @@ export default function FormBuilder() {
                 onChange={(e) => setEditTitle(e.target.value)}
               />
               <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
                 <textarea
-                  className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400 resize-none"
+                  className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400 resize-none"
                   rows={3}
                   value={editDesc}
                   onChange={(e) => setEditDesc(e.target.value)}
@@ -211,10 +211,10 @@ export default function FormBuilder() {
           </Card>
 
           <Card>
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Publish</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Publish</h2>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
                   {form.is_published ? 'Form is live' : 'Form is in draft'}
                 </p>
                 <p className="text-xs text-gray-400 mt-0.5">
@@ -224,7 +224,7 @@ export default function FormBuilder() {
               <button
                 onClick={handleTogglePublish}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  form.is_published ? 'bg-[#6fd943]' : 'bg-gray-200'
+                  form.is_published ? 'bg-[#6fd943]' : 'bg-gray-200 dark:bg-gray-700'
                 }`}
               >
                 <span
@@ -241,7 +241,7 @@ export default function FormBuilder() {
         <div className="lg:col-span-2 space-y-4">
           <Card>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-gray-900">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 Fields ({form.fields?.length ?? 0})
               </h2>
               <Button size="sm" variant="outline" onClick={() => setShowAddField(!showAddField)}>
@@ -254,7 +254,7 @@ export default function FormBuilder() {
 
             {/* Add Field Form */}
             {showAddField && (
-              <form onSubmit={handleAddField} className="mb-5 p-4 bg-gray-50 rounded-[10px] space-y-3">
+              <form onSubmit={handleAddField} className="mb-5 p-4 bg-gray-50 dark:bg-gray-950 rounded-[10px] space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input
                     label="Label"
@@ -265,9 +265,9 @@ export default function FormBuilder() {
                     required
                   />
                   <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Type</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
                     <select
-                      className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                       value={fieldType}
                       onChange={(e) => setFieldType(e.target.value as FormField['field_type'])}
                     >
@@ -293,9 +293,9 @@ export default function FormBuilder() {
                     id="field-required"
                     checked={fieldRequired}
                     onChange={(e) => setFieldRequired(e.target.checked)}
-                    className="rounded border-gray-300 text-primary focus:ring-primary/30"
+                    className="rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary/30"
                   />
-                  <label htmlFor="field-required" className="text-sm text-gray-700">Required</label>
+                  <label htmlFor="field-required" className="text-sm text-gray-700 dark:text-gray-300">Required</label>
                 </div>
 
                 <div className="flex justify-end gap-2">
@@ -324,7 +324,7 @@ export default function FormBuilder() {
                   .map((field, idx) => (
                     <div
                       key={field.id}
-                      className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-[10px] hover:border-gray-200 transition-colors"
+                      className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
                     >
                       {/* Drag handle */}
                       <div className="text-gray-300 cursor-grab shrink-0">
@@ -344,7 +344,7 @@ export default function FormBuilder() {
                       </span>
 
                       {/* Label */}
-                      <span className="text-sm font-medium text-gray-900 flex-1 min-w-0 truncate">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">
                         {field.label}
                       </span>
 

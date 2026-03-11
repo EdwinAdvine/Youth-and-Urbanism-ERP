@@ -91,9 +91,7 @@ export default function FolderSidebar({ selectedFolderId, onSelectFolder, classN
           {/* All Notes */}
           <button
             onClick={() => onSelectFolder(null)}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-              selectedFolderId === null ? 'bg-primary/10 text-primary font-medium' : 'text-gray-600 hover:bg-gray-50'
-            }`}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${ selectedFolderId === null ? 'bg-primary/10 text-primary font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800' }`}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -106,9 +104,7 @@ export default function FolderSidebar({ selectedFolderId, onSelectFolder, classN
             <div key={folder.id} className="group relative">
               <button
                 onClick={() => onSelectFolder(folder.id)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  selectedFolderId === folder.id ? 'bg-primary/10 text-primary font-medium' : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${ selectedFolderId === folder.id ? 'bg-primary/10 text-primary font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800' }`}
               >
                 <div
                   className="w-3 h-3 rounded-sm shrink-0"
@@ -120,7 +116,7 @@ export default function FolderSidebar({ selectedFolderId, onSelectFolder, classN
               <div className="absolute right-1 top-1 hidden group-hover:flex items-center gap-0.5">
                 <button
                   onClick={(e) => openEdit(folder, e)}
-                  className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                  className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600"
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -128,7 +124,7 @@ export default function FolderSidebar({ selectedFolderId, onSelectFolder, classN
                 </button>
                 <button
                   onClick={(e) => handleDelete(folder, e)}
-                  className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-red-500"
+                  className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-red-500"
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -144,8 +140,8 @@ export default function FolderSidebar({ selectedFolderId, onSelectFolder, classN
         <div className="space-y-4">
           <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Folder name" />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Color</label>
-            <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-10 h-10 rounded border border-gray-200 cursor-pointer" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Color</label>
+            <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-10 h-10 rounded border border-gray-200 dark:border-gray-700 cursor-pointer" />
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>

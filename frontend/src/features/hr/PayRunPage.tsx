@@ -86,7 +86,7 @@ export default function PayRunPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pay Runs</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Pay Runs</h1>
           <p className="text-sm text-gray-500 mt-1">Generate, review, approve, and process payroll batches</p>
         </div>
         <Button size="sm" onClick={() => { setPeriodStart(''); setPeriodEnd(''); setStructureId(''); setShowGenerate(true) }}>
@@ -96,8 +96,8 @@ export default function PayRunPage() {
 
       {/* Pay Runs List */}
       <Card padding={false}>
-        <div className="p-4 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Pay Run History</h2>
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Pay Run History</h2>
         </div>
         {!payRuns || payRuns.length === 0 ? (
           <div className="text-center py-12 text-gray-400 text-sm">No pay runs yet. Generate one to get started.</div>
@@ -106,11 +106,11 @@ export default function PayRunPage() {
             {payRuns.map((pr) => (
               <div
                 key={pr.id}
-                className={`flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${selectedId === pr.id ? 'bg-primary/5' : ''}`}
+                className={`flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors ${selectedId === pr.id ? 'bg-primary/5' : ''}`}
                 onClick={() => setSelectedId(pr.id)}
               >
                 <div>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {new Date(pr.period_start).toLocaleDateString()} - {new Date(pr.period_end).toLocaleDateString()}
                   </p>
                   <p className="text-xs text-gray-500">
@@ -145,7 +145,7 @@ export default function PayRunPage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-base font-semibold text-gray-900">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
                     Pay Run: {new Date(detail.period_start).toLocaleDateString()} - {new Date(detail.period_end).toLocaleDateString()}
                   </h3>
                   <p className="text-xs text-gray-500">
@@ -177,7 +177,7 @@ export default function PayRunPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-100">
+                      <tr className="border-b border-gray-100 dark:border-gray-800">
                         <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Employee</th>
                         <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Gross</th>
                         <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Deductions</th>
@@ -187,11 +187,11 @@ export default function PayRunPage() {
                     </thead>
                     <tbody>
                       {detail.payslips.map((p) => (
-                        <tr key={p.id} className="border-b border-gray-50">
-                          <td className="py-2 px-3 text-gray-700 font-mono text-xs">{p.employee_id.slice(0, 8)}...</td>
+                        <tr key={p.id} className="border-b border-gray-50 dark:border-gray-800">
+                          <td className="py-2 px-3 text-gray-700 dark:text-gray-300 font-mono text-xs">{p.employee_id.slice(0, 8)}...</td>
                           <td className="py-2 px-3 text-right text-green-600">{formatCurrency(p.gross_pay)}</td>
                           <td className="py-2 px-3 text-right text-red-600">{formatCurrency(p.deductions_total)}</td>
-                          <td className="py-2 px-3 text-right font-medium text-gray-900">{formatCurrency(p.net_pay)}</td>
+                          <td className="py-2 px-3 text-right font-medium text-gray-900 dark:text-gray-100">{formatCurrency(p.net_pay)}</td>
                           <td className="py-2 px-3 text-center">
                             <Badge variant={STATUS_BADGE[p.status] ?? 'default'}>{p.status}</Badge>
                           </td>
@@ -214,9 +214,9 @@ export default function PayRunPage() {
             <Input label="Period End" type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Salary Structure (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Salary Structure (optional)</label>
             <select
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
               value={structureId}
               onChange={(e) => setStructureId(e.target.value)}
             >

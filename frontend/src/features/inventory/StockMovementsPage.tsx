@@ -133,7 +133,7 @@ export default function StockMovementsPage() {
     {
       key: 'item_name',
       label: 'Item',
-      render: (row: StockMovement) => <span className="font-medium text-gray-900">{row.item_name ?? row.item_id}</span>,
+      render: (row: StockMovement) => <span className="font-medium text-gray-900 dark:text-gray-100">{row.item_name ?? row.item_id}</span>,
     },
     {
       key: 'warehouse_name',
@@ -161,7 +161,7 @@ export default function StockMovementsPage() {
       key: 'notes',
       label: 'Notes',
       render: (row: StockMovement) => row.notes
-        ? <span className="text-sm text-gray-600 truncate max-w-[200px] block">{row.notes}</span>
+        ? <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[200px] block">{row.notes}</span>
         : <span className="text-gray-400">—</span>,
     },
     {
@@ -176,7 +176,7 @@ export default function StockMovementsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Stock Movements</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Stock Movements</h1>
           <p className="text-sm text-gray-500 mt-1">Track all inventory inflows and outflows</p>
         </div>
         <Button onClick={openModal}>
@@ -259,16 +259,16 @@ export default function StockMovementsPage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
               placeholder="Optional notes or reason for adjustment"
             />
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" size="sm" onClick={() => setModalOpen(false)}>Cancel</Button>
             <Button size="sm" onClick={handleSubmit} loading={createMovement.isPending}>
               Record Movement

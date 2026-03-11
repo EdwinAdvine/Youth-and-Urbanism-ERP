@@ -45,7 +45,7 @@ export default function RolesPage() {
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Roles & Permissions</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Roles & Permissions</h1>
         <p className="text-gray-500 text-sm mt-1">System roles and their access levels</p>
       </div>
 
@@ -60,7 +60,7 @@ export default function RolesPage() {
                 </span>
               </div>
             </div>
-            <p className="text-sm text-gray-600 mb-3">{role.desc}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{role.desc}</p>
             <div className="space-y-1">
               {role.permissions.map((perm) => (
                 <div key={perm} className="flex items-center gap-1.5 text-xs text-gray-500">
@@ -77,11 +77,11 @@ export default function RolesPage() {
 
       {/* Permission matrix */}
       <Card>
-        <h2 className="text-base font-semibold text-gray-900 mb-4">Permission Matrix</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Permission Matrix</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100">
+              <tr className="border-b border-gray-100 dark:border-gray-800">
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Module</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Action</th>
                 {ROLES.map((r) => (
@@ -94,8 +94,8 @@ export default function RolesPage() {
             <tbody>
               {MODULES.flatMap((mod) =>
                 ACTIONS.map((action, ai) => (
-                  <tr key={`${mod}-${action}`} className={`border-b border-gray-50 ${ai === 0 ? 'bg-gray-50/50' : ''}`}>
-                    <td className="py-2 px-4 text-gray-700 font-medium">{ai === 0 ? mod : ''}</td>
+                  <tr key={`${mod}-${action}`} className={`border-b border-gray-50 dark:border-gray-800 ${ai === 0 ? 'bg-gray-50/50 dark:bg-gray-950/50' : ''}`}>
+                    <td className="py-2 px-4 text-gray-700 dark:text-gray-300 font-medium">{ai === 0 ? mod : ''}</td>
                     <td className="py-2 px-4 text-gray-500">{action}</td>
                     {ROLES.map((role) => {
                       const has = role.key === 'superadmin' ||

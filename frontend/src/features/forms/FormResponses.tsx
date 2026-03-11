@@ -66,7 +66,7 @@ export default function FormResponses() {
   if (!form) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <h2 className="text-lg font-semibold text-gray-900">Form not found</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Form not found</h2>
         <Button variant="ghost" className="mt-4" onClick={() => navigate('/forms')}>Back to Forms</Button>
       </div>
     )
@@ -88,7 +88,7 @@ export default function FormResponses() {
             </svg>
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{form.title}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{form.title}</h1>
             <p className="text-sm text-gray-500 mt-0.5">
               {responses?.length ?? 0} response{(responses?.length ?? 0) !== 1 ? 's' : ''}
             </p>
@@ -126,7 +126,7 @@ export default function FormResponses() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
+                <tr className="border-b border-gray-100 dark:border-gray-800">
                   <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     #
                   </th>
@@ -148,12 +148,12 @@ export default function FormResponses() {
               </thead>
               <tbody>
                 {responses.map((resp, idx) => (
-                  <tr key={resp.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                  <tr key={resp.id} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                     <td className="py-3 px-4 text-gray-400">{idx + 1}</td>
                     {fields.map((f) => {
                       const val = resp.answers?.[f.id] ?? resp.answers?.[f.label] ?? ''
                       return (
-                        <td key={f.id} className="py-3 px-4 text-gray-700 max-w-[200px] truncate">
+                        <td key={f.id} className="py-3 px-4 text-gray-700 dark:text-gray-300 max-w-[200px] truncate">
                           {Array.isArray(val) ? val.join(', ') : String(val)}
                         </td>
                       )
@@ -181,26 +181,26 @@ export default function FormResponses() {
       {/* Create Task from Response dialog */}
       {taskDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => { setTaskDialog(null); setTaskProjectId(''); setTaskTitle('') }}>
-          <div className="bg-white rounded-[10px] shadow-xl w-96 p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">Create Task from Response</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-xl w-96 p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Create Task from Response</h3>
             <p className="text-xs text-gray-400 mb-3">Create a project task from this form response.</p>
             <div className="space-y-3 mb-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Project ID</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Project ID</label>
                 <input
                   value={taskProjectId}
                   onChange={(e) => setTaskProjectId(e.target.value)}
                   placeholder="Enter project UUID"
-                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                  className="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Task Title</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Task Title</label>
                 <input
                   value={taskTitle}
                   onChange={(e) => setTaskTitle(e.target.value)}
                   placeholder="Task title"
-                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                  className="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
                 />
               </div>
             </div>

@@ -28,7 +28,7 @@ export default function SearchPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Mail Search</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Mail Search</h1>
         <p className="text-sm text-gray-500 mt-1">Search emails with advanced filters</p>
       </div>
 
@@ -61,7 +61,7 @@ export default function SearchPage() {
                   onChange={(e) => setHasAttachment(e.target.checked)}
                   className="rounded border-gray-300 text-primary focus:ring-primary"
                 />
-                <span className="text-sm text-gray-700">Has attachment</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">Has attachment</span>
               </label>
             </div>
           </div>
@@ -79,7 +79,7 @@ export default function SearchPage() {
             </div>
           ) : (
             <>
-              <div className="px-4 py-3 border-b border-gray-100">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                 <span className="text-sm text-gray-500">{data.total} result{data.total !== 1 ? 's' : ''}</span>
               </div>
               <div className="divide-y divide-gray-50">
@@ -99,7 +99,7 @@ function SearchResultItem({ message }: { message: MailThreadMessage }) {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setExpanded(!expanded)}>
+    <div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer" onClick={() => setExpanded(!expanded)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
@@ -125,9 +125,9 @@ function SearchResultItem({ message }: { message: MailThreadMessage }) {
             To: {message.to.map((t) => t.name || t.email).join(', ')}
           </div>
           {message.html_body ? (
-            <div className="text-sm text-gray-600 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: message.html_body }} />
+            <div className="text-sm text-gray-600 dark:text-gray-400 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: message.html_body }} />
           ) : (
-            <p className="text-sm text-gray-600 whitespace-pre-wrap line-clamp-6">{message.text_body}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap line-clamp-6">{message.text_body}</p>
           )}
         </div>
       )}

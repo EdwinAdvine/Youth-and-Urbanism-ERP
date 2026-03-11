@@ -36,7 +36,7 @@ export default function RecentDocsWidget({ limit = 8, className }: Props) {
 
   return (
     <Card className={className}>
-      <h3 className="text-base font-semibold text-gray-900 mb-4">Recent Documents</h3>
+      <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Documents</h3>
       {isLoading ? (
         <div className="flex items-center justify-center py-8"><Spinner /></div>
       ) : !docs || docs.length === 0 ? (
@@ -45,18 +45,18 @@ export default function RecentDocsWidget({ limit = 8, className }: Props) {
         <div className="space-y-1">
           {docs.map((doc) => {
             const ext = doc.extension.replace('.', '').toLowerCase()
-            const color = TYPE_COLORS[ext] ?? 'text-gray-600 bg-gray-50'
+            const color = TYPE_COLORS[ext] ?? 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-950'
             const label = TYPE_LABELS[ext] ?? ext.toUpperCase().slice(0, 3)
             return (
               <div
                 key={doc.id}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
               >
                 <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center text-xs font-bold shrink-0`}>
                   {label}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-700 truncate">{doc.name}</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{doc.name}</p>
                   <p className="text-xs text-gray-400">{timeAgo(doc.last_accessed || doc.updated_at)}</p>
                 </div>
               </div>

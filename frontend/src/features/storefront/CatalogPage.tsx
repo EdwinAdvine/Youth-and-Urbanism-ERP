@@ -33,14 +33,14 @@ export default function CatalogPage() {
         {data?.products.map((p) => (
           <div
             key={p.id}
-            className="bg-white rounded-[10px] border overflow-hidden flex flex-col"
+            className="bg-white dark:bg-gray-800 rounded-[10px] border overflow-hidden flex flex-col"
           >
             {/* Image placeholder */}
             <Link to={`/store/${storeSlug}/product/${p.id}`}>
               {p.images?.[0] ? (
                 <img src={p.images[0]} alt={p.display_name} className="w-full h-48 object-cover" />
               ) : (
-                <div className="w-full h-48 bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
+                <div className="w-full h-48 bg-gray-100 dark:bg-gray-900 flex items-center justify-center text-gray-400 text-xs">
                   No image
                 </div>
               )}

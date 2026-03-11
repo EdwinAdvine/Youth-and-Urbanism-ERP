@@ -21,3 +21,4 @@ export const AnalyticsPage    = lazyWithPreload(() => import('../features/analyt
 export const FormsPage        = lazyWithPreload(() => import('../features/forms/FormsPage'))
 export const AdminDashboard   = lazyWithPreload(() => import('../features/admin/AdminDashboard'))
 export const SettingsPage     = lazyWithPreload(() => import('../features/settings/SettingsPage'))
+export const HandbookDashboard = lazyWithPreload(() => import('../features/handbook/HandbookPage'))

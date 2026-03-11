@@ -100,7 +100,7 @@ export default function TemplatesPage() {
                 <Badge variant="info">{tmpl.task_templates.length} tasks</Badge>
                 <Badge variant="primary">{tmpl.milestone_templates.length} milestones</Badge>
               </div>
-              <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
                 <span className="text-xs text-gray-400">
                   {new Date(tmpl.created_at).toLocaleDateString()}
                 </span>

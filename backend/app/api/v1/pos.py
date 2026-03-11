@@ -878,7 +878,7 @@ async def list_products(
     db: DBSession,
     category: str | None = Query(None, description="Filter by category"),
     skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=1000),
 ) -> dict[str, Any]:
     """Return inventory items with their stock levels for the POS product grid."""
     # Get active session warehouse

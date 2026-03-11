@@ -140,7 +140,7 @@ export default function CashManagementPage() {
       key: 'created_at',
       label: 'Date / Time',
       render: (row: POSCashMovement) => (
-        <span className="text-sm text-gray-600">{formatDateTime(row.created_at)}</span>
+        <span className="text-sm text-gray-600 dark:text-gray-400">{formatDateTime(row.created_at)}</span>
       ),
     },
     {
@@ -168,7 +168,7 @@ export default function CashManagementPage() {
       key: 'reason',
       label: 'Reason',
       render: (row: POSCashMovement) => (
-        <span className="text-sm text-gray-700">{row.reason}</span>
+        <span className="text-sm text-gray-700 dark:text-gray-300">{row.reason}</span>
       ),
     },
     {
@@ -182,7 +182,7 @@ export default function CashManagementPage() {
       key: 'created_by_name',
       label: 'Recorded By',
       render: (row: POSCashMovement) => (
-        <span className="text-sm text-gray-600">{row.created_by_name || '-'}</span>
+        <span className="text-sm text-gray-600 dark:text-gray-400">{row.created_by_name || '-'}</span>
       ),
     },
   ]
@@ -192,7 +192,7 @@ export default function CashManagementPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cash Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Cash Management</h1>
           <p className="text-sm text-gray-500 mt-1">
             Track cash drawer movements and reconciliation
           </p>
@@ -235,7 +235,7 @@ export default function CashManagementPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <p className="text-sm text-gray-500">Opening Balance</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
             {session ? formatCurrency(session.opening_balance) : '-'}
           </p>
         </Card>
@@ -250,9 +250,7 @@ export default function CashManagementPage() {
         <Card>
           <p className="text-sm text-gray-500">Net Movement</p>
           <p
-            className={`text-2xl font-bold mt-1 ${
-              netMovement >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}
+            className={`text-2xl font-bold mt-1 ${ netMovement >= 0 ? 'text-green-600' : 'text-red-600' }`}
           >
             {netMovement >= 0 ? '+' : ''}
             {formatCurrency(netMovement)}
@@ -262,10 +260,10 @@ export default function CashManagementPage() {
 
       {/* Expected Drawer Balance */}
       {session && (
-        <Card className="bg-gray-50">
+        <Card className="bg-gray-50 dark:bg-gray-950">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-700">Expected Drawer Balance</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Expected Drawer Balance</p>
               <p className="text-xs text-gray-500 mt-0.5">
                 Opening balance + cash in - cash out (excluding sales)
               </p>
@@ -279,8 +277,8 @@ export default function CashManagementPage() {
 
       {/* Cash Movements Table */}
       <Card padding={false}>
-        <div className="px-4 py-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700">Cash Movements</h2>
+        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Cash Movements</h2>
         </div>
         <Table<POSCashMovement>
           columns={columns}

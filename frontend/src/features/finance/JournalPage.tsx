@@ -267,7 +267,7 @@ export default function JournalPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
                     <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">Account</th>
                     <th className="text-right py-2 px-2 text-xs font-semibold text-gray-500 uppercase w-28">Debit</th>
                     <th className="text-right py-2 px-2 text-xs font-semibold text-gray-500 uppercase w-28">Credit</th>
@@ -277,12 +277,12 @@ export default function JournalPage() {
                 </thead>
                 <tbody>
                   {lines.map((line, i) => (
-                    <tr key={i} className="border-b border-gray-50">
+                    <tr key={i} className="border-b border-gray-50 dark:border-gray-800">
                       <td className="py-2 px-2">
                         <select
                           value={line.account_id}
                           onChange={(e) => updateLine(i, 'account_id', e.target.value)}
-                          className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                          className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         >
                           {accountOptionsWithEmpty.map((o) => (
                             <option key={o.value} value={o.value}>{o.label}</option>
@@ -297,7 +297,7 @@ export default function JournalPage() {
                           min={0}
                           step={0.01}
                           placeholder="0.00"
-                          className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                          className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         />
                       </td>
                       <td className="py-2 px-2">
@@ -308,7 +308,7 @@ export default function JournalPage() {
                           min={0}
                           step={0.01}
                           placeholder="0.00"
-                          className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                          className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         />
                       </td>
                       <td className="py-2 px-2">
@@ -316,7 +316,7 @@ export default function JournalPage() {
                           value={line.description}
                           onChange={(e) => updateLine(i, 'description', e.target.value)}
                           placeholder="Line memo"
-                          className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                          className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         />
                       </td>
                       <td className="py-2 px-1">
@@ -335,7 +335,7 @@ export default function JournalPage() {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t border-gray-200">
+                  <tr className="border-t border-gray-200 dark:border-gray-700">
                     <td className="py-2 px-2 text-right font-semibold text-sm">Totals</td>
                     <td className="py-2 px-2 text-right font-semibold text-sm">{formatCurrency(totalDebits)}</td>
                     <td className="py-2 px-2 text-right font-semibold text-sm">{formatCurrency(totalCredits)}</td>

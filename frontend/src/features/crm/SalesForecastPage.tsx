@@ -86,7 +86,7 @@ export default function SalesForecastPage() {
                     )
                   })}
                 </div>
-                <div className="flex items-center justify-center gap-6 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-center gap-6 pt-4 border-t border-gray-100 dark:border-gray-800">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-gray-200 rounded" />
                     <span className="text-xs text-gray-500">Expected</span>
@@ -109,7 +109,7 @@ export default function SalesForecastPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100">
+                    <tr className="border-b border-gray-100 dark:border-gray-800">
                       <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Quarter</th>
                       <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Expected</th>
                       <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Weighted</th>
@@ -117,7 +117,7 @@ export default function SalesForecastPage() {
                   </thead>
                   <tbody>
                     {forecast.quarterly_forecast.map((q) => (
-                      <tr key={q.quarter} className="border-b border-gray-50">
+                      <tr key={q.quarter} className="border-b border-gray-50 dark:border-gray-800">
                         <td className="py-2 px-3 font-medium">{q.quarter}</td>
                         <td className="py-2 px-3 text-right">{formatCurrency(q.expected_value)}</td>
                         <td className="py-2 px-3 text-right font-semibold text-primary">{formatCurrency(q.weighted_value)}</td>
@@ -135,7 +135,7 @@ export default function SalesForecastPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
                     <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Month</th>
                     <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Deals</th>
                     <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Expected</th>
@@ -144,7 +144,7 @@ export default function SalesForecastPage() {
                 </thead>
                 <tbody>
                   {forecast.monthly_forecast.map((m) => (
-                    <tr key={m.month} className="border-b border-gray-50">
+                    <tr key={m.month} className="border-b border-gray-50 dark:border-gray-800">
                       <td className="py-2 px-3 font-medium">{m.month}</td>
                       <td className="py-2 px-3 text-right">{m.deal_count}</td>
                       <td className="py-2 px-3 text-right">{formatCurrency(m.expected_value)}</td>

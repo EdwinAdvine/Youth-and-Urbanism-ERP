@@ -20,7 +20,7 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
 
   if (isLoading) {
     return (
-      <div className="w-96 border-l border-gray-100 bg-white flex items-center justify-center">
+      <div className="w-96 border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 flex items-center justify-center">
         <Spinner />
       </div>
     )
@@ -28,7 +28,7 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
 
   if (!file) {
     return (
-      <div className="w-96 border-l border-gray-100 bg-white flex items-center justify-center text-gray-400 text-sm">
+      <div className="w-96 border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 flex items-center justify-center text-gray-400 text-sm">
         File not found
       </div>
     )
@@ -40,10 +40,10 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
   const isText = file.content_type.startsWith('text/') || file.content_type.includes('json') || file.content_type.includes('xml')
 
   return (
-    <div className="w-96 border-l border-gray-100 bg-white flex flex-col h-full">
+    <div className="w-96 border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
-        <h3 className="text-sm font-semibold text-gray-900 truncate">{file.name}</h3>
+      <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{file.name}</h3>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="ghost" onClick={handleDownload} loading={downloadFile.isPending}>
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -63,7 +63,7 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
       {/* Preview */}
       <div className="flex-1 overflow-auto p-4">
         {isImage ? (
-          <div className="rounded-[10px] overflow-hidden border border-gray-100">
+          <div className="rounded-[10px] overflow-hidden border border-gray-100 dark:border-gray-800">
             <img
               src={`/api/v1/drive/file/${file.id}/preview`}
               alt={file.name}
@@ -74,7 +74,7 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
             />
           </div>
         ) : isPdf ? (
-          <div className="rounded-[10px] overflow-hidden border border-gray-100 h-[500px]">
+          <div className="rounded-[10px] overflow-hidden border border-gray-100 dark:border-gray-800 h-[500px]">
             <iframe
               src={`/api/v1/drive/file/${file.id}/preview`}
               className="w-full h-full"
@@ -82,9 +82,9 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
             />
           </div>
         ) : isText ? (
-          <div className="rounded-[10px] border border-gray-100 p-4 bg-gray-50 max-h-[500px] overflow-auto">
+          <div className="rounded-[10px] border border-gray-100 dark:border-gray-800 p-4 bg-gray-50 dark:bg-gray-950 max-h-[500px] overflow-auto">
             <p className="text-xs text-gray-400 mb-2">Text preview</p>
-            <pre className="text-sm text-gray-600 whitespace-pre-wrap font-mono">
+            <pre className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap font-mono">
               Content preview requires loading from the server.
             </pre>
           </div>
@@ -102,10 +102,10 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
       </div>
 
       {/* File info */}
-      <div className="p-4 border-t border-gray-100 shrink-0 space-y-2">
+      <div className="p-4 border-t border-gray-100 dark:border-gray-800 shrink-0 space-y-2">
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-500">Size</span>
-          <span className="text-gray-700">{formatFileSize(file.size)}</span>
+          <span className="text-gray-700 dark:text-gray-300">{formatFileSize(file.size)}</span>
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-500">Type</span>
@@ -113,11 +113,11 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-500">Modified</span>
-          <span className="text-gray-700">{new Date(file.updated_at).toLocaleDateString()}</span>
+          <span className="text-gray-700 dark:text-gray-300">{new Date(file.updated_at).toLocaleDateString()}</span>
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-500">Location</span>
-          <span className="text-gray-700 truncate max-w-[180px]">{file.folder_path || '/'}</span>
+          <span className="text-gray-700 dark:text-gray-300 truncate max-w-[180px]">{file.folder_path || '/'}</span>
         </div>
       </div>
     </div>

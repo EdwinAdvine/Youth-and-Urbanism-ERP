@@ -62,20 +62,20 @@ function WorkOrderSelector({ onSelect }: { onSelect: (wo: WorkOrder) => void }) 
           <button
             key={wo.id}
             onClick={() => onSelect(wo)}
-            className="w-full bg-white rounded-[10px] border border-gray-200 p-4 text-left hover:border-primary active:bg-primary/5 active:scale-[0.98] transition-all"
+            className="w-full bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-primary active:bg-primary/5 active:scale-[0.98] transition-all"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-bold text-primary">{wo.wo_number}</span>
               <Badge variant={STATUS_BADGE[wo.status]}>{wo.status.replace('_', ' ')}</Badge>
             </div>
-            <p className="text-sm text-gray-700 mb-1">{wo.finished_item_name ?? 'Unknown Product'}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">{wo.finished_item_name ?? 'Unknown Product'}</p>
             <div className="flex items-center gap-3 text-xs text-gray-500">
               <span>{wo.completed_quantity}/{wo.planned_quantity} completed</span>
               {wo.rejected_quantity > 0 && (
                 <span className="text-red-500">{wo.rejected_quantity} rejected</span>
               )}
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
+            <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-full h-2 mt-2">
               <div
                 className="h-full rounded-full bg-primary transition-all"
                 style={{ width: `${Math.min(100, progress)}%` }}
@@ -149,12 +149,12 @@ function ProductionForm({
   return (
     <div className="space-y-4">
       {/* Work Order info */}
-      <div className="bg-white rounded-[10px] border border-gray-200 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-bold text-primary">{workOrder.wo_number}</span>
           <Badge variant={STATUS_BADGE[workOrder.status]}>{workOrder.status.replace('_', ' ')}</Badge>
         </div>
-        <p className="text-lg font-semibold text-gray-900">{workOrder.finished_item_name ?? 'Product'}</p>
+        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{workOrder.finished_item_name ?? 'Product'}</p>
         {workOrder.bom_name && (
           <p className="text-xs text-gray-500 mt-1">BOM: {workOrder.bom_name}</p>
         )}
@@ -163,7 +163,7 @@ function ProductionForm({
             <span>{workOrder.completed_quantity} of {workOrder.planned_quantity} completed</span>
             <span>{progress.toFixed(0)}%</span>
           </div>
-          <div className="w-full bg-gray-100 rounded-full h-3">
+          <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-full h-3">
             <div
               className="h-full rounded-full bg-primary transition-all"
               style={{ width: `${Math.min(100, progress)}%` }}
@@ -189,7 +189,7 @@ function ProductionForm({
       {workOrder.status === 'in_progress' && (
         <>
           {/* Completed quantity */}
-          <div className="bg-white rounded-[10px] border border-green-200 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-green-200 p-4">
             <label className="block text-sm font-medium text-green-700 mb-3">Completed Quantity</label>
             <div className="flex items-center justify-center gap-4">
               <button
@@ -226,7 +226,7 @@ function ProductionForm({
           </div>
 
           {/* Rejected quantity */}
-          <div className="bg-white rounded-[10px] border border-red-200 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-red-200 p-4">
             <label className="block text-sm font-medium text-red-700 mb-3">Rejected Quantity</label>
             <div className="flex items-center justify-center gap-4">
               <button
@@ -252,13 +252,13 @@ function ProductionForm({
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes (optional)</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Production notes, issues, etc."
               rows={3}
-              className="w-full rounded-[10px] border border-gray-200 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-gray-400 min-h-[56px]"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-gray-400 min-h-[56px]"
             />
           </div>
 
@@ -296,18 +296,18 @@ export default function MobileProductionEntry() {
   const [selectedWO, setSelectedWO] = useState<WorkOrder | null>(null)
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center gap-3">
         <button
           onClick={() => selectedWO ? setSelectedWO(null) : navigate('/manufacturing/work-orders')}
-          className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-[10px] text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+          className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-[10px] text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 transition-colors"
         >
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="text-lg font-bold text-gray-900">
+        <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">
           {selectedWO ? 'Production Entry' : 'Select Work Order'}
         </h1>
       </div>

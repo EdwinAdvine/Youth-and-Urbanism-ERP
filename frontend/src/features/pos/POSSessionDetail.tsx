@@ -97,14 +97,14 @@ export default function POSSessionDetail() {
       key: 'customer_name',
       label: 'Customer',
       render: (row: POSTransactionData) => (
-        <span className="text-gray-700">{row.customer_name || 'Walk-in'}</span>
+        <span className="text-gray-700 dark:text-gray-300">{row.customer_name || 'Walk-in'}</span>
       ),
     },
     {
       key: 'subtotal',
       label: 'Subtotal',
       render: (row: POSTransactionData) => (
-        <span className="text-gray-600">{formatCurrency(row.subtotal)}</span>
+        <span className="text-gray-600 dark:text-gray-400">{formatCurrency(row.subtotal)}</span>
       ),
     },
     {
@@ -119,7 +119,7 @@ export default function POSSessionDetail() {
       key: 'total',
       label: 'Total',
       render: (row: POSTransactionData) => (
-        <span className="font-semibold text-gray-900">{formatCurrency(row.total)}</span>
+        <span className="font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(row.total)}</span>
       ),
     },
     {
@@ -153,7 +153,7 @@ export default function POSSessionDetail() {
               </button>
               <button
                 onClick={() => setVoidConfirmId(null)}
-                className="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-[6px] hover:bg-gray-200"
+                className="px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-[6px] hover:bg-gray-200 dark:hover:bg-gray-600"
               >
                 No
               </button>
@@ -184,7 +184,7 @@ export default function POSSessionDetail() {
             Back
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{session.session_number}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{session.session_number}</h1>
             <p className="text-sm text-gray-500 mt-1">Session Detail and Reconciliation</p>
           </div>
         </div>
@@ -200,19 +200,19 @@ export default function POSSessionDetail() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Opened</p>
-          <p className="text-sm font-semibold text-gray-900 mt-1">{formatDateTime(session.opened_at)}</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mt-1">{formatDateTime(session.opened_at)}</p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Closed</p>
-          <p className="text-sm font-semibold text-gray-900 mt-1">{formatDateTime(session.closed_at)}</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mt-1">{formatDateTime(session.closed_at)}</p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Opening Balance</p>
-          <p className="text-lg font-bold text-gray-900 mt-1">{formatCurrency(session.opening_balance)}</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">{formatCurrency(session.opening_balance)}</p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Closing Balance</p>
-          <p className="text-lg font-bold text-gray-900 mt-1">{formatCurrency(session.closing_balance)}</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">{formatCurrency(session.closing_balance)}</p>
         </Card>
       </div>
 
@@ -220,15 +220,15 @@ export default function POSSessionDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Sales Summary */}
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Sales Summary</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Sales Summary</h2>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Total Sales</span>
-              <span className="text-sm font-semibold text-gray-900">{formatCurrency(totalSales)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Total Sales</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(totalSales)}</span>
             </div>
             {Object.entries(txnCounts).map(([status, count]) => (
               <div key={status} className="flex justify-between">
-                <span className="text-sm text-gray-600 capitalize">{status}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">{status}</span>
                 <Badge variant={TXN_STATUS_BADGE[status] ?? 'default'}>{count}</Badge>
               </div>
             ))}
@@ -240,7 +240,7 @@ export default function POSSessionDetail() {
 
         {/* Payment Method Breakdown */}
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Payment Methods</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Payment Methods</h2>
           <div className="space-y-3">
             {Object.entries(paymentMethods).map(([method, amount]) => {
               const totalNum = parseFloat(totalSales) || 1
@@ -254,10 +254,10 @@ export default function POSSessionDetail() {
               return (
                 <div key={method}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700 capitalize">{method.replace(/_/g, ' ')}</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">{method.replace(/_/g, ' ')}</span>
                     <span className="text-sm text-gray-500">{formatCurrency(amount)} ({pct}%)</span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
+                  <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
                     <div
                       className={cn('h-2 rounded-full transition-all', colors[method] || 'bg-gray-400')}
                       style={{ width: `${pct}%` }}
@@ -274,27 +274,27 @@ export default function POSSessionDetail() {
 
         {/* Cash Reconciliation */}
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Cash Reconciliation</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Cash Reconciliation</h2>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Opening Balance</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Opening Balance</span>
               <span className="text-sm font-medium">{formatCurrency(session.opening_balance)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Expected Balance</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Expected Balance</span>
               <span className="text-sm font-medium">{formatCurrency(session.expected_balance)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Actual Closing</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Actual Closing</span>
               <span className="text-sm font-medium">{formatCurrency(session.closing_balance)}</span>
             </div>
-            <div className="border-t border-gray-100 pt-3 flex justify-between">
-              <span className="text-sm font-semibold text-gray-900">Difference</span>
+            <div className="border-t border-gray-100 dark:border-gray-800 pt-3 flex justify-between">
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Difference</span>
               {difference !== null ? (
                 <span
                   className={cn(
                     'text-sm font-bold',
-                    difference > 0 ? 'text-green-600' : difference < 0 ? 'text-red-600' : 'text-gray-600'
+                    difference > 0 ? 'text-green-600' : difference < 0 ? 'text-red-600' : 'text-gray-600 dark:text-gray-400'
                   )}
                 >
                   {difference > 0 ? '+' : ''}{formatCurrency(difference)}
@@ -321,8 +321,8 @@ export default function POSSessionDetail() {
       {/* Session Notes */}
       {session.notes && (
         <Card className="mb-8">
-          <h2 className="text-base font-semibold text-gray-900 mb-2">Notes</h2>
-          <p className="text-sm text-gray-600 whitespace-pre-wrap">{session.notes}</p>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">Notes</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{session.notes}</p>
         </Card>
       )}
 
@@ -335,8 +335,8 @@ export default function POSSessionDetail() {
 
       {/* Transactions Table */}
       <Card padding={false}>
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
             Transactions
             {txnData && <span className="text-sm font-normal text-gray-500 ml-2">({txnData.total} total)</span>}
           </h2>

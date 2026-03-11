@@ -22,7 +22,7 @@ export default function CustomerOrderDetailPage() {
         &larr; Back to Orders
       </button>
 
-      <div className="bg-white rounded-[10px] border p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] border p-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold">Order #{order.order_number}</h1>
           <span className="text-xs text-gray-400">
@@ -39,18 +39,12 @@ export default function CustomerOrderDetailPage() {
                 return (
                   <div key={step} className="flex flex-col items-center flex-1">
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        reached
-                          ? 'bg-[#51459d] text-white'
-                          : 'bg-gray-200 text-gray-400'
-                      }`}
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${ reached ? 'bg-[#51459d] text-white' : 'bg-gray-200 text-gray-400' }`}
                     >
                       {i + 1}
                     </div>
                     <span
-                      className={`mt-1 text-[10px] capitalize ${
-                        reached ? 'text-[#51459d] font-medium' : 'text-gray-400'
-                      }`}
+                      className={`mt-1 text-[10px] capitalize ${ reached ? 'text-[#51459d] font-medium' : 'text-gray-400' }`}
                     >
                       {step}
                     </span>

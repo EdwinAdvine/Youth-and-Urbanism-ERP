@@ -13,7 +13,7 @@ export default function PerformancePage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Supplier Performance</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Supplier Performance</h1>
           <p className="text-sm text-gray-500 mt-1">Analytics on supplier reliability and efficiency</p>
         </div>
         <div className="flex gap-3 items-end">
@@ -24,7 +24,7 @@ export default function PerformancePage() {
 
       {/* Performance Table */}
       <Card>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Supplier Performance Scores</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Supplier Performance Scores</h2>
         {perfLoading ? (
           <div className="flex justify-center py-12"><Spinner /></div>
         ) : !performance || performance.length === 0 ? (
@@ -33,7 +33,7 @@ export default function PerformancePage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
+                <tr className="border-b border-gray-100 dark:border-gray-800">
                   <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Supplier</th>
                   <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Overall</th>
                   <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Quality</th>
@@ -49,8 +49,8 @@ export default function PerformancePage() {
                 {performance.map((p) => {
                   const scoreColor = (s: number) => s >= 4 ? 'text-green-600' : s >= 3 ? 'text-yellow-600' : 'text-red-600'
                   return (
-                    <tr key={p.supplier_id} className="border-b border-gray-50 hover:bg-gray-50">
-                      <td className="py-3 px-4 font-medium text-gray-900">{p.supplier_name}</td>
+                    <tr key={p.supplier_id} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <td className="py-3 px-4 font-medium text-gray-900 dark:text-gray-100">{p.supplier_name}</td>
                       <td className={`py-3 px-4 text-center font-bold ${scoreColor(p.overall_score)}`}>{p.overall_score.toFixed(1)}</td>
                       <td className={`py-3 px-4 text-center ${scoreColor(p.quality_score)}`}>{p.quality_score.toFixed(1)}</td>
                       <td className={`py-3 px-4 text-center ${scoreColor(p.delivery_score)}`}>{p.delivery_score.toFixed(1)}</td>
@@ -78,7 +78,7 @@ export default function PerformancePage() {
 
       {/* Lead Times */}
       <Card>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Lead Time Analysis</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Lead Time Analysis</h2>
         {leadLoading ? (
           <div className="flex justify-center py-8"><Spinner /></div>
         ) : !leadTimes || leadTimes.length === 0 ? (
@@ -90,10 +90,10 @@ export default function PerformancePage() {
               return (
                 <div key={lt.supplier_id} className="space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span className="font-medium text-gray-900">{lt.supplier_name}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{lt.supplier_name}</span>
                     <span className="text-gray-500">{lt.order_count} orders</span>
                   </div>
-                  <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="relative h-6 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
                     {/* Min-max range */}
                     <div
                       className="absolute h-full bg-blue-100 rounded-full"

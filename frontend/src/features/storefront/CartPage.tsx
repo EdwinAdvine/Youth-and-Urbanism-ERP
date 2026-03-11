@@ -35,7 +35,7 @@ export default function CartPage() {
     <div className="max-w-3xl mx-auto">
       <h1 className="text-xl font-bold mb-6">Shopping Cart</h1>
 
-      <div className="bg-white rounded-[10px] border divide-y">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] border divide-y">
         {cart.items.map((item) => (
           <div key={item.id} className="p-4 flex items-center gap-4">
             {/* Info */}
@@ -50,7 +50,7 @@ export default function CartPage() {
                 onClick={() =>
                   updateItem.mutate({ cartItemId: item.id, quantity: Math.max(1, item.quantity - 1) })
                 }
-                className="px-2 py-1 text-sm hover:bg-gray-50"
+                className="px-2 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 -
               </button>
@@ -59,7 +59,7 @@ export default function CartPage() {
                 onClick={() =>
                   updateItem.mutate({ cartItemId: item.id, quantity: item.quantity + 1 })
                 }
-                className="px-2 py-1 text-sm hover:bg-gray-50"
+                className="px-2 py-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 +
               </button>
@@ -82,7 +82,7 @@ export default function CartPage() {
       </div>
 
       {/* Summary */}
-      <div className="mt-4 bg-white rounded-[10px] border p-4 flex items-center justify-between">
+      <div className="mt-4 bg-white dark:bg-gray-800 rounded-[10px] border p-4 flex items-center justify-between">
         <span className="font-medium">Subtotal</span>
         <span className="text-lg font-bold text-[#51459d]">${cart.subtotal.toFixed(2)}</span>
       </div>

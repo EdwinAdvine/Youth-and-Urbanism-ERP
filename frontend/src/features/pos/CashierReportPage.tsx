@@ -122,7 +122,7 @@ export default function CashierReportPage() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="rounded-[10px] border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -131,7 +131,7 @@ export default function CashierReportPage() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="rounded-[10px] border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
         </div>
@@ -208,7 +208,7 @@ export default function CashierReportPage() {
 
       {/* Detailed Table */}
       <Card padding={false}>
-        <div className="px-4 py-3 border-b border-gray-100">
+        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-sm font-semibold text-gray-700">Cashier Details</h2>
         </div>
         <Table<CashierReportData>

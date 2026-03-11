@@ -50,7 +50,7 @@ export default function ExportMenu({ noteId, noteTitle }: ExportMenuProps) {
     <div ref={menuRef} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-[6px] transition-colors"
+        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] transition-colors"
         title="Export note"
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -59,7 +59,7 @@ export default function ExportMenu({ noteId, noteTitle }: ExportMenuProps) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-30 bg-white border border-gray-200 rounded-[10px] shadow-lg py-1 w-48">
+        <div className="absolute right-0 top-full mt-1 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[10px] shadow-lg py-1 w-48">
           <p className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
             Export as
           </p>
@@ -68,7 +68,7 @@ export default function ExportMenu({ noteId, noteTitle }: ExportMenuProps) {
               key={fmt.id}
               onClick={() => handleExport(fmt.id)}
               disabled={exportNote.isPending}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
             >
               <span>{fmt.icon}</span>
               <span>{fmt.label}</span>

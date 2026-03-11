@@ -81,7 +81,7 @@ export default function DocLinker({ fileId, fileName, onLinked }: DocLinkerProps
     <div className="relative inline-block">
       <button
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1.5 rounded-[10px] border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:border-[#51459d] hover:text-[#51459d]"
+        className="inline-flex items-center gap-1.5 rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm transition-colors hover:border-[#51459d] hover:text-[#51459d]"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -101,19 +101,19 @@ export default function DocLinker({ fileId, fileName, onLinked }: DocLinkerProps
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-80 rounded-[10px] border border-gray-200 bg-white p-4 shadow-lg">
-          <h4 className="mb-3 text-sm font-semibold text-gray-900">
+        <div className="absolute right-0 z-50 mt-2 w-80 rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-lg">
+          <h4 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
             Link Document to Task
           </h4>
 
           {/* Project selector */}
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
             Project
           </label>
           <select
             value={selectedProject}
             onChange={(e) => setSelectedProject(e.target.value)}
-            className="mb-3 w-full rounded-[10px] border border-gray-300 px-3 py-2 text-sm focus:border-[#51459d] focus:outline-none focus:ring-1 focus:ring-[#51459d]"
+            className="mb-3 w-full rounded-[10px] border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-[#51459d] focus:outline-none focus:ring-1 focus:ring-[#51459d]"
           >
             <option value="">Select a project...</option>
             {projects.map((p) => (
@@ -124,14 +124,14 @@ export default function DocLinker({ fileId, fileName, onLinked }: DocLinkerProps
           </select>
 
           {/* Task selector */}
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
             Task
           </label>
           <select
             value={selectedTask}
             onChange={(e) => setSelectedTask(e.target.value)}
             disabled={!selectedProject}
-            className="mb-3 w-full rounded-[10px] border border-gray-300 px-3 py-2 text-sm focus:border-[#51459d] focus:outline-none focus:ring-1 focus:ring-[#51459d] disabled:cursor-not-allowed disabled:bg-gray-50"
+            className="mb-3 w-full rounded-[10px] border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-[#51459d] focus:outline-none focus:ring-1 focus:ring-[#51459d] disabled:cursor-not-allowed disabled:bg-gray-50 dark:disabled:bg-gray-950"
           >
             <option value="">
               {selectedProject ? 'Select a task...' : 'Choose a project first'}
@@ -163,7 +163,7 @@ export default function DocLinker({ fileId, fileName, onLinked }: DocLinkerProps
                 setError('')
                 setSuccess('')
               }}
-              className="rounded-[10px] px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700"
+              className="rounded-[10px] px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             >
               Cancel
             </button>

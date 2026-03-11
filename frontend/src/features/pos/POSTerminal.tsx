@@ -66,29 +66,29 @@ function PaymentModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-[10px] shadow-xl w-full max-w-md p-4 sm:p-6 mx-4 sm:mx-0">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Payment</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-xl w-full max-w-md p-4 sm:p-6 mx-4 sm:mx-0">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Payment</h2>
 
         <div className="text-center mb-6">
           <p className="text-sm text-gray-500">Total Due</p>
-          <p className="text-3xl font-bold text-gray-900">{formatCurrency(total)}</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(total)}</p>
         </div>
 
         {/* Customer Name */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name (optional)</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Customer Name (optional)</label>
           <input
             type="text"
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
             placeholder="Walk-in Customer"
-            className="w-full rounded-[10px] border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full rounded-[10px] border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
         </div>
 
         {/* Payment Method */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Method</label>
           <div className="grid grid-cols-3 gap-2">
             {[
               { value: 'cash', label: 'Cash' },
@@ -102,7 +102,7 @@ function PaymentModal({
                   'px-3 py-2 min-h-[48px] rounded-[10px] border text-sm font-medium transition-colors active:scale-95',
                   method === m.value
                     ? 'bg-primary text-white border-primary'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 active:bg-gray-100'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-700'
                 )}
               >
                 {m.label}
@@ -113,13 +113,13 @@ function PaymentModal({
 
         {/* Amount */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Amount Tendered</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount Tendered</label>
           <input
             type="number"
             step="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full rounded-[10px] border border-gray-300 px-3 py-2 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full rounded-[10px] border border-gray-300 dark:border-gray-600 px-3 py-2 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           {method === 'cash' && (
             <div className="flex gap-2 mt-2">
@@ -127,7 +127,7 @@ function PaymentModal({
                 <button
                   key={qa}
                   onClick={() => setAmount(qa.toFixed(2))}
-                  className="px-3 py-2 min-h-[44px] rounded-lg bg-gray-100 text-sm font-medium hover:bg-gray-200 active:bg-gray-300 transition-colors"
+                  className="px-3 py-2 min-h-[44px] rounded-lg bg-gray-100 dark:bg-gray-700 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 transition-colors"
                 >
                   {formatCurrency(qa)}
                 </button>
@@ -139,13 +139,13 @@ function PaymentModal({
         {/* Reference for card/mobile */}
         {method !== 'cash' && (
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Reference #</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reference #</label>
             <input
               type="text"
               value={reference}
               onChange={(e) => setReference(e.target.value)}
               placeholder="Transaction reference"
-              className="w-full rounded-[10px] border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full rounded-[10px] border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
         )}
@@ -194,11 +194,11 @@ function ProductCard({
       className={cn(
         'flex flex-col items-center justify-center p-3 sm:p-4 rounded-[10px] border transition-all text-center h-full min-h-[120px] sm:min-h-[120px]',
         outOfStock
-          ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed'
-          : 'bg-white border-gray-200 hover:border-primary hover:shadow-md cursor-pointer active:scale-95'
+          ? 'bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-700 opacity-60 cursor-not-allowed'
+          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-primary hover:shadow-md cursor-pointer active:scale-95'
       )}
     >
-      <p className="text-sm font-semibold text-gray-900 line-clamp-2">{product.name}</p>
+      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">{product.name}</p>
       <p className="text-xs text-gray-500 mt-1">{product.sku}</p>
       <p className="text-base font-bold text-primary mt-2">{formatCurrency(product.selling_price)}</p>
       <Badge
@@ -316,7 +316,7 @@ export default function POSTerminal() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">No Active Session</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">No Active Session</h2>
         <p className="text-gray-500 mb-4">You need to open a POS session before making sales.</p>
         <Button onClick={() => navigate('/pos/sessions')}>Open Session</Button>
       </div>
@@ -328,7 +328,7 @@ export default function POSTerminal() {
       {/* Left: Product Grid */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="p-4 border-b border-gray-200 bg-white">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex items-center gap-3 mb-3">
             <div className="flex-1 relative">
               <svg
@@ -344,7 +344,7 @@ export default function POSTerminal() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search products by name or SKU..."
-                className="w-full pl-10 pr-4 py-2 rounded-[10px] border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full pl-10 pr-4 py-2 rounded-[10px] border border-gray-300 dark:border-gray-600 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <Badge variant="info">Session: {session.session_number}</Badge>
@@ -357,7 +357,7 @@ export default function POSTerminal() {
                 onClick={() => setSelectedCategory(null)}
                 className={cn(
                   'px-3 py-1.5 sm:py-1 rounded-full text-xs font-medium transition-colors min-h-[44px] sm:min-h-0 active:scale-95',
-                  !selectedCategory ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  !selectedCategory ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                 )}
               >
                 All
@@ -368,7 +368,7 @@ export default function POSTerminal() {
                   onClick={() => setSelectedCategory(cat)}
                   className={cn(
                     'px-3 py-1.5 sm:py-1 rounded-full text-xs font-medium transition-colors min-h-[44px] sm:min-h-0 active:scale-95',
-                    selectedCategory === cat ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    selectedCategory === cat ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                   )}
                 >
                   {cat}
@@ -400,10 +400,10 @@ export default function POSTerminal() {
       </div>
 
       {/* Right: Cart Sidebar */}
-      <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-gray-200 bg-gray-50 flex flex-col max-h-[50vh] lg:max-h-none">
+      <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 flex flex-col max-h-[50vh] lg:max-h-none">
         {/* Cart Header */}
-        <div className="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
             Cart
             {cart.length > 0 && (
               <span className="ml-2 text-sm font-normal text-gray-500">
@@ -431,11 +431,11 @@ export default function POSTerminal() {
             cart.map((item) => (
               <div
                 key={item.product.id}
-                className="bg-white rounded-[10px] border border-gray-200 p-3"
+                className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 p-3"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">{item.product.name}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{item.product.name}</p>
                     <p className="text-xs text-gray-500">{formatCurrency(item.product.selling_price)} each</p>
                   </div>
                   <button
@@ -451,7 +451,7 @@ export default function POSTerminal() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                      className="w-9 h-9 sm:w-7 sm:h-7 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
+                      className="w-9 h-9 sm:w-7 sm:h-7 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
                       -
                     </button>
@@ -459,12 +459,12 @@ export default function POSTerminal() {
                     <button
                       onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
                       disabled={item.quantity >= item.product.stock_on_hand}
-                      className="w-9 h-9 sm:w-7 sm:h-7 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                      className="w-9 h-9 sm:w-7 sm:h-7 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
                     >
                       +
                     </button>
                   </div>
-                  <p className="text-sm font-bold text-gray-900">
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
                     {formatCurrency(parseFloat(item.product.selling_price) * item.quantity - item.discount)}
                   </p>
                 </div>
@@ -474,12 +474,12 @@ export default function POSTerminal() {
         </div>
 
         {/* Cart Footer / Totals */}
-        <div className="p-4 border-t border-gray-200 bg-white space-y-3">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-3">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Subtotal</span>
+            <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
             <span className="font-medium">{formatCurrency(subtotal)}</span>
           </div>
-          <div className="flex justify-between text-lg font-bold border-t border-gray-100 pt-3">
+          <div className="flex justify-between text-lg font-bold border-t border-gray-100 dark:border-gray-800 pt-3">
             <span>Total</span>
             <span className="text-primary">{formatCurrency(total)}</span>
           </div>

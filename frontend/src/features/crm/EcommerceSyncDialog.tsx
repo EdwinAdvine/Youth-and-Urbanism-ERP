@@ -100,15 +100,15 @@ export function ImportFromEcommerceDialog({ open, onClose }: ImportProps) {
             <p className="text-sm font-medium text-green-800">Import complete</p>
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="rounded-[10px] bg-gray-50 p-3">
+            <div className="rounded-[10px] bg-gray-50 dark:bg-gray-950 p-3">
               <p className="text-2xl font-bold text-primary">{result.imported}</p>
               <p className="text-xs text-gray-500">New contacts</p>
             </div>
-            <div className="rounded-[10px] bg-gray-50 p-3">
+            <div className="rounded-[10px] bg-gray-50 dark:bg-gray-950 p-3">
               <p className="text-2xl font-bold text-info">{result.linked}</p>
               <p className="text-xs text-gray-500">Linked existing</p>
             </div>
-            <div className="rounded-[10px] bg-gray-50 p-3">
+            <div className="rounded-[10px] bg-gray-50 dark:bg-gray-950 p-3">
               <p className="text-2xl font-bold text-gray-400">{result.skipped}</p>
               <p className="text-xs text-gray-500">Skipped</p>
             </div>

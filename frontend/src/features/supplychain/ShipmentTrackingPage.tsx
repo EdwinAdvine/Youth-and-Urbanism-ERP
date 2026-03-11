@@ -53,10 +53,10 @@ export default function ShipmentTrackingPage() {
   if (error) return <div className="p-6 text-danger">Failed to load shipments</div>
 
   const columns = [
-    { key: 'shipment_number', label: 'Shipment #', render: (r: Shipment) => <span className="font-mono font-medium text-gray-900">{r.shipment_number}</span> },
+    { key: 'shipment_number', label: 'Shipment #', render: (r: Shipment) => <span className="font-mono font-medium text-gray-900 dark:text-gray-100">{r.shipment_number}</span> },
     { key: 'origin', label: 'Origin', render: (r: Shipment) => <span className="text-sm">{r.origin}</span> },
     { key: 'destination', label: 'Destination', render: (r: Shipment) => <span className="text-sm">{r.destination}</span> },
-    { key: 'carrier', label: 'Carrier', render: (r: Shipment) => <span className="text-sm text-gray-600">{r.carrier || '-'}</span> },
+    { key: 'carrier', label: 'Carrier', render: (r: Shipment) => <span className="text-sm text-gray-600 dark:text-gray-400">{r.carrier || '-'}</span> },
     { key: 'tracking', label: 'Tracking #', render: (r: Shipment) => <span className="text-sm font-mono text-gray-500">{r.tracking_number || '-'}</span> },
     { key: 'status', label: 'Status', render: (r: Shipment) => <Badge variant={statusColors[r.status] || 'default'}>{r.status.replace(/_/g, ' ')}</Badge> },
     { key: 'eta', label: 'ETA', render: (r: Shipment) => <span className="text-sm text-gray-500">{r.estimated_arrival ? new Date(r.estimated_arrival).toLocaleDateString() : '-'}</span> },
@@ -75,7 +75,7 @@ export default function ShipmentTrackingPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Shipment Tracking</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shipment Tracking</h1>
           <p className="text-sm text-gray-500 mt-1">Track and manage shipments</p>
         </div>
         <div className="flex gap-3">
@@ -99,7 +99,7 @@ export default function ShipmentTrackingPage() {
       {/* Tracking Timeline */}
       {trackingId && (
         <Card>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Shipment Timeline</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Shipment Timeline</h2>
           {eventsLoading ? (
             <div className="flex justify-center py-8"><Spinner /></div>
           ) : !events || events.length === 0 ? (
@@ -109,11 +109,9 @@ export default function ShipmentTrackingPage() {
               <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-gray-200" />
               {events.map((ev, i) => (
                 <div key={ev.id} className="relative pb-6 last:pb-0">
-                  <div className={`absolute left-[-1.25rem] w-3 h-3 rounded-full border-2 ${
-                    i === 0 ? 'bg-primary border-primary' : 'bg-white border-gray-300'
-                  }`} />
+                  <div className={`absolute left-[-1.25rem] w-3 h-3 rounded-full border-2 ${ i === 0 ? 'bg-primary border-primary' : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600' }`} />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-900">{ev.status}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{ev.status}</p>
                     {ev.location && <p className="text-xs text-gray-500">{ev.location}</p>}
                     <p className="text-xs text-gray-400">{ev.description}</p>
                     <p className="text-xs text-gray-400 mt-1">{new Date(ev.timestamp).toLocaleString()}</p>

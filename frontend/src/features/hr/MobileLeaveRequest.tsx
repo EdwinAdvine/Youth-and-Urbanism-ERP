@@ -60,7 +60,7 @@ export default function MobileLeaveRequest() {
       {leaveBalance && (
         <div className="grid grid-cols-3 gap-2">
           <Card className="text-center p-3">
-            <p className="text-2xl font-bold text-gray-900">{leaveBalance.annual_allocation}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{leaveBalance.annual_allocation}</p>
             <p className="text-[10px] text-gray-500 uppercase tracking-wide mt-0.5">Total</p>
           </Card>
           <Card className="text-center p-3">
@@ -87,7 +87,7 @@ export default function MobileLeaveRequest() {
         </Button>
       ) : (
         <Card>
-          <h3 className="text-base font-semibold text-gray-900 mb-4">New Leave Request</h3>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">New Leave Request</h3>
           <form onSubmit={handleCreate} className="space-y-4">
             <Select
               label="Leave Type"
@@ -124,15 +124,15 @@ export default function MobileLeaveRequest() {
 
             {dayCount > 0 && (
               <div className="bg-primary/5 rounded-[10px] px-3 py-2 text-sm">
-                <span className="text-gray-600">Duration: </span>
+                <span className="text-gray-600 dark:text-gray-400">Duration: </span>
                 <span className="font-semibold text-primary">{dayCount} day{dayCount > 1 ? 's' : ''}</span>
               </div>
             )}
 
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">Reason</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reason</label>
               <textarea
-                className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[88px]"
+                className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[88px]"
                 required
                 placeholder="Briefly describe the reason for your leave..."
                 value={form.reason}
@@ -164,15 +164,15 @@ export default function MobileLeaveRequest() {
       {/* Recent Requests */}
       {(recentLeaves?.items ?? []).length > 0 && (
         <Card>
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Recent Requests</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Recent Requests</h3>
           <div className="space-y-3">
             {(recentLeaves?.items ?? []).map((leave) => (
               <div
                 key={leave.id}
-                className="flex items-start justify-between py-2 border-b border-gray-50 last:border-0"
+                className="flex items-start justify-between py-2 border-b border-gray-50 dark:border-gray-800 last:border-0"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 capitalize">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">
                     {leave.leave_type.replace('_', ' ')}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">

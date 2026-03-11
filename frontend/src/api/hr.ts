@@ -178,8 +178,8 @@ export function useEmployees(params: { page?: number; limit?: number; department
   return useQuery({
     queryKey: ['hr', 'employees', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<Employee>>('/hr/employees', { params })
-      return data
+      const { data } = await apiClient.get<any>('/hr/employees', { params })
+      return { total: data.total ?? 0, items: data.employees ?? data.items ?? [] } as PaginatedResponse<Employee>
     },
   })
 }
@@ -249,8 +249,8 @@ export function useLeaveRequests(params: { page?: number; limit?: number; status
   return useQuery({
     queryKey: ['hr', 'leave-requests', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<LeaveRequest>>('/hr/leave-requests', { params })
-      return data
+      const { data } = await apiClient.get<any>('/hr/leave-requests', { params })
+      return { total: data.total ?? 0, items: data.leave_requests ?? data.items ?? [] } as PaginatedResponse<LeaveRequest>
     },
   })
 }
@@ -307,8 +307,8 @@ export function useAttendance(params: { page?: number; limit?: number; employee_
   return useQuery({
     queryKey: ['hr', 'attendance', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<AttendanceRecord>>('/hr/attendance', { params })
-      return data
+      const { data } = await apiClient.get<any>('/hr/attendance', { params })
+      return { total: data.total ?? 0, items: data.attendance ?? data.records ?? data.items ?? [] } as PaginatedResponse<AttendanceRecord>
     },
   })
 }
@@ -447,8 +447,8 @@ export function usePayslips(params?: {
   return useQuery({
     queryKey: ['hr', 'payslips', params],
     queryFn: async () => {
-      const { data } = await apiClient.get<PaginatedResponse<Payslip>>('/hr/payslips', { params })
-      return data
+      const { data } = await apiClient.get<any>('/hr/payslips', { params })
+      return { total: data.total ?? 0, items: data.payslips ?? data.items ?? [] } as PaginatedResponse<Payslip>
     },
   })
 }

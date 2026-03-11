@@ -126,12 +126,12 @@ export default function TaskDetail({ task, projectId, open, onClose }: TaskDetai
 
         {/* Description */}
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Description</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm min-h-[44px] focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+            className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm min-h-[44px] focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
             placeholder="Task description..."
           />
         </div>
@@ -153,12 +153,12 @@ export default function TaskDetail({ task, projectId, open, onClose }: TaskDetai
 
         {/* Dependencies Section - collapsible on mobile */}
         {task && (
-          <div className="border-t border-gray-100 pt-3">
+          <div className="border-t border-gray-100 dark:border-gray-800 pt-3">
             <button
               onClick={() => setShowDependencies(!showDependencies)}
               className="flex items-center justify-between w-full text-left sm:pointer-events-none min-h-[44px] sm:min-h-0"
             >
-              <h3 className="text-sm font-semibold text-gray-900">Dependencies</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Dependencies</h3>
               <svg
                 className={`h-4 w-4 text-gray-400 transition-transform sm:hidden ${showDependencies ? 'rotate-180' : ''}`}
                 fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -173,12 +173,12 @@ export default function TaskDetail({ task, projectId, open, onClose }: TaskDetai
         )}
 
         {/* Time Log Section - collapsible on mobile */}
-        <div className="border-t border-gray-100 pt-3">
+        <div className="border-t border-gray-100 dark:border-gray-800 pt-3">
           <button
             onClick={() => setShowTimeLog(!showTimeLog)}
             className="flex items-center justify-between w-full text-left sm:pointer-events-none min-h-[44px] sm:min-h-0"
           >
-            <h3 className="text-sm font-semibold text-gray-900">Log Time</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Log Time</h3>
             <svg
               className={`h-4 w-4 text-gray-400 transition-transform sm:hidden ${showTimeLog ? 'rotate-180' : ''}`}
               fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -202,7 +202,7 @@ export default function TaskDetail({ task, projectId, open, onClose }: TaskDetai
         </div>
 
         {/* Actions - stacked on mobile */}
-        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-100 gap-3">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-100 dark:border-gray-800 gap-3">
           <Button variant="danger" size="sm" onClick={handleDelete} loading={deleteTask.isPending} className="min-h-[44px] w-full sm:w-auto">
             Delete Task
           </Button>

@@ -3,6 +3,13 @@ import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface NoteLinkedItem {
+  type: string
+  id: string
+  title: string
+  module?: string
+}
+
 export interface Note {
   id: string
   title: string
@@ -11,6 +18,7 @@ export interface Note {
   is_pinned: boolean
   shared_with: string[]
   is_shared: boolean
+  linked_items?: NoteLinkedItem[] | null
   created_at: string
   updated_at: string
 }

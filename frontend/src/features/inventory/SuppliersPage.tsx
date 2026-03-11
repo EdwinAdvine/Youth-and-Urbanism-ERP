@@ -83,7 +83,7 @@ export default function SuppliersPage() {
       label: 'Supplier',
       render: (s: Supplier) => (
         <div>
-          <p className="font-medium text-gray-900">{s.name}</p>
+          <p className="font-medium text-gray-900 dark:text-gray-100">{s.name}</p>
           {s.contact_person && <p className="text-xs text-gray-400">Contact: {s.contact_person}</p>}
         </div>
       ),
@@ -135,7 +135,7 @@ export default function SuppliersPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Suppliers</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Suppliers</h1>
           <p className="text-sm text-gray-500 mt-1">Manage your supplier directory</p>
         </div>
         <Button onClick={openCreate}>Add Supplier</Button>
@@ -170,9 +170,9 @@ export default function SuppliersPage() {
           <Input label="Address" value={form.address ?? ''} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} />
           <Input label="Payment Terms" placeholder="e.g., Net 30, COD" value={form.payment_terms ?? ''} onChange={(e) => setForm((p) => ({ ...p, payment_terms: e.target.value }))} />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={3}
               value={form.notes ?? ''}
               onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}

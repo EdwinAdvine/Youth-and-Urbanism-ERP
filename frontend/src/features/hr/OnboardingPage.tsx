@@ -75,7 +75,7 @@ export default function OnboardingPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Employee Onboarding</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Employee Onboarding</h1>
         <p className="text-sm text-gray-500 mt-1">Step-by-step wizard for onboarding new employees</p>
       </div>
 
@@ -84,9 +84,7 @@ export default function OnboardingPage() {
         {STEPS.map((s, i) => (
           <div key={s} className="flex items-center gap-2">
             <div
-              className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold transition-colors ${
-                i <= step ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'
-              }`}
+              className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold transition-colors ${ i <= step ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400' }`}
             >
               {i < step ? '✓' : i + 1}
             </div>
@@ -100,7 +98,7 @@ export default function OnboardingPage() {
         {/* Step 0: Personal Details */}
         {step === 0 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Employee Details</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Employee Details</h2>
             <div className="grid grid-cols-2 gap-4">
               <Input label="First Name" required value={form.first_name} onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))} />
               <Input label="Last Name" required value={form.last_name} onChange={(e) => setForm((p) => ({ ...p, last_name: e.target.value }))} />
@@ -116,7 +114,7 @@ export default function OnboardingPage() {
         {/* Step 1: Department & Role */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Department & Role</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Department & Role</h2>
             <Input label="Job Title" required value={form.job_title} onChange={(e) => setForm((p) => ({ ...p, job_title: e.target.value }))} />
             <Select
               label="Department"
@@ -155,7 +153,7 @@ export default function OnboardingPage() {
         {step === 2 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Onboarding Checklist</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Onboarding Checklist</h2>
               <Badge variant={completedCount === checklist.length ? 'success' : 'warning'}>
                 {completedCount} / {checklist.length} completed
               </Badge>
@@ -164,7 +162,7 @@ export default function OnboardingPage() {
               {checklist.map((item) => (
                 <label
                   key={item.id}
-                  className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                 >
                   <input
                     type="checkbox"
@@ -184,7 +182,7 @@ export default function OnboardingPage() {
         {/* Step 3: Review */}
         {step === 3 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Review & Submit</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Review & Submit</h2>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="space-y-2">
                 <p><span className="text-gray-500">Name:</span> <span className="font-medium">{form.first_name} {form.last_name}</span></p>
@@ -199,9 +197,9 @@ export default function OnboardingPage() {
                 <p><span className="text-gray-500">Salary:</span> <span className="font-medium">{form.salary ? `$${form.salary.toLocaleString()}` : 'N/A'}</span></p>
               </div>
             </div>
-            <div className="border-t border-gray-100 pt-4">
+            <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
               <p className="text-sm text-gray-500 mb-2">Checklist Progress:</p>
-              <div className="w-full bg-gray-100 rounded-full h-2">
+              <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-full h-2">
                 <div
                   className="bg-primary h-2 rounded-full transition-all"
                   style={{ width: `${(completedCount / checklist.length) * 100}%` }}
@@ -213,7 +211,7 @@ export default function OnboardingPage() {
         )}
 
         {/* Navigation */}
-        <div className="flex justify-between pt-6 mt-6 border-t border-gray-100">
+        <div className="flex justify-between pt-6 mt-6 border-t border-gray-100 dark:border-gray-800">
           <Button variant="secondary" disabled={step === 0} onClick={() => setStep(step - 1)}>
             Previous
           </Button>

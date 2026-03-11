@@ -109,7 +109,7 @@ export default function LeavePage() {
       key: 'reason',
       label: 'Reason',
       render: (r: LeaveRequest) => (
-        <span className="text-gray-600 truncate max-w-[200px] block">{r.reason}</span>
+        <span className="text-gray-600 dark:text-gray-400 truncate max-w-[200px] block">{r.reason}</span>
       ),
     },
     {
@@ -152,7 +152,7 @@ export default function LeavePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Leave Requests</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Leave Requests</h1>
           <p className="text-sm text-gray-500 mt-0.5">Manage and review leave requests</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="w-full sm:w-auto min-h-[44px] sm:min-h-0 hidden md:inline-flex">Submit Leave Request</Button>
@@ -168,7 +168,7 @@ export default function LeavePage() {
         <div className="hidden md:grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <Card>
             <p className="text-sm text-gray-500">Annual Allocation</p>
-            <p className="text-2xl font-bold text-gray-900">{leaveBalance.annual_allocation} days</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{leaveBalance.annual_allocation} days</p>
           </Card>
           <Card>
             <p className="text-sm text-gray-500">Used</p>
@@ -246,9 +246,9 @@ export default function LeavePage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Reason</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reason</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={3}
               required
               value={form.reason}

@@ -47,18 +47,18 @@ export default function SnoozeDialog({ messageId, onClose }: SnoozeDialogProps) 
       <div className="fixed inset-0 bg-black/30 z-50" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="bg-white rounded-[10px] shadow-2xl w-full max-w-sm"
+          className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-sm"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-2">
               <svg className="h-4 w-4 text-[#51459d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <h2 className="text-sm font-semibold text-gray-900">Snooze Email</h2>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Snooze Email</h2>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-[6px] text-gray-400">
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-400">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -72,7 +72,7 @@ export default function SnoozeDialog({ messageId, onClose }: SnoozeDialogProps) 
                 key={opt.label}
                 onClick={() => handleQuickSnooze(opt.hours)}
                 disabled={snoozeMail.isPending}
-                className="w-full text-left px-3 py-2.5 text-sm text-gray-700 hover:bg-[#51459d]/5 hover:text-[#51459d] rounded-[8px] transition-colors disabled:opacity-50"
+                className="w-full text-left px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#51459d]/5 hover:text-[#51459d] rounded-[8px] transition-colors disabled:opacity-50"
               >
                 {opt.label}
               </button>
@@ -80,7 +80,7 @@ export default function SnoozeDialog({ messageId, onClose }: SnoozeDialogProps) 
           </div>
 
           {/* Custom date/time */}
-          <div className="border-t border-gray-100 p-4 space-y-3">
+          <div className="border-t border-gray-100 dark:border-gray-800 p-4 space-y-3">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pick date & time</p>
             <div className="flex gap-2">
               <input
@@ -88,13 +88,13 @@ export default function SnoozeDialog({ messageId, onClose }: SnoozeDialogProps) 
                 value={customDate}
                 onChange={(e) => setCustomDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
               />
               <input
                 type="time"
                 value={customTime}
                 onChange={(e) => setCustomTime(e.target.value)}
-                className="w-28 px-3 py-2 text-sm border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                className="w-28 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
               />
             </div>
             <button

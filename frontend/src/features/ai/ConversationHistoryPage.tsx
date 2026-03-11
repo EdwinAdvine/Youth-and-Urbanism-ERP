@@ -36,7 +36,7 @@ export default function ConversationHistoryPage() {
     <div className="p-4 sm:p-6 h-[calc(100vh-64px)]">
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Conversation History</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Conversation History</h1>
           <p className="text-sm text-gray-500 mt-1">Browse past AI conversations</p>
         </div>
       </div>
@@ -66,13 +66,9 @@ export default function ConversationHistoryPage() {
                 <button
                   key={conv.id}
                   onClick={() => setSelectedId(conv.id)}
-                  className={`w-full text-left p-3 rounded-[10px] transition-colors border ${
-                    selectedId === conv.id
-                      ? 'bg-primary/5 border-primary/20'
-                      : 'border-transparent hover:bg-gray-50'
-                  }`}
+                  className={`w-full text-left p-3 rounded-[10px] transition-colors border ${ selectedId === conv.id ? 'bg-primary/5 border-primary/20' : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800' }`}
                 >
-                  <p className="text-sm text-gray-900 truncate mb-1">
+                  <p className="text-sm text-gray-900 dark:text-gray-100 truncate mb-1">
                     {conv.title || conv.last_message || `Session ${conv.session_id.slice(0, 8)}`}
                   </p>
                   <div className="flex items-center gap-2">
@@ -127,9 +123,9 @@ function ConversationView({ conversationId, conversations }: { conversationId: s
 
   return (
     <Card className="flex-1 flex flex-col overflow-hidden">
-      <div className="border-b border-gray-100 pb-3 mb-4 flex items-center justify-between">
+      <div className="border-b border-gray-100 dark:border-gray-800 pb-3 mb-4 flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-gray-900">
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {convo?.title || convo?.last_message || 'Conversation'}
           </p>
           {convo && (
@@ -147,13 +143,7 @@ function ConversationView({ conversationId, conversations }: { conversationId: s
         ) : (
           messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] rounded-[10px] p-3 ${
-                msg.role === 'user'
-                  ? 'bg-primary text-white'
-                  : msg.role === 'system'
-                  ? 'bg-gray-100 text-gray-600'
-                  : 'bg-gray-50 text-gray-700 border border-gray-100'
-              }`}>
+              <div className={`max-w-[80%] rounded-[10px] p-3 ${ msg.role === 'user' ? 'bg-primary text-white' : msg.role === 'system' ? 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400' : 'bg-gray-50 dark:bg-gray-950 text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-gray-800' }`}>
                 <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
                 <div className={`flex items-center gap-2 mt-1.5 ${msg.role === 'user' ? 'text-white/60' : 'text-gray-400'}`}>
                   <span className="text-[10px]">{formatDate(msg.timestamp)}</span>

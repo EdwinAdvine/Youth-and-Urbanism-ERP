@@ -27,7 +27,7 @@ export default function DealsPage() {
     {
       key: 'title',
       label: 'Deal Title',
-      render: (row: Deal) => <span className="font-medium text-gray-900">{row.title}</span>,
+      render: (row: Deal) => <span className="font-medium text-gray-900 dark:text-gray-100">{row.title}</span>,
     },
     {
       key: 'contact_name',
@@ -89,7 +89,7 @@ export default function DealsPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Deals</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Deals</h1>
         <p className="text-sm text-gray-500 mt-1">Closed deals and their outcomes</p>
       </div>
 
@@ -98,7 +98,7 @@ export default function DealsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total Deals</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{data?.total ?? deals.length}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{data?.total ?? deals.length}</p>
           </Card>
           <Card>
             <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total Value (This Page)</p>
@@ -125,8 +125,8 @@ export default function DealsPage() {
 
         {/* Totals Row */}
         {deals.length > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-100 text-sm">
-            <span className="font-semibold text-gray-700">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 text-sm">
+            <span className="font-semibold text-gray-700 dark:text-gray-300">
               Page Total: {deals.length} deal{deals.length !== 1 ? 's' : ''}
             </span>
             <span className="font-bold text-primary text-base">{formatCurrency(totalValue)}</span>

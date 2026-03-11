@@ -75,8 +75,8 @@ export default function FinanceDashboard() {
       </div>
 
       {/* Revenue & Expense Trend */}
-      <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-900 mb-1">Revenue vs Expenses</h3>
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Revenue vs Expenses</h3>
         <p className="text-xs text-gray-400 mb-4">Monthly P&L trend</p>
         <BarChart
           data={pnlData}
@@ -92,8 +92,8 @@ export default function FinanceDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* P&L Trend Line */}
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Profit Trend</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Profit Trend</h3>
           <p className="text-xs text-gray-400 mb-4">Net profit over time</p>
           <LineChart
             data={pnlData}
@@ -105,8 +105,8 @@ export default function FinanceDashboard() {
         </div>
 
         {/* Cash Flow */}
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Cash Flow</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Cash Flow</h3>
           <p className="text-xs text-gray-400 mb-4">Cumulative cash position</p>
           <LineChart
             data={cashFlowData}
@@ -119,8 +119,8 @@ export default function FinanceDashboard() {
       </div>
 
       {/* Expense Distribution */}
-      <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-900 mb-1">Expense Distribution</h3>
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Expense Distribution</h3>
         <p className="text-xs text-gray-400 mb-4">Breakdown by category</p>
         <PieChart
           data={expenseDistribution}

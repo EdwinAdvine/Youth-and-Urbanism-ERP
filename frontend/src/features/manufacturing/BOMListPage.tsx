@@ -122,7 +122,7 @@ export default function BOMListPage() {
     {
       key: 'finished_item_name',
       label: 'Finished Item',
-      render: (row: BOM) => <span className="text-gray-700">{row.finished_item_name ?? '-'}</span>,
+      render: (row: BOM) => <span className="text-gray-700 dark:text-gray-300">{row.finished_item_name ?? '-'}</span>,
     },
     { key: 'quantity_produced', label: 'Qty/Batch' },
     { key: 'version', label: 'Ver.' },
@@ -163,7 +163,7 @@ export default function BOMListPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bills of Materials</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Bills of Materials</h1>
           <p className="text-sm text-gray-500 mt-1">Recipes and formulas for production</p>
         </div>
         <div className="flex gap-2">
@@ -210,7 +210,7 @@ export default function BOMListPage() {
             placeholder="e.g. Wooden Chair Assembly"
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Finished Item</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Finished Item</label>
             <select
               className="w-full rounded-[10px] border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               value={form.finished_item_id}
@@ -236,11 +236,11 @@ export default function BOMListPage() {
 
           {/* BOM Items */}
           <div className="border-t pt-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Raw Materials</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Raw Materials</h3>
             {form.items.length > 0 && (
               <div className="space-y-2 mb-3">
                 {form.items.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-sm bg-gray-50 rounded-lg px-3 py-2">
+                  <div key={idx} className="flex items-center gap-2 text-sm bg-gray-50 dark:bg-gray-950 rounded-lg px-3 py-2">
                     <span className="flex-1">{getItemName(item.item_id)}</span>
                     <span className="font-medium">x{item.quantity_required}</span>
                     <button className="text-red-500 hover:text-red-700" onClick={() => removeItemLine(idx)}>

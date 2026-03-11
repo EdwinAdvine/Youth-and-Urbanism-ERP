@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, File, status
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import selectinload
 
@@ -73,22 +73,51 @@ class SupplierOut(BaseModel):
 class StockAdjustmentCreate(BaseModel):
     item_id: uuid.UUID
     warehouse_id: uuid.UUID
-    new_quantity: int
+    adjustment_type: str  # 'increase' | 'decrease'
+    quantity: int  # delta (always positive)
     reason: str | None = None
+    notes: str | None = None  # combined with reason for display
 
 
 class StockAdjustmentOut(BaseModel):
     id: uuid.UUID
     item_id: uuid.UUID
+    item_name: str | None = None
     warehouse_id: uuid.UUID
+    warehouse_name: str | None = None
+    adjustment_type: str  # computed: 'increase' | 'decrease'
+    quantity: int  # computed: abs(new - old)
     old_quantity: int
     new_quantity: int
     reason: str | None
+    notes: str | None = None
     adjusted_by: uuid.UUID
+    adjusted_by_name: str | None = None
     created_at: Any
     updated_at: Any
 
     model_config = {"from_attributes": True}
+
+
+def _adj_to_dict(adj: StockAdjustment, item_name: str | None = None, warehouse_name: str | None = None) -> dict:
+    qty_diff = adj.new_quantity - adj.old_quantity
+    return {
+        "id": str(adj.id),
+        "item_id": str(adj.item_id),
+        "item_name": item_name,
+        "warehouse_id": str(adj.warehouse_id),
+        "warehouse_name": warehouse_name,
+        "adjustment_type": "increase" if qty_diff >= 0 else "decrease",
+        "quantity": abs(qty_diff),
+        "old_quantity": adj.old_quantity,
+        "new_quantity": adj.new_quantity,
+        "reason": adj.reason,
+        "notes": None,
+        "adjusted_by": str(adj.adjusted_by),
+        "adjusted_by_name": None,
+        "created_at": adj.created_at.isoformat() if adj.created_at else None,
+        "updated_at": adj.updated_at.isoformat() if adj.updated_at else None,
+    }
 
 
 # -- Item Variants --
@@ -135,15 +164,37 @@ class BatchNumberCreate(BaseModel):
 class BatchNumberOut(BaseModel):
     id: uuid.UUID
     item_id: uuid.UUID
+    item_name: str | None = None
     batch_no: str
     manufacture_date: date
     expiry_date: date | None
     quantity: int
     warehouse_id: uuid.UUID
+    warehouse_name: str | None = None
+    status: str = "active"  # computed: 'active' | 'expired'
     created_at: Any
     updated_at: Any
 
     model_config = {"from_attributes": True}
+
+
+def _batch_to_dict(batch: BatchNumber, item_name: str | None = None, warehouse_name: str | None = None) -> dict:
+    now = date.today()
+    status = "expired" if (batch.expiry_date and batch.expiry_date < now) else "active"
+    return {
+        "id": str(batch.id),
+        "item_id": str(batch.item_id),
+        "item_name": item_name,
+        "batch_no": batch.batch_no,
+        "manufacture_date": batch.manufacture_date.isoformat() if batch.manufacture_date else None,
+        "expiry_date": batch.expiry_date.isoformat() if batch.expiry_date else None,
+        "quantity": batch.quantity,
+        "warehouse_id": str(batch.warehouse_id),
+        "warehouse_name": warehouse_name,
+        "status": status,
+        "created_at": batch.created_at.isoformat() if batch.created_at else None,
+        "updated_at": batch.updated_at.isoformat() if batch.updated_at else None,
+    }
 
 
 # -- Inventory Counts --
@@ -319,13 +370,24 @@ async def create_stock_adjustment(
     stock_level = sl_result.scalar_one_or_none()
     old_quantity = stock_level.quantity_on_hand if stock_level else 0
 
+    # Compute new quantity from adjustment_type + quantity
+    if payload.adjustment_type == "increase":
+        new_quantity = old_quantity + payload.quantity
+    else:
+        new_quantity = max(0, old_quantity - payload.quantity)
+
+    # Build reason text (combine reason + notes if both provided)
+    reason_text = payload.reason
+    if payload.notes:
+        reason_text = f"{reason_text}: {payload.notes}" if reason_text else payload.notes
+
     # Create adjustment record
     adjustment = StockAdjustment(
         item_id=payload.item_id,
         warehouse_id=payload.warehouse_id,
         old_quantity=old_quantity,
-        new_quantity=payload.new_quantity,
-        reason=payload.reason,
+        new_quantity=new_quantity,
+        reason=reason_text,
         adjusted_by=current_user.id,
     )
     db.add(adjustment)
@@ -335,21 +397,21 @@ async def create_stock_adjustment(
         stock_level = StockLevel(
             item_id=payload.item_id,
             warehouse_id=payload.warehouse_id,
-            quantity_on_hand=payload.new_quantity,
+            quantity_on_hand=new_quantity,
         )
         db.add(stock_level)
     else:
-        stock_level.quantity_on_hand = payload.new_quantity
+        stock_level.quantity_on_hand = new_quantity
 
     # Create a stock movement for audit trail
-    qty_diff = payload.new_quantity - old_quantity
+    qty_diff = new_quantity - old_quantity
     movement = StockMovement(
         item_id=payload.item_id,
         warehouse_id=payload.warehouse_id,
         movement_type="adjustment",
         quantity=qty_diff,
         reference_type="stock_adjustment",
-        notes=payload.reason or "Manual stock adjustment",
+        notes=reason_text or "Manual stock adjustment",
         created_by=current_user.id,
     )
     db.add(movement)
@@ -370,7 +432,7 @@ async def create_stock_adjustment(
 
     await db.commit()
     await db.refresh(adjustment)
-    return StockAdjustmentOut.model_validate(adjustment).model_dump()
+    return _adj_to_dict(adjustment, item_name=item.name, warehouse_name=warehouse.name)
 
 
 @router.get("/stock-adjustments", summary="List stock adjustments")
@@ -382,23 +444,39 @@ async def list_stock_adjustments(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ) -> dict[str, Any]:
-    query = select(StockAdjustment)
+    query = (
+        select(
+            StockAdjustment,
+            InventoryItem.name.label("item_name"),
+            Warehouse.name.label("warehouse_name"),
+        )
+        .join(InventoryItem, StockAdjustment.item_id == InventoryItem.id)
+        .join(Warehouse, StockAdjustment.warehouse_id == Warehouse.id)
+    )
 
     if item_id:
         query = query.where(StockAdjustment.item_id == item_id)
     if warehouse_id:
         query = query.where(StockAdjustment.warehouse_id == warehouse_id)
 
-    count_query = select(func.count()).select_from(query.subquery())
-    total_result = await db.execute(count_query)
+    count_base = select(StockAdjustment)
+    if item_id:
+        count_base = count_base.where(StockAdjustment.item_id == item_id)
+    if warehouse_id:
+        count_base = count_base.where(StockAdjustment.warehouse_id == warehouse_id)
+    total_result = await db.execute(select(func.count()).select_from(count_base.subquery()))
     total = total_result.scalar() or 0
 
     query = query.order_by(StockAdjustment.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(query)
-    adjustments = result.scalars().all()
+    rows = result.all()
+
     return {
         "total": total,
-        "stock_adjustments": [StockAdjustmentOut.model_validate(a).model_dump() for a in adjustments],
+        "stock_adjustments": [
+            _adj_to_dict(adj, item_name=item_name, warehouse_name=warehouse_name)
+            for adj, item_name, warehouse_name in rows
+        ],
     }
 
 
@@ -447,19 +525,23 @@ async def stock_valuation(
     db: DBSession,
     warehouse_id: uuid.UUID | None = Query(None, description="Filter by warehouse"),
 ) -> dict[str, Any]:
+    # Per-item per-warehouse stock levels with item details
     query = (
         select(
             Warehouse.id.label("warehouse_id"),
             Warehouse.name.label("warehouse_name"),
-            func.coalesce(func.sum(InventoryItem.cost_price * StockLevel.quantity_on_hand), 0).label("cost_value"),
-            func.coalesce(func.sum(InventoryItem.selling_price * StockLevel.quantity_on_hand), 0).label("retail_value"),
-            func.coalesce(func.sum(StockLevel.quantity_on_hand), 0).label("total_units"),
+            InventoryItem.id.label("item_id"),
+            InventoryItem.name.label("item_name"),
+            InventoryItem.sku,
+            InventoryItem.cost_price,
+            StockLevel.quantity_on_hand,
         )
         .select_from(StockLevel)
         .join(InventoryItem, StockLevel.item_id == InventoryItem.id)
         .join(Warehouse, StockLevel.warehouse_id == Warehouse.id)
         .where(InventoryItem.is_active == True)  # noqa: E712
-        .group_by(Warehouse.id, Warehouse.name)
+        .where(StockLevel.quantity_on_hand > 0)
+        .order_by(Warehouse.name, InventoryItem.name)
     )
 
     if warehouse_id:
@@ -468,31 +550,35 @@ async def stock_valuation(
     result = await db.execute(query)
     rows = result.all()
 
-    warehouses = []
-    grand_cost = Decimal("0")
-    grand_retail = Decimal("0")
-    grand_units = 0
-
+    # Group by warehouse
+    wh_map: dict[str, dict] = {}
     for row in rows:
-        cost_val = Decimal(str(row.cost_value))
-        retail_val = Decimal(str(row.retail_value))
-        units = int(row.total_units)
-        warehouses.append({
-            "warehouse_id": str(row.warehouse_id),
-            "warehouse_name": row.warehouse_name,
-            "cost_value": str(cost_val),
-            "retail_value": str(retail_val),
-            "total_units": units,
+        wid = str(row.warehouse_id)
+        if wid not in wh_map:
+            wh_map[wid] = {
+                "warehouse_id": wid,
+                "warehouse_name": row.warehouse_name,
+                "items": [],
+                "total_value": 0.0,
+            }
+        unit_cost = float(row.cost_price)
+        total_value = unit_cost * row.quantity_on_hand
+        wh_map[wid]["items"].append({
+            "item_id": str(row.item_id),
+            "item_name": row.item_name,
+            "sku": row.sku,
+            "quantity": row.quantity_on_hand,
+            "unit_cost": unit_cost,
+            "total_value": total_value,
         })
-        grand_cost += cost_val
-        grand_retail += retail_val
-        grand_units += units
+        wh_map[wid]["total_value"] += total_value
+
+    warehouses = list(wh_map.values())
+    grand_total = sum(w["total_value"] for w in warehouses)
 
     return {
         "warehouses": warehouses,
-        "grand_total_cost": str(grand_cost),
-        "grand_total_retail": str(grand_retail),
-        "grand_total_units": grand_units,
+        "grand_total": grand_total,
     }
 
 
@@ -941,40 +1027,6 @@ async def _generate_sku_for_import(db: DBSession) -> str:
     return f"SKU-{count:04d}"
 
 
-@router.get("/items/export", summary="Export inventory items as CSV")
-async def export_items(
-    current_user: CurrentUser,
-    db: DBSession,
-):
-    """Download all inventory items as a CSV file."""
-    from app.core.export import rows_to_csv  # noqa: PLC0415
-
-    result = await db.execute(
-        select(InventoryItem)
-        .where(InventoryItem.is_active == True)  # noqa: E712
-        .order_by(InventoryItem.name)
-    )
-    items = result.scalars().all()
-    rows = [
-        {
-            "sku": i.sku,
-            "name": i.name,
-            "description": i.description or "",
-            "category": i.category or "",
-            "unit_of_measure": i.unit_of_measure,
-            "cost_price": float(i.cost_price),
-            "selling_price": float(i.selling_price),
-            "reorder_level": i.reorder_level,
-            "is_active": i.is_active,
-            "created_at": i.created_at.isoformat(),
-        }
-        for i in items
-    ]
-    columns = [
-        "sku", "name", "description", "category", "unit_of_measure",
-        "cost_price", "selling_price", "reorder_level", "is_active", "created_at",
-    ]
-    return rows_to_csv(rows, columns, "inventory_items.csv")
 
 
 # ── Variant endpoints ────────────────────────────────────────────────────────
@@ -1097,6 +1149,47 @@ async def delete_variant(
 
 # ── Batch endpoints ──────────────────────────────────────────────────────────
 
+@router.get("/batches", summary="List all batches with optional filters")
+async def list_all_batches(
+    current_user: CurrentUser,
+    db: DBSession,
+    item_id: uuid.UUID | None = Query(None, description="Filter by item"),
+    warehouse_id: uuid.UUID | None = Query(None, description="Filter by warehouse"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+) -> dict[str, Any]:
+    query = (
+        select(
+            BatchNumber,
+            InventoryItem.name.label("item_name"),
+            Warehouse.name.label("warehouse_name"),
+        )
+        .join(InventoryItem, BatchNumber.item_id == InventoryItem.id)
+        .join(Warehouse, BatchNumber.warehouse_id == Warehouse.id)
+    )
+    if item_id:
+        query = query.where(BatchNumber.item_id == item_id)
+    if warehouse_id:
+        query = query.where(BatchNumber.warehouse_id == warehouse_id)
+
+    count_base = select(BatchNumber)
+    if item_id:
+        count_base = count_base.where(BatchNumber.item_id == item_id)
+    if warehouse_id:
+        count_base = count_base.where(BatchNumber.warehouse_id == warehouse_id)
+    total_result = await db.execute(select(func.count()).select_from(count_base.subquery()))
+    total = total_result.scalar() or 0
+
+    query = query.order_by(BatchNumber.created_at.desc()).offset(skip).limit(limit)
+    result = await db.execute(query)
+    rows = result.all()
+
+    return {
+        "total": total,
+        "batches": [_batch_to_dict(b, item_name=iname, warehouse_name=wname) for b, iname, wname in rows],
+    }
+
+
 @router.get("/items/{item_id}/batches", summary="List batches for an item")
 async def list_batches(
     item_id: uuid.UUID,
@@ -1108,12 +1201,13 @@ async def list_batches(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
     result = await db.execute(
-        select(BatchNumber)
+        select(BatchNumber, Warehouse.name.label("warehouse_name"))
+        .join(Warehouse, BatchNumber.warehouse_id == Warehouse.id)
         .where(BatchNumber.item_id == item_id)
         .order_by(BatchNumber.manufacture_date.desc())
     )
-    batches = result.scalars().all()
-    return [BatchNumberOut.model_validate(b).model_dump() for b in batches]
+    rows = result.all()
+    return [_batch_to_dict(b, item_name=item.name, warehouse_name=wname) for b, wname in rows]
 
 
 @router.post(
@@ -1157,7 +1251,7 @@ async def create_batch(
     db.add(batch)
     await db.commit()
     await db.refresh(batch)
-    return BatchNumberOut.model_validate(batch).model_dump()
+    return _batch_to_dict(batch, item_name=item.name, warehouse_name=warehouse.name)
 
 
 @router.get("/batches/{batch_id}", summary="Get batch detail")
@@ -1166,7 +1260,14 @@ async def get_batch(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
-    batch = await db.get(BatchNumber, batch_id)
-    if not batch:
+    result = await db.execute(
+        select(BatchNumber, InventoryItem.name.label("item_name"), Warehouse.name.label("warehouse_name"))
+        .join(InventoryItem, BatchNumber.item_id == InventoryItem.id)
+        .join(Warehouse, BatchNumber.warehouse_id == Warehouse.id)
+        .where(BatchNumber.id == batch_id)
+    )
+    row = result.one_or_none()
+    if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found")
-    return BatchNumberOut.model_validate(batch).model_dump()
+    batch, item_name, warehouse_name = row
+    return _batch_to_dict(batch, item_name=item_name, warehouse_name=warehouse_name)

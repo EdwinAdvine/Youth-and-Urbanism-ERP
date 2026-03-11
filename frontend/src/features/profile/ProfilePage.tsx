@@ -94,7 +94,7 @@ function PersonalInfoCard() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Personal Information</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Personal Information</h2>
       <div className="flex items-start gap-5 mb-6">
         {/* Avatar */}
         <div className="shrink-0">
@@ -111,7 +111,7 @@ function PersonalInfoCard() {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-base font-semibold text-gray-900 truncate">{profile?.full_name}</p>
+          <p className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{profile?.full_name}</p>
           <p className="text-sm text-gray-500 mt-0.5 truncate">{profile?.email}</p>
           <div className="mt-2 flex items-center gap-2 flex-wrap">
             <Badge variant={roleBadgeVariant(profile?.role ?? '')} className="capitalize">
@@ -144,7 +144,7 @@ function PersonalInfoCard() {
           value={profile?.email ?? ''}
           readOnly
           disabled
-          className="bg-gray-50 cursor-not-allowed opacity-70"
+          className="bg-gray-50 dark:bg-gray-950 cursor-not-allowed opacity-70"
         />
         <Button
           onClick={handleSave}
@@ -207,7 +207,7 @@ function PasswordCard() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Change Password</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Change Password</h2>
       <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
         <Input
           label="Current Password"
@@ -258,7 +258,7 @@ function ActivityCard() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Recent Activity</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Recent Activity</h2>
       {isLoading ? (
         <div className="flex items-center justify-center py-10">
           <Spinner />
@@ -271,11 +271,11 @@ function ActivityCard() {
             <div key={item.id} className="flex items-start gap-3 py-3">
               <span className="text-lg shrink-0 mt-0.5">{moduleIcon(item.module)}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-800">{item.message}</p>
+                <p className="text-sm text-gray-800 dark:text-gray-200">{item.message}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-gray-400">{timeAgo(item.created_at)}</span>
                   {item.module && (
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 capitalize">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-900 text-gray-500 capitalize">
                       {item.module}
                     </span>
                   )}
@@ -295,7 +295,7 @@ export default function ProfilePage() {
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <div className="mb-2">
-        <h1 className="text-xl font-bold text-gray-900">My Profile</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">My Profile</h1>
         <p className="text-sm text-gray-500 mt-1">Manage your personal information and account security</p>
       </div>
       <PersonalInfoCard />

@@ -39,7 +39,7 @@ export default function PostMeetingSummary({ meetingId, onClose }: PostMeetingSu
   if (loadingMeeting) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div className="bg-white rounded-[10px] shadow-2xl p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl p-8">
           <svg className="animate-spin h-6 w-6 text-[#51459d] mx-auto" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
@@ -57,12 +57,12 @@ export default function PostMeetingSummary({ meetingId, onClose }: PostMeetingSu
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100 shrink-0">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-base font-semibold text-gray-900">{meeting.title}</h2>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{meeting.title}</h2>
               <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                 <span>{new Date(meeting.start_time).toLocaleDateString('en-KE', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
                 <span>{new Date(meeting.start_time).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })} - {new Date(meeting.end_time).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -70,7 +70,7 @@ export default function PostMeetingSummary({ meetingId, onClose }: PostMeetingSu
                 {meeting.attendees && <span>{meeting.attendees.length} participants</span>}
               </div>
             </div>
-            <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-[6px] text-gray-400">
+            <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-400">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -119,11 +119,7 @@ export default function PostMeetingSummary({ meetingId, onClose }: PostMeetingSu
                     setActiveTab(tab.key)
                     if (tab.key === 'chat' && !chats) handleExportChat()
                   }}
-                  className={`px-3 py-1.5 text-[11px] rounded-[6px] font-medium transition-colors ${
-                    activeTab === tab.key
-                      ? 'bg-[#51459d]/10 text-[#51459d]'
-                      : 'text-gray-500 hover:bg-gray-50'
-                  }`}
+                  className={`px-3 py-1.5 text-[11px] rounded-[6px] font-medium transition-colors ${ activeTab === tab.key ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800' }`}
                 >
                   {tab.label}
                 </button>
@@ -151,14 +147,14 @@ export default function PostMeetingSummary({ meetingId, onClose }: PostMeetingSu
               {activeTab === 'summary' && (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                       <svg className="h-4 w-4 text-[#51459d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
                       AI Summary
                     </h3>
-                    <div className="bg-gray-50 rounded-[10px] p-4">
-                      <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    <div className="bg-gray-50 dark:bg-gray-950 rounded-[10px] p-4">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                         {summary.summary}
                       </p>
                     </div>
@@ -189,9 +185,9 @@ export default function PostMeetingSummary({ meetingId, onClose }: PostMeetingSu
                     <p className="text-sm text-gray-400 text-center py-8">No action items identified.</p>
                   ) : (
                     summary.action_items.map((item, i) => (
-                      <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-[8px]">
+                      <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-950 rounded-[8px]">
                         <input type="checkbox" className="mt-0.5 rounded text-[#51459d] focus:ring-[#51459d]/40" />
-                        <span className="text-sm text-gray-700">{item}</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{item}</span>
                       </div>
                     ))
                   )}
@@ -209,7 +205,7 @@ export default function PostMeetingSummary({ meetingId, onClose }: PostMeetingSu
                         <svg className="h-4 w-4 text-green-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        <span className="text-sm text-gray-700">{dec}</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{dec}</span>
                       </div>
                     ))
                   )}
@@ -236,12 +232,12 @@ export default function PostMeetingSummary({ meetingId, onClose }: PostMeetingSu
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2">
-                            <span className="text-xs font-medium text-gray-700">{msg.sender_name}</span>
+                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{msg.sender_name}</span>
                             <span className="text-[10px] text-gray-400">
                               {new Date(msg.timestamp).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-600">{msg.message}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">{msg.message}</p>
                         </div>
                       </div>
                     ))
@@ -256,7 +252,7 @@ export default function PostMeetingSummary({ meetingId, onClose }: PostMeetingSu
                     <p className="text-sm text-gray-400 text-center py-8">No recordings available.</p>
                   ) : (
                     recordings.map((rec: MeetingRecording) => (
-                      <div key={rec.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-[8px]">
+                      <div key={rec.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-950 rounded-[8px]">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-[8px] bg-[#51459d]/10 flex items-center justify-center">
                             <svg className="h-5 w-5 text-[#51459d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -264,7 +260,7 @@ export default function PostMeetingSummary({ meetingId, onClose }: PostMeetingSu
                             </svg>
                           </div>
                           <div>
-                            <p className="text-xs font-medium text-gray-700">{rec.file_name}</p>
+                            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{rec.file_name}</p>
                             <p className="text-[10px] text-gray-400">
                               {Math.round(rec.duration_seconds / 60)} min
                               {' | '}
@@ -275,7 +271,7 @@ export default function PostMeetingSummary({ meetingId, onClose }: PostMeetingSu
                         {rec.download_url && (
                           <button
                             onClick={() => window.open(rec.download_url!, '_blank')}
-                            className="px-3 py-1.5 text-xs border border-gray-200 rounded-[6px] text-gray-600 hover:bg-gray-100 transition-colors"
+                            className="px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-[6px] text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                           >
                             Download
                           </button>
@@ -291,7 +287,7 @@ export default function PostMeetingSummary({ meetingId, onClose }: PostMeetingSu
 
         {/* Footer */}
         {summary && (
-          <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between shrink-0">
+          <div className="px-6 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
             <button
               onClick={() => {
                 const text = [

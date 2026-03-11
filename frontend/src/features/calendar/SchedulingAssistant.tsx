@@ -119,7 +119,7 @@ export default function SchedulingAssistant() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
                     <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500">Time</th>
                     {availability.map((a) => (
                       <th key={a.user_id} className="text-center py-2 px-3 text-xs font-semibold text-gray-500">
@@ -136,7 +136,7 @@ export default function SchedulingAssistant() {
                     const freeStatus = freeSlots.find((s) => s.hour === h)
 
                     return (
-                      <tr key={h} className={`border-b border-gray-50 ${freeStatus?.free ? 'bg-green-50' : ''}`}>
+                      <tr key={h} className={`border-b border-gray-50 dark:border-gray-800 ${freeStatus?.free ? 'bg-green-50' : ''}`}>
                         <td className="py-2 px-3 text-gray-600 font-medium">
                           {formatHour(h)} - {formatHour(h + 1)}
                         </td>

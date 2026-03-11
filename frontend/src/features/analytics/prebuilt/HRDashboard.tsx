@@ -71,8 +71,8 @@ export default function HRDashboard() {
 
       {/* Headcount + Attrition */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Headcount Trend</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Headcount Trend</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly employee count</p>
           <LineChart
             data={headcountData}
@@ -82,8 +82,8 @@ export default function HRDashboard() {
           />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Attrition Rate</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Attrition Rate</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly turnover percentage</p>
           <LineChart
             data={attritionData}
@@ -97,14 +97,14 @@ export default function HRDashboard() {
 
       {/* Department Distribution + Attendance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Department Distribution</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Department Distribution</h3>
           <p className="text-xs text-gray-400 mb-4">Employees by department</p>
           <PieChart data={deptDistribution} innerRadius={50} height={260} />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Attendance Breakdown</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Attendance Breakdown</h3>
           <p className="text-xs text-gray-400 mb-4">Present vs Remote vs Absent (%)</p>
           <BarChart
             data={attendanceData}
@@ -122,8 +122,8 @@ export default function HRDashboard() {
 
       {/* Leave Utilization + Gauge */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Leave Utilization</h3>
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Leave Utilization</h3>
           <p className="text-xs text-gray-400 mb-4">Days used vs allocated by type</p>
           <BarChart
             data={leaveData}
@@ -136,8 +136,8 @@ export default function HRDashboard() {
           />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm flex flex-col items-center justify-center">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Overall Leave Usage</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm flex flex-col items-center justify-center">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Overall Leave Usage</h3>
           <GaugeChart
             value={leaveUtilization}
             label="Leave Utilization"

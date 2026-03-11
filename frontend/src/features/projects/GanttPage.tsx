@@ -74,7 +74,7 @@ export default function GanttPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gantt Chart</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Gantt Chart</h1>
           <p className="text-sm text-gray-500 mt-1">Visual project timeline with task dependencies</p>
         </div>
         <div className="w-64">
@@ -98,8 +98,8 @@ export default function GanttPage() {
           <div className="overflow-x-auto">
             <div style={{ minWidth: 300 + totalDays * DAY_WIDTH }}>
               {/* Month headers */}
-              <div className="flex border-b border-gray-100">
-                <div className="w-[300px] shrink-0 px-4 py-2 text-xs font-semibold text-gray-500 uppercase bg-gray-50 border-r border-gray-100">
+              <div className="flex border-b border-gray-100 dark:border-gray-800">
+                <div className="w-[300px] shrink-0 px-4 py-2 text-xs font-semibold text-gray-500 uppercase bg-gray-50 dark:bg-gray-950 border-r border-gray-100 dark:border-gray-800">
                   Task
                 </div>
                 <div className="flex">
@@ -107,7 +107,7 @@ export default function GanttPage() {
                     <div
                       key={i}
                       style={{ width: m.days * DAY_WIDTH }}
-                      className="px-2 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-r border-gray-100 text-center"
+                      className="px-2 py-2 text-xs font-semibold text-gray-500 bg-gray-50 dark:bg-gray-950 border-r border-gray-100 dark:border-gray-800 text-center"
                     >
                       {m.label}
                     </div>
@@ -156,13 +156,13 @@ function GanttRow({
   const color = STATUS_COLORS[task.status] ?? '#94a3b8'
 
   return (
-    <div className="flex border-b border-gray-50 hover:bg-gray-50 transition-colors group">
-      <div className="w-[300px] shrink-0 px-4 py-2 flex items-center gap-2 border-r border-gray-100">
+    <div className="flex border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
+      <div className="w-[300px] shrink-0 px-4 py-2 flex items-center gap-2 border-r border-gray-100 dark:border-gray-800">
         <span
           className="w-2 h-2 rounded-full shrink-0"
           style={{ backgroundColor: color }}
         />
-        <span className="text-sm text-gray-700 truncate">{task.title}</span>
+        <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{task.title}</span>
         {task.assignee_name && (
           <span className="text-xs text-gray-400 truncate ml-auto">{task.assignee_name}</span>
         )}
@@ -172,7 +172,7 @@ function GanttRow({
         {Array.from({ length: totalDays }).map((_, i) => (
           <div
             key={i}
-            className="absolute top-0 bottom-0 border-r border-gray-50"
+            className="absolute top-0 bottom-0 border-r border-gray-50 dark:border-gray-800"
             style={{ left: i * dayWidth, width: dayWidth }}
           />
         ))}

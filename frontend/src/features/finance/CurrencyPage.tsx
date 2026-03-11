@@ -142,7 +142,7 @@ export default function CurrencyPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Currencies & Exchange Rates</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Currencies & Exchange Rates</h1>
           <p className="text-sm text-gray-500 mt-1">Manage currencies and conversion rates</p>
         </div>
         <div className="flex gap-2">
@@ -155,16 +155,16 @@ export default function CurrencyPage() {
 
       {/* Currencies */}
       <Card padding={false}>
-        <div className="p-4 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Currencies</h2>
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Currencies</h2>
         </div>
         <Table columns={currencyColumns} data={currencies ?? []} loading={isLoading} emptyText="No currencies defined" keyExtractor={(c) => c.id} />
       </Card>
 
       {/* Exchange Rates */}
       <Card padding={false}>
-        <div className="p-4 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Exchange Rates</h2>
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Exchange Rates</h2>
         </div>
         <Table columns={rateColumns} data={rates ?? []} loading={ratesLoading} emptyText="No exchange rates" keyExtractor={(r) => r.id} />
       </Card>
@@ -190,15 +190,15 @@ export default function CurrencyPage() {
       <Modal open={showRateModal} onClose={() => setShowRateModal(false)} title="Add Exchange Rate">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">From Currency</label>
-            <select className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm" value={fromId} onChange={(e) => setFromId(e.target.value)}>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From Currency</label>
+            <select className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm" value={fromId} onChange={(e) => setFromId(e.target.value)}>
               <option value="">Select...</option>
               {(currencies ?? []).map((c) => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">To Currency</label>
-            <select className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm" value={toId} onChange={(e) => setToId(e.target.value)}>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To Currency</label>
+            <select className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm" value={toId} onChange={(e) => setToId(e.target.value)}>
               <option value="">Select...</option>
               {(currencies ?? []).map((c) => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}
             </select>

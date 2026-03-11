@@ -145,7 +145,7 @@ export default function LicensePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">License Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">License Management</h1>
           <p className="text-gray-500 text-sm mt-0.5">
             View and manage your Urban ERP license and subscription
           </p>
@@ -261,7 +261,7 @@ export default function LicensePage() {
               <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Expires
               </p>
-              <p className="mt-2 text-lg font-semibold text-gray-900">
+              <p className="mt-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {license.expires_at
                   ? new Date(license.expires_at).toLocaleDateString()
                   : 'Never'}
@@ -269,11 +269,7 @@ export default function LicensePage() {
               {licenseStatus?.days_remaining !== null &&
                 licenseStatus?.days_remaining !== undefined && (
                   <p
-                    className={`text-xs mt-1 ${
-                      licenseStatus.days_remaining <= 30
-                        ? 'text-red-500 font-medium'
-                        : 'text-gray-400'
-                    }`}
+                    className={`text-xs mt-1 ${ licenseStatus.days_remaining <= 30 ? 'text-red-500 font-medium' : 'text-gray-400' }`}
                   >
                     {licenseStatus.days_remaining} day
                     {licenseStatus.days_remaining !== 1 ? 's' : ''} remaining
@@ -286,7 +282,7 @@ export default function LicensePage() {
               <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Users
               </p>
-              <p className="mt-2 text-lg font-semibold text-gray-900">
+              <p className="mt-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {licenseStatus?.current_users ?? 0} / {license.max_users}
               </p>
               <p className="text-xs text-gray-400 mt-1">{usagePercent}% capacity</p>
@@ -296,7 +292,7 @@ export default function LicensePage() {
       ) : (
         <Card>
           <div className="p-10 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-900 flex items-center justify-center mx-auto mb-4">
               <svg
                 className="w-8 h-8 text-gray-400"
                 fill="none"
@@ -311,7 +307,7 @@ export default function LicensePage() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">No License Activated</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">No License Activated</h3>
             <p className="text-gray-500 text-sm mt-1">
               Activate a license to enforce user limits and track your subscription.
             </p>
@@ -324,22 +320,16 @@ export default function LicensePage() {
         <Card>
           <div className="p-5">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-gray-700">User Usage</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">User Usage</p>
               <p className="text-sm text-gray-500">
                 {licenseStatus.current_users} / {licenseStatus.max_users} users (
                 {Math.max(0, licenseStatus.max_users - licenseStatus.current_users)}{' '}
                 remaining)
               </p>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-3">
+            <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-full h-3">
               <div
-                className={`h-3 rounded-full transition-all ${
-                  usagePercent > 90
-                    ? 'bg-red-500'
-                    : usagePercent > 70
-                      ? 'bg-yellow-500'
-                      : 'bg-[#6fd943]'
-                }`}
+                className={`h-3 rounded-full transition-all ${ usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-yellow-500' : 'bg-[#6fd943]' }`}
                 style={{ width: `${Math.min(100, usagePercent)}%` }}
               />
             </div>
@@ -354,18 +344,14 @@ export default function LicensePage() {
       {license && license.features && license.features.length > 0 && (
         <Card>
           <div className="p-5">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Enabled Modules</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Enabled Modules</h3>
             <div className="flex flex-wrap gap-2">
               {ALL_MODULES.map((mod) => {
                 const enabled = license.features.includes(mod)
                 return (
                   <span
                     key={mod}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-sm font-medium ${
-                      enabled
-                        ? 'bg-[#51459d]/10 text-[#51459d] border border-[#51459d]/20'
-                        : 'bg-gray-50 text-gray-400 border border-gray-100'
-                    }`}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-sm font-medium ${ enabled ? 'bg-[#51459d]/10 text-[#51459d] border border-[#51459d]/20' : 'bg-gray-50 dark:bg-gray-950 text-gray-400 border border-gray-100 dark:border-gray-800' }`}
                   >
                     {enabled ? (
                       <svg
@@ -410,24 +396,24 @@ export default function LicensePage() {
         <Card>
           <div className="p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-700">License Key</p>
-              <code className="bg-gray-100 text-gray-700 px-3 py-1 rounded-[10px] text-sm font-mono">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">License Key</p>
+              <code className="bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-[10px] text-sm font-mono">
                 {license.license_key}
               </code>
             </div>
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-700">Issued</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Issued</p>
               <p className="text-sm text-gray-500">
                 {new Date(license.issued_at).toLocaleDateString()}
               </p>
             </div>
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-700">Max Users</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Max Users</p>
               <p className="text-sm text-gray-500">{license.max_users}</p>
             </div>
             {license.notes && (
-              <div className="pt-2 border-t border-gray-100">
-                <p className="text-sm font-medium text-gray-700 mb-1">Notes</p>
+              <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</p>
                 <p className="text-sm text-gray-500">{license.notes}</p>
               </div>
             )}
@@ -439,7 +425,7 @@ export default function LicensePage() {
       {showForm && (
         <Card>
           <div className="p-5">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {license ? 'Activate New License' : 'Activate License'}
             </h3>
             <form onSubmit={form.handleSubmit(handleActivate)} className="space-y-4">
@@ -472,7 +458,7 @@ export default function LicensePage() {
 
               {/* Features multi-select */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Enabled Modules
                 </label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
@@ -483,11 +469,7 @@ export default function LicensePage() {
                         key={mod}
                         type="button"
                         onClick={() => toggleFeature(mod)}
-                        className={`px-3 py-2 rounded-[10px] text-sm font-medium border transition-colors ${
-                          checked
-                            ? 'bg-[#51459d] text-white border-[#51459d]'
-                            : 'bg-white text-gray-600 border-gray-200 hover:border-[#51459d]/40'
-                        }`}
+                        className={`px-3 py-2 rounded-[10px] text-sm font-medium border transition-colors ${ checked ? 'bg-[#51459d] text-white border-[#51459d]' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-[#51459d]/40' }`}
                       >
                         <span className="capitalize">{mod}</span>
                       </button>
@@ -516,11 +498,11 @@ export default function LicensePage() {
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Notes (optional)
                 </label>
                 <textarea
-                  className="w-full rounded-[10px] border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/40 focus:border-[#51459d]"
+                  className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/40 focus:border-[#51459d]"
                   rows={3}
                   placeholder="Internal notes about this license..."
                   {...form.register('notes')}

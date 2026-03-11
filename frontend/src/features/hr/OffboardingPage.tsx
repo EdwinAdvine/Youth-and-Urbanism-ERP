@@ -73,14 +73,14 @@ export default function OffboardingPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Employee Offboarding</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Employee Offboarding</h1>
         <p className="text-sm text-gray-500 mt-1">Structured checklist for employee departures</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Employee selection + details */}
         <Card>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Departing Employee</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Departing Employee</h3>
           <Select
             label="Select Employee"
             options={[
@@ -93,7 +93,7 @@ export default function OffboardingPage() {
 
           {selectedEmployee && (
             <div className="mt-4 space-y-3 text-sm">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-[10px]">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-950 rounded-[10px]">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
                   {selectedEmployee.first_name[0]}{selectedEmployee.last_name[0]}
                 </div>
@@ -118,9 +118,9 @@ export default function OffboardingPage() {
                 onChange={(e) => setReason(e.target.value)}
               />
               <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700">Notes</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
                 <textarea
-                  className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   rows={3}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
@@ -145,7 +145,7 @@ export default function OffboardingPage() {
                   <Badge variant={completedCount === totalCount ? 'success' : 'warning'}>
                     {completedCount} / {totalCount}
                   </Badge>
-                  <div className="w-48 bg-gray-100 rounded-full h-2">
+                  <div className="w-48 bg-gray-100 dark:bg-gray-900 rounded-full h-2">
                     <div
                       className="bg-primary h-2 rounded-full transition-all"
                       style={{ width: `${(completedCount / totalCount) * 100}%` }}
@@ -163,14 +163,14 @@ export default function OffboardingPage() {
 
               {categories.map((category) => (
                 <Card key={category}>
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">{category}</h3>
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">{category}</h3>
                   <div className="space-y-2">
                     {checklist
                       .filter((item) => item.category === category)
                       .map((item) => (
                         <label
                           key={item.id}
-                          className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                          className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                         >
                           <input
                             type="checkbox"

@@ -73,14 +73,14 @@ export default function InventoryDashboard() {
 
       {/* Stock Distribution + Valuation */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Stock by Category</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Stock by Category</h3>
           <p className="text-xs text-gray-400 mb-4">Units per category</p>
           <PieChart data={stockByCategory} innerRadius={50} height={260} />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Inventory Valuation</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Inventory Valuation</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly total stock value</p>
           <LineChart
             data={valuationData}
@@ -94,8 +94,8 @@ export default function InventoryDashboard() {
 
       {/* Turnover + Top Items */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Inventory Turnover</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Inventory Turnover</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly turnover ratio</p>
           <BarChart
             data={turnoverData}
@@ -106,8 +106,8 @@ export default function InventoryDashboard() {
           />
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Top Items by Value</h3>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Top Items by Value</h3>
           <p className="text-xs text-gray-400 mb-4">Highest value inventory items</p>
           <BarChart
             data={topItems}
@@ -120,8 +120,8 @@ export default function InventoryDashboard() {
       </div>
 
       {/* Warehouse Utilization */}
-      <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Warehouse Utilization</h3>
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Warehouse Utilization</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
           {warehouseData.map((wh) => (
             <div key={wh.name} className="flex flex-col items-center">

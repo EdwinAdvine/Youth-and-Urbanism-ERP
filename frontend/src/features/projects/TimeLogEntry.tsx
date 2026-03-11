@@ -96,12 +96,12 @@ export default function TimeLogEntry({ projectId, taskId, taskTitle, onClose }: 
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-500">
-        Log time for: <span className="font-medium text-gray-900">{taskTitle}</span>
+        Log time for: <span className="font-medium text-gray-900 dark:text-gray-100">{taskTitle}</span>
       </p>
 
       {/* Timer */}
-      <div className="bg-gray-50 rounded-[10px] p-4 text-center">
-        <p className="text-3xl font-mono font-bold text-gray-900 mb-3">{timerDisplay}</p>
+      <div className="bg-gray-50 dark:bg-gray-950 rounded-[10px] p-4 text-center">
+        <p className="text-3xl font-mono font-bold text-gray-900 dark:text-gray-100 mb-3">{timerDisplay}</p>
         <div className="flex items-center justify-center gap-2">
           {!isRunning ? (
             <Button size="sm" onClick={startTimer}>
@@ -122,7 +122,7 @@ export default function TimeLogEntry({ projectId, taskId, taskTitle, onClose }: 
       </div>
 
       {/* Manual entry */}
-      <div className="border-t border-gray-100 pt-4">
+      <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Or enter manually</p>
         <div className="flex items-end gap-3">
           <div className="w-24">

@@ -119,7 +119,7 @@ export default function TrainingPage() {
       label: 'Training',
       render: (t: Training) => (
         <div>
-          <p className="font-medium text-gray-900">{t.title}</p>
+          <p className="font-medium text-gray-900 dark:text-gray-100">{t.title}</p>
           {t.trainer && <p className="text-xs text-gray-400">Trainer: {t.trainer}</p>}
         </div>
       ),
@@ -177,7 +177,7 @@ export default function TrainingPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Training Programs</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Training Programs</h1>
           <p className="text-sm text-gray-500 mt-1">Manage employee training and development</p>
         </div>
         <Button onClick={openCreate}>Create Training</Button>
@@ -212,9 +212,9 @@ export default function TrainingPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input label="Title" required value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={3}
               value={form.description ?? ''}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
@@ -285,7 +285,7 @@ export default function TrainingPage() {
               attendees.map((a) => (
                 <div key={a.id} className="flex items-center justify-between px-4 py-3">
                   <div>
-                    <p className="font-medium text-sm text-gray-900">{a.employee_name ?? 'Unknown'}</p>
+                    <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{a.employee_name ?? 'Unknown'}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge variant={a.status === 'attended' ? 'success' : a.status === 'absent' ? 'danger' : 'default'}>
                         {a.status}

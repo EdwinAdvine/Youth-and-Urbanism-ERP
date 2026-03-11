@@ -92,9 +92,9 @@ export default function ScheduleMeetingDialog({ open, onClose, entityType, entit
           />
         </div>
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Description (optional)</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description (optional)</label>
           <textarea
-            className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}

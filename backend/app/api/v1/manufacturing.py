@@ -625,7 +625,7 @@ async def list_work_orders(
     priority: str | None = Query(None),
     search: str | None = Query(None),
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=500),
 ) -> dict[str, Any]:
     query = select(WorkOrder)
 

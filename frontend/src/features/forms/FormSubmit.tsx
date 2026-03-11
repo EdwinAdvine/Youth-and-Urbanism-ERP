@@ -53,7 +53,7 @@ export default function FormSubmit() {
   if (!form) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <h2 className="text-lg font-semibold text-gray-900">Form not found</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Form not found</h2>
         <p className="text-sm text-gray-500 mt-1">This form may have been deleted or does not exist.</p>
       </div>
     )
@@ -67,7 +67,7 @@ export default function FormSubmit() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-gray-900">Response Submitted</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Response Submitted</h2>
         <p className="text-sm text-gray-500 mt-2">Thank you for your submission.</p>
         <Button
           variant="ghost"
@@ -109,7 +109,7 @@ export default function FormSubmit() {
     <div className="max-w-2xl mx-auto space-y-6 px-4 sm:px-0 py-4 sm:py-0">
       {/* Form Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{form.title}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{form.title}</h1>
         {form.description && (
           <p className="text-sm text-gray-500 mt-2">{form.description}</p>
         )}
@@ -159,7 +159,7 @@ function FieldRenderer({ field, value, onChange, onCheckbox }: FieldRendererProp
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         {field.label}
         {field.is_required && <span className="text-[#ff3a6e] ml-1">*</span>}
       </label>
@@ -232,7 +232,7 @@ function FieldRenderer({ field, value, onChange, onCheckbox }: FieldRendererProp
           />
           <label
             htmlFor={`file-${field.id}`}
-            className="flex items-center justify-center gap-2 w-full rounded-[10px] border-2 border-dashed border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-600 cursor-pointer hover:border-[#51459d]/40 hover:bg-[#51459d]/5 transition-colors min-h-[56px]"
+            className="flex items-center justify-center gap-2 w-full rounded-[10px] border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-4 py-4 text-sm text-gray-600 dark:text-gray-400 cursor-pointer hover:border-[#51459d]/40 hover:bg-[#51459d]/5 transition-colors min-h-[56px]"
           >
             <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -259,7 +259,7 @@ function FieldRenderer({ field, value, onChange, onCheckbox }: FieldRendererProp
       {field.field_type === 'radio' && (
         <div className="space-y-1 pt-1">
           {field.options?.map((opt) => (
-            <label key={opt} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer py-2 px-2 rounded-[8px] hover:bg-gray-50 min-h-[44px]">
+            <label key={opt} className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300 cursor-pointer py-2 px-2 rounded-[8px] hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[44px]">
               <input
                 type="radio"
                 name={`field-${field.id}`}
@@ -277,7 +277,7 @@ function FieldRenderer({ field, value, onChange, onCheckbox }: FieldRendererProp
       {field.field_type === 'checkbox' && (
         <div className="space-y-1 pt-1">
           {field.options?.map((opt) => (
-            <label key={opt} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer py-2 px-2 rounded-[8px] hover:bg-gray-50 min-h-[44px]">
+            <label key={opt} className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300 cursor-pointer py-2 px-2 rounded-[8px] hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[44px]">
               <input
                 type="checkbox"
                 checked={((value as string[]) ?? []).includes(opt)}

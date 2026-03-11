@@ -54,37 +54,37 @@ export default function QuickTaskFAB({ projectId }: QuickTaskFABProps) {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
 
           {/* Bottom sheet */}
-          <div className="relative bg-white rounded-t-[16px] shadow-2xl p-5 pb-8 animate-slide-up">
+          <div className="relative bg-white dark:bg-gray-800 rounded-t-[16px] shadow-2xl p-5 pb-8 animate-slide-up">
             <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
-            <h3 className="text-base font-semibold text-gray-900 mb-4">Quick Add Task</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Quick Add Task</h3>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Title</label>
                 <input
                   autoFocus
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="What needs to be done?"
-                  className="w-full px-3 py-3 text-sm border border-gray-200 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] min-h-[44px]"
+                  className="w-full px-3 py-3 text-sm border border-gray-200 dark:border-gray-700 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] min-h-[44px]"
                   onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Assignee ID (optional)</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Assignee ID (optional)</label>
                 <input
                   value={assigneeId}
                   onChange={(e) => setAssigneeId(e.target.value)}
                   placeholder="User ID"
-                  className="w-full px-3 py-3 text-sm border border-gray-200 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] min-h-[44px]"
+                  className="w-full px-3 py-3 text-sm border border-gray-200 dark:border-gray-700 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] min-h-[44px]"
                 />
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setOpen(false)}
-                  className="flex-1 px-4 py-3 text-sm text-gray-600 bg-gray-100 rounded-[10px] hover:bg-gray-200 transition-colors min-h-[44px]"
+                  className="flex-1 px-4 py-3 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-900 rounded-[10px] hover:bg-gray-200 transition-colors min-h-[44px]"
                 >
                   Cancel
                 </button>

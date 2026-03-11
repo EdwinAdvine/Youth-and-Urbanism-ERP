@@ -32,7 +32,7 @@ export default function AdminDashboard() {
     <div className="p-4 sm:p-6 space-y-5 sm:space-y-6 max-w-6xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h1>
         <p className="text-gray-500 text-sm mt-1">System overview and administration</p>
       </div>
 
@@ -48,7 +48,7 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm text-gray-500 font-medium">{card.label}</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{card.value}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{card.value}</p>
                 </div>
                 <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl ${card.bg} flex items-center justify-center text-xl sm:text-2xl`}>
                   {card.icon}
@@ -62,16 +62,16 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Quick Actions */}
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-3">
             {quickActions.map((action) => (
               <button
                 key={action.label}
                 onClick={() => navigate(action.href)}
-                className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 hover:border-primary/30 hover:bg-primary/5 transition-colors text-left group min-h-[44px]"
+                className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 dark:border-gray-800 hover:border-primary/30 hover:bg-primary/5 transition-colors text-left group min-h-[44px]"
               >
                 <span className="text-xl">{action.icon}</span>
-                <span className="text-sm font-medium text-gray-700 group-hover:text-primary transition-colors">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors">
                   {action.label}
                 </span>
               </button>
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
 
         {/* System Status */}
         <Card>
-          <h2 className="text-base font-semibold text-gray-900 mb-4">System Status</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">System Status</h2>
           <div className="space-y-3">
             {[
               { name: 'PostgreSQL', status: 'healthy', detail: 'postgres:5432' },
@@ -93,7 +93,7 @@ export default function AdminDashboard() {
               <div key={svc.name} className="flex items-center justify-between py-1.5">
                 <div className="flex items-center gap-2.5">
                   <div className={`w-2 h-2 rounded-full ${svc.status === 'healthy' ? 'bg-success' : 'bg-danger'}`} />
-                  <span className="text-sm font-medium text-gray-700">{svc.name}</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{svc.name}</span>
                 </div>
                 <span className="text-xs text-gray-400">{svc.detail}</span>
               </div>
@@ -104,7 +104,7 @@ export default function AdminDashboard() {
 
       {/* Admin navigation cards */}
       <div>
-        <h2 className="text-base font-semibold text-gray-900 mb-4">Administration</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Administration</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             { label: 'Users', desc: 'Manage system users and access', icon: '👤', href: '/admin/users', color: 'from-blue-400 to-blue-600' },
@@ -116,13 +116,13 @@ export default function AdminDashboard() {
             <button
               key={item.label}
               onClick={() => navigate(item.href)}
-              className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-[10px] border border-gray-100 hover:border-primary/30 hover:shadow-md transition-all text-left group min-h-[44px]"
+              className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 hover:border-primary/30 hover:shadow-md transition-all text-left group min-h-[44px]"
             >
               <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-2xl shrink-0 shadow-sm`}>
                 {item.icon}
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800 group-hover:text-primary transition-colors">{item.label}</p>
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 group-hover:text-primary transition-colors">{item.label}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
               </div>
             </button>

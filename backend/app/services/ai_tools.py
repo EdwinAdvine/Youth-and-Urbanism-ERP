@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.sanitize import like_pattern
@@ -92,6 +92,10 @@ TOOL_APPROVAL_TIERS: dict[str, str] = {
     "share_file": "require_approval",
     "update_ai_config": "require_approval",
     "get_system_metrics": "require_approval",
+    # ── Handbook (read-only) ──────────────────────────────────────────────────
+    "search_handbook": "auto_approve",
+    "get_handbook_article": "auto_approve",
+    "list_handbook_guides": "auto_approve",
 }
 
 
@@ -1013,6 +1017,53 @@ TOOL_DEFINITIONS = [
                     "deal_id": {"type": "string", "description": "UUID of the deal (optional)"},
                     "contact_id": {"type": "string", "description": "UUID of the CRM contact (optional)"},
                     "opportunity_id": {"type": "string", "description": "UUID of the opportunity (optional)"},
+                },
+                "required": [],
+            },
+        },
+    },
+    # ── Handbook tools ────────────────────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "search_handbook",
+            "description": "Search the Urban ERP handbook for guides, how-tos, and help articles",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query"},
+                    "module": {"type": "string", "description": "Optional: filter by module (finance, hr, crm, etc.)"},
+                    "limit": {"type": "integer", "description": "Max results (default 5)", "default": 5},
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_handbook_article",
+            "description": "Get the full content of a handbook article by slug or ID",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slug": {"type": "string", "description": "Article slug or UUID"},
+                },
+                "required": ["slug"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_handbook_guides",
+            "description": "List available handbook guides, optionally filtered by module or category",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "module": {"type": "string", "description": "Filter by ERP module"},
+                    "category": {"type": "string", "description": "Filter by category slug"},
+                    "article_type": {"type": "string", "enum": ["guide", "quickstart", "faq", "pro_tip"], "description": "Type of article"},
                 },
                 "required": [],
             },
@@ -5429,5 +5480,131 @@ class ToolExecutor:
                 f"Types: {', '.join(f'{k}: {len(v)}' for k, v in sorted(by_type.items(), key=lambda x: -len(x[1]))[:5])}\n\n"
                 "Suggestions:\n"
                 + "\n".join(f"  {i+1}. {s['description']}" for i, s in enumerate(suggestions))
+            ),
+        }
+
+    # ── Handbook tools ────────────────────────────────────────────────────────
+
+    async def _exec_search_handbook(
+        self, query: str, module: str | None = None, limit: int = 5
+    ) -> dict[str, Any]:
+        from app.models.handbook import HandbookArticle  # noqa: PLC0415
+
+        term = f"%{query}%"
+        conditions = [
+            HandbookArticle.status == "published",
+            or_(
+                HandbookArticle.title.ilike(term),
+                HandbookArticle.excerpt.ilike(term),
+                HandbookArticle.content_markdown.ilike(term),
+            ),
+        ]
+        if module:
+            conditions.append(HandbookArticle.module == module)
+
+        result = await self.db.execute(
+            select(HandbookArticle)
+            .where(*conditions)
+            .order_by(HandbookArticle.view_count.desc())
+            .limit(limit)
+        )
+        articles = result.scalars().all()
+        items = [
+            {
+                "id": str(a.id),
+                "title": a.title,
+                "slug": a.slug,
+                "excerpt": a.excerpt or "",
+                "module": a.module or "",
+                "article_type": a.article_type,
+            }
+            for a in articles
+        ]
+        return {
+            "articles": items,
+            "total": len(items),
+            "result": (
+                f"Found {len(items)} handbook articles for '{query}':\n"
+                + "\n".join(f"  - {a['title']} ({a['article_type']})" for a in items)
+                if items
+                else f"No handbook articles found for '{query}'."
+            ),
+        }
+
+    async def _exec_get_handbook_article(self, slug: str) -> dict[str, Any]:
+        from app.models.handbook import HandbookArticle  # noqa: PLC0415
+
+        result = await self.db.execute(
+            select(HandbookArticle).where(
+                HandbookArticle.slug == slug,
+                HandbookArticle.status == "published",
+            )
+        )
+        article = result.scalar_one_or_none()
+        if not article:
+            return {"error": f"Article '{slug}' not found."}
+
+        return {
+            "id": str(article.id),
+            "title": article.title,
+            "slug": article.slug,
+            "content": article.content_markdown[:3000],
+            "excerpt": article.excerpt or "",
+            "module": article.module or "",
+            "ai_shortcut_prompt": article.ai_shortcut_prompt or "",
+            "result": f"Article: {article.title}\n\n{article.content_markdown[:2000]}",
+        }
+
+    async def _exec_list_handbook_guides(
+        self,
+        module: str | None = None,
+        category: str | None = None,
+        article_type: str | None = None,
+    ) -> dict[str, Any]:
+        from app.models.handbook import HandbookArticle, HandbookCategory  # noqa: PLC0415
+
+        conditions = [HandbookArticle.status == "published"]
+        if module:
+            conditions.append(HandbookArticle.module == module)
+        if article_type:
+            conditions.append(HandbookArticle.article_type == article_type)
+        if category:
+            cat_result = await self.db.execute(
+                select(HandbookCategory.id).where(HandbookCategory.slug == category)
+            )
+            cat_id = cat_result.scalar_one_or_none()
+            if cat_id:
+                conditions.append(HandbookArticle.category_id == cat_id)
+
+        result = await self.db.execute(
+            select(HandbookArticle)
+            .where(*conditions)
+            .order_by(HandbookArticle.sort_order, HandbookArticle.title)
+            .limit(20)
+        )
+        articles = result.scalars().all()
+        items = [
+            {
+                "id": str(a.id),
+                "title": a.title,
+                "slug": a.slug,
+                "module": a.module or "",
+                "article_type": a.article_type,
+            }
+            for a in articles
+        ]
+        filter_desc = ""
+        if module:
+            filter_desc += f" for module '{module}'"
+        if category:
+            filter_desc += f" in category '{category}'"
+        return {
+            "articles": items,
+            "total": len(items),
+            "result": (
+                f"Found {len(items)} handbook guides{filter_desc}:\n"
+                + "\n".join(f"  - {a['title']} ({a['article_type']})" for a in items)
+                if items
+                else f"No handbook guides found{filter_desc}."
             ),
         }

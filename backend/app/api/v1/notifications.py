@@ -71,7 +71,7 @@ async def unread_count(
     current_user: CurrentUser,
 ) -> UnreadCountOut:
     """Return the number of unread notifications for the current user."""
-    q = select(func.count()).where(
+    q = select(func.count()).select_from(Notification).where(
         Notification.user_id == current_user.id,
         Notification.is_read == False,  # noqa: E712
     )
@@ -120,6 +120,26 @@ async def mark_read(
         )
 
     notif.is_read = True
+    await db.commit()
+    await db.refresh(notif)
+    return NotificationOut.model_validate(notif)
+
+
+@router.post("/test", response_model=NotificationOut, status_code=status.HTTP_201_CREATED)
+async def create_test_notification(
+    db: DBSession,
+    current_user: CurrentUser,
+) -> NotificationOut:
+    """Create a test notification for the current user (useful for verifying the system)."""
+    notif = Notification(
+        user_id=current_user.id,
+        title="Test Notification",
+        message="This is a test notification to confirm the system is working.",
+        type="info",
+        module=None,
+        link_url="/notifications",
+    )
+    db.add(notif)
     await db.commit()
     await db.refresh(notif)
     return NotificationOut.model_validate(notif)

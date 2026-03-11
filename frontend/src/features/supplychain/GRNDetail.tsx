@@ -36,7 +36,7 @@ export default function GRNDetail() {
         <button onClick={() => navigate('/supply-chain/grn')} className="text-gray-400 hover:text-gray-600">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
         </button>
-        <h1 className="text-xl font-bold text-gray-900">{grn.grn_number}</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{grn.grn_number}</h1>
         <Badge variant={STATUS_BADGE[grn.status] ?? 'default'}>{grn.status}</Badge>
         <div className="ml-auto flex gap-2">
           {(grn.status === 'draft' || grn.status === 'pending') && (
@@ -64,10 +64,10 @@ export default function GRNDetail() {
       </Card>
 
       <Card className="p-5">
-        <h3 className="font-semibold text-gray-900 mb-3">Line Items — Ordered vs Received</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Line Items — Ordered vs Received</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-gray-100 text-left text-gray-500">
+            <thead><tr className="border-b border-gray-100 dark:border-gray-800 text-left text-gray-500">
               <th className="pb-2 pr-4">Item ID</th>
               <th className="pb-2 pr-4 text-right">Ordered</th>
               <th className="pb-2 pr-4 text-right">Received</th>
@@ -77,7 +77,7 @@ export default function GRNDetail() {
             </tr></thead>
             <tbody>
               {(grn.lines ?? []).map((line) => (
-                <tr key={line.id} className="border-b border-gray-50">
+                <tr key={line.id} className="border-b border-gray-50 dark:border-gray-800">
                   <td className="py-2 pr-4 font-mono text-xs">{line.item_id.slice(0, 8)}...</td>
                   <td className="py-2 pr-4 text-right">{line.ordered_quantity}</td>
                   <td className="py-2 pr-4 text-right">{line.received_quantity}</td>
@@ -97,8 +97,8 @@ export default function GRNDetail() {
       {/* Post GRN Confirmation Dialog */}
       {showPostConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-sm p-6">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">Post GRN</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Post GRN</h3>
             <p className="text-sm text-gray-500 mb-4">Are you sure you want to post this GRN? This action will update inventory and cannot be undone.</p>
             <div className="flex justify-end gap-2">
               <Button size="sm" variant="outline" onClick={() => setShowPostConfirm(false)}>Cancel</Button>

@@ -142,7 +142,7 @@ export default function AccountsPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => openEdit(row)}
-            className="p-1.5 rounded-md text-gray-400 hover:text-primary hover:bg-gray-50 transition-colors"
+            className="p-1.5 rounded-md text-gray-400 hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             title="Edit"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -176,7 +176,7 @@ export default function AccountsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Chart of Accounts</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Chart of Accounts</h1>
           <p className="text-sm text-gray-500 mt-1">Manage your financial accounts</p>
         </div>
         <Button onClick={openCreate}>
@@ -248,12 +248,12 @@ export default function AccountsPage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
             <textarea
               value={form.description ?? ''}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
               placeholder="Optional description..."
             />
           </div>

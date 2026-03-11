@@ -45,9 +45,9 @@ export default function QuickNoteFAB({ onNoteCreated }: QuickNoteFABProps) {
       {open && (
         <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          <div className="relative bg-white rounded-t-[16px] shadow-2xl p-5 pb-8" style={{ animation: 'slideUp 0.25s ease-out' }}>
+          <div className="relative bg-white dark:bg-gray-800 rounded-t-[16px] shadow-2xl p-5 pb-8" style={{ animation: 'slideUp 0.25s ease-out' }}>
             <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
-            <h3 className="text-base font-semibold text-gray-900 mb-4">Quick Note</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Quick Note</h3>
 
             <div className="space-y-3">
               <input
@@ -55,19 +55,19 @@ export default function QuickNoteFAB({ onNoteCreated }: QuickNoteFABProps) {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Note title..."
-                className="w-full px-3 py-3 text-sm border border-gray-200 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] min-h-[44px]"
+                className="w-full px-3 py-3 text-sm border border-gray-200 dark:border-gray-700 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] min-h-[44px]"
               />
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Start writing..."
                 rows={4}
-                className="w-full px-3 py-3 text-sm border border-gray-200 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] resize-none min-h-[44px]"
+                className="w-full px-3 py-3 text-sm border border-gray-200 dark:border-gray-700 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] resize-none min-h-[44px]"
               />
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setOpen(false)}
-                  className="flex-1 px-4 py-3 text-sm text-gray-600 bg-gray-100 rounded-[10px] hover:bg-gray-200 transition-colors min-h-[44px]"
+                  className="flex-1 px-4 py-3 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-900 rounded-[10px] hover:bg-gray-200 transition-colors min-h-[44px]"
                 >
                   Cancel
                 </button>

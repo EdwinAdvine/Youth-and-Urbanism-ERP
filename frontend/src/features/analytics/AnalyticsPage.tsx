@@ -106,8 +106,8 @@ function DonutChart({ segments }: { segments: { label: string; value: number; co
         {segments.map((seg) => (
           <div key={seg.label} className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: seg.color }} />
-            <span className="text-xs text-gray-600">{seg.label}</span>
-            <span className="text-xs font-semibold text-gray-900 ml-auto">{seg.value}</span>
+            <span className="text-xs text-gray-600 dark:text-gray-400">{seg.label}</span>
+            <span className="text-xs font-semibold text-gray-900 dark:text-gray-100 ml-auto">{seg.value}</span>
           </div>
         ))}
       </div>
@@ -119,7 +119,7 @@ function DonutChart({ segments }: { segments: { label: string; value: number; co
 
 function StatCard({ label, value, change, color, icon }: { label: string; value: string; change?: number; color: string; icon: string }) {
   return (
-    <div className="bg-white border border-gray-100 rounded-[10px] p-4 shadow-sm">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-4 shadow-sm">
       <div className="flex items-start justify-between mb-3">
         <div className="w-9 h-9 rounded-[8px] flex items-center justify-center text-lg" style={{ backgroundColor: color + '20' }}>
           {icon}
@@ -130,7 +130,7 @@ function StatCard({ label, value, change, color, icon }: { label: string; value:
           </span>
         )}
       </div>
-      <p className="text-xl font-bold text-gray-900">{value}</p>
+      <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
       <p className="text-xs text-gray-500 mt-0.5">{label}</p>
     </div>
   )
@@ -184,15 +184,15 @@ export default function AnalyticsPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 sm:px-5 py-2 sm:py-3 flex items-center gap-3 sm:gap-4 shrink-0">
-        <h1 className="text-sm sm:text-base font-semibold text-gray-900">Analytics</h1>
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800 px-4 sm:px-5 py-2 sm:py-3 flex items-center gap-3 sm:gap-4 shrink-0">
+        <h1 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100">Analytics</h1>
         <div className="flex-1" />
-        <div className="flex items-center border border-gray-200 rounded-[8px] overflow-hidden">
+        <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-[8px] overflow-hidden">
           {(['overview', 'finance', 'operations'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-3 py-1.5 text-xs font-medium transition-colors capitalize ${tab === t ? 'bg-[#51459d] text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors capitalize ${tab === t ? 'bg-[#51459d] text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
             >
               {t}
             </button>
@@ -213,10 +213,10 @@ export default function AnalyticsPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Revenue trend */}
-              <div className="lg:col-span-2 bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
+              <div className="lg:col-span-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Revenue Trend</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Revenue Trend</h3>
                     <p className="text-xs text-gray-400 mt-0.5">Monthly revenue (KSh M)</p>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -234,8 +234,8 @@ export default function AnalyticsPage() {
               </div>
 
               {/* Module usage */}
-              <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">Module Usage</h3>
+              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Module Usage</h3>
                 <p className="text-xs text-gray-400 mb-4">By feature access</p>
                 {moduleSegments.length > 0 ? (
                   <DonutChart segments={moduleSegments} />
@@ -249,7 +249,7 @@ export default function AnalyticsPage() {
 
             {/* Additional metrics */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="bg-white border border-gray-100 rounded-[10px] p-4 shadow-sm">
+              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-4 shadow-sm">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Top Customers (Revenue)</h4>
                 <div className="space-y-2.5">
                   {[
@@ -260,10 +260,10 @@ export default function AnalyticsPage() {
                   ].map((c) => (
                     <div key={c.name}>
                       <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-gray-700">{c.name}</span>
+                        <span className="text-gray-700 dark:text-gray-300">{c.name}</span>
                         <span className="text-gray-500 font-medium">{c.value}</span>
                       </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
                         <div className="h-full rounded-full bg-[#51459d]" style={{ width: `${c.pct}%` }} />
                       </div>
                     </div>
@@ -271,7 +271,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-100 rounded-[10px] p-4 shadow-sm">
+              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-4 shadow-sm">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Invoice Status</h4>
                 <div className="space-y-2">
                   {[
@@ -283,14 +283,14 @@ export default function AnalyticsPage() {
                     <div key={item.label} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                        <span className="text-xs text-gray-600">{item.label}</span>
+                        <span className="text-xs text-gray-600 dark:text-gray-400">{item.label}</span>
                       </div>
-                      <span className="text-xs font-semibold text-gray-900">{item.count}</span>
+                      <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{item.count}</span>
                     </div>
                   ))}
                 </div>
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden flex gap-0.5">
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                  <div className="h-2 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden flex gap-0.5">
                     {[{ pct: 52, color: '#6fd943' }, { pct: 28, color: '#ffa21d' }, { pct: 8, color: '#ff3a6e' }, { pct: 12, color: '#9ca3af' }].map((s, i) => (
                       <div key={i} className="h-full rounded-full" style={{ width: `${s.pct}%`, backgroundColor: s.color }} />
                     ))}
@@ -298,7 +298,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-100 rounded-[10px] p-4 shadow-sm">
+              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-4 shadow-sm">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">HR Overview</h4>
                 <div className="space-y-3">
                   {[
@@ -308,10 +308,10 @@ export default function AnalyticsPage() {
                   ].map((item) => (
                     <div key={item.label}>
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-600">{item.label}</span>
-                        <span className="font-semibold text-gray-900">{item.value}<span className="text-gray-400 font-normal">/{item.total}</span></span>
+                        <span className="text-gray-600 dark:text-gray-400">{item.label}</span>
+                        <span className="font-semibold text-gray-900 dark:text-gray-100">{item.value}<span className="text-gray-400 font-normal">/{item.total}</span></span>
                       </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${(parseInt(item.value) / parseInt(item.total)) * 100}%`, backgroundColor: item.color }} />
                       </div>
                     </div>
@@ -321,16 +321,16 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Top Selling Products */}
-            <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900">Top Selling Products</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Top Selling Products</h3>
                   <p className="text-xs text-gray-400 mt-0.5">Ranked by units sold</p>
                 </div>
                 <select
                   value={topProductsLimit}
                   onChange={(e) => setTopProductsLimit(Number(e.target.value))}
-                  className="text-xs border border-gray-200 rounded-[6px] px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
+                  className="text-xs border border-gray-200 dark:border-gray-700 rounded-[6px] px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#51459d]/40"
                 >
                   <option value={5}>Top 5</option>
                   <option value={10}>Top 10</option>
@@ -345,7 +345,7 @@ export default function AnalyticsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-100">
+                      <tr className="border-b border-gray-100 dark:border-gray-800">
                         <th className="text-left py-2 pr-3 text-xs font-semibold text-gray-500 w-8">#</th>
                         <th className="text-left py-2 pr-3 text-xs font-semibold text-gray-500">Product Name</th>
                         <th className="text-right py-2 pr-3 text-xs font-semibold text-gray-500 w-24">Units Sold</th>
@@ -354,11 +354,11 @@ export default function AnalyticsPage() {
                     </thead>
                     <tbody>
                       {(topProductsData?.data ?? []).map((p: { name: string; units_sold: number; revenue: number }, i: number) => (
-                        <tr key={i} className="border-b border-gray-50">
+                        <tr key={i} className="border-b border-gray-50 dark:border-gray-800">
                           <td className="py-2 pr-3 text-gray-400 text-xs">{i + 1}</td>
-                          <td className="py-2 pr-3 font-medium text-gray-900">{p.name}</td>
-                          <td className="py-2 pr-3 text-right text-gray-700">{p.units_sold.toLocaleString()}</td>
-                          <td className="py-2 text-right font-medium text-gray-900">{formatKSh(p.revenue)}</td>
+                          <td className="py-2 pr-3 font-medium text-gray-900 dark:text-gray-100">{p.name}</td>
+                          <td className="py-2 pr-3 text-right text-gray-700 dark:text-gray-300">{p.units_sold.toLocaleString()}</td>
+                          <td className="py-2 text-right font-medium text-gray-900 dark:text-gray-100">{formatKSh(p.revenue)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -373,8 +373,8 @@ export default function AnalyticsPage() {
           <div className="p-5 space-y-5 max-w-5xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Revenue */}
-              <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">Revenue Trend</h3>
+              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Revenue Trend</h3>
                 <p className="text-xs text-gray-400 mb-4">Monthly revenue (KSh M)</p>
                 {revenueValues.length > 0 ? (
                   <BarChart data={revenueValues} labels={revenueLabels} color="#51459d" />
@@ -384,8 +384,8 @@ export default function AnalyticsPage() {
               </div>
 
               {/* Expenses */}
-              <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">Expense Trend</h3>
+              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Expense Trend</h3>
                 <p className="text-xs text-gray-400 mb-4">Monthly expenses (KSh M)</p>
                 {expenseValues.length > 0 ? (
                   <BarChart data={expenseValues} labels={expenseLabels} color="#ff3a6e" />
@@ -415,8 +415,8 @@ export default function AnalyticsPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Module usage */}
-              <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">Module Usage</h3>
+              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Module Usage</h3>
                 <p className="text-xs text-gray-400 mb-4">Records by module</p>
                 {moduleSegments.length > 0 ? (
                   <DonutChart segments={moduleSegments} />
@@ -426,8 +426,8 @@ export default function AnalyticsPage() {
               </div>
 
               {/* Support breakdown */}
-              <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">Support Tickets</h3>
+              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Support Tickets</h3>
                 <p className="text-xs text-gray-400 mb-4">Current status breakdown</p>
                 <div className="space-y-3">
                   {[
@@ -437,10 +437,10 @@ export default function AnalyticsPage() {
                   ].map((item) => (
                     <div key={item.label}>
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-600">{item.label}</span>
-                        <span className="font-semibold text-gray-900">{item.value}</span>
+                        <span className="text-gray-600 dark:text-gray-400">{item.label}</span>
+                        <span className="font-semibold text-gray-900 dark:text-gray-100">{item.value}</span>
                       </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full"
                           style={{

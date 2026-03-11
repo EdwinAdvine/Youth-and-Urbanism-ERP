@@ -104,7 +104,7 @@ export default function MobilePayment({
 
   if (sessionLoading) {
     return (
-      <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
         <Spinner size="lg" />
       </div>
     )
@@ -112,8 +112,8 @@ export default function MobilePayment({
 
   if (!session) {
     return (
-      <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-2">No Active Session</h2>
+      <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col items-center justify-center p-6">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">No Active Session</h2>
         <p className="text-gray-500 mb-4 text-center">Open a POS session before accepting payments.</p>
         <Button onClick={() => navigate('/pos/sessions')} className="min-h-[52px] w-full max-w-xs">
           Go to Sessions
@@ -130,29 +130,29 @@ export default function MobilePayment({
   ].filter((v, i, a) => a.indexOf(v) === i && v >= total).slice(0, 4)
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col safe-area-inset">
+    <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col safe-area-inset">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950">
         <button
           onClick={onCancel}
-          className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-[10px] text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+          className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-[10px] text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors"
         >
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <h1 className="text-lg font-bold text-gray-900">Payment</h1>
+        <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Payment</h1>
         <div className="w-12" />
       </div>
 
       {/* Total Display */}
-      <div className="text-center py-6 bg-white border-b border-gray-100">
+      <div className="text-center py-6 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800">
         <p className="text-sm text-gray-500 mb-1">Total Due</p>
-        <p className="text-4xl font-bold text-gray-900">{formatCurrency(total)}</p>
+        <p className="text-4xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(total)}</p>
       </div>
 
       {/* Payment Method Tabs */}
-      <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50">
+      <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50 dark:bg-gray-950">
         {([
           { key: 'cash' as const, label: 'Cash', icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z' },
           { key: 'card' as const, label: 'Card', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
@@ -164,7 +164,7 @@ export default function MobilePayment({
             className={`min-h-[56px] flex flex-col items-center justify-center gap-1 rounded-[10px] border text-sm font-medium transition-all active:scale-95 ${
               method === m.key
                 ? 'border-primary bg-primary text-white shadow-sm'
-                : 'border-gray-200 bg-white text-gray-700 active:bg-gray-50'
+                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 active:bg-gray-50 dark:active:bg-gray-700'
             }`}
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -180,9 +180,9 @@ export default function MobilePayment({
         {method === 'cash' && (
           <div className="p-4 space-y-4">
             {/* Amount display */}
-            <div className="text-center bg-gray-50 rounded-[10px] p-4">
+            <div className="text-center bg-gray-50 dark:bg-gray-950 rounded-[10px] p-4">
               <p className="text-sm text-gray-500 mb-1">Amount Tendered</p>
-              <p className="text-3xl font-bold text-gray-900">${displayAmount}</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">${displayAmount}</p>
               {change > 0 && (
                 <p className="text-lg font-semibold text-green-600 mt-2">Change: {formatCurrency(change)}</p>
               )}
@@ -207,7 +207,7 @@ export default function MobilePayment({
                 <button
                   key={key}
                   onClick={() => handleKeypad(key)}
-                  className="min-h-[56px] rounded-[10px] bg-white border border-gray-200 text-lg font-semibold text-gray-900 flex items-center justify-center hover:bg-gray-50 active:bg-gray-100 active:scale-95 transition-all"
+                  className="min-h-[56px] rounded-[10px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-700 active:scale-95 transition-all"
                 >
                   {key === 'backspace' ? (
                     <svg className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -220,7 +220,7 @@ export default function MobilePayment({
 
             <button
               onClick={() => handleKeypad('clear')}
-              className="w-full min-h-[48px] rounded-[10px] bg-gray-100 text-gray-600 text-sm font-medium hover:bg-gray-200 active:bg-gray-300 transition-colors"
+              className="w-full min-h-[48px] rounded-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 transition-colors"
             >
               Clear
             </button>
@@ -242,12 +242,12 @@ export default function MobilePayment({
 
         {method === 'split' && (
           <div className="p-4 space-y-4">
-            <div className="bg-gray-50 rounded-[10px] p-4">
+            <div className="bg-gray-50 dark:bg-gray-950 rounded-[10px] p-4">
               <p className="text-sm text-gray-500 mb-1">Remaining to allocate</p>
               <p className={`text-2xl font-bold ${
                 (total - (parseFloat(splitCash) || 0) - (parseFloat(splitCard) || 0)) <= 0
                   ? 'text-green-600'
-                  : 'text-gray-900'
+                  : 'text-gray-900 dark:text-gray-100'
               }`}>
                 {formatCurrency(Math.max(0, total - (parseFloat(splitCash) || 0) - (parseFloat(splitCard) || 0)))}
               </p>
@@ -255,25 +255,25 @@ export default function MobilePayment({
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cash Amount</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cash Amount</label>
                 <input
                   type="number"
                   step="0.01"
                   value={splitCash}
                   onChange={(e) => setSplitCash(e.target.value)}
                   placeholder="0.00"
-                  className="w-full min-h-[52px] rounded-[10px] border border-gray-300 px-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full min-h-[52px] rounded-[10px] border border-gray-300 dark:border-gray-600 px-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Card Amount</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Card Amount</label>
                 <input
                   type="number"
                   step="0.01"
                   value={splitCard}
                   onChange={(e) => setSplitCard(e.target.value)}
                   placeholder="0.00"
-                  className="w-full min-h-[52px] rounded-[10px] border border-gray-300 px-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full min-h-[52px] rounded-[10px] border border-gray-300 dark:border-gray-600 px-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
               <button
@@ -281,7 +281,7 @@ export default function MobilePayment({
                   const cash = parseFloat(splitCash) || 0
                   setSplitCard(Math.max(0, total - cash).toFixed(2))
                 }}
-                className="w-full min-h-[48px] rounded-[10px] bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 active:bg-gray-300 transition-colors"
+                className="w-full min-h-[48px] rounded-[10px] bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 transition-colors"
               >
                 Auto-fill remaining to card
               </button>
@@ -291,7 +291,7 @@ export default function MobilePayment({
       </div>
 
       {/* Bottom action */}
-      <div className="p-4 border-t border-gray-200 bg-white">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <Button
           className="w-full min-h-[56px] text-lg font-semibold"
           size="lg"

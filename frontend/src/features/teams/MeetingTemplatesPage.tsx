@@ -75,7 +75,7 @@ export default function MeetingTemplatesPage() {
               {tmpl.default_agenda && (
                 <p className="text-xs text-gray-400 line-clamp-2 mb-3">{tmpl.default_agenda}</p>
               )}
-              <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
+              <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
                 <span className="text-xs text-gray-400">{new Date(tmpl.created_at).toLocaleDateString()}</span>
                 <Button size="sm" variant="outline">Use Template</Button>
               </div>
@@ -95,7 +95,7 @@ export default function MeetingTemplatesPage() {
               value={agenda}
               onChange={(e) => setAgenda(e.target.value)}
               placeholder="1. Updates\n2. Blockers\n3. Action items"
-              className="w-full rounded-[10px] border border-gray-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={4}
             />
           </div>

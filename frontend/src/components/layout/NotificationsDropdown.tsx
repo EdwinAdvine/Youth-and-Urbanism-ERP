@@ -63,14 +63,14 @@ function DropdownItem({
   return (
     <button
       onClick={handleClick}
-      className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-gray-50 ${
+      className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 ${
         !notification.is_read ? 'bg-primary/5' : ''
       }`}
     >
       <span className="text-base shrink-0 mt-0.5">{notifTypeIcon(notification.type)}</span>
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-1">
-          <p className={`text-sm leading-snug flex-1 truncate ${!notification.is_read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+          <p className={`text-sm leading-snug flex-1 truncate ${!notification.is_read ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300'}`}>
             {notification.title}
           </p>
           {!notification.is_read && (
@@ -128,7 +128,7 @@ export function NotificationsDropdown({ open, onToggle, onClose }: Notifications
       {/* Bell button */}
       <button
         onClick={onToggle}
-        className="relative p-2 rounded-[8px] hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+        className="relative p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
         title="Notifications"
       >
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -148,10 +148,10 @@ export function NotificationsDropdown({ open, onToggle, onClose }: Notifications
 
       {/* Dropdown panel */}
       {open && (
-        <div className="absolute right-0 mt-1 w-80 bg-white rounded-[10px] shadow-xl border border-gray-100 z-50 overflow-hidden">
+        <div className="absolute right-0 mt-1 w-80 bg-white dark:bg-gray-800 rounded-[10px] shadow-xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 text-sm">Notifications</h3>
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
@@ -178,7 +178,7 @@ export function NotificationsDropdown({ open, onToggle, onClose }: Notifications
                 <p className="text-sm text-gray-500">No new notifications</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-gray-50 dark:divide-gray-700">
                 {notifications.map((notif) => (
                   <DropdownItem
                     key={notif.id}
@@ -191,10 +191,10 @@ export function NotificationsDropdown({ open, onToggle, onClose }: Notifications
           </div>
 
           {/* Footer */}
-          <div className="border-t border-gray-100">
+          <div className="border-t border-gray-100 dark:border-gray-700">
             <button
               onClick={handleViewAll}
-              className="w-full px-4 py-3 text-sm font-medium text-primary hover:bg-gray-50 transition-colors text-center"
+              className="w-full px-4 py-3 text-sm font-medium text-primary hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center"
             >
               View all notifications
             </button>

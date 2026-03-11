@@ -12,6 +12,7 @@ from app.models.hr import Employee
 from app.models.inventory import InventoryItem
 from app.models.projects import Project
 from app.models.user import User
+from app.models.handbook import HandbookArticle
 
 router = APIRouter()
 
@@ -108,6 +109,21 @@ async def global_search(
             "module": "projects",
             "label": "Projects",
             "items": [{"id": str(p.id), "title": p.name, "subtitle": p.status, "link": f"/projects/{p.id}"} for p in projects],
+        })
+
+    # Handbook articles
+    hb_result = await db.execute(
+        select(HandbookArticle).where(
+            HandbookArticle.status == "published",
+            or_(HandbookArticle.title.ilike(term), HandbookArticle.excerpt.ilike(term))
+        ).limit(5)
+    )
+    hb_articles = hb_result.scalars().all()
+    if hb_articles:
+        results.append({
+            "module": "handbook",
+            "label": "Handbook",
+            "items": [{"id": str(a.id), "title": a.title, "subtitle": a.excerpt or a.article_type, "link": f"/handbook/articles/{a.slug}"} for a in hb_articles],
         })
 
     return {"query": q, "results": results}

@@ -45,7 +45,7 @@ function CashFlowSection({ title, items, total, colorClass }: SectionProps) {
       ) : (
         <div className="space-y-2">
           {items.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+            <div key={idx} className="flex items-center justify-between py-1.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
               <span className="text-sm text-gray-700">{item.description}</span>
               <span className={cn('text-sm font-medium', item.amount >= 0 ? 'text-green-700' : 'text-danger')}>
                 {formatCurrency(item.amount)}

@@ -182,7 +182,7 @@ export default function GRNPage() {
       key: 'received_date',
       label: 'Received Date',
       render: (row: GoodsReceivedNote) => (
-        <span className="text-gray-600">{formatDate(row.received_date)}</span>
+        <span className="text-gray-600 dark:text-gray-400">{formatDate(row.received_date)}</span>
       ),
     },
     {
@@ -234,7 +234,7 @@ export default function GRNPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Goods Received Notes</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Goods Received Notes</h1>
           <p className="text-sm text-gray-500 mt-0.5">{data?.total ?? 0} total GRNs</p>
         </div>
         <div className="flex gap-2">
@@ -315,14 +315,14 @@ export default function GRNPage() {
           {/* Line Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">GRN Lines *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">GRN Lines *</label>
               <Button variant="ghost" size="sm" onClick={addLine}>
                 + Add Line
               </Button>
             </div>
             <div className="space-y-3">
               {formLines.map((line, idx) => (
-                <div key={idx} className="p-3 bg-gray-50 rounded-[10px] space-y-2">
+                <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-950 rounded-[10px] space-y-2">
                   <div className="flex flex-col sm:flex-row gap-2">
                     <div className="flex-1">
                       <Input
@@ -385,17 +385,17 @@ export default function GRNPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
               value={formNotes}
               onChange={(e) => setFormNotes(e.target.value)}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] placeholder:text-gray-400"
               placeholder="Optional notes"
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" size="sm" onClick={() => { setShowCreate(false); resetForm() }}>
               Cancel
             </Button>
@@ -414,7 +414,7 @@ export default function GRNPage() {
         size="sm"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             {confirmAction?.action === 'accept'
               ? 'Accepting this GRN will update stock levels for all accepted quantities. Continue?'
               : 'Are you sure you want to reject this GRN? No stock changes will be made.'}

@@ -65,7 +65,7 @@ export default function ReturnDetail() {
         <h3 className="font-semibold text-gray-900 mb-3">Return Line Items</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-gray-100 text-left text-gray-500">
+            <thead><tr className="border-b border-gray-100 dark:border-gray-800 text-left text-gray-500">
               <th className="pb-2 pr-4">Item ID</th>
               <th className="pb-2 pr-4 text-right">Quantity</th>
               <th className="pb-2 pr-4 text-right">Unit Cost</th>
@@ -74,7 +74,7 @@ export default function ReturnDetail() {
             </tr></thead>
             <tbody>
               {(ret.lines ?? []).map((line) => (
-                <tr key={line.id} className="border-b border-gray-50">
+                <tr key={line.id} className="border-b border-gray-50 dark:border-gray-800">
                   <td className="py-2 pr-4 font-mono text-xs">{line.item_id.slice(0, 8)}...</td>
                   <td className="py-2 pr-4 text-right">{line.quantity}</td>
                   <td className="py-2 pr-4 text-right">{formatCurrency(line.unit_cost)}</td>

@@ -181,7 +181,7 @@ export default function ItemsPage() {
 
   const columns = [
     { key: 'sku', label: 'SKU' },
-    { key: 'name', label: 'Name', render: (row: InventoryItem) => <span className="font-medium text-gray-900">{row.name}</span> },
+    { key: 'name', label: 'Name', render: (row: InventoryItem) => <span className="font-medium text-gray-900 dark:text-gray-100">{row.name}</span> },
     { key: 'category', label: 'Category', render: (row: InventoryItem) => row.category ?? <span className="text-gray-400">—</span> },
     { key: 'unit_of_measure', label: 'UOM' },
     { key: 'cost_price', label: 'Cost', render: (row: InventoryItem) => formatCurrency(row.cost_price) },
@@ -226,7 +226,7 @@ export default function ItemsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Inventory Items</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Inventory Items</h1>
           <p className="text-sm text-gray-500 mt-0.5">Manage your product catalog and stock items</p>
         </div>
         <div className="flex items-center gap-2">
@@ -275,9 +275,9 @@ export default function ItemsPage() {
 
       {/* Barcode manual input bar */}
       {showScanBar && (
-        <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-[10px]">
+        <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-700 rounded-[10px]">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-medium text-gray-600 whitespace-nowrap">Quick Lookup:</span>
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">Quick Lookup:</span>
             <div className="flex-1 max-w-md">
               <ManualBarcodeInput onSubmit={handleManualBarcode} />
             </div>
@@ -361,16 +361,16 @@ export default function ItemsPage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
               placeholder="Optional description"
             />
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" size="sm" onClick={closeModal}>Cancel</Button>
             <Button
               size="sm"
@@ -391,7 +391,7 @@ export default function ItemsPage() {
         size="sm"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Are you sure you want to delete <span className="font-semibold">{confirmDelete?.name}</span>? This action cannot be undone.
           </p>
           <div className="flex justify-end gap-2">

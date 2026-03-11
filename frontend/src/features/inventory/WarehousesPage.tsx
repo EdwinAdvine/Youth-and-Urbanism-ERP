@@ -183,7 +183,7 @@ export default function WarehousesPage() {
             onChange={(e) => setForm({ ...form, location: e.target.value })}
             placeholder="e.g. 123 Industrial Road, Nairobi"
           />
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" size="sm" onClick={closeModal}>Cancel</Button>
             <Button
               size="sm"

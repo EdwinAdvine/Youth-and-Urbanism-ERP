@@ -168,7 +168,7 @@ export default function SupplierDetail() {
     {
       key: 'total_value',
       label: 'Value',
-      render: (row: SupplierReturn) => <span className="text-gray-700">{formatCurrency(row.total_value)}</span>,
+      render: (row: SupplierReturn) => <span className="text-gray-700 dark:text-gray-300">{formatCurrency(row.total_value)}</span>,
     },
     {
       key: 'created_at',
@@ -184,7 +184,7 @@ export default function SupplierDetail() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/supply-chain/suppliers')}
-            className="p-2 rounded-[10px] hover:bg-gray-100 text-gray-500"
+            className="p-2 rounded-[10px] hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -192,7 +192,7 @@ export default function SupplierDetail() {
           </button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">{supplier.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{supplier.name}</h1>
               <Badge variant={supplier.is_active ? 'success' : 'default'}>
                 {supplier.is_active ? 'Active' : 'Inactive'}
               </Badge>
@@ -204,7 +204,7 @@ export default function SupplierDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
         <div className="flex gap-0">
           {tabs.map((tab) => (
             <button
@@ -214,7 +214,7 @@ export default function SupplierDetail() {
                 'px-4 py-3 text-sm font-medium border-b-2 transition-colors',
                 activeTab === tab.id
                   ? 'text-[#51459d] border-[#51459d]'
-                  : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                  : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
               )}
             >
               {tab.label}
@@ -227,7 +227,7 @@ export default function SupplierDetail() {
       {activeTab === 'info' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <h2 className="text-base font-semibold text-gray-900 mb-4">Contact Details</h2>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Contact Details</h2>
             <dl className="space-y-3">
               {[
                 { label: 'Contact Name', value: supplier.contact_name },
@@ -237,21 +237,21 @@ export default function SupplierDetail() {
               ].map((item) => (
                 <div key={item.label} className="flex justify-between">
                   <dt className="text-sm text-gray-500">{item.label}</dt>
-                  <dd className="text-sm font-medium text-gray-900">{item.value || '-'}</dd>
+                  <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.value || '-'}</dd>
                 </div>
               ))}
             </dl>
           </Card>
           <Card>
-            <h2 className="text-base font-semibold text-gray-900 mb-4">Payment & Rating</h2>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Payment & Rating</h2>
             <dl className="space-y-3">
               <div className="flex justify-between">
                 <dt className="text-sm text-gray-500">Payment Terms</dt>
-                <dd className="text-sm font-medium text-gray-900">{supplier.payment_terms || '-'}</dd>
+                <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{supplier.payment_terms || '-'}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-sm text-gray-500">Payment Terms Days</dt>
-                <dd className="text-sm font-medium text-gray-900">{supplier.payment_terms_days} days</dd>
+                <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{supplier.payment_terms_days} days</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-sm text-gray-500">Rating</dt>
@@ -261,7 +261,7 @@ export default function SupplierDetail() {
               </div>
               <div className="flex justify-between">
                 <dt className="text-sm text-gray-500">Tags</dt>
-                <dd className="text-sm font-medium text-gray-900">
+                <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {supplier.tags?.length ? (
                     <div className="flex flex-wrap gap-1">
                       {supplier.tags.map((tag) => (
@@ -275,20 +275,20 @@ export default function SupplierDetail() {
           </Card>
           {supplier.notes && (
             <Card className="lg:col-span-2">
-              <h2 className="text-base font-semibold text-gray-900 mb-2">Notes</h2>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{supplier.notes}</p>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">Notes</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{supplier.notes}</p>
             </Card>
           )}
           <Card className="lg:col-span-2">
-            <h2 className="text-base font-semibold text-gray-900 mb-2">Meta</h2>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">Meta</h2>
             <dl className="flex gap-8">
               <div>
                 <dt className="text-xs text-gray-500">Created</dt>
-                <dd className="text-sm text-gray-700">{formatDate(supplier.created_at)}</dd>
+                <dd className="text-sm text-gray-700 dark:text-gray-300">{formatDate(supplier.created_at)}</dd>
               </div>
               <div>
                 <dt className="text-xs text-gray-500">Updated</dt>
-                <dd className="text-sm text-gray-700">{formatDate(supplier.updated_at)}</dd>
+                <dd className="text-sm text-gray-700 dark:text-gray-300">{formatDate(supplier.updated_at)}</dd>
               </div>
             </dl>
           </Card>
@@ -308,8 +308,8 @@ export default function SupplierDetail() {
 
       {activeTab === 'grns' && (
         <Card padding={false}>
-          <div className="p-5 border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">
+          <div className="p-5 border-b border-gray-100 dark:border-gray-800">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
               Goods Received Notes ({supplierGRNs.length})
             </h2>
           </div>
@@ -325,8 +325,8 @@ export default function SupplierDetail() {
 
       {activeTab === 'returns' && (
         <Card padding={false}>
-          <div className="p-5 border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">
+          <div className="p-5 border-b border-gray-100 dark:border-gray-800">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
               Supplier Returns ({supplierReturns.length})
             </h2>
           </div>
@@ -396,15 +396,15 @@ export default function SupplierDetail() {
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
               value={editForm.notes}
               onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
               rows={2}
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] placeholder:text-gray-400"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#51459d]/30 focus:border-[#51459d] placeholder:text-gray-400"
             />
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" size="sm" onClick={() => setShowEdit(false)}>Cancel</Button>
             <Button size="sm" onClick={handleUpdate} loading={updateMutation.isPending}>
               Save Changes

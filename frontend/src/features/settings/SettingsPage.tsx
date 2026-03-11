@@ -61,7 +61,7 @@ function GeneralTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">General Preferences</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">General Preferences</h2>
       <div className="space-y-5 max-w-lg">
         <Select
           label="Language"
@@ -87,7 +87,7 @@ function GeneralTab() {
         />
 
         <div className="space-y-3">
-          <p className="text-sm font-medium text-gray-700">Notification Preferences</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Notification Preferences</p>
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -95,7 +95,7 @@ function GeneralTab() {
               onChange={(e) => setNotificationsEnabled(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30 accent-primary"
             />
-            <span className="text-sm text-gray-700">Enable in-app notifications</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Enable in-app notifications</span>
           </label>
           <label className="flex items-center gap-3 cursor-pointer">
             <input
@@ -104,7 +104,7 @@ function GeneralTab() {
               onChange={(e) => setEmailNotifications(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30 accent-primary"
             />
-            <span className="text-sm text-gray-700">Enable email notifications</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Enable email notifications</span>
           </label>
         </div>
 
@@ -173,16 +173,16 @@ function CompanyTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Company Settings</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Company Settings</h2>
       <div className="space-y-5 max-w-lg">
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Company Name</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Company Name</label>
           <input
             type="text"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
             placeholder="Your company name"
-            className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+            className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
           />
         </div>
 
@@ -242,7 +242,7 @@ function NotificationsTab() {
         <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl mb-4">
           📧
         </div>
-        <h3 className="text-base font-semibold text-gray-900">Email Notification Templates</h3>
+        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Email Notification Templates</h3>
         <p className="text-sm text-gray-500 mt-2">
           Email notification templates coming soon.
         </p>
@@ -262,15 +262,15 @@ const INTEGRATIONS = [
 function IntegrationsTab() {
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Connected Services</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Connected Services</h2>
       <div className="space-y-3">
         {INTEGRATIONS.map((integration) => (
           <div
             key={integration.name}
-            className="flex items-center justify-between p-4 rounded-[10px] border border-gray-100 bg-gray-50"
+            className="flex items-center justify-between p-4 rounded-[10px] border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950"
           >
             <div>
-              <p className="text-sm font-semibold text-gray-900">{integration.name}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{integration.name}</p>
               <p className="text-xs text-gray-500 mt-0.5">{integration.description}</p>
             </div>
             <Badge variant="success">Connected</Badge>
@@ -313,14 +313,14 @@ function SharingPoliciesTab() {
 
   return (
     <Card>
-      <h2 className="text-base font-semibold text-gray-900 mb-5">Drive Sharing Policies</h2>
+      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-5">Drive Sharing Policies</h2>
       <div className="max-w-lg">
         <table className="w-full text-sm">
           <tbody>
             {rows.map((row) => (
-              <tr key={row.label} className="border-b border-gray-50">
+              <tr key={row.label} className="border-b border-gray-50 dark:border-gray-800">
                 <td className="py-3 pr-4 text-gray-500 font-medium">{row.label}</td>
-                <td className="py-3 text-gray-900">{row.value}</td>
+                <td className="py-3 text-gray-900 dark:text-gray-100">{row.value}</td>
               </tr>
             ))}
           </tbody>
@@ -351,21 +351,17 @@ export default function SettingsPage() {
     <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
         <p className="text-sm text-gray-500 mt-1">Manage your application and account settings</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-gray-100">
+      <div className="flex gap-1 mb-6 border-b border-gray-100 dark:border-gray-800">
         {visibleTabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              activeTab === tab.id
-                ? 'text-primary border-primary'
-                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200'
-            }`}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${ activeTab === tab.id ? 'text-primary border-primary' : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-200' }`}
           >
             {tab.label}
           </button>

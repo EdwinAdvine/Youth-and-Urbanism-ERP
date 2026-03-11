@@ -92,7 +92,7 @@ export default function PhysicalCountPage() {
     {
       key: 'warehouse_name',
       label: 'Warehouse',
-      render: (c: InventoryCount) => <span className="font-medium text-gray-900">{c.warehouse_name ?? 'Unknown'}</span>,
+      render: (c: InventoryCount) => <span className="font-medium text-gray-900 dark:text-gray-100">{c.warehouse_name ?? 'Unknown'}</span>,
     },
     {
       key: 'count_date',
@@ -143,7 +143,7 @@ export default function PhysicalCountPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Physical Counts</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Physical Counts</h1>
           <p className="text-sm text-gray-500 mt-1">Conduct inventory counts and reconcile stock</p>
         </div>
         <Button onClick={() => setShowCreate(true)}>Start New Count</Button>
@@ -194,9 +194,9 @@ export default function PhysicalCountPage() {
             onChange={(e) => setCreateForm((p) => ({ ...p, count_date: e.target.value }))}
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
-              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               rows={2}
               value={createForm.notes ?? ''}
               onChange={(e) => setCreateForm((p) => ({ ...p, notes: e.target.value }))}
@@ -219,8 +219,8 @@ export default function PhysicalCountPage() {
             </p>
             <div className="overflow-x-auto max-h-96">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-white">
-                  <tr className="border-b border-gray-100">
+                <thead className="sticky top-0 bg-white dark:bg-gray-800">
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
                     <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Item</th>
                     <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Expected</th>
                     <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Counted</th>
@@ -232,7 +232,7 @@ export default function PhysicalCountPage() {
                     const counted = countEntries[item.item_id] ?? 0
                     const variance = counted - item.expected_quantity
                     return (
-                      <tr key={item.id} className="border-b border-gray-50">
+                      <tr key={item.id} className="border-b border-gray-50 dark:border-gray-800">
                         <td className="py-2 px-3">
                           <p className="font-medium">{item.item_name ?? 'Unknown'}</p>
                           {item.sku && <p className="text-xs text-gray-400">{item.sku}</p>}

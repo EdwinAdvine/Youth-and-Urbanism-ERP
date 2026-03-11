@@ -83,7 +83,7 @@ export default function BackupsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 text-left text-gray-500">
+                <tr className="border-b border-gray-100 dark:border-gray-800 text-left text-gray-500">
                   <th className="pb-2 pr-4">Filename</th>
                   <th className="pb-2 pr-4 text-right">Size</th>
                   <th className="pb-2 pr-4">Date</th>
@@ -92,7 +92,7 @@ export default function BackupsPage() {
               </thead>
               <tbody>
                 {backups.map((b) => (
-                  <tr key={b.filename} className="border-b border-gray-50">
+                  <tr key={b.filename} className="border-b border-gray-50 dark:border-gray-800">
                     <td className="py-2 pr-4 font-mono text-xs">{b.filename}</td>
                     <td className="py-2 pr-4 text-right">{formatBytes(b.size_bytes)}</td>
                     <td className="py-2 pr-4 text-gray-500">{formatDate(b.last_modified)}</td>

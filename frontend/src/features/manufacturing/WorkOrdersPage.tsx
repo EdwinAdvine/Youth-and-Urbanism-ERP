@@ -292,7 +292,7 @@ export default function WorkOrdersPage() {
           />
         </div>
         {(data?.total ?? 0) > limit && (
-          <div className="flex justify-center p-4 border-t border-gray-100">
+          <div className="flex justify-center p-4 border-t border-gray-100 dark:border-gray-800">
             <div className="flex gap-2">
               <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
                 Previous

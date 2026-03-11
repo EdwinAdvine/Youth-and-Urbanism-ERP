@@ -106,7 +106,7 @@ export default function CustomerLookup({ open, onClose, onSelectCustomer }: Cust
                     <button
                       key={customer.id}
                       onClick={() => handleSelectFromList(customer)}
-                      className="w-full text-left px-3 py-3 rounded-[10px] hover:bg-gray-50 transition-colors flex items-center gap-3 group"
+                      className="w-full text-left px-3 py-3 rounded-[10px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-3 group"
                     >
                       {/* Avatar */}
                       <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold shrink-0">
@@ -116,7 +116,7 @@ export default function CustomerLookup({ open, onClose, onSelectCustomer }: Cust
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900 truncate">
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                             {fullName || 'No name'}
                           </span>
                           {!customer.is_active && <Badge variant="default" className="text-[9px]">Inactive</Badge>}
@@ -184,23 +184,23 @@ export default function CustomerLookup({ open, onClose, onSelectCustomer }: Cust
             </button>
 
             {/* Customer Info */}
-            <div className="flex items-start gap-4 mb-6 p-4 bg-gray-50 rounded-[10px]">
+            <div className="flex items-start gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-950 rounded-[10px]">
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary text-lg font-bold shrink-0">
                 {([selectedCustomer.first_name, selectedCustomer.last_name].filter(Boolean).join(' ') || selectedCustomer.email).charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-semibold text-gray-900">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
                   {[selectedCustomer.first_name, selectedCustomer.last_name].filter(Boolean).join(' ') || 'No name'}
                 </h3>
                 <div className="mt-1 space-y-0.5">
-                  <p className="text-sm text-gray-600 flex items-center gap-1.5">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
                     <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                     {selectedCustomer.email}
                   </p>
                   {selectedCustomer.phone && (
-                    <p className="text-sm text-gray-600 flex items-center gap-1.5">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
                       <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                       </svg>
@@ -226,7 +226,7 @@ export default function CustomerLookup({ open, onClose, onSelectCustomer }: Cust
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Addresses</h4>
                 <div className="space-y-2">
                   {selectedCustomer.addresses.map((addr) => (
-                    <div key={addr.id} className="text-xs text-gray-600 p-2 bg-gray-50 rounded-lg flex items-start gap-2">
+                    <div key={addr.id} className="text-xs text-gray-600 dark:text-gray-400 p-2 bg-gray-50 dark:bg-gray-950 rounded-lg flex items-start gap-2">
                       <svg className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -250,7 +250,7 @@ export default function CustomerLookup({ open, onClose, onSelectCustomer }: Cust
               ) : txData && txData.transactions.length > 0 ? (
                 <div className="space-y-1 max-h-[200px] overflow-y-auto">
                   {txData.transactions.slice(0, 5).map((tx) => (
-                    <div key={tx.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg text-xs">
+                    <div key={tx.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-950 rounded-lg text-xs">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-gray-500">{tx.transaction_number}</span>
                         <Badge
@@ -261,7 +261,7 @@ export default function CustomerLookup({ open, onClose, onSelectCustomer }: Cust
                         </Badge>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="font-medium text-gray-900">${tx.total.toFixed(2)}</span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">${tx.total.toFixed(2)}</span>
                         <span className="text-gray-400">
                           {new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </span>
@@ -275,7 +275,7 @@ export default function CustomerLookup({ open, onClose, onSelectCustomer }: Cust
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
               <Button variant="secondary" size="sm" onClick={() => setTab('search')}>
                 Back
               </Button>

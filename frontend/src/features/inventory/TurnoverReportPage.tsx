@@ -35,7 +35,7 @@ export default function TurnoverReportPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Inventory Turnover & Aging</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Inventory Turnover & Aging</h1>
         <p className="text-sm text-gray-500 mt-1">Track how fast inventory moves and identify slow-moving stock</p>
       </div>
 
@@ -48,16 +48,16 @@ export default function TurnoverReportPage() {
       {turnover && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="bg-primary/5 border-primary/20">
-            <p className="text-sm text-gray-600">Average Turnover Ratio</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Average Turnover Ratio</p>
             <p className="text-3xl font-bold text-primary mt-1">{turnover.avg_turnover_ratio.toFixed(2)}x</p>
           </Card>
           <Card>
             <p className="text-sm text-gray-500">Items Tracked</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{turnover.items.length}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{turnover.items.length}</p>
           </Card>
           <Card>
             <p className="text-sm text-gray-500">Period</p>
-            <p className="text-lg font-bold text-gray-900 mt-1">
+            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">
               {periodStart ? new Date(periodStart).toLocaleDateString() : 'Start'} &ndash;{' '}
               {periodEnd ? new Date(periodEnd).toLocaleDateString() : 'End'}
             </p>
@@ -70,7 +70,7 @@ export default function TurnoverReportPage() {
         {['0-30', '31-60', '61-90', '90+'].map((bucket) => (
           <Card key={bucket}>
             <p className="text-sm text-gray-500">{bucket} Days</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{(agingBuckets[bucket] ?? 0).toLocaleString()}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{(agingBuckets[bucket] ?? 0).toLocaleString()}</p>
             <p className="text-xs text-gray-400">units</p>
           </Card>
         ))}
@@ -78,12 +78,12 @@ export default function TurnoverReportPage() {
 
       {/* Turnover Table */}
       <Card>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Turnover by Item</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Turnover by Item</h3>
         {turnover?.items && turnover.items.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
+                <tr className="border-b border-gray-100 dark:border-gray-800">
                   <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Item</th>
                   <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">SKU</th>
                   <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Avg Inventory</th>
@@ -94,7 +94,7 @@ export default function TurnoverReportPage() {
               </thead>
               <tbody>
                 {turnover.items.map((item) => (
-                  <tr key={item.item_id} className="border-b border-gray-50 hover:bg-gray-50">
+                  <tr key={item.item_id} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="py-2 px-3 font-medium">{item.item_name}</td>
                     <td className="py-2 px-3 text-gray-500 font-mono text-xs">{item.sku}</td>
                     <td className="py-2 px-3 text-right">{item.avg_inventory.toFixed(0)}</td>
@@ -117,12 +117,12 @@ export default function TurnoverReportPage() {
 
       {/* Aging Detail Table */}
       <Card>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Aging Detail</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Aging Detail</h3>
         {aging?.items && aging.items.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
+                <tr className="border-b border-gray-100 dark:border-gray-800">
                   <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Item</th>
                   <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">SKU</th>
                   <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Qty</th>
@@ -133,7 +133,7 @@ export default function TurnoverReportPage() {
               </thead>
               <tbody>
                 {aging.items.map((item) => (
-                  <tr key={item.item_id} className="border-b border-gray-50 hover:bg-gray-50">
+                  <tr key={item.item_id} className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="py-2 px-3 font-medium">{item.item_name}</td>
                     <td className="py-2 px-3 text-gray-500 font-mono text-xs">{item.sku}</td>
                     <td className="py-2 px-3 text-right">{item.quantity}</td>

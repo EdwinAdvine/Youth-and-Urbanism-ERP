@@ -10,7 +10,7 @@ function formatNumber(n: number): string {
 
 function StatCard({ label, value, subtext, color }: { label: string; value: string; subtext: string; color: string }) {
   return (
-    <div className="bg-white border border-gray-100 rounded-[10px] p-5 shadow-sm">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
       <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-2">{label}</p>
       <p className="text-3xl font-bold" style={{ color }}>{value}</p>
       <p className="text-xs text-gray-400 mt-1">{subtext}</p>
@@ -36,7 +36,7 @@ export default function UsageDashboardPage() {
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Usage Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">AI Usage Dashboard</h1>
           <p className="text-sm text-gray-500 mt-1">
             {new Date(usage.period_start).toLocaleDateString()} - {new Date(usage.period_end).toLocaleDateString()}
           </p>
@@ -67,7 +67,7 @@ export default function UsageDashboardPage() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Usage Trend</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Usage Trend</h3>
               <p className="text-xs text-gray-400 mt-0.5">Daily token usage</p>
             </div>
             <div className="flex items-center gap-4 text-xs text-gray-500">
@@ -88,7 +88,7 @@ export default function UsageDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Top Tools */}
         <Card className="lg:col-span-2">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Top AI Tools Used</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Top AI Tools Used</h3>
           <p className="text-xs text-gray-400 mb-4">Most frequently called AI tools</p>
           {usage.tokens_by_tool.length === 0 ? (
             <p className="text-sm text-gray-400">No tool data</p>
@@ -103,10 +103,10 @@ export default function UsageDashboardPage() {
                   return (
                     <div key={tool.tool}>
                       <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-gray-700 font-mono">{tool.tool}</span>
+                        <span className="text-gray-700 dark:text-gray-300 font-mono">{tool.tool}</span>
                         <span className="text-gray-500 font-medium">{tool.requests} calls</span>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-2 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
                         <div className="h-full rounded-full bg-[#51459d]" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
@@ -118,7 +118,7 @@ export default function UsageDashboardPage() {
 
         {/* Model Usage */}
         <Card>
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">Model Usage</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Model Usage</h3>
           <p className="text-xs text-gray-400 mb-4">Tokens by AI model</p>
           {usage.tokens_by_model.length === 0 ? (
             <p className="text-sm text-gray-400">No model data</p>
@@ -133,17 +133,17 @@ export default function UsageDashboardPage() {
                     <div key={m.model} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: colors[idx] }} />
-                        <span className="text-xs text-gray-600">{m.model}</span>
+                        <span className="text-xs text-gray-600 dark:text-gray-400">{m.model}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-gray-900">{formatNumber(m.tokens)}</span>
+                        <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{formatNumber(m.tokens)}</span>
                         <span className="text-[10px] text-gray-400">{pct}%</span>
                       </div>
                     </div>
                   )
                 })}
               </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden flex gap-0.5">
+              <div className="h-2 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden flex gap-0.5">
                 {usage.tokens_by_model.map((m, i) => {
                   const pct = usage.total_tokens > 0 ? Math.round((m.tokens / usage.total_tokens) * 100) : 0
                   const colors = ['#51459d', '#6fd943', '#3ec9d6', '#ffa21d', '#ff3a6e']

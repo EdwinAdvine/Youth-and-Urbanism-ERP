@@ -67,7 +67,8 @@ function getGreeting() {
 export default function HomePage() {
   const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
-  const [chatOpen, setChatOpen] = useState(false)
+  const [chatMode, setChatMode] = useState(false)
+  const [initialQuestion, setInitialQuestion] = useState('')
   const [quickInput, setQuickInput] = useState('')
   const firstName = user?.full_name?.split(' ')[0] ?? 'there'
 
@@ -84,8 +85,43 @@ export default function HomePage() {
   const handleQuickSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (quickInput.trim()) {
-      setChatOpen(true)
+      setInitialQuestion(quickInput)
+      setChatMode(true)
     }
+  }
+
+  if (chatMode) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-3 px-5 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shrink-0">
+          <button
+            onClick={() => { setChatMode(false); setInitialQuestion(''); setQuickInput('') }}
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Dashboard
+          </button>
+          <span className="text-gray-300 dark:text-gray-700">|</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-primary-700 flex items-center justify-center">
+              <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Urban AI Assistant</span>
+          </div>
+        </div>
+        <div className="flex-1 min-h-0">
+          <AIChat
+            fullPage
+            initialMessage={initialQuestion}
+            onClose={() => { setChatMode(false); setInitialQuestion(''); setQuickInput('') }}
+          />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -118,7 +154,7 @@ export default function HomePage() {
               />
               <button
                 type="submit"
-                onClick={() => setChatOpen(true)}
+                onClick={() => { if (quickInput.trim()) { setInitialQuestion(quickInput); setChatMode(true) } }}
                 className="mr-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-white text-sm font-medium transition-colors flex items-center gap-1.5"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -134,7 +170,7 @@ export default function HomePage() {
             {['Revenue this month?', 'Staff on leave today', 'Low stock alerts', 'Overdue invoices'].map((s) => (
               <button
                 key={s}
-                onClick={() => { setQuickInput(s); setChatOpen(true) }}
+                onClick={() => { setInitialQuestion(s); setChatMode(true) }}
                 className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 text-xs transition-colors border border-white/15"
               >
                 {s}
@@ -149,29 +185,29 @@ export default function HomePage() {
         {/* Quick stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {liveStats.map((stat) => (
-            <div key={stat.label} className="bg-white rounded-[10px] border border-gray-100 p-4 shadow-sm">
+            <div key={stat.label} className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
               <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
-              <p className="text-xl font-bold text-gray-900 mt-1">{stat.value}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">{stat.value}</p>
             </div>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* App grid */}
-          <div className="lg:col-span-2 bg-white rounded-[10px] border border-gray-100 p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Applications</h2>
+          <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Applications</h2>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
               {APP_TILES.map((tile) => (
                 <button
                   key={tile.id}
                   onClick={() => navigate(tile.href)}
-                  className="flex flex-col items-center gap-2 p-3 rounded-[10px] hover:bg-gray-50 transition-colors group text-center"
+                  className="flex flex-col items-center gap-2 p-3 rounded-[10px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group text-center"
                 >
                   <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tile.color} flex items-center justify-center text-2xl shadow-sm group-hover:scale-105 transition-transform`}>
                     {tile.icon}
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-gray-700">{tile.label}</p>
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{tile.label}</p>
                     <p className="text-[10px] text-gray-400 leading-tight">{tile.description}</p>
                   </div>
                 </button>
@@ -180,9 +216,9 @@ export default function HomePage() {
           </div>
 
           {/* Activity feed */}
-          <div className="bg-white rounded-[10px] border border-gray-100 p-5 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-gray-700">Recent Activity</h2>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Recent Activity</h2>
             </div>
             <div className="space-y-3">
               {activity && activity.length > 0 ? (
@@ -194,7 +230,7 @@ export default function HomePage() {
                         {mod.icon}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs text-gray-700 leading-snug">{item.message}</p>
+                        <p className="text-xs text-gray-700 dark:text-gray-300 leading-snug">{item.message}</p>
                         <p className="text-[10px] text-gray-400 mt-0.5">{timeAgo(item.created_at)}</p>
                       </div>
                     </div>
@@ -208,25 +244,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* AI Chat panel */}
-      {chatOpen && (
-        <div className="fixed bottom-4 right-4 z-50 w-full max-w-md h-[520px] shadow-2xl rounded-[10px] overflow-hidden">
-          <AIChat onClose={() => setChatOpen(false)} />
-        </div>
-      )}
-
-      {/* Floating AI button */}
-      {!chatOpen && (
-        <button
-          onClick={() => setChatOpen(true)}
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-primary hover:bg-primary-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center"
-          title="Open AI Assistant"
-        >
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-        </button>
-      )}
     </div>
   )
 }

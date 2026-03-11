@@ -38,10 +38,10 @@ function LineItemCard({
   onRejectedChange: (val: number) => void
 }) {
   return (
-    <div className="bg-white rounded-[10px] border border-gray-200 p-4 space-y-3">
+    <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 p-4 space-y-3">
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-gray-900 truncate">{line.item_id}</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{line.item_id}</p>
           <p className="text-xs text-gray-500">
             Ordered: {line.ordered_quantity} | Received: {line.received_quantity}
           </p>
@@ -140,7 +140,7 @@ function GRNSelector({
         <button
           key={grn.id}
           onClick={() => onSelect(grn)}
-          className="w-full bg-white rounded-[10px] border border-gray-200 p-4 text-left hover:border-primary active:bg-primary/5 active:scale-[0.98] transition-all min-h-[72px]"
+          className="w-full bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-primary active:bg-primary/5 active:scale-[0.98] transition-all min-h-[72px]"
         >
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm font-bold text-primary">{grn.grn_number}</span>
@@ -226,19 +226,19 @@ export default function MobileGoodsReceipt() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center gap-3">
         <button
           onClick={() => selectedGRNId ? (setSelectedGRNId(null), setLineQuantities({})) : navigate('/supply-chain/grn')}
-          className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-[10px] text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+          className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-[10px] text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 transition-colors"
         >
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-lg font-bold text-gray-900">
+          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">
             {selectedGRNId ? 'Receive Goods' : 'Goods Receipt'}
           </h1>
           {grnDetail && (
@@ -258,11 +258,11 @@ export default function MobileGoodsReceipt() {
         ) : grnDetail ? (
           <div className="space-y-4">
             {/* Summary banner */}
-            <div className="bg-white rounded-[10px] border border-gray-200 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-200 dark:border-gray-700 p-4">
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
                   <p className="text-xs text-gray-500">Lines</p>
-                  <p className="text-lg font-bold text-gray-900">{grnDetail.lines?.length ?? 0}</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{grnDetail.lines?.length ?? 0}</p>
                 </div>
                 <div>
                   <p className="text-xs text-green-600">Accepted</p>
@@ -303,7 +303,7 @@ export default function MobileGoodsReceipt() {
 
       {/* Bottom actions (only when viewing GRN detail) */}
       {selectedGRNId && grnDetail && (grnDetail.status === 'draft' || grnDetail.status === 'inspecting') && (
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 space-y-2">
+        <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 space-y-2">
           <div className="grid grid-cols-2 gap-3">
             <Button
               variant="danger"

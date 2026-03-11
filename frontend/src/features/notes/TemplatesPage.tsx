@@ -51,7 +51,7 @@ export default function NoteTemplatesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Note Templates</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Note Templates</h1>
           <p className="text-sm text-gray-500 mt-1">Start from a template for common note types</p>
         </div>
         <Button onClick={() => setShowCreate(true)}>New Template</Button>
@@ -79,10 +79,10 @@ export default function NoteTemplatesPage() {
           {filtered.map((tmpl) => (
             <Card key={tmpl.id} className="hover:shadow-md transition-shadow group">
               <div className="mb-3">
-                <h3 className="text-sm font-semibold text-gray-900">{tmpl.name}</h3>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{tmpl.name}</h3>
                 {tmpl.description && <p className="text-xs text-gray-500 mt-0.5">{tmpl.description}</p>}
               </div>
-              <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 line-clamp-4 font-mono whitespace-pre-wrap mb-3">
+              <div className="bg-gray-50 dark:bg-gray-950 rounded-lg p-3 text-xs text-gray-600 dark:text-gray-400 line-clamp-4 font-mono whitespace-pre-wrap mb-3">
                 {tmpl.content}
               </div>
               <div className="flex items-center justify-between">
@@ -110,12 +110,12 @@ export default function NoteTemplatesPage() {
           </div>
           <Input label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What this template is for" />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Content</label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Template content..."
-              className="w-full rounded-[10px] border border-gray-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary font-mono"
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary font-mono"
               rows={10}
             />
           </div>

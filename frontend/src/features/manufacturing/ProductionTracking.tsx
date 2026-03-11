@@ -89,7 +89,7 @@ export default function ProductionTracking() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Production Tracking</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Production Tracking</h1>
           <p className="text-sm text-gray-500 mt-1">
             Real-time view of work orders in progress
             <span className="ml-2 text-xs text-gray-400">(auto-refreshes every 30s)</span>
@@ -117,7 +117,7 @@ export default function ProductionTracking() {
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase">Active Orders</p>
-              <p className="text-xl font-bold text-gray-900">{totalActive}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{totalActive}</p>
             </div>
           </div>
         </Card>
@@ -131,7 +131,7 @@ export default function ProductionTracking() {
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase">Overall Progress</p>
-              <p className="text-xl font-bold text-gray-900">{overallCompletion}%</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{overallCompletion}%</p>
             </div>
           </div>
         </Card>
@@ -145,7 +145,7 @@ export default function ProductionTracking() {
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase">Units Completed</p>
-              <p className="text-xl font-bold text-gray-900">{totalCompletedQty} / {totalPlannedQty}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{totalCompletedQty} / {totalPlannedQty}</p>
             </div>
           </div>
         </Card>
@@ -159,7 +159,7 @@ export default function ProductionTracking() {
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase">Queued (Planned)</p>
-              <p className="text-xl font-bold text-gray-900">{plannedOrders.length}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{plannedOrders.length}</p>
             </div>
           </div>
         </Card>
@@ -168,10 +168,10 @@ export default function ProductionTracking() {
       {/* Overall Progress Bar */}
       <Card className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-gray-900">Production Completion</h2>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Production Completion</h2>
           <span className="text-sm font-bold text-primary">{overallCompletion}%</span>
         </div>
-        <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+        <div className="w-full h-3 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-primary to-[#6fd943] rounded-full transition-all duration-500"
             style={{ width: `${overallCompletion}%` }}
@@ -186,7 +186,7 @@ export default function ProductionTracking() {
       {/* Active Work Orders Grid */}
       {activeOrders.length > 0 ? (
         <div className="space-y-4">
-          <h2 className="text-base font-semibold text-gray-900">In-Progress Work Orders</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">In-Progress Work Orders</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {activeOrders.map((wo) => (
               <WorkOrderCard key={wo.id} workOrder={wo} onClick={() => navigate(`/manufacturing/work-orders/${wo.id}`)} />
@@ -208,18 +208,18 @@ export default function ProductionTracking() {
       {/* Planned Queue */}
       {plannedOrders.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-base font-semibold text-gray-900 mb-3">Up Next (Planned)</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">Up Next (Planned)</h2>
           <Card padding={false}>
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-gray-50 dark:divide-gray-700">
               {plannedOrders.slice(0, 5).map((wo) => (
                 <div
                   key={wo.id}
                   onClick={() => navigate(`/manufacturing/work-orders/${wo.id}`)}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-primary">{wo.wo_number}</span>
-                    <span className="text-sm text-gray-600">{wo.finished_item_name ?? '-'}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{wo.finished_item_name ?? '-'}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-gray-500">Qty: {wo.planned_quantity}</span>
@@ -258,8 +258,8 @@ function WorkOrderCard({ workOrder: wo, onClick }: { workOrder: WorkOrder; onCli
     <div
       onClick={onClick}
       className={cn(
-        'bg-white rounded-[10px] border shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden',
-        isBehindSchedule ? 'border-red-200' : 'border-gray-100'
+        'bg-white dark:bg-gray-800 rounded-[10px] border shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden',
+        isBehindSchedule ? 'border-red-200' : 'border-gray-100 dark:border-gray-700'
       )}
     >
       {/* Header */}
@@ -277,7 +277,7 @@ function WorkOrderCard({ workOrder: wo, onClick }: { workOrder: WorkOrder; onCli
 
       {/* Product */}
       <div className="px-4 pb-2">
-        <p className="text-sm text-gray-700 font-medium truncate">{wo.finished_item_name ?? 'Unknown Product'}</p>
+        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium truncate">{wo.finished_item_name ?? 'Unknown Product'}</p>
         {wo.bom_name && <p className="text-xs text-gray-400 truncate">BOM: {wo.bom_name}</p>}
       </div>
 
@@ -287,11 +287,11 @@ function WorkOrderCard({ workOrder: wo, onClick }: { workOrder: WorkOrder; onCli
           <span className="text-xs text-gray-500">
             {wo.completed_quantity} / {wo.planned_quantity} units
           </span>
-          <span className={cn('text-xs font-semibold', completion >= 80 ? 'text-green-600' : completion >= 50 ? 'text-yellow-600' : 'text-gray-600')}>
+          <span className={cn('text-xs font-semibold', completion >= 80 ? 'text-green-600' : completion >= 50 ? 'text-yellow-600' : 'text-gray-600 dark:text-gray-400')}>
             {completion}%
           </span>
         </div>
-        <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="w-full h-2.5 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
           <div
             className={cn(
               'h-full rounded-full transition-all duration-500',
@@ -306,26 +306,26 @@ function WorkOrderCard({ workOrder: wo, onClick }: { workOrder: WorkOrder; onCli
       </div>
 
       {/* Time Info */}
-      <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 grid grid-cols-2 gap-2 text-xs">
+      <div className="px-4 py-2 bg-gray-50 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-2 text-xs">
         <div>
           <span className="text-gray-400">Elapsed</span>
-          <p className="font-medium text-gray-700">{elapsed}</p>
+          <p className="font-medium text-gray-700 dark:text-gray-300">{elapsed}</p>
         </div>
         <div>
           <span className="text-gray-400">Planned Duration</span>
-          <p className="font-medium text-gray-700">{plannedDuration}</p>
+          <p className="font-medium text-gray-700 dark:text-gray-300">{plannedDuration}</p>
         </div>
       </div>
 
       {/* Operator */}
       {wo.assigned_to && (
-        <div className="px-4 py-2 border-t border-gray-50 flex items-center gap-2">
+        <div className="px-4 py-2 border-t border-gray-50 dark:border-gray-700 flex items-center gap-2">
           <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
             <svg className="h-3 w-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <span className="text-xs text-gray-600">Operator: {wo.assigned_to}</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">Operator: {wo.assigned_to}</span>
         </div>
       )}
     </div>

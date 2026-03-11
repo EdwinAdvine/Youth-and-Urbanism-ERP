@@ -91,7 +91,7 @@ export default function SupplyChainDashboard() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
         </svg>
       ),
-      color: (stats?.pending_returns ?? 0) > 0 ? 'text-[#ff3a6e] bg-[#ff3a6e]/10' : 'text-gray-600 bg-gray-50',
+      color: (stats?.pending_returns ?? 0) > 0 ? 'text-[#ff3a6e] bg-[#ff3a6e]/10' : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-950',
     },
   ]
 
@@ -107,7 +107,7 @@ export default function SupplyChainDashboard() {
       key: 'title',
       label: 'Title',
       render: (row: ProcurementRequisition) => (
-        <span className="text-gray-700 truncate max-w-[200px] block">{row.title}</span>
+        <span className="text-gray-700 dark:text-gray-300 truncate max-w-[200px] block">{row.title}</span>
       ),
     },
     {
@@ -130,7 +130,7 @@ export default function SupplyChainDashboard() {
       key: 'total_estimated',
       label: 'Est. Value',
       render: (row: ProcurementRequisition) => (
-        <span className="text-gray-700">{formatCurrency(row.total_estimated)}</span>
+        <span className="text-gray-700 dark:text-gray-300">{formatCurrency(row.total_estimated)}</span>
       ),
     },
     {
@@ -180,7 +180,7 @@ export default function SupplyChainDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Supply Chain</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Supply Chain</h1>
           <p className="text-sm text-gray-500 mt-1">Suppliers, procurement, goods receiving, and returns</p>
         </div>
         <div className="flex gap-2">
@@ -220,7 +220,7 @@ export default function SupplyChainDashboard() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{stat.label}</p>
-                <p className="text-lg font-bold text-gray-900 mt-1">{stat.value}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">{stat.value}</p>
               </div>
             </div>
           </Card>
@@ -238,7 +238,7 @@ export default function SupplyChainDashboard() {
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Pending Requisition Value</p>
-              <p className="text-lg font-bold text-gray-900 mt-1">
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">
                 {formatCurrency(stats?.pending_requisition_value ?? '0')}
               </p>
             </div>
@@ -253,7 +253,7 @@ export default function SupplyChainDashboard() {
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Pending Return Value</p>
-              <p className="text-lg font-bold text-gray-900 mt-1">
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">
                 {formatCurrency(stats?.pending_return_value ?? '0')}
               </p>
             </div>
@@ -263,8 +263,8 @@ export default function SupplyChainDashboard() {
 
       {/* Recent Requisitions */}
       <Card padding={false} className="mb-6">
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Recent Requisitions</h2>
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Recent Requisitions</h2>
           <Button variant="ghost" size="sm" onClick={() => navigate('/supply-chain/requisitions')}>
             View All
           </Button>
@@ -280,8 +280,8 @@ export default function SupplyChainDashboard() {
 
       {/* Recent GRNs */}
       <Card padding={false}>
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Recent Goods Received Notes</h2>
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Recent Goods Received Notes</h2>
           <Button variant="ghost" size="sm" onClick={() => navigate('/supply-chain/grn')}>
             View All
           </Button>
