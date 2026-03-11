@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Card, Button, Spinner, Badge, Select } from '../../components/ui'
+import { Card, Button, Spinner, Select } from '../../components/ui'
 import { useLeaveRequests, useDepartments, type LeaveRequest } from '../../api/hr'
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']

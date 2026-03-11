@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import SuperAdminUser
-from app.core.security import encrypt_field, decrypt_field
+from app.core.security import encrypt_field
 from app.models.sso import SSOProvider, SSOProviderType
 from app.services.sso import SSOService
 

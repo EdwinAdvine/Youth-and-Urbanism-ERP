@@ -91,6 +91,15 @@ const FixedAssetsPage  = lazy(() => import('./features/finance/FixedAssetsPage')
 const CashFlowPage     = lazy(() => import('./features/finance/CashFlowPage'))
 const AgedReportPage   = lazy(() => import('./features/finance/AgedReportPage'))
 const FinanceKPIsPage  = lazy(() => import('./features/finance/FinanceKPIsPage'))
+// Finance Phase 2A — AI-era upgrades
+const EstimatesPage        = lazy(() => import('./features/finance/EstimatesPage'))
+const WorkflowRulesPage    = lazy(() => import('./features/finance/WorkflowRulesPage'))
+const FinanceAIPage        = lazy(() => import('./features/finance/FinanceAIPage'))
+const RevenueStreamsPage    = lazy(() => import('./features/finance/RevenueStreamsPage'))
+const JobCostingPage       = lazy(() => import('./features/finance/JobCostingPage'))
+const ComplianceCalendarPage = lazy(() => import('./features/finance/ComplianceCalendarPage'))
+const CustomFieldsAdmin    = lazy(() => import('./features/finance/CustomFieldsAdmin'))
+const DimensionsAdmin      = lazy(() => import('./features/finance/DimensionsAdmin'))
 
 // HR sub-pages
 const DepartmentsPage  = lazy(() => import('./features/hr/DepartmentsPage'))
@@ -111,6 +120,62 @@ const PayrollReportsPage = lazy(() => import('./features/hr/PayrollReportsPage')
 const OnboardingPage   = lazy(() => import('./features/hr/OnboardingPage'))
 const OffboardingPage  = lazy(() => import('./features/hr/OffboardingPage'))
 
+// HR Phase 2 pages — ATS
+const ATSDashboard        = lazy(() => import('./features/hr/ats/ATSDashboard'))
+const RequisitionsAtsPage = lazy(() => import('./features/hr/ats/RequisitionsPage'))
+const RequisitionDetail2  = lazy(() => import('./features/hr/ats/RequisitionDetail'))
+const CandidatesPage      = lazy(() => import('./features/hr/ats/CandidatesPage'))
+const CandidateDetail     = lazy(() => import('./features/hr/ats/CandidateDetail'))
+const PipelineBoard       = lazy(() => import('./features/hr/ats/PipelineBoard'))
+const InterviewScheduler  = lazy(() => import('./features/hr/ats/InterviewScheduler'))
+// HR Phase 2 pages — LMS
+const CourseCatalogPage   = lazy(() => import('./features/hr/lms/CourseCatalogPage'))
+const CourseDetailPage    = lazy(() => import('./features/hr/lms/CourseDetailPage'))
+const CourseBuilderPage   = lazy(() => import('./features/hr/lms/CourseBuilderPage'))
+const LearningDashboard   = lazy(() => import('./features/hr/lms/LearningDashboard'))
+const CertificationsPage  = lazy(() => import('./features/hr/lms/CertificationsPage'))
+// HR Phase 2 pages — Engagement
+const SurveyBuilderPage   = lazy(() => import('./features/hr/engagement/SurveyBuilderPage'))
+const SurveyResponsePage  = lazy(() => import('./features/hr/engagement/SurveyResponsePage'))
+const SurveyResultsPage   = lazy(() => import('./features/hr/engagement/SurveyResultsPage'))
+const RecognitionFeedPage = lazy(() => import('./features/hr/engagement/RecognitionFeedPage'))
+const EngagementDashboard = lazy(() => import('./features/hr/engagement/EngagementDashboard'))
+// HR Phase 2 pages — Onboarding & Import
+const OnboardingTemplatesPage = lazy(() => import('./features/hr/OnboardingTemplatesPage'))
+const OnboardingTrackerPage   = lazy(() => import('./features/hr/OnboardingTrackerPage'))
+const HRImportPage            = lazy(() => import('./features/hr/ImportPage'))
+// HR Phase 3 pages — AI Intelligence
+const FlightRiskDashboard     = lazy(() => import('./features/hr/ai/FlightRiskDashboard'))
+const BurnoutAlerts           = lazy(() => import('./features/hr/ai/BurnoutAlerts'))
+const SkillsOntologyPage      = lazy(() => import('./features/hr/ai/SkillsOntologyPage'))
+const HRChatbot               = lazy(() => import('./features/hr/ai/HRChatbot'))
+const WorkforcePlanningPage   = lazy(() => import('./features/hr/ai/WorkforcePlanningPage'))
+// HR Phase 3 pages — Workflows
+const WorkflowListPage        = lazy(() => import('./features/hr/workflows/WorkflowListPage'))
+const WorkflowBuilderPage     = lazy(() => import('./features/hr/workflows/WorkflowBuilderPage'))
+const WorkflowExecutionPage   = lazy(() => import('./features/hr/workflows/WorkflowExecutionPage'))
+const WorkflowApprovals       = lazy(() => import('./features/hr/workflows/WorkflowApprovals'))
+// HR Phase 3 pages — Analytics
+const CustomDashboardBuilder  = lazy(() => import('./features/hr/analytics/CustomDashboardBuilder'))
+const DEIDashboard            = lazy(() => import('./features/hr/analytics/DEIDashboard'))
+const PredictiveReports       = lazy(() => import('./features/hr/analytics/PredictiveReports'))
+const CostModelingPage        = lazy(() => import('./features/hr/analytics/CostModelingPage'))
+
+// HR Phase 1 pages
+const SkillsMatrixPage = lazy(() => import('./features/hr/SkillsMatrixPage'))
+const SuccessionPlanningPage = lazy(() => import('./features/hr/SuccessionPlanningPage'))
+const CompensationBandsPage = lazy(() => import('./features/hr/CompensationBandsPage'))
+const MeritPlanningPage = lazy(() => import('./features/hr/MeritPlanningPage'))
+const BonusManagementPage = lazy(() => import('./features/hr/BonusManagementPage'))
+const EquityGrantsPage = lazy(() => import('./features/hr/EquityGrantsPage'))
+const ShiftSchedulingPage = lazy(() => import('./features/hr/ShiftSchedulingPage'))
+const HolidayCalendarPage = lazy(() => import('./features/hr/HolidayCalendarPage'))
+const GoalsPage = lazy(() => import('./features/hr/GoalsPage'))
+const FeedbackPage = lazy(() => import('./features/hr/FeedbackPage'))
+const ReviewCyclesPage = lazy(() => import('./features/hr/ReviewCyclesPage'))
+const ManagerDashboardPage = lazy(() => import('./features/hr/ManagerDashboardPage'))
+const AuditLogPage = lazy(() => import('./features/hr/AuditLogPage'))
+
 // CRM sub-pages
 const ContactsPage     = lazy(() => import('./features/crm/ContactsPage'))
 const ContactDetail    = lazy(() => import('./features/crm/ContactDetail'))
@@ -125,6 +190,39 @@ const SalesForecastPage = lazy(() => import('./features/crm/SalesForecastPage'))
 const PipelineAnalyticsPage = lazy(() => import('./features/crm/PipelineAnalyticsPage'))
 const ContactImportPage = lazy(() => import('./features/crm/ContactImportPage'))
 const CRMTicketsPage   = lazy(() => import('./features/crm/TicketsPage'))
+// CRM MVP upgrade pages
+const Contact360Page        = lazy(() => import('./features/crm/Contact360Page'))
+const DuplicatesPage        = lazy(() => import('./features/crm/DuplicatesPage'))
+const CRMCustomFieldsPage   = lazy(() => import('./features/crm/CustomFieldsPage'))
+const LeadScoringPage       = lazy(() => import('./features/crm/LeadScoringPage'))
+const SequencesPage         = lazy(() => import('./features/crm/SequencesPage'))
+const SequenceBuilderPage   = lazy(() => import('./features/crm/SequenceBuilderPage'))
+const CRMTemplatesPage      = lazy(() => import('./features/crm/TemplatesPage'))
+const CRMActivitiesPage     = lazy(() => import('./features/crm/ActivitiesPage'))
+const PipelinesSettingsPage = lazy(() => import('./features/crm/PipelinesSettingsPage'))
+// CRM Phase 2 pages — Marketing
+const EmailCampaignBuilder  = lazy(() => import('./features/crm/EmailCampaignBuilder'))
+const ABTestSetup           = lazy(() => import('./features/crm/ABTestSetup'))
+const SegmentBuilder        = lazy(() => import('./features/crm/SegmentBuilder'))
+const ContentCalendarPage   = lazy(() => import('./features/crm/ContentCalendarPage'))
+// CRM Phase 2 pages — Service Hub
+const ConversationInbox     = lazy(() => import('./features/crm/ConversationInbox'))
+const KnowledgeBasePage     = lazy(() => import('./features/crm/KnowledgeBasePage'))
+const SLAPoliciesPage       = lazy(() => import('./features/crm/SLAPoliciesPage'))
+// CRM Phase 2 pages — Automations & Reports
+const WorkflowListPage      = lazy(() => import('./features/crm/WorkflowListPage'))
+const WorkflowCanvasPage    = lazy(() => import('./features/crm/WorkflowCanvasPage'))
+const DashboardBuilderPage  = lazy(() => import('./features/crm/DashboardBuilderPage'))
+const FunnelReportPage      = lazy(() => import('./features/crm/FunnelReportPage'))
+const CohortReportPage      = lazy(() => import('./features/crm/CohortReportPage'))
+const LeaderboardPage       = lazy(() => import('./features/crm/LeaderboardPage'))
+// CRM Phase 3 pages — AI Agents, Custom Objects, Collaboration, Audit
+const AIAgentConfigPage     = lazy(() => import('./features/crm/AIAgentConfigPage'))
+const AIAgentRunsPage       = lazy(() => import('./features/crm/AIAgentRunsPage'))
+const CustomObjectListPage  = lazy(() => import('./features/crm/CustomObjectListPage'))
+const CustomObjectRecordsPage = lazy(() => import('./features/crm/CustomObjectRecordsPage'))
+const CustomObjectFormBuilder = lazy(() => import('./features/crm/CustomObjectFormBuilder'))
+const CRMAuditLogPage       = lazy(() => import('./features/crm/AuditLogPage'))
 
 // Inventory sub-pages
 const ItemsPage           = lazy(() => import('./features/inventory/ItemsPage'))
@@ -157,6 +255,32 @@ const MfgKPIsPage         = lazy(() => import('./features/manufacturing/MfgKPIsP
 const ProductionTrackingPage = lazy(() => import('./features/manufacturing/ProductionTracking'))
 const MobileProductionEntry = lazy(() => import('./features/manufacturing/MobileProductionEntry'))
 const WorkstationTablet     = lazy(() => import('./features/manufacturing/WorkstationTablet'))
+const ECOListPage           = lazy(() => import('./features/manufacturing/ECOListPage'))
+const ECODetailPage         = lazy(() => import('./features/manufacturing/ECODetail'))
+const InspectionPlansPage   = lazy(() => import('./features/manufacturing/InspectionPlansPage'))
+const InspectionPlanDetailPage = lazy(() => import('./features/manufacturing/InspectionPlanDetail'))
+const NCRListPage           = lazy(() => import('./features/manufacturing/NCRListPage'))
+const NCRDetailPage         = lazy(() => import('./features/manufacturing/NCRDetail'))
+const CAPAListPage          = lazy(() => import('./features/manufacturing/CAPAListPage'))
+const CAPADetailPage        = lazy(() => import('./features/manufacturing/CAPADetail'))
+const LotTrackingPage       = lazy(() => import('./features/manufacturing/LotTrackingPage'))
+const TraceabilityViewPage  = lazy(() => import('./features/manufacturing/TraceabilityView'))
+const GenealogyTreePage     = lazy(() => import('./features/manufacturing/GenealogyTree'))
+const BatchRecordPage       = lazy(() => import('./features/manufacturing/BatchRecordPage'))
+const ReworkOrdersPage      = lazy(() => import('./features/manufacturing/ReworkOrdersPage'))
+// Phase 2: Planning, Equipment, Labor
+const GanttSchedulerPage    = lazy(() => import('./features/manufacturing/GanttScheduler'))
+const CapacityDashboardPage = lazy(() => import('./features/manufacturing/CapacityDashboard'))
+const ScenarioPlannerPage   = lazy(() => import('./features/manufacturing/ScenarioPlanner'))
+const AssetRegisterPage     = lazy(() => import('./features/manufacturing/AssetRegisterPage'))
+const AssetDetailPage       = lazy(() => import('./features/manufacturing/AssetDetail'))
+const DowntimeTrackerPage   = lazy(() => import('./features/manufacturing/DowntimeTracker'))
+const DowntimeAnalysisPage  = lazy(() => import('./features/manufacturing/DowntimeAnalysis'))
+const MaintenanceMWOPage    = lazy(() => import('./features/manufacturing/MaintenanceWorkOrdersPage'))
+const OEEReportPage         = lazy(() => import('./features/manufacturing/OEEDetailedReport'))
+const SkillsMatrixPage      = lazy(() => import('./features/manufacturing/SkillsMatrixPage'))
+const CertTrackerPage       = lazy(() => import('./features/manufacturing/CertificationTracker'))
+const CrewSchedulingPage    = lazy(() => import('./features/manufacturing/CrewSchedulingPage'))
 
 // Supply Chain sub-pages
 const SuppliersPage        = lazy(() => import('./features/supplychain/SuppliersPage'))
@@ -175,6 +299,25 @@ const SCPerformancePage     = lazy(() => import('./features/supplychain/Performa
 const MobileGoodsReceipt    = lazy(() => import('./features/supplychain/MobileGoodsReceipt'))
 const MobileQualityInspection = lazy(() => import('./features/supplychain/MobileQualityInspection'))
 
+// Supply Chain Planning & Ops sub-pages
+const DemandForecastPage     = lazy(() => import('./features/supplychain/DemandForecastPage'))
+const ForecastScenariosPage  = lazy(() => import('./features/supplychain/ForecastScenariosPage'))
+const SOPPlanPage            = lazy(() => import('./features/supplychain/SOPPlanPage'))
+const SOPPlanDetail          = lazy(() => import('./features/supplychain/SOPPlanDetail'))
+const SupplyPlanPage         = lazy(() => import('./features/supplychain/SupplyPlanPage'))
+const SupplyPlanDetail       = lazy(() => import('./features/supplychain/SupplyPlanDetail'))
+const ControlTowerDashboard  = lazy(() => import('./features/supplychain/ControlTowerDashboard'))
+const SCAlertPage            = lazy(() => import('./features/supplychain/AlertsPage'))
+const RFxPage                = lazy(() => import('./features/supplychain/RFxPage'))
+const RFxDetail              = lazy(() => import('./features/supplychain/RFxDetail'))
+const SupplierRiskPage       = lazy(() => import('./features/supplychain/SupplierRiskPage'))
+const ReplenishmentRulesPage = lazy(() => import('./features/supplychain/ReplenishmentRulesPage'))
+const StockHealthPage        = lazy(() => import('./features/supplychain/StockHealthPage'))
+const WorkflowsPage          = lazy(() => import('./features/supplychain/WorkflowsPage'))
+const WorkflowRunDetail      = lazy(() => import('./features/supplychain/WorkflowRunDetail'))
+const CompliancePage         = lazy(() => import('./features/supplychain/CompliancePage'))
+const SCAnalyticsPage        = lazy(() => import('./features/supplychain/SCAnalyticsPage'))
+
 // POS sub-pages
 const POSTerminal          = lazy(() => import('./features/pos/POSTerminal'))
 const POSSessions          = lazy(() => import('./features/pos/POSSessions'))
@@ -187,6 +330,31 @@ const CashManagementPage   = lazy(() => import('./features/pos/CashManagementPag
 const DailySalesPage       = lazy(() => import('./features/pos/DailySalesPage'))
 const CashierReportPage    = lazy(() => import('./features/pos/CashierReportPage'))
 const MobilePayment        = lazy(() => import('./features/pos/MobilePayment'))
+const HeldTransactions     = lazy(() => import('./features/pos/HeldTransactions'))
+const BundlesPage          = lazy(() => import('./features/pos/BundlesPage'))
+const ModifierGroupsPage   = lazy(() => import('./features/pos/ModifierGroupsPage'))
+const XZReadingPage        = lazy(() => import('./features/pos/XZReadingPage'))
+const ProfitabilityDashboard = lazy(() => import('./features/pos/ProfitabilityDashboard'))
+const CommissionRulesPage  = lazy(() => import('./features/pos/CommissionRulesPage'))
+const CommissionReportPage = lazy(() => import('./features/pos/CommissionReportPage'))
+const Customer360Panel     = lazy(() => import('./features/pos/Customer360Panel'))
+const GiftCardsPage        = lazy(() => import('./features/pos/GiftCardsPage'))
+const StoreCreditLookup    = lazy(() => import('./features/pos/StoreCreditLookup'))
+const PickupOrdersPage     = lazy(() => import('./features/pos/PickupOrdersPage'))
+const PickupOrderDetail    = lazy(() => import('./features/pos/PickupOrderDetail'))
+const HardwareSettings     = lazy(() => import('./features/pos/HardwareSettings'))
+
+// KDS sub-pages
+const KDSDisplay           = lazy(() => import('./features/kds/KDSDisplay'))
+const KDSStationManager    = lazy(() => import('./features/kds/KDSStationManager'))
+
+// Loyalty sub-pages
+const LoyaltyDashboard     = lazy(() => import('./features/loyalty/LoyaltyDashboard'))
+const MemberLookup         = lazy(() => import('./features/loyalty/MemberLookup'))
+const RewardsPage          = lazy(() => import('./features/loyalty/RewardsPage'))
+
+// Phase 4 — Customer Display
+const CustomerDisplay      = lazy(() => import('./features/pos/CustomerDisplay'))
 
 // E-Commerce sub-pages
 const EcomCategoryManagerPage = lazy(() => import('./features/ecommerce/CategoryManagerPage'))
@@ -242,6 +410,12 @@ const ProjectDashboard     = lazy(() => import('./features/projects/ProjectDashb
 const WorkloadPage         = lazy(() => import('./features/projects/WorkloadPage'))
 const TemplatesPage        = lazy(() => import('./features/projects/TemplatesPage'))
 const ProjectIntegrations  = lazy(() => import('./features/projects/ProjectIntegrations'))
+const ProjectListView      = lazy(() => import('./features/projects/ListView'))
+const ProjectCalendarView  = lazy(() => import('./features/projects/CalendarView'))
+const ProjectBacklogView   = lazy(() => import('./features/projects/BacklogView'))
+const ProjectAutomations   = lazy(() => import('./features/projects/AutomationsList'))
+const ProjectRecurring     = lazy(() => import('./features/projects/RecurringTaskConfig'))
+const CustomFieldsManager  = lazy(() => import('./features/projects/CustomFieldsManager'))
 
 // Analytics enhancements
 const DashboardListPage       = lazy(() => import('./features/analytics/DashboardListPage'))
@@ -361,6 +535,9 @@ export default function App() {
           {/* Public share link */}
           <Route path="/share/:link" element={<S><PublicSharePage /></S>} />
 
+          {/* POS Customer-Facing Display (full-screen, outside AppShell) */}
+          <Route path="/pos/customer-display" element={<RequireAuth><S><CustomerDisplay /></S></RequireAuth>} />
+
           {/* Protected app shell */}
           <Route
             path="/"
@@ -394,6 +571,15 @@ export default function App() {
             <Route path="finance/cash-flow" element={<S><CashFlowPage /></S>} />
             <Route path="finance/aged-report" element={<S><AgedReportPage /></S>} />
             <Route path="finance/kpis" element={<S><FinanceKPIsPage /></S>} />
+            {/* Finance Phase 2A — AI-era upgrades */}
+            <Route path="finance/estimates" element={<S><EstimatesPage /></S>} />
+            <Route path="finance/workflow-rules" element={<S><WorkflowRulesPage /></S>} />
+            <Route path="finance/ai" element={<S><FinanceAIPage /></S>} />
+            <Route path="finance/revenue-streams" element={<S><RevenueStreamsPage /></S>} />
+            <Route path="finance/job-costing" element={<S><JobCostingPage /></S>} />
+            <Route path="finance/compliance-calendar" element={<S><ComplianceCalendarPage /></S>} />
+            <Route path="finance/custom-fields" element={<S><CustomFieldsAdmin /></S>} />
+            <Route path="finance/dimensions" element={<S><DimensionsAdmin /></S>} />
             <Route path="hr" element={<S><HRDashboard /></S>} />
             <Route path="hr/departments" element={<S><DepartmentsPage /></S>} />
             <Route path="hr/employees" element={<S><EmployeesPage /></S>} />
@@ -412,6 +598,62 @@ export default function App() {
             <Route path="hr/payroll-reports" element={<S><PayrollReportsPage /></S>} />
             <Route path="hr/onboarding" element={<S><OnboardingPage /></S>} />
             <Route path="hr/offboarding" element={<S><OffboardingPage /></S>} />
+            <Route path="hr/skills-matrix" element={<S><SkillsMatrixPage /></S>} />
+            <Route path="hr/succession-planning" element={<S><SuccessionPlanningPage /></S>} />
+            <Route path="hr/compensation-bands" element={<S><CompensationBandsPage /></S>} />
+            <Route path="hr/merit-planning" element={<S><MeritPlanningPage /></S>} />
+            <Route path="hr/bonuses" element={<S><BonusManagementPage /></S>} />
+            <Route path="hr/equity-grants" element={<S><EquityGrantsPage /></S>} />
+            <Route path="hr/shift-scheduling" element={<S><ShiftSchedulingPage /></S>} />
+            <Route path="hr/holiday-calendar" element={<S><HolidayCalendarPage /></S>} />
+            <Route path="hr/goals" element={<S><GoalsPage /></S>} />
+            <Route path="hr/feedback" element={<S><FeedbackPage /></S>} />
+            <Route path="hr/review-cycles" element={<S><ReviewCyclesPage /></S>} />
+            <Route path="hr/manager-dashboard" element={<S><ManagerDashboardPage /></S>} />
+            <Route path="hr/audit-log" element={<S><AuditLogPage /></S>} />
+            {/* HR Phase 2 — ATS */}
+            <Route path="hr/ats" element={<S><ATSDashboard /></S>} />
+            <Route path="hr/ats/requisitions" element={<S><RequisitionsAtsPage /></S>} />
+            <Route path="hr/ats/requisitions/:id" element={<S><RequisitionDetail2 /></S>} />
+            <Route path="hr/ats/requisitions/:id/pipeline" element={<S><PipelineBoard /></S>} />
+            <Route path="hr/ats/candidates" element={<S><CandidatesPage /></S>} />
+            <Route path="hr/ats/candidates/:id" element={<S><CandidateDetail /></S>} />
+            <Route path="hr/ats/interviews" element={<S><InterviewScheduler /></S>} />
+            {/* HR Phase 2 — LMS */}
+            <Route path="hr/learning" element={<S><LearningDashboard /></S>} />
+            <Route path="hr/courses" element={<S><CourseCatalogPage /></S>} />
+            <Route path="hr/courses/new" element={<S><CourseBuilderPage /></S>} />
+            <Route path="hr/courses/:id" element={<S><CourseDetailPage /></S>} />
+            <Route path="hr/courses/:id/edit" element={<S><CourseBuilderPage /></S>} />
+            <Route path="hr/certifications" element={<S><CertificationsPage /></S>} />
+            {/* HR Phase 2 — Engagement */}
+            <Route path="hr/engagement" element={<S><EngagementDashboard /></S>} />
+            <Route path="hr/surveys/new" element={<S><SurveyBuilderPage /></S>} />
+            <Route path="hr/surveys/:id/edit" element={<S><SurveyBuilderPage /></S>} />
+            <Route path="hr/surveys/:id/respond" element={<S><SurveyResponsePage /></S>} />
+            <Route path="hr/surveys/:id/results" element={<S><SurveyResultsPage /></S>} />
+            <Route path="hr/recognition" element={<S><RecognitionFeedPage /></S>} />
+            {/* HR Phase 2 — Onboarding & Import */}
+            <Route path="hr/onboarding-templates" element={<S><OnboardingTemplatesPage /></S>} />
+            <Route path="hr/onboarding-tracker" element={<S><OnboardingTrackerPage /></S>} />
+            <Route path="hr/import" element={<S><HRImportPage /></S>} />
+            {/* HR Phase 3 — AI Intelligence */}
+            <Route path="hr/ai/flight-risk" element={<S><FlightRiskDashboard /></S>} />
+            <Route path="hr/ai/burnout" element={<S><BurnoutAlerts /></S>} />
+            <Route path="hr/ai/skills-ontology" element={<S><SkillsOntologyPage /></S>} />
+            <Route path="hr/ai/chatbot" element={<S><HRChatbot /></S>} />
+            <Route path="hr/ai/workforce-planning" element={<S><WorkforcePlanningPage /></S>} />
+            {/* HR Phase 3 — Workflows */}
+            <Route path="hr/workflows" element={<S><WorkflowListPage /></S>} />
+            <Route path="hr/workflows/builder" element={<S><WorkflowBuilderPage /></S>} />
+            <Route path="hr/workflows/:id/edit" element={<S><WorkflowBuilderPage /></S>} />
+            <Route path="hr/workflows/executions" element={<S><WorkflowExecutionPage /></S>} />
+            <Route path="hr/workflows/approvals" element={<S><WorkflowApprovals /></S>} />
+            {/* HR Phase 3 — People Analytics */}
+            <Route path="hr/analytics" element={<S><CustomDashboardBuilder /></S>} />
+            <Route path="hr/analytics/dei" element={<S><DEIDashboard /></S>} />
+            <Route path="hr/analytics/predictive" element={<S><PredictiveReports /></S>} />
+            <Route path="hr/analytics/cost" element={<S><CostModelingPage /></S>} />
             <Route path="crm" element={<S><CRMDashboard /></S>} />
             <Route path="crm/contacts" element={<S><ContactsPage /></S>} />
             <Route path="crm/contacts/:id" element={<S><ContactDetail /></S>} />
@@ -426,6 +668,39 @@ export default function App() {
             <Route path="crm/pipeline-analytics" element={<S><PipelineAnalyticsPage /></S>} />
             <Route path="crm/contacts/import" element={<S><ContactImportPage /></S>} />
             <Route path="crm/tickets" element={<S><CRMTicketsPage /></S>} />
+            {/* CRM MVP upgrade routes */}
+            <Route path="crm/contacts/:id/360" element={<S><Contact360Page /></S>} />
+            <Route path="crm/duplicates" element={<S><DuplicatesPage /></S>} />
+            <Route path="crm/custom-fields" element={<S><CRMCustomFieldsPage /></S>} />
+            <Route path="crm/lead-scoring" element={<S><LeadScoringPage /></S>} />
+            <Route path="crm/sequences" element={<S><SequencesPage /></S>} />
+            <Route path="crm/sequences/:id" element={<S><SequenceBuilderPage /></S>} />
+            <Route path="crm/templates" element={<S><CRMTemplatesPage /></S>} />
+            <Route path="crm/activities" element={<S><CRMActivitiesPage /></S>} />
+            <Route path="crm/pipelines/settings" element={<S><PipelinesSettingsPage /></S>} />
+            {/* CRM Phase 2 — Marketing */}
+            <Route path="crm/campaigns/:id/email-builder" element={<S><EmailCampaignBuilder /></S>} />
+            <Route path="crm/ab-test" element={<S><ABTestSetup /></S>} />
+            <Route path="crm/segments" element={<S><SegmentBuilder /></S>} />
+            <Route path="crm/content-calendar" element={<S><ContentCalendarPage /></S>} />
+            {/* CRM Phase 2 — Service Hub */}
+            <Route path="crm/conversations" element={<S><ConversationInbox /></S>} />
+            <Route path="crm/knowledge-base" element={<S><KnowledgeBasePage /></S>} />
+            <Route path="crm/sla-policies" element={<S><SLAPoliciesPage /></S>} />
+            {/* CRM Phase 2 — Automations & Reports */}
+            <Route path="crm/workflows" element={<S><WorkflowListPage /></S>} />
+            <Route path="crm/workflows/:id/canvas" element={<S><WorkflowCanvasPage /></S>} />
+            <Route path="crm/dashboard-builder" element={<S><DashboardBuilderPage /></S>} />
+            <Route path="crm/reports/funnel" element={<S><FunnelReportPage /></S>} />
+            <Route path="crm/reports/cohort" element={<S><CohortReportPage /></S>} />
+            <Route path="crm/leaderboard" element={<S><LeaderboardPage /></S>} />
+            {/* CRM Phase 3 — AI Agents, Custom Objects, Audit */}
+            <Route path="crm/ai-agents" element={<S><AIAgentConfigPage /></S>} />
+            <Route path="crm/ai-agents/:id/runs" element={<S><AIAgentRunsPage /></S>} />
+            <Route path="crm/custom-objects" element={<S><CustomObjectListPage /></S>} />
+            <Route path="crm/custom-objects/:id/records" element={<S><CustomObjectRecordsPage /></S>} />
+            <Route path="crm/custom-objects/:id/form-builder" element={<S><CustomObjectFormBuilder /></S>} />
+            <Route path="crm/audit-log" element={<S><CRMAuditLogPage /></S>} />
             <Route path="projects" element={<S><ProjectsPage /></S>} />
             <Route path="projects/:id" element={<S><ProjectBoard /></S>} />
             <Route path="projects/:id/time-report" element={<S><TimeLogReport /></S>} />
@@ -436,6 +711,12 @@ export default function App() {
             <Route path="projects/workload" element={<S><WorkloadPage /></S>} />
             <Route path="projects/templates" element={<S><TemplatesPage /></S>} />
             <Route path="projects/:id/integrations" element={<S><ProjectIntegrations /></S>} />
+            <Route path="projects/:id/list" element={<S><ProjectListView /></S>} />
+            <Route path="projects/:id/calendar" element={<S><ProjectCalendarView /></S>} />
+            <Route path="projects/:id/backlog" element={<S><ProjectBacklogView /></S>} />
+            <Route path="projects/:id/automations" element={<S><ProjectAutomations /></S>} />
+            <Route path="projects/:id/recurring" element={<S><ProjectRecurring /></S>} />
+            <Route path="projects/:id/custom-fields" element={<S><CustomFieldsManager /></S>} />
             {/* Inventory */}
             <Route path="inventory" element={<S><InventoryDashboard /></S>} />
             <Route path="inventory/items" element={<S><ItemsPage /></S>} />
@@ -469,6 +750,24 @@ export default function App() {
             <Route path="supply-chain/performance" element={<S><SCPerformancePage /></S>} />
             <Route path="supply-chain/mobile-goods-receipt" element={<S><MobileGoodsReceipt /></S>} />
             <Route path="supply-chain/mobile-quality-inspection" element={<S><MobileQualityInspection /></S>} />
+            {/* Supply Chain Planning & Ops */}
+            <Route path="supply-chain/demand-forecasts" element={<S><DemandForecastPage /></S>} />
+            <Route path="supply-chain/forecast-scenarios" element={<S><ForecastScenariosPage /></S>} />
+            <Route path="supply-chain/sop" element={<S><SOPPlanPage /></S>} />
+            <Route path="supply-chain/sop/:id" element={<S><SOPPlanDetail /></S>} />
+            <Route path="supply-chain/supply-plans" element={<S><SupplyPlanPage /></S>} />
+            <Route path="supply-chain/supply-plans/:id" element={<S><SupplyPlanDetail /></S>} />
+            <Route path="supply-chain/control-tower" element={<S><ControlTowerDashboard /></S>} />
+            <Route path="supply-chain/alerts" element={<S><SCAlertPage /></S>} />
+            <Route path="supply-chain/rfx" element={<S><RFxPage /></S>} />
+            <Route path="supply-chain/rfx/:id" element={<S><RFxDetail /></S>} />
+            <Route path="supply-chain/supplier-risks" element={<S><SupplierRiskPage /></S>} />
+            <Route path="supply-chain/replenishment" element={<S><ReplenishmentRulesPage /></S>} />
+            <Route path="supply-chain/stock-health" element={<S><StockHealthPage /></S>} />
+            <Route path="supply-chain/workflows" element={<S><WorkflowsPage /></S>} />
+            <Route path="supply-chain/workflows/:id" element={<S><WorkflowRunDetail /></S>} />
+            <Route path="supply-chain/compliance" element={<S><CompliancePage /></S>} />
+            <Route path="supply-chain/analytics" element={<S><SCAnalyticsPage /></S>} />
             {/* Manufacturing */}
             <Route path="manufacturing" element={<S><ManufacturingDashboard /></S>} />
             <Route path="manufacturing/bom" element={<S><BOMListPage /></S>} />
@@ -485,6 +784,32 @@ export default function App() {
             <Route path="manufacturing/production-tracking" element={<S><ProductionTrackingPage /></S>} />
             <Route path="manufacturing/mobile-production" element={<S><MobileProductionEntry /></S>} />
             <Route path="manufacturing/workstation-dashboard" element={<S><WorkstationTablet /></S>} />
+            <Route path="manufacturing/eco" element={<S><ECOListPage /></S>} />
+            <Route path="manufacturing/eco/:ecoId" element={<S><ECODetailPage /></S>} />
+            <Route path="manufacturing/inspection-plans" element={<S><InspectionPlansPage /></S>} />
+            <Route path="manufacturing/inspection-plans/:planId" element={<S><InspectionPlanDetailPage /></S>} />
+            <Route path="manufacturing/ncr" element={<S><NCRListPage /></S>} />
+            <Route path="manufacturing/ncr/:ncrId" element={<S><NCRDetailPage /></S>} />
+            <Route path="manufacturing/capa" element={<S><CAPAListPage /></S>} />
+            <Route path="manufacturing/capa/:capaId" element={<S><CAPADetailPage /></S>} />
+            <Route path="manufacturing/lots" element={<S><LotTrackingPage /></S>} />
+            <Route path="manufacturing/lots/:lotId" element={<S><TraceabilityViewPage /></S>} />
+            <Route path="manufacturing/lots/:lotId/genealogy" element={<S><GenealogyTreePage /></S>} />
+            <Route path="manufacturing/batch-records" element={<S><BatchRecordPage /></S>} />
+            <Route path="manufacturing/rework-orders" element={<S><ReworkOrdersPage /></S>} />
+            {/* Phase 2: Planning, Equipment, Labor */}
+            <Route path="manufacturing/schedule" element={<S><GanttSchedulerPage /></S>} />
+            <Route path="manufacturing/capacity" element={<S><CapacityDashboardPage /></S>} />
+            <Route path="manufacturing/scenarios" element={<S><ScenarioPlannerPage /></S>} />
+            <Route path="manufacturing/assets" element={<S><AssetRegisterPage /></S>} />
+            <Route path="manufacturing/assets/:assetId" element={<S><AssetDetailPage /></S>} />
+            <Route path="manufacturing/downtime" element={<S><DowntimeTrackerPage /></S>} />
+            <Route path="manufacturing/downtime/analysis" element={<S><DowntimeAnalysisPage /></S>} />
+            <Route path="manufacturing/maintenance-work-orders" element={<S><MaintenanceMWOPage /></S>} />
+            <Route path="manufacturing/oee" element={<S><OEEReportPage /></S>} />
+            <Route path="manufacturing/skills" element={<S><SkillsMatrixPage /></S>} />
+            <Route path="manufacturing/certifications" element={<S><CertTrackerPage /></S>} />
+            <Route path="manufacturing/crew" element={<S><CrewSchedulingPage /></S>} />
             {/* POS */}
             <Route path="pos" element={<S><POSDashboard /></S>} />
             <Route path="pos/terminal" element={<S><POSTerminal /></S>} />
@@ -498,6 +823,26 @@ export default function App() {
             <Route path="pos/daily-sales" element={<S><DailySalesPage /></S>} />
             <Route path="pos/cashier-report" element={<S><CashierReportPage /></S>} />
             <Route path="pos/mobile-payment" element={<S><MobilePayment total={0} lines={[]} /></S>} />
+            <Route path="pos/held-transactions" element={<S><HeldTransactions /></S>} />
+            <Route path="pos/bundles" element={<S><BundlesPage /></S>} />
+            <Route path="pos/modifier-groups" element={<S><ModifierGroupsPage /></S>} />
+            <Route path="pos/xz-readings" element={<S><XZReadingPage /></S>} />
+            <Route path="pos/profitability" element={<S><ProfitabilityDashboard /></S>} />
+            <Route path="pos/commission-rules" element={<S><CommissionRulesPage /></S>} />
+            <Route path="pos/commission-report" element={<S><CommissionReportPage /></S>} />
+            <Route path="pos/customer-360/:customerId" element={<S><Customer360Panel /></S>} />
+            <Route path="pos/gift-cards" element={<S><GiftCardsPage /></S>} />
+            <Route path="pos/store-credit" element={<S><StoreCreditLookup /></S>} />
+            <Route path="pos/pickup-orders" element={<S><PickupOrdersPage /></S>} />
+            <Route path="pos/pickup-orders/:id" element={<S><PickupOrderDetail /></S>} />
+            <Route path="pos/hardware-settings" element={<S><HardwareSettings /></S>} />
+            {/* KDS */}
+            <Route path="kds" element={<S><KDSDisplay /></S>} />
+            <Route path="kds/stations" element={<S><KDSStationManager /></S>} />
+            {/* Loyalty */}
+            <Route path="loyalty" element={<S><LoyaltyDashboard /></S>} />
+            <Route path="loyalty/members" element={<S><MemberLookup /></S>} />
+            <Route path="loyalty/programs/:programId/rewards" element={<S><RewardsPage /></S>} />
             {/* E-Commerce */}
             <Route path="ecommerce" element={<S><EcommerceDashboard /></S>} />
             <Route path="ecommerce/stores" element={<S><EcomStoresPage /></S>} />

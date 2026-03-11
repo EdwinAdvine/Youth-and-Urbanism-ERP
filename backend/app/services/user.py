@@ -6,7 +6,6 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.security import hash_password
 from app.models.user import AppAdmin, Permission, Role, RolePermission, Team, TeamMember, User, UserRole

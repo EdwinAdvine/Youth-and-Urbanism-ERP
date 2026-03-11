@@ -16,9 +16,21 @@ from app.models.hr import (
 )
 from app.models.inventory import (
     Warehouse, InventoryItem, StockLevel, StockMovement, PurchaseOrder, PurchaseOrderLine,
-    StockAdjustment, ItemVariant, BatchNumber, InventoryCount,
+    StockAdjustment, ItemVariant, BatchNumber, InventoryCount, InventorySupplier,
+    # Phase 1
+    UnitOfMeasure, UoMConversion, SerialNumber, BlanketOrder,
+    # Phase 2
+    WarehouseZone, WarehouseBin, BinContent, PutawayRule, PickList, PickListLine,
+    # Phase 3
+    PurchaseSuggestion, ItemClassification,
+    # Phase 4
+    Kit, KitComponent, SupplierPriceList,
+    LandedCostVoucher, LandedCostLine, LandedCostAllocation,
+    # Phase 5
+    CostingConfig, CostLayer, InventoryAuditTrail,
+    # Phase 6
+    InventoryAutomationRule,
 )
-from app.models.inventory import InventorySupplier
 from app.models.settings import SystemSettings, UserPreferences
 from app.models.notification import Notification
 from app.models.crm import Contact, Lead, Opportunity, Deal, Campaign, CampaignContact, CRMProduct, Quote, CRMTicket
@@ -34,10 +46,29 @@ from app.models.supplychain import (
     GoodsReceivedNote, GRNLine, SupplierReturn, SupplierReturnLine,
     Shipment, ReturnOrder, QualityInspection, SupplierRating, Contract,
 )
+from app.models.supplychain_planning import (
+    ForecastScenario, DemandForecast, DemandSignal,
+    SalesOperationsPlan, SupplyPlan, SupplyPlanLine, CapacityPlan,
+)
+from app.models.supplychain_ops import (
+    ControlTowerAlert, SupplyChainKPI, SupplyChainEvent,
+    RFx, RFxResponse, SupplierRisk, ReplenishmentRule,
+    SafetyStockConfig, StockHealthScore,
+    WorkflowTemplate, WorkflowRun, WorkflowStep,
+    ComplianceRecord, ESGMetric,
+)
 from app.models.pos import (
     POSSession, POSTransaction, POSTransactionLine, POSPayment,
     POSTerminal, POSDiscount, POSReceipt, POSCashMovement,
+    POSBundle, POSBundleItem, POSModifierGroup, POSModifier, POSProductModifierLink,
+    POSGiftCard, POSGiftCardTransaction, POSStoreCredit, POSStoreCreditTransaction,
+    POSPickupOrder, POSPaymentGatewayConfig,
+    POSCommissionRule, POSCommission, POSTipPool,
 )
+from app.models.loyalty import (
+    LoyaltyProgram, LoyaltyTier, LoyaltyMember, LoyaltyTransaction, LoyaltyReward,
+)
+from app.models.kds import KDSStation, KDSOrder, KDSOrderItem
 from app.models.manufacturing import (
     BillOfMaterials, BOMItem, WorkStation, WorkOrder, MaterialConsumption, QualityCheck,
     RoutingStep, ScrapEntry, MaintenanceSchedule, QualityControl,
@@ -90,6 +121,11 @@ __all__ = [
     # Inventory
     "Warehouse", "InventoryItem", "StockLevel", "StockMovement", "PurchaseOrder", "PurchaseOrderLine",
     "InventorySupplier", "StockAdjustment", "ItemVariant", "BatchNumber", "InventoryCount",
+    "UnitOfMeasure", "UoMConversion", "SerialNumber", "BlanketOrder",
+    "WarehouseZone", "WarehouseBin", "BinContent", "PutawayRule", "PickList", "PickListLine",
+    "PurchaseSuggestion", "ItemClassification",
+    "Kit", "KitComponent", "SupplierPriceList", "LandedCostVoucher", "LandedCostLine", "LandedCostAllocation",
+    "CostingConfig", "CostLayer", "InventoryAuditTrail", "InventoryAutomationRule",
     # CRM
     "Contact", "Lead", "Opportunity", "Deal", "Campaign", "CampaignContact", "CRMProduct", "Quote", "CRMTicket",
     # Settings / Notifications
@@ -103,9 +139,26 @@ __all__ = [
     "Supplier", "ProcurementRequisition", "RequisitionLine",
     "GoodsReceivedNote", "GRNLine", "SupplierReturn", "SupplierReturnLine",
     "Shipment", "ReturnOrder", "QualityInspection", "SupplierRating", "Contract",
+    # Supply Chain Planning
+    "ForecastScenario", "DemandForecast", "DemandSignal",
+    "SalesOperationsPlan", "SupplyPlan", "SupplyPlanLine", "CapacityPlan",
+    # Supply Chain Ops
+    "ControlTowerAlert", "SupplyChainKPI", "SupplyChainEvent",
+    "RFx", "RFxResponse", "SupplierRisk", "ReplenishmentRule",
+    "SafetyStockConfig", "StockHealthScore",
+    "WorkflowTemplate", "WorkflowRun", "WorkflowStep",
+    "ComplianceRecord", "ESGMetric",
     # POS
     "POSSession", "POSTransaction", "POSTransactionLine", "POSPayment",
     "POSTerminal", "POSDiscount", "POSReceipt", "POSCashMovement",
+    "POSBundle", "POSBundleItem", "POSModifierGroup", "POSModifier", "POSProductModifierLink",
+    "POSGiftCard", "POSGiftCardTransaction", "POSStoreCredit", "POSStoreCreditTransaction",
+    "POSPickupOrder", "POSPaymentGatewayConfig",
+    "POSCommissionRule", "POSCommission", "POSTipPool",
+    # Loyalty
+    "LoyaltyProgram", "LoyaltyTier", "LoyaltyMember", "LoyaltyTransaction", "LoyaltyReward",
+    # KDS
+    "KDSStation", "KDSOrder", "KDSOrderItem",
     # Manufacturing
     "BillOfMaterials", "BOMItem", "WorkStation", "WorkOrder", "MaterialConsumption", "QualityCheck",
     "RoutingStep", "ScrapEntry", "MaintenanceSchedule", "QualityControl",

@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { Badge } from '@/components/ui'
 import type { HandbookArticle } from '@/api/handbook'
 
 interface ArticleCardProps {

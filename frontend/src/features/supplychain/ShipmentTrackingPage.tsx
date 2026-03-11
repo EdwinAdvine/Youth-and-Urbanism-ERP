@@ -5,7 +5,6 @@ import {
   useCreateShipment,
   useTrackShipment,
   type Shipment,
-  type ShipmentEvent,
   type CreateShipmentPayload,
 } from '../../api/supplychain_ext'
 

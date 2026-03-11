@@ -1,8 +1,12 @@
 import { useState, useRef, useCallback } from 'react'
 import { Button, Card, Input, Badge, Spinner, toast } from '../../components/ui'
-import { usePOSProducts, useSearchProducts, useActiveSession, useCreateTransaction, type POSProduct, type TransactionLinePayload, type TransactionPaymentPayload } from '../../api/pos'
+import { usePOSProducts, useSearchProducts, useActiveSession, useCreateTransaction, useHoldTransaction, useHeldTransactions, useResumeHeldTransaction, type POSProduct, type TransactionLinePayload, type TransactionPaymentPayload } from '../../api/pos'
+import { useLoyaltyMemberByCustomer } from '../../api/loyalty'
 import BarcodeScanner from './BarcodeScanner'
 import CustomerLookup, { type SelectedCustomer } from './CustomerLookup'
+import SplitPaymentDialog from './SplitPaymentDialog'
+import TipDialog from './TipDialog'
+import AICashierAssistant from './AICashierAssistant'
 
 interface CartLine extends TransactionLinePayload {
   name: string
@@ -16,6 +20,9 @@ export default function POSRegister() {
   const { data: productsData, isLoading: productsLoading } = usePOSProducts({ category: category || undefined, limit: 50 })
   const { data: searchResults } = useSearchProducts(search)
   const createTransaction = useCreateTransaction()
+  const holdTransaction = useHoldTransaction()
+  const { data: heldTransactions } = useHeldTransactions()
+  const resumeHeld = useResumeHeldTransaction()
 
   const [cart, setCart] = useState<CartLine[]>([])
   const [paymentMethod, setPaymentMethod] = useState('cash')
@@ -23,13 +30,18 @@ export default function POSRegister() {
   const [customerName, setCustomerName] = useState('')
   const [customerLookupOpen, setCustomerLookupOpen] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer | null>(null)
+  const [splitPaymentOpen, setSplitPaymentOpen] = useState(false)
+  const [tipDialogOpen, setTipDialogOpen] = useState(false)
+  const [tipAmount, setTipAmount] = useState(0)
   const barcodeRef = useRef<HTMLInputElement>(null)
+
+  const { data: loyaltyMember } = useLoyaltyMemberByCustomer(selectedCustomer?.id || '')
 
   const displayProducts = search ? searchResults : productsData?.products
   const subtotal = cart.reduce((sum, l) => sum + l.unit_price * l.quantity - (l.discount_amount || 0), 0)
   const taxRate = 0.16
   const taxAmount = subtotal * taxRate
-  const total = subtotal + taxAmount
+  const total = subtotal + taxAmount + tipAmount
   const tendered = parseFloat(amountTendered) || 0
   const change = Math.max(0, tendered - total)
 
@@ -82,12 +94,20 @@ export default function POSRegister() {
     ;(e.target as HTMLInputElement).value = ''
   }
 
-  const handleCheckout = async () => {
+  const resetCart = () => {
+    setCart([])
+    setAmountTendered('')
+    setCustomerName('')
+    setSelectedCustomer(null)
+    setTipAmount(0)
+    barcodeRef.current?.focus()
+  }
+
+  const handleCheckout = async (payments?: TransactionPaymentPayload[]) => {
     if (cart.length === 0) return toast('error', 'Cart is empty')
-    if (paymentMethod === 'cash' && tendered < total) return toast('error', 'Insufficient amount tendered')
 
     const lines: TransactionLinePayload[] = cart.map(({ name, sku, ...l }) => l)
-    const payments: TransactionPaymentPayload[] = [
+    const finalPayments: TransactionPaymentPayload[] = payments || [
       {
         payment_method: paymentMethod,
         amount: paymentMethod === 'cash' ? tendered : total,
@@ -95,20 +115,51 @@ export default function POSRegister() {
       },
     ]
 
+    if (!payments && paymentMethod === 'cash' && tendered < total) {
+      return toast('error', 'Insufficient amount tendered')
+    }
+
     try {
       await createTransaction.mutateAsync({
         customer_name: customerName || undefined,
+        customer_id: selectedCustomer?.id,
+        tip_amount: tipAmount || undefined,
         tax_amount: taxAmount,
         lines,
-        payments,
+        payments: finalPayments,
       })
       toast('success', 'Transaction completed')
-      setCart([])
-      setAmountTendered('')
-      setCustomerName('')
-      barcodeRef.current?.focus()
+      resetCart()
     } catch {
       toast('error', 'Transaction failed')
+    }
+  }
+
+  const handleHold = async () => {
+    if (cart.length === 0) return toast('error', 'Cart is empty')
+    const lines: TransactionLinePayload[] = cart.map(({ name, sku, ...l }) => l)
+    try {
+      const txn = await createTransaction.mutateAsync({
+        customer_name: customerName || undefined,
+        customer_id: selectedCustomer?.id,
+        tax_amount: taxAmount,
+        lines,
+        payments: [{ payment_method: 'cash', amount: 0 }],
+      })
+      await holdTransaction.mutateAsync(txn.id)
+      toast('success', 'Transaction held')
+      resetCart()
+    } catch {
+      toast('error', 'Failed to hold transaction')
+    }
+  }
+
+  const handleResumeHeld = async (txnId: string) => {
+    try {
+      await resumeHeld.mutateAsync(txnId)
+      toast('success', 'Transaction resumed — redirecting to register')
+    } catch {
+      toast('error', 'Failed to resume transaction')
     }
   }
 
@@ -148,6 +199,14 @@ export default function POSRegister() {
           />
           <BarcodeScanner onProductScanned={addToCart} showIndicator />
           <Badge variant="info" className="hidden sm:inline-flex">Session: {session.session_number}</Badge>
+          {(heldTransactions?.length ?? 0) > 0 && (
+            <button
+              onClick={() => window.location.href = '/pos/held-transactions'}
+              className="relative px-3 py-2 min-h-[44px] rounded-[10px] border border-warning/50 bg-warning/10 text-warning text-xs font-medium hover:bg-warning/20 transition-colors"
+            >
+              Held ({heldTransactions?.length})
+            </button>
+          )}
         </div>
 
         <div className="flex-1 overflow-auto p-3 sm:p-4">
@@ -203,8 +262,11 @@ export default function POSRegister() {
             <div className="flex items-center justify-between mt-2 px-2 py-1.5 bg-primary/5 rounded-lg">
               <div className="flex items-center gap-2 text-xs">
                 <span className="font-medium text-primary">{selectedCustomer.name}</span>
-                {selectedCustomer.loyalty_points > 0 && (
-                  <span className="text-yellow-600">{selectedCustomer.loyalty_points} pts</span>
+                {loyaltyMember && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-[10px] font-semibold">
+                    {loyaltyMember.points_balance} pts
+                    {loyaltyMember.tier_name && <span>• {loyaltyMember.tier_name}</span>}
+                  </span>
                 )}
               </div>
               <button
@@ -277,10 +339,37 @@ export default function POSRegister() {
           <div className="space-y-1 text-sm">
             <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
             <div className="flex justify-between"><span className="text-gray-500">Tax (16%)</span><span>${taxAmount.toFixed(2)}</span></div>
+            {tipAmount > 0 && (
+              <div className="flex justify-between"><span className="text-gray-500">Tip</span><span className="text-green-600">${tipAmount.toFixed(2)}</span></div>
+            )}
             <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-gray-100 pt-1 border-t border-gray-100 dark:border-gray-800">
               <span>Total</span>
               <span>${total.toFixed(2)}</span>
             </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleHold}
+              disabled={cart.length === 0}
+              className="flex-1 min-h-[40px] rounded-[10px] border border-warning text-warning text-xs font-medium hover:bg-warning/10 transition-colors disabled:opacity-40"
+            >
+              Hold
+            </button>
+            <button
+              onClick={() => setTipDialogOpen(true)}
+              disabled={cart.length === 0}
+              className="flex-1 min-h-[40px] rounded-[10px] border border-green-500 text-green-600 text-xs font-medium hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors disabled:opacity-40"
+            >
+              {tipAmount > 0 ? `Tip $${tipAmount.toFixed(2)}` : 'Add Tip'}
+            </button>
+            <button
+              onClick={() => setSplitPaymentOpen(true)}
+              disabled={cart.length === 0}
+              className="flex-1 min-h-[40px] rounded-[10px] border border-primary text-primary text-xs font-medium hover:bg-primary/10 transition-colors disabled:opacity-40"
+            >
+              Split Pay
+            </button>
           </div>
 
           <div className="grid grid-cols-4 gap-2">
@@ -321,7 +410,7 @@ export default function POSRegister() {
           <Button
             className="w-full min-h-[52px] text-base"
             size="lg"
-            onClick={handleCheckout}
+            onClick={() => handleCheckout()}
             loading={createTransaction.isPending}
             disabled={cart.length === 0}
           >
@@ -329,6 +418,34 @@ export default function POSRegister() {
           </Button>
         </div>
       </div>
+
+      {/* Tip Dialog */}
+      <TipDialog
+        open={tipDialogOpen}
+        onClose={() => setTipDialogOpen(false)}
+        subtotal={subtotal + taxAmount}
+        onConfirm={(tip) => {
+          setTipAmount(tip)
+          setTipDialogOpen(false)
+        }}
+      />
+
+      {/* Split Payment Dialog */}
+      <SplitPaymentDialog
+        open={splitPaymentOpen}
+        onClose={() => setSplitPaymentOpen(false)}
+        total={total}
+        onConfirm={(payments) => {
+          setSplitPaymentOpen(false)
+          handleCheckout(payments)
+        }}
+      />
+
+      {/* AI Cashier Assistant */}
+      <AICashierAssistant
+        cartItemIds={cart.map((l) => l.item_id)}
+        customerId={selectedCustomer?.id}
+      />
     </div>
   )
 }

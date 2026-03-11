@@ -14,7 +14,6 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decrypt_field,
-    encrypt_field,
     hash_password,
     store_refresh_token,
 )

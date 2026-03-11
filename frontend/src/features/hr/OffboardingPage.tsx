@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Card, Button, Select, Badge, Input } from '../../components/ui'
 import { toast } from '../../components/ui'
-import { useEmployees, useUpdateEmployee, type Employee } from '../../api/hr'
+import { useEmployees, useUpdateEmployee } from '../../api/hr'
 
 interface OffboardingItem {
   id: string

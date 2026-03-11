@@ -14,13 +14,10 @@ from sqlalchemy.orm import selectinload
 from app.core.deps import CurrentUser, DBSession
 from app.core.export import rows_to_csv
 from app.models.ecommerce import (
-    Cart,
-    CartItem,
     CustomerAccount,
     EcomOrder,
     EcomProduct,
     OrderLine,
-    ShippingAddress,
     Store,
 )
 

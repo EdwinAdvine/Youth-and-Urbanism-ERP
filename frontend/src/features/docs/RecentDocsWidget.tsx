@@ -1,5 +1,5 @@
 import { Card, Spinner } from '../../components/ui'
-import { useRecentDocs, type RecentDoc } from '../../api/docs_ext'
+import { useRecentDocs } from '../../api/docs_ext'
 
 const TYPE_COLORS: Record<string, string> = {
   docx: 'text-blue-600 bg-blue-50',

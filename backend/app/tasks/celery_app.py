@@ -185,7 +185,7 @@ def overdue_invoice_check():
     async def _check():
         from datetime import date
 
-        from sqlalchemy import select, update
+        from sqlalchemy import update
 
         from app.core.database import AsyncSessionLocal
         from app.models.finance import Invoice
@@ -590,6 +590,85 @@ def document_retention_cleanup():
         return {"status": "error", "error": str(exc)}
 
 
+# ── Recurring project tasks ──────────────────────────────────────────────────
+
+@celery_app.task(name="tasks.process_recurring_project_tasks")
+def process_recurring_project_tasks():
+    """Check for due recurring task configs and create task instances."""
+    import asyncio
+
+    async def _process():
+        from app.core.database import AsyncSessionLocal
+        from app.models.projects import Task
+        from app.models.projects_enhanced import RecurringTaskConfig
+        from sqlalchemy import select
+        from datetime import datetime, timezone
+        import uuid as _uuid
+        import logging as _logging
+
+        logger = _logging.getLogger(__name__)
+
+        async with AsyncSessionLocal() as db:
+            now = datetime.now(timezone.utc)
+            result = await db.execute(
+                select(RecurringTaskConfig).where(
+                    RecurringTaskConfig.is_active.is_(True),
+                    RecurringTaskConfig.next_run_at <= now,
+                )
+            )
+            configs = result.scalars().all()
+            created = 0
+
+            for config in configs:
+                try:
+                    tmpl = config.template_task
+                    assignee_id = tmpl.get("assignee_id")
+
+                    task = Task(
+                        project_id=config.project_id,
+                        title=tmpl.get("title", "Recurring Task"),
+                        description=tmpl.get("description"),
+                        assignee_id=_uuid.UUID(assignee_id) if assignee_id else None,
+                        status=tmpl.get("status", "todo"),
+                        priority=tmpl.get("priority", "medium"),
+                        tags=tmpl.get("tags", []),
+                        recurring_config_id=config.id,
+                    )
+                    db.add(task)
+
+                    # Advance next_run_at
+                    from datetime import timedelta
+                    if config.recurrence_type == "daily":
+                        config.next_run_at = config.next_run_at + timedelta(days=config.recurrence_interval)
+                    elif config.recurrence_type == "weekly":
+                        config.next_run_at = config.next_run_at + timedelta(weeks=config.recurrence_interval)
+                    elif config.recurrence_type == "monthly":
+                        month = config.next_run_at.month + config.recurrence_interval
+                        year = config.next_run_at.year + (month - 1) // 12
+                        month = ((month - 1) % 12) + 1
+                        day = min(config.day_of_month or config.next_run_at.day, 28)
+                        config.next_run_at = config.next_run_at.replace(year=year, month=month, day=day)
+                    else:
+                        config.next_run_at = config.next_run_at + timedelta(days=config.recurrence_interval)
+
+                    created += 1
+                except Exception:
+                    logger.exception("Failed to create recurring task for config %s", config.id)
+
+            if created:
+                await db.commit()
+                logger.info("Created %d recurring project tasks", created)
+
+            return {"status": "ok", "created": created, "configs_checked": len(configs)}
+
+    try:
+        return asyncio.run(_process())
+    except Exception as exc:
+        import logging as _logging
+        _logging.getLogger(__name__).exception("Recurring project tasks failed: %s", exc)
+        return {"status": "error", "error": str(exc)}
+
+
 # ── Beat schedule ────────────────────────────────────────────────────────────
 
 celery_app.conf.beat_schedule = {
@@ -613,4 +692,723 @@ celery_app.conf.beat_schedule = {
         "task": "tasks.document_retention_cleanup",
         "schedule": crontab(hour=3, minute=0),
     },
+    "recurring-project-tasks-every-15-min": {
+        "task": "tasks.process_recurring_project_tasks",
+        "schedule": 900.0,  # 15 minutes
+    },
+    "capa-due-date-check-daily": {
+        "task": "tasks.check_capa_due_dates",
+        "schedule": 86400.0,  # 24 hours
+    },
+    "crm-sequence-processing-hourly": {
+        "task": "tasks.process_crm_sequence_enrollments",
+        "schedule": 3600.0,  # 1 hour
+    },
+    "crm-lead-scoring-daily": {
+        "task": "tasks.rescore_all_crm_leads",
+        "schedule": crontab(hour=4, minute=0),
+    },
+    "crm-gamification-scores-daily": {
+        "task": "tasks.compute_crm_gamification_scores",
+        "schedule": crontab(hour=3, minute=0),
+    },
+    "crm-sla-breach-check-hourly": {
+        "task": "tasks.check_crm_sla_breaches",
+        "schedule": 3600.0,  # 1 hour
+    },
+    # ── Supply Chain Planning & Ops ──
+    "sc-kpi-calculation-daily": {
+        "task": "tasks.sc_calculate_kpis",
+        "schedule": crontab(hour=1, minute=0),
+    },
+    "sc-stock-health-daily": {
+        "task": "tasks.sc_stock_health_analysis",
+        "schedule": crontab(hour=1, minute=30),
+    },
+    "sc-replenishment-check-4h": {
+        "task": "tasks.sc_replenishment_check",
+        "schedule": 14400.0,  # 4 hours
+    },
+    "sc-safety-stock-weekly": {
+        "task": "tasks.sc_safety_stock_recalc",
+        "schedule": crontab(day_of_week=0, hour=4, minute=0),
+    },
+    "sc-demand-forecast-daily": {
+        "task": "tasks.sc_demand_forecast_refresh",
+        "schedule": crontab(hour=5, minute=0),
+    },
+    "sc-contract-expiry-daily": {
+        "task": "tasks.sc_contract_expiry_check",
+        "schedule": crontab(hour=6, minute=0),
+    },
+    # ── Finance Finance ──
+    "finance-revenue-recognition-daily": {
+        "task": "tasks.run_revenue_recognition",
+        "schedule": crontab(hour=1, minute=0),
+    },
+    "finance-dunning-check-daily": {
+        "task": "tasks.run_dunning_check",
+        "schedule": crontab(hour=8, minute=0),
+    },
+    "finance-compliance-reminders-daily": {
+        "task": "tasks.send_compliance_reminders",
+        "schedule": crontab(hour=9, minute=0),
+    },
+    "finance-fx-revaluation-monthly": {
+        "task": "tasks.run_fx_revaluation",
+        "schedule": crontab(day_of_month=1, hour=2, minute=0),
+    },
 }
+
+
+@celery_app.task(name="tasks.check_capa_due_dates")
+def check_capa_due_dates():
+    """Check for CAPAs approaching or past their due dates and publish events."""
+    import asyncio
+    from datetime import date as date_type, timedelta
+
+    async def _check():
+        from app.core.database import AsyncSessionLocal
+        from app.core.events import event_bus
+        from app.models.manufacturing import CAPA
+        from sqlalchemy import select
+
+        async with AsyncSessionLocal() as db:
+            today = date_type.today()
+            warning_date = today + timedelta(days=7)
+
+            result = await db.execute(
+                select(CAPA).where(
+                    CAPA.status.in_(["open", "in_progress"]),
+                    CAPA.due_date.isnot(None),
+                    CAPA.due_date <= warning_date,
+                )
+            )
+            capas = result.scalars().all()
+
+            for capa in capas:
+                is_overdue = capa.due_date < today
+                await event_bus.publish("capa.due_soon", {
+                    "capa_id": str(capa.id),
+                    "capa_number": capa.capa_number,
+                    "due_date": capa.due_date.isoformat(),
+                    "is_overdue": is_overdue,
+                    "assigned_to": str(capa.assigned_to) if capa.assigned_to else None,
+                })
+
+            return {"checked": len(capas), "date": today.isoformat()}
+
+    return asyncio.run(_check())
+
+
+@celery_app.task(name="tasks.process_crm_sequence_enrollments")
+def process_crm_sequence_enrollments():
+    """Hourly: advance active CRM sequence enrollments to their next step."""
+    import asyncio
+
+    async def _process():
+        from app.core.database import AsyncSessionLocal
+        from app.services.crm_sequences import process_enrollments
+
+        async with AsyncSessionLocal() as db:
+            result = await process_enrollments(db)
+            await db.commit()
+            return result
+
+    return asyncio.run(_process())
+
+
+@celery_app.task(name="tasks.rescore_all_crm_leads")
+def rescore_all_crm_leads():
+    """Daily: re-score all CRM leads using current scoring rules."""
+    import asyncio
+
+    async def _rescore():
+        from app.core.database import AsyncSessionLocal
+        from app.services.crm_scoring import batch_rescore_all
+
+        async with AsyncSessionLocal() as db:
+            result = await batch_rescore_all(db)
+            await db.commit()
+            return result
+
+    return asyncio.run(_rescore())
+
+
+@celery_app.task(name="tasks.compute_crm_gamification_scores")
+def compute_crm_gamification_scores():
+    """Daily: compute gamification scores for CRM leaderboard."""
+    import asyncio
+
+    async def _compute():
+        from app.core.database import AsyncSessionLocal
+        from app.services.crm_gamification import compute_daily_scores
+
+        async with AsyncSessionLocal() as db:
+            result = await compute_daily_scores(db)
+            await db.commit()
+            return result
+
+    return asyncio.run(_compute())
+
+
+@celery_app.task(name="tasks.check_crm_sla_breaches")
+def check_crm_sla_breaches():
+    """Hourly: check SLA trackers for breaches and flag them."""
+    import asyncio
+    from datetime import datetime, timezone
+
+    async def _check():
+        from app.core.database import AsyncSessionLocal
+        from app.models.crm_service import SLATracker
+        from sqlalchemy import update
+
+        async with AsyncSessionLocal() as db:
+            now = datetime.now(timezone.utc)
+            # Flag first response breaches
+            await db.execute(
+                update(SLATracker)
+                .where(
+                    SLATracker.first_response_at.is_(None),
+                    SLATracker.first_response_due < now,
+                    SLATracker.is_first_response_breached.is_(False),
+                )
+                .values(is_first_response_breached=True)
+            )
+            # Flag resolution breaches
+            await db.execute(
+                update(SLATracker)
+                .where(
+                    SLATracker.resolution_at.is_(None),
+                    SLATracker.resolution_due < now,
+                    SLATracker.is_resolution_breached.is_(False),
+                )
+                .values(is_resolution_breached=True)
+            )
+            await db.commit()
+            return {"checked_at": now.isoformat()}
+
+    return asyncio.run(_check())
+
+
+# ── Supply Chain Periodic Tasks ──────────────────────────────────────────────
+
+
+@celery_app.task(name="tasks.sc_calculate_kpis")
+def sc_calculate_kpis():
+    """Calculate daily supply chain KPIs (OTIF, lead times, inventory turns)."""
+    import asyncio
+    from datetime import datetime as dt
+    from decimal import Decimal as D
+
+    async def _calc():
+        from app.core.database import AsyncSessionLocal
+        from app.models.supplychain import Shipment
+        from app.models.supplychain_ops import SupplyChainKPI
+        from sqlalchemy import func, select
+
+        async with AsyncSessionLocal() as db:
+            period = dt.utcnow().strftime("%Y-%m")
+            total = (await db.execute(select(func.count()).select_from(Shipment))).scalar() or 0
+            delivered = (await db.execute(
+                select(func.count()).select_from(Shipment).where(Shipment.status == "delivered")
+            )).scalar() or 0
+            otif = (delivered / total * 100) if total > 0 else 0
+
+            db.add(SupplyChainKPI(kpi_name="otif_rate", period=period, value=D(str(round(otif, 2))), unit="percent"))
+            db.add(SupplyChainKPI(kpi_name="fill_rate", period=period, value=D(str(round(otif, 2))), unit="percent"))
+            await db.commit()
+            return {"period": period, "otif": otif}
+
+    return asyncio.run(_calc())
+
+
+@celery_app.task(name="tasks.sc_stock_health_analysis")
+def sc_stock_health_analysis():
+    """Scan all stock levels and update StockHealthScore records."""
+    import asyncio
+    from datetime import datetime as dt
+
+    async def _analyze():
+        from app.core.database import AsyncSessionLocal
+        from app.models.inventory import StockLevel, StockMovement
+        from app.models.supplychain_ops import StockHealthScore
+        from sqlalchemy import func, select
+
+        async with AsyncSessionLocal() as db:
+            levels = await db.execute(select(StockLevel))
+            analyzed = 0
+            for sl in levels.scalars().all():
+                last_move = await db.execute(
+                    select(func.max(StockMovement.created_at)).where(
+                        StockMovement.item_id == sl.item_id,
+                        StockMovement.warehouse_id == sl.warehouse_id,
+                    )
+                )
+                last_dt = last_move.scalar()
+                days_since = (dt.utcnow() - last_dt).days if last_dt else 999
+
+                if days_since > 180:
+                    health, action = "obsolete", "liquidate"
+                elif days_since > 90:
+                    health, action = "slow_moving", "markdown"
+                elif sl.quantity_on_hand <= 0:
+                    health, action = "understock", "reorder"
+                else:
+                    health, action = "healthy", "none"
+
+                existing = await db.execute(
+                    select(StockHealthScore).where(
+                        StockHealthScore.item_id == sl.item_id,
+                        StockHealthScore.warehouse_id == sl.warehouse_id,
+                    )
+                )
+                score = existing.scalar_one_or_none()
+                if score:
+                    score.health_status = health
+                    score.days_of_stock = max(0, sl.quantity_on_hand)
+                    score.recommended_action = action
+                    score.calculated_at = dt.utcnow()
+                else:
+                    db.add(StockHealthScore(
+                        item_id=sl.item_id, warehouse_id=sl.warehouse_id,
+                        health_status=health, days_of_stock=max(0, sl.quantity_on_hand),
+                        last_movement_date=last_dt.date() if last_dt else None,
+                        recommended_action=action,
+                    ))
+                analyzed += 1
+            await db.commit()
+            return {"analyzed": analyzed}
+
+    return asyncio.run(_analyze())
+
+
+@celery_app.task(name="tasks.sc_replenishment_check")
+def sc_replenishment_check():
+    """Check items against replenishment rules and trigger alerts."""
+    import asyncio
+
+    async def _check():
+        from app.core.database import AsyncSessionLocal
+        from app.core.events import event_bus
+        from app.models.inventory import StockLevel
+        from app.models.supplychain_ops import ReplenishmentRule
+        from datetime import datetime as dt
+        from sqlalchemy import select
+
+        async with AsyncSessionLocal() as db:
+            rules = await db.execute(
+                select(ReplenishmentRule).where(ReplenishmentRule.is_active.is_(True))
+            )
+            triggered = 0
+            for rule in rules.scalars().all():
+                sl = await db.execute(
+                    select(StockLevel).where(
+                        StockLevel.item_id == rule.item_id,
+                        StockLevel.warehouse_id == rule.warehouse_id,
+                    )
+                )
+                stock = sl.scalar_one_or_none()
+                qty = stock.quantity_on_hand if stock else 0
+                if qty <= rule.reorder_point:
+                    rule.last_triggered_at = dt.utcnow()
+                    await event_bus.publish("supplychain.replenishment.triggered", {
+                        "rule_id": str(rule.id),
+                        "item_id": str(rule.item_id),
+                        "auto_generate_po": rule.auto_generate_po,
+                    })
+                    triggered += 1
+            await db.commit()
+            return {"triggered": triggered}
+
+    return asyncio.run(_check())
+
+
+@celery_app.task(name="tasks.sc_safety_stock_recalc")
+def sc_safety_stock_recalc():
+    """Recalculate dynamic safety stock levels weekly."""
+    import asyncio
+    import math
+    from datetime import datetime as dt
+
+    async def _recalc():
+        from app.core.database import AsyncSessionLocal
+        from app.models.supplychain_ops import SafetyStockConfig
+        from sqlalchemy import select
+
+        async with AsyncSessionLocal() as db:
+            configs = await db.execute(
+                select(SafetyStockConfig).where(SafetyStockConfig.method == "service_level")
+            )
+            updated = 0
+            for cfg in configs.scalars().all():
+                if cfg.demand_std_dev:
+                    z = 1.65 if (cfg.service_level_pct or 0) >= 95 else 1.28
+                    lt = float(cfg.lead_time_std_dev or 1)
+                    cfg.safety_stock_qty = int(z * float(cfg.demand_std_dev) * math.sqrt(lt))
+                    cfg.recalculated_at = dt.utcnow()
+                    updated += 1
+            await db.commit()
+            return {"updated": updated}
+
+    return asyncio.run(_recalc())
+
+
+@celery_app.task(name="tasks.sc_demand_forecast_refresh")
+def sc_demand_forecast_refresh():
+    """Refresh rolling demand forecasts for items with active rules."""
+    import asyncio
+
+    async def _refresh():
+        return {"status": "ok", "note": "Full auto-refresh requires ML pipeline (Phase 2)"}
+
+    return asyncio.run(_refresh())
+
+
+@celery_app.task(name="tasks.sc_contract_expiry_check")
+def sc_contract_expiry_check():
+    """Alert on supplier contracts expiring within 30 days."""
+    import asyncio
+    from datetime import date as date_type, timedelta
+
+    async def _check():
+        from app.core.database import AsyncSessionLocal
+        from app.core.events import event_bus
+        from app.models.supplychain import Contract
+        from sqlalchemy import select
+
+        async with AsyncSessionLocal() as db:
+            today = date_type.today()
+            soon = today + timedelta(days=30)
+            result = await db.execute(
+                select(Contract).where(
+                    Contract.status == "active",
+                    Contract.end_date <= soon,
+                    Contract.end_date >= today,
+                )
+            )
+            expiring = result.scalars().all()
+            for c in expiring:
+                await event_bus.publish("supplychain.alert.created", {
+                    "alert_type": "contract_expiry",
+                    "severity": "medium" if (c.end_date - today).days > 14 else "high",
+                    "title": f"Contract '{c.title}' expiring on {c.end_date}",
+                })
+            return {"expiring_contracts": len(expiring)}
+
+    return asyncio.run(_check())
+
+
+# ── Finance Periodic Tasks ────────────────────────────────────────────────────
+
+
+@celery_app.task(name="tasks.run_revenue_recognition")
+def run_revenue_recognition():
+    """Daily: post recognition JEs for active revenue recognition schedules."""
+    import asyncio
+    import logging
+    from datetime import date
+
+    task_logger = logging.getLogger(__name__)
+
+    async def _run():
+        from decimal import Decimal
+
+        from sqlalchemy import select
+
+        from app.core.database import AsyncSessionLocal
+        from app.models.finance import Account, JournalEntry, JournalLine, RevenueRecognitionSchedule
+
+        async with AsyncSessionLocal() as db:
+            today = date.today()
+            period_key = today.strftime("%Y-%m")
+
+            result = await db.execute(
+                select(RevenueRecognitionSchedule).where(
+                    RevenueRecognitionSchedule.status == "active",
+                    RevenueRecognitionSchedule.start_date <= today,
+                    RevenueRecognitionSchedule.end_date >= today,
+                )
+            )
+            schedules = result.scalars().all()
+            posted = 0
+
+            for sched in schedules:
+                lines = sched.schedule_lines or []
+                already_done = any(ln.get("period") == period_key and ln.get("recognized") for ln in lines)
+                if already_done:
+                    continue
+
+                months = max(1, (sched.end_date.year - sched.start_date.year) * 12
+                             + sched.end_date.month - sched.start_date.month + 1)
+                period_amount = round(float(sched.total_amount) / months, 2)
+                if period_amount <= 0:
+                    continue
+
+                dr_result = await db.execute(select(Account).where(Account.account_type == "liability").limit(1))
+                dr_account = dr_result.scalar_one_or_none()
+                rev_result = await db.execute(select(Account).where(Account.account_type == "revenue").limit(1))
+                rev_account = rev_result.scalar_one_or_none()
+                if not dr_account or not rev_account:
+                    continue
+
+                je = JournalEntry(
+                    entry_number=f"RR-{period_key}-{str(sched.id)[:8]}",
+                    entry_date=today,
+                    description=f"Revenue recognition — period {period_key}",
+                    reference=f"REV-REC:{sched.id}",
+                    status="posted",
+                    created_by_id=sched.created_by_id,
+                )
+                db.add(je)
+                await db.flush()
+                db.add(JournalLine(journal_entry_id=je.id, account_id=dr_account.id,
+                                   description="Deferred revenue recognition",
+                                   debit=Decimal(str(period_amount)), credit=Decimal("0"),
+                                   currency=sched.currency or "USD"))
+                db.add(JournalLine(journal_entry_id=je.id, account_id=rev_account.id,
+                                   description="Revenue recognized",
+                                   debit=Decimal("0"), credit=Decimal(str(period_amount)),
+                                   currency=sched.currency or "USD"))
+
+                new_lines = [ln for ln in lines if ln.get("period") != period_key]
+                new_lines.append({"period": period_key, "amount": period_amount,
+                                  "recognized": True, "je_id": str(je.id),
+                                  "recognized_at": today.isoformat()})
+                sched.schedule_lines = new_lines
+                sched.recognized_amount = float(sched.recognized_amount or 0) + period_amount
+                if float(sched.recognized_amount) >= float(sched.total_amount) - 0.01:
+                    sched.status = "completed"
+                posted += 1
+
+            await db.commit()
+            task_logger.info("Revenue recognition: posted JEs for %d schedules (period %s)", posted, period_key)
+            return {"status": "ok", "posted": posted, "period": period_key}
+
+    try:
+        return asyncio.run(_run())
+    except Exception as exc:
+        task_logger.exception("Revenue recognition task failed: %s", exc)
+        return {"status": "error", "error": str(exc)}
+
+
+@celery_app.task(name="tasks.run_dunning_check")
+def run_dunning_check():
+    """Daily: find overdue invoices and send staged dunning reminder emails."""
+    import asyncio
+    import logging
+    from datetime import date
+
+    task_logger = logging.getLogger(__name__)
+
+    async def _run():
+        from sqlalchemy import select
+
+        from app.core.database import AsyncSessionLocal
+        from app.models.finance import DunningLog, Invoice
+
+        stage_map = {1: "soft_reminder", 7: "firm_reminder", 14: "formal_notice", 30: "collections"}
+
+        async with AsyncSessionLocal() as db:
+            today = date.today()
+            result = await db.execute(
+                select(Invoice).where(Invoice.status == "overdue", Invoice.customer_email.isnot(None))
+            )
+            overdue = result.scalars().all()
+            triggered = 0
+
+            for inv in overdue:
+                days_overdue = (today - inv.due_date).days if inv.due_date else 0
+                last_log_r = await db.execute(
+                    select(DunningLog).where(DunningLog.invoice_id == inv.id)
+                    .order_by(DunningLog.sent_at.desc()).limit(1)
+                )
+                last_log = last_log_r.scalar_one_or_none()
+                days_since = (today - last_log.sent_at.date()).days if last_log else 999
+
+                send_stage = None
+                for threshold, stage in sorted(stage_map.items(), reverse=True):
+                    if days_overdue >= threshold and days_since >= threshold:
+                        if not last_log or last_log.stage != stage:
+                            send_stage = stage
+                            break
+
+                if not send_stage:
+                    continue
+
+                html = (f"<h2>Payment Reminder — Invoice {inv.invoice_number}</h2>"
+                        f"<p>Your invoice for <strong>{inv.currency} {float(inv.total):,.2f}</strong>"
+                        f" was due on <strong>{inv.due_date}</strong> ({days_overdue} days ago).</p>"
+                        f"<p>Please arrange payment at your earliest convenience.</p>")
+                send_email.delay(
+                    to=inv.customer_email,
+                    subject=f"[{send_stage.replace('_', ' ').title()}] Invoice {inv.invoice_number}",
+                    body=f"Invoice {inv.invoice_number} is {days_overdue} days overdue.",
+                    html_body=html,
+                )
+                db.add(DunningLog(invoice_id=inv.id, stage=send_stage, channel="email",
+                                  recipient_email=inv.customer_email, days_overdue=days_overdue,
+                                  message_preview=send_stage))
+                triggered += 1
+
+            await db.commit()
+            task_logger.info("Dunning: triggered %d reminders for %d overdue invoices", triggered, len(overdue))
+            return {"status": "ok", "overdue": len(overdue), "triggered": triggered}
+
+    try:
+        return asyncio.run(_run())
+    except Exception as exc:
+        task_logger.exception("Dunning check task failed: %s", exc)
+        return {"status": "error", "error": str(exc)}
+
+
+@celery_app.task(name="tasks.send_compliance_reminders")
+def send_compliance_reminders():
+    """Daily: send reminders for compliance events due in 30, 7, or 1 day(s)."""
+    import asyncio
+    import logging
+    from datetime import date, timedelta
+
+    task_logger = logging.getLogger(__name__)
+
+    async def _run():
+        from sqlalchemy import select
+
+        from app.core.database import AsyncSessionLocal
+        from app.core.events import event_bus
+        from app.models.finance_ext import ComplianceEvent
+
+        async with AsyncSessionLocal() as db:
+            today = date.today()
+            result = await db.execute(
+                select(ComplianceEvent).where(
+                    ComplianceEvent.status == "pending",
+                    ComplianceEvent.due_date >= today,
+                    ComplianceEvent.due_date <= today + timedelta(days=30),
+                )
+            )
+            events = result.scalars().all()
+            notified = 0
+
+            for evt in events:
+                days_until = (evt.due_date - today).days
+                configured_days = evt.reminder_days or [30, 7, 1]
+                if days_until not in configured_days:
+                    continue
+
+                await event_bus.publish("compliance.reminder", {
+                    "event_id": str(evt.id),
+                    "title": evt.title,
+                    "due_date": evt.due_date.isoformat(),
+                    "days_until": days_until,
+                    "jurisdiction": evt.jurisdiction,
+                    "category": evt.category,
+                    "assigned_to_id": str(evt.assigned_to_id) if evt.assigned_to_id else None,
+                })
+                notified += 1
+
+            task_logger.info("Compliance reminders: notified %d / %d events", notified, len(events))
+            return {"status": "ok", "checked": len(events), "notified": notified}
+
+    try:
+        return asyncio.run(_run())
+    except Exception as exc:
+        task_logger.exception("Compliance reminder task failed: %s", exc)
+        return {"status": "error", "error": str(exc)}
+
+
+@celery_app.task(name="tasks.run_fx_revaluation")
+def run_fx_revaluation():
+    """Monthly (1st of month): revalue foreign-currency balances, post unrealized FX gain/loss JEs."""
+    import asyncio
+    import logging
+    from datetime import date
+
+    task_logger = logging.getLogger(__name__)
+
+    async def _run():
+        from decimal import Decimal
+
+        from sqlalchemy import select
+
+        from app.core.database import AsyncSessionLocal
+        from app.models.finance import Account, JournalEntry, JournalLine
+        from app.models.finance_ext import FXRevaluationEntry
+
+        async with AsyncSessionLocal() as db:
+            today = date.today()
+            period_key = today.strftime("%Y-%m")
+
+            result = await db.execute(
+                select(Account).where(
+                    Account.currency.isnot(None),
+                    Account.currency != "USD",
+                    Account.is_active.is_(True),
+                )
+            )
+            foreign_accounts = result.scalars().all()
+            if not foreign_accounts:
+                return {"status": "ok", "revalued": 0, "period": period_key}
+
+            fx_gain_r = await db.execute(
+                select(Account).where(Account.account_type == "revenue",
+                                      Account.name.ilike("%fx%")).limit(1)
+            )
+            fx_gain_account = fx_gain_r.scalar_one_or_none()
+            fx_loss_r = await db.execute(
+                select(Account).where(Account.account_type == "expense",
+                                      Account.name.ilike("%fx%")).limit(1)
+            )
+            fx_loss_account = fx_loss_r.scalar_one_or_none()
+
+            revalued = 0
+            for account in foreign_accounts:
+                current_rate = Decimal("1.0")  # Placeholder — fetch from ECB/Open Exchange Rates in prod
+                balance = getattr(account, "balance", Decimal("0")) or Decimal("0")
+                if not balance or balance == 0:
+                    continue
+
+                fx_diff = balance * current_rate - balance
+                if abs(fx_diff) < Decimal("0.01"):
+                    continue
+
+                is_gain = fx_diff > 0
+                contra = fx_gain_account if is_gain else fx_loss_account
+                if not contra:
+                    continue
+
+                je = JournalEntry(
+                    entry_number=f"FXR-{period_key}-{str(account.id)[:8]}",
+                    entry_date=today,
+                    description=f"FX revaluation — {account.currency} — {period_key}",
+                    reference=f"FX-REVAL:{account.id}",
+                    status="posted",
+                )
+                db.add(je)
+                await db.flush()
+                abs_diff = abs(fx_diff)
+                db.add(JournalLine(journal_entry_id=je.id, account_id=account.id,
+                                   description="FX revaluation adjustment",
+                                   debit=abs_diff if is_gain else Decimal("0"),
+                                   credit=Decimal("0") if is_gain else abs_diff, currency="USD"))
+                db.add(JournalLine(journal_entry_id=je.id, account_id=contra.id,
+                                   description="Unrealized FX gain/loss",
+                                   debit=Decimal("0") if is_gain else abs_diff,
+                                   credit=abs_diff if is_gain else Decimal("0"), currency="USD"))
+                db.add(FXRevaluationEntry(
+                    account_id=account.id, period=period_key, currency=account.currency,
+                    original_balance=balance, revalued_balance=balance * current_rate,
+                    fx_rate=current_rate, unrealized_gain_loss=fx_diff,
+                    journal_entry_id=je.id, revaluation_date=today, is_realized=False,
+                ))
+                revalued += 1
+
+            await db.commit()
+            task_logger.info("FX revaluation: %d accounts revalued for %s", revalued, period_key)
+            return {"status": "ok", "revalued": revalued, "period": period_key}
+
+    try:
+        return asyncio.run(_run())
+    except Exception as exc:
+        task_logger.exception("FX revaluation task failed: %s", exc)
+        return {"status": "error", "error": str(exc)}

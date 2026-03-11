@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
@@ -42,6 +42,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Start Redis event bus
     _register_event_handlers()
+    # Register project automation event handlers
+    _register_automation_handlers()
     # Register cross-module integration handlers (POS→Finance, E-Commerce→Mail, etc.)
     from app.core.integration_handlers import register_integration_handlers  # noqa: PLC0415
     register_integration_handlers()
@@ -53,6 +55,26 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await event_bus.stop()
     logger.info("Event bus stopped.")
     logger.info("Shutting down %s.", settings.APP_NAME)
+
+
+def _register_automation_handlers() -> None:
+    """Register project automation engine handlers on the event bus."""
+
+    @event_bus.on("task.status_changed")
+    @event_bus.on("task.assigned")
+    @event_bus.on("task.created")
+    async def _handle_automation_trigger(event_name: str, data: dict) -> None:
+        """Run matching automation rules for project task events."""
+        try:
+            from app.services.automation_engine import run_automations_for_event  # noqa: PLC0415
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+
+            async with AsyncSessionLocal() as session:
+                executed = await run_automations_for_event(session, event_name, data)
+                if executed:
+                    logger.info("Executed %d automation rules for %s", executed, event_name)
+        except Exception:
+            logger.exception("Automation engine error for %s", event_name)
 
 
 def _register_event_handlers() -> None:
@@ -200,11 +222,116 @@ def _register_event_handlers() -> None:
                 module="finance",
                 link_url=f"/finance/invoices/{data.get('invoice_id', '')}",
             )
+        # Auto-post AR journal entry: DR Accounts Receivable / CR Revenue
+        invoice_id = data.get("invoice_id")
+        if invoice_id:
+            try:
+                from app.core.database import AsyncSessionLocal as _ASL  # noqa: PLC0415
+                from app.services.finance_auto_je import on_invoice_sent as _auto_je_sent  # noqa: PLC0415
+                import uuid as _uuid  # noqa: PLC0415
+                async with _ASL() as db:
+                    await _auto_je_sent(db, _uuid.UUID(str(invoice_id)))
+                    await db.commit()
+                logger.info("Auto-posted AR journal entry for invoice %s", invoice_id)
+            except Exception:
+                logger.exception("Failed to auto-post JE for invoice.sent")
 
     @event_bus.on("payment.received")
     async def on_payment_received(data: dict) -> None:
         logger.info("Event: payment.received — %s", data.get("payment_number"))
         await _log_activity("created", f"Payment received: {data.get('payment_number')}", "finance", data.get("payer_id", ""), data)
+        # Auto-post cash receipt: DR Cash / CR Accounts Receivable
+        invoice_id = data.get("invoice_id")
+        if invoice_id:
+            try:
+                from app.core.database import AsyncSessionLocal as _ASL  # noqa: PLC0415
+                from app.services.finance_auto_je import on_invoice_paid as _auto_je_paid  # noqa: PLC0415
+                import uuid as _uuid  # noqa: PLC0415
+                async with _ASL() as db:
+                    await _auto_je_paid(db, _uuid.UUID(str(invoice_id)))
+                    await db.commit()
+                logger.info("Auto-posted cash receipt JE for invoice %s", invoice_id)
+            except Exception:
+                logger.exception("Failed to auto-post JE for payment.received")
+
+    @event_bus.on("expense.approved")
+    async def on_expense_approved_je(data: dict) -> None:
+        """Auto-post expense journal entry on approval."""
+        expense_id = data.get("expense_id")
+        if expense_id:
+            try:
+                from app.core.database import AsyncSessionLocal as _ASL  # noqa: PLC0415
+                from app.services.finance_auto_je import on_expense_approved as _auto_je_exp  # noqa: PLC0415
+                import uuid as _uuid  # noqa: PLC0415
+                approver_id = data.get("approver_id")
+                async with _ASL() as db:
+                    await _auto_je_exp(
+                        db,
+                        _uuid.UUID(str(expense_id)),
+                        _uuid.UUID(str(approver_id)) if approver_id else None,
+                    )
+                    await db.commit()
+                logger.info("Auto-posted expense JE for expense %s", expense_id)
+            except Exception:
+                logger.exception("Failed to auto-post JE for expense.approved")
+
+    @event_bus.on("asset.depreciated")
+    async def on_asset_depreciated_je(data: dict) -> None:
+        """Auto-post depreciation journal entry."""
+        asset_id = data.get("asset_id")
+        depreciation_amount = data.get("depreciation_amount")
+        if asset_id and depreciation_amount:
+            try:
+                from app.core.database import AsyncSessionLocal as _ASL  # noqa: PLC0415
+                from app.services.finance_auto_je import on_asset_depreciated as _auto_je_dep  # noqa: PLC0415
+                from decimal import Decimal as _Dec  # noqa: PLC0415
+                import uuid as _uuid  # noqa: PLC0415
+                async with _ASL() as db:
+                    await _auto_je_dep(db, _uuid.UUID(str(asset_id)), _Dec(str(depreciation_amount)))
+                    await db.commit()
+                logger.info("Auto-posted depreciation JE for asset %s", asset_id)
+            except Exception:
+                logger.exception("Failed to auto-post JE for asset.depreciated")
+
+    # ── COGS Automation: POS sale + E-Commerce order → auto-post COGS JE ────
+    @event_bus.on("pos.sale.completed")
+    async def on_pos_sale_cogs(data: dict) -> None:
+        """Auto-post COGS journal entry when a POS sale is completed."""
+        logger.info("Event: pos.sale.completed — sale %s", data.get("sale_id"))
+        try:
+            import uuid as _uuid
+            from decimal import Decimal as _Dec
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.services.finance_auto_je import on_cogs_posted as _cogs_je  # noqa: PLC0415
+
+            sale_id = data.get("sale_id")
+            cogs_amount = data.get("cogs_amount") or data.get("cost_of_goods_sold")
+            if sale_id and cogs_amount:
+                async with AsyncSessionLocal() as db:
+                    await _cogs_je(db, str(sale_id), _Dec(str(cogs_amount)), "pos")
+                    await db.commit()
+                logger.info("Auto-posted COGS JE for POS sale %s (amount: %s)", sale_id, cogs_amount)
+        except Exception:
+            logger.exception("Failed to auto-post COGS JE for pos.sale.completed")
+
+    @event_bus.on("ecommerce.order.paid")
+    async def on_ecommerce_order_cogs(data: dict) -> None:
+        """Auto-post COGS journal entry when an e-commerce order is paid."""
+        logger.info("Event: ecommerce.order.paid — order %s", data.get("order_id"))
+        try:
+            from decimal import Decimal as _Dec
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.services.finance_auto_je import on_cogs_posted as _cogs_je  # noqa: PLC0415
+
+            order_id = data.get("order_id")
+            cogs_amount = data.get("cogs_amount") or data.get("cost_of_goods_sold")
+            if order_id and cogs_amount:
+                async with AsyncSessionLocal() as db:
+                    await _cogs_je(db, str(order_id), _Dec(str(cogs_amount)), "ecommerce")
+                    await db.commit()
+                logger.info("Auto-posted COGS JE for e-commerce order %s (amount: %s)", order_id, cogs_amount)
+        except Exception:
+            logger.exception("Failed to auto-post COGS JE for ecommerce.order.paid")
 
     @event_bus.on("leave.approved")
     async def on_leave_approved(data: dict) -> None:
@@ -316,6 +443,63 @@ def _register_event_handlers() -> None:
     async def on_lead_converted(data: dict) -> None:
         logger.info("Event: lead.converted — %s", data.get("title"))
         await _log_activity("updated", f"Lead converted: {data.get('title')}", "crm", data.get("owner_id", ""), data)
+
+    @event_bus.on("lead.created")
+    async def on_lead_created_auto_score(data: dict) -> None:
+        """Auto-score new leads using configurable scoring rules."""
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.services.crm_scoring import score_lead  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                lead_id = data.get("lead_id")
+                if lead_id:
+                    result = await score_lead(db, lead_id)
+                    await db.commit()
+                    logger.info("Auto-scored lead %s: %s", lead_id, result.get("score"))
+        except Exception:
+            logger.exception("Failed to auto-score new lead")
+
+    @event_bus.on("contact.created")
+    async def on_contact_created_detect_dupes(data: dict) -> None:
+        """Async duplicate detection when a new contact is created."""
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.services.crm_duplicates import detect_duplicates  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                new = await detect_duplicates(db)
+                await db.commit()
+                if new:
+                    logger.info("Detected %d new duplicate candidates after contact creation", len(new))
+        except Exception:
+            logger.exception("Failed to run duplicate detection after contact creation")
+
+    @event_bus.on("ticket.created")
+    async def on_ticket_created_workflow(data: dict) -> None:
+        """Trigger CRM workflows when a ticket is created."""
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.services.crm_workflow_engine import trigger_workflows_for_event  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                count = await trigger_workflows_for_event(db, "ticket.created", data)
+                await db.commit()
+                if count:
+                    logger.info("Triggered %d workflows for ticket.created", count)
+        except Exception:
+            logger.exception("Failed to trigger workflows for ticket.created")
+
+    @event_bus.on("deal.closed")
+    async def on_deal_closed_workflow(data: dict) -> None:
+        """Trigger CRM workflows when a deal is closed."""
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.services.crm_workflow_engine import trigger_workflows_for_event  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                count = await trigger_workflows_for_event(db, "deal.closed", data)
+                await db.commit()
+                if count:
+                    logger.info("Triggered %d workflows for deal.closed", count)
+        except Exception:
+            logger.exception("Failed to trigger workflows for deal.closed")
 
     @event_bus.on("stock.low")
     async def on_stock_low(data: dict) -> None:
@@ -643,6 +827,291 @@ def _register_event_handlers() -> None:
                 link_url=f"/docs",
             )
         await _log_activity("commented", f"Comment on: {data.get('file_name')}", "docs", data.get("author_id", ""), data)
+
+    # ── Phase 1 HR Upgrade Events ──────────────────────────────────────────
+
+    @event_bus.on("employee.skill_added")
+    async def on_skill_added(data: dict) -> None:
+        logger.info("Event: employee.skill_added — %s", data.get("employee_id"))
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.models.hr_phase1 import EmployeeActivityLog  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                log = EmployeeActivityLog(
+                    employee_id=data["employee_id"],
+                    activity_type="skill_added",
+                    title=f"Skill added: {data.get('skill_name', '')} (Level {data.get('proficiency_level', '')})",
+                    source_module="hr",
+                    source_id=data.get("skill_id"),
+                    occurred_at=datetime.now(UTC),
+                )
+                db.add(log)
+                await db.commit()
+        except Exception:
+            logger.exception("Failed to log skill addition")
+
+    @event_bus.on("employee.salary_changed")
+    async def on_salary_changed(data: dict) -> None:
+        logger.info("Event: employee.salary_changed — %s", data.get("employee_id"))
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.models.hr_phase1 import EmployeeActivityLog  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                log = EmployeeActivityLog(
+                    employee_id=data["employee_id"],
+                    activity_type="salary_change",
+                    title=f"Salary changed: {data.get('current_salary', '')} → {data.get('proposed_salary', '')}",
+                    description=f"Increase type: {data.get('increase_type', '')}",
+                    source_module="hr",
+                    source_id=data.get("increase_id"),
+                    occurred_at=datetime.now(UTC),
+                )
+                db.add(log)
+                await db.commit()
+        except Exception:
+            logger.exception("Failed to log salary change")
+        await _log_activity("salary_changed", f"Salary updated for employee {data.get('employee_id')}", "hr", data.get("approved_by", ""), data)
+
+    @event_bus.on("bonus.approved")
+    async def on_bonus_approved(data: dict) -> None:
+        logger.info("Event: bonus.approved — %s", data.get("employee_id"))
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.models.hr_phase1 import EmployeeActivityLog  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                log = EmployeeActivityLog(
+                    employee_id=data["employee_id"],
+                    activity_type="bonus",
+                    title=f"Bonus approved: {data.get('bonus_type', '')} — {data.get('amount', '')} {data.get('currency', 'USD')}",
+                    source_module="hr",
+                    source_id=data.get("bonus_id"),
+                    occurred_at=datetime.now(UTC),
+                )
+                db.add(log)
+                await db.commit()
+        except Exception:
+            logger.exception("Failed to log bonus approval")
+
+    @event_bus.on("goal.completed")
+    async def on_goal_completed(data: dict) -> None:
+        logger.info("Event: goal.completed — %s", data.get("goal_id"))
+        employee_id = data.get("owner_id")
+        if data.get("owner_type") == "employee" and employee_id:
+            try:
+                from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+                from app.models.hr_phase1 import EmployeeActivityLog  # noqa: PLC0415
+                async with AsyncSessionLocal() as db:
+                    log = EmployeeActivityLog(
+                        employee_id=employee_id,
+                        activity_type="goal_completed",
+                        title=f"Goal completed: {data.get('title', '')}",
+                        source_module="hr",
+                        source_id=data.get("goal_id"),
+                        occurred_at=datetime.now(UTC),
+                    )
+                    db.add(log)
+                    await db.commit()
+            except Exception:
+                logger.exception("Failed to log goal completion")
+
+    @event_bus.on("review_cycle.launched")
+    async def on_review_cycle_launched(data: dict) -> None:
+        logger.info("Event: review_cycle.launched — %s", data.get("cycle_id"))
+        await _log_activity("review_cycle_launched", f"Review cycle launched: {data.get('name', '')}", "hr", data.get("created_by", ""), data)
+
+    @event_bus.on("feedback.received")
+    async def on_feedback_received(data: dict) -> None:
+        logger.info("Event: feedback.received — to %s", data.get("to_employee_id"))
+        to_user_id = data.get("to_user_id")
+        if to_user_id:
+            await _create_notification(
+                user_id=to_user_id,
+                title="New Feedback Received",
+                message=f"You received {data.get('feedback_type', 'feedback')} from a colleague.",
+                notif_type="info",
+                module="hr",
+                link_url="/hr/feedback",
+            )
+
+    @event_bus.on("shift.assigned")
+    async def on_shift_assigned(data: dict) -> None:
+        logger.info("Event: shift.assigned — employee %s", data.get("employee_id"))
+
+    # ── Phase 2 HR Upgrade Events ──────────────────────────────────────────
+
+    @event_bus.on("ats.ai_screen_requested")
+    async def on_ats_ai_screen_requested(data: dict) -> None:
+        """ATS → AI: Run async resume screening when requested."""
+        logger.info("Event: ats.ai_screen_requested — candidate %s vs req %s", data.get("candidate_id"), data.get("requisition_id"))
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.models.hr_phase2 import Candidate, CandidateApplication, JobRequisition  # noqa: PLC0415
+            from app.services.hr_ai_screening import screen_resume  # noqa: PLC0415
+            from sqlalchemy import select  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                cand = await db.get(Candidate, data["candidate_id"])
+                req = await db.get(JobRequisition, data["requisition_id"])
+                app_res = await db.execute(
+                    select(CandidateApplication).where(
+                        CandidateApplication.candidate_id == data["candidate_id"],
+                        CandidateApplication.requisition_id == data["requisition_id"],
+                    )
+                )
+                application = app_res.scalar_one_or_none()
+                if not cand or not req or not application:
+                    return
+                resume_text = cand.ai_summary or cand.notes or ""
+                result = await screen_resume(
+                    resume_text=resume_text,
+                    job_title=req.title,
+                    required_skills=req.skills_required or [],
+                    job_description=req.description or "",
+                )
+                application.ai_match_score = result.get("match_score", 0)
+                application.ai_match_notes = result.get("summary", "")
+                if not cand.skills_extracted:
+                    cand.skills_extracted = result.get("extracted_skills", [])
+                    cand.ai_summary = result.get("summary", "")
+                await db.commit()
+                logger.info("AI screening complete — score: %s for candidate %s", result.get("match_score"), data.get("candidate_id"))
+        except Exception:
+            logger.exception("Failed to run AI resume screening")
+
+    @event_bus.on("ats.interview_scheduled")
+    async def on_interview_scheduled(data: dict) -> None:
+        logger.info("Event: ats.interview_scheduled — application %s", data.get("application_id"))
+        await _log_activity("created", f"Interview scheduled for candidate", "hr", data.get("scheduled_by", ""), data)
+
+    @event_bus.on("ats.application_stage_changed")
+    async def on_application_stage_changed(data: dict) -> None:
+        logger.info("Event: ats.application_stage_changed — %s → %s", data.get("old_stage"), data.get("new_stage"))
+        await _log_activity("updated", f"Application moved to {data.get('new_stage', '')}", "hr", data.get("updated_by", ""), data)
+
+    @event_bus.on("lms.course_completed")
+    async def on_course_completed(data: dict) -> None:
+        """LMS → Skills: Auto-add skills from completed course to employee skills."""
+        logger.info("Event: lms.course_completed — employee %s course %s", data.get("employee_id"), data.get("course_id"))
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.models.hr_phase1 import EmployeeSkill, EmployeeActivityLog  # noqa: PLC0415
+            from app.models.hr_phase2 import Course  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                course = await db.get(Course, data["course_id"])
+                if course and course.skills_taught:
+                    for skill_name in course.skills_taught:
+                        existing = await db.execute(
+                            select(EmployeeSkill).where(
+                                EmployeeSkill.employee_id == data["employee_id"],
+                                EmployeeSkill.skill_name == skill_name,
+                            )
+                        )
+                        if not existing.scalar_one_or_none():
+                            db.add(EmployeeSkill(
+                                employee_id=data["employee_id"],
+                                skill_name=skill_name,
+                                category="lms",
+                                proficiency_level=2,
+                            ))
+                log = EmployeeActivityLog(
+                    employee_id=data["employee_id"],
+                    activity_type="course_completed",
+                    title=f"Completed course: {data.get('course_title', '')}",
+                    source_module="hr_lms",
+                    source_id=data.get("course_id"),
+                    occurred_at=datetime.now(UTC),
+                )
+                db.add(log)
+                await db.commit()
+        except Exception:
+            logger.exception("Failed to process course completion event")
+        # Notify the employee
+        user_id = data.get("user_id")
+        if user_id:
+            await _create_notification(
+                user_id=user_id,
+                title="Course Completed!",
+                message=f"Congratulations! You completed '{data.get('course_title', 'the course')}'. Score: {data.get('quiz_score', 'N/A')}%",
+                notif_type="success",
+                module="hr",
+                link_url="/hr/learning",
+            )
+
+    @event_bus.on("engagement.survey_launched")
+    async def on_survey_launched(data: dict) -> None:
+        logger.info("Event: engagement.survey_launched — survey %s", data.get("survey_id"))
+        await _log_activity("created", f"Survey launched: {data.get('title', '')}", "hr", data.get("created_by", ""), data)
+
+    @event_bus.on("engagement.survey_response_submitted")
+    async def on_survey_response_submitted(data: dict) -> None:
+        """Engagement → Sentiment: Run async sentiment analysis on open responses."""
+        logger.info("Event: engagement.survey_response_submitted — survey %s", data.get("survey_id"))
+        if not data.get("response_id"):
+            return
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.models.hr_phase2 import SurveyResponse  # noqa: PLC0415
+            from app.services.hr_sentiment import analyze_survey_responses, score_to_decimal  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                response = await db.get(SurveyResponse, data["response_id"])
+                if response and response.answers:
+                    result = await analyze_survey_responses(response.answers)
+                    response.sentiment_score = score_to_decimal(result["score"])
+                    response.sentiment_label = result["label"]
+                    await db.commit()
+                    logger.info("Sentiment analysis complete: %s (%s)", result["label"], result["score"])
+        except Exception:
+            logger.exception("Failed to run sentiment analysis for survey response")
+
+    @event_bus.on("engagement.recognition_given")
+    async def on_recognition_given(data: dict) -> None:
+        logger.info("Event: engagement.recognition_given — to employee %s", data.get("to_employee_id"))
+        to_user_id = data.get("to_user_id")
+        if to_user_id:
+            await _create_notification(
+                user_id=to_user_id,
+                title="You received recognition!",
+                message=f"{data.get('from_name', 'A colleague')} gave you {data.get('recognition_type', 'kudos')}: {data.get('message', '')[:80]}",
+                notif_type="success",
+                module="hr",
+                link_url="/hr/recognition",
+            )
+
+    @event_bus.on("onboarding.buddy_assigned")
+    async def on_buddy_assigned(data: dict) -> None:
+        logger.info("Event: onboarding.buddy_assigned — new employee %s, buddy %s", data.get("new_employee_id"), data.get("buddy_employee_id"))
+        buddy_user_id = data.get("buddy_user_id")
+        if buddy_user_id:
+            await _create_notification(
+                user_id=buddy_user_id,
+                title="You've been assigned as a buddy!",
+                message=f"You are now the onboarding buddy for a new team member. Welcome them aboard!",
+                notif_type="info",
+                module="hr",
+                link_url="/hr/onboarding-tracker",
+            )
+
+    @event_bus.on("onboarding.task_completed")
+    async def on_onboarding_task_completed(data: dict) -> None:
+        logger.info("Event: onboarding.task_completed — task %s for employee %s", data.get("task_id"), data.get("employee_id"))
+
+    @event_bus.on("onboarding.completed")
+    async def on_onboarding_completed(data: dict) -> None:
+        logger.info("Event: onboarding.completed — employee %s", data.get("employee_id"))
+        admin_ids = await _get_app_admin_ids("hr")
+        for uid in admin_ids:
+            await _create_notification(
+                user_id=uid,
+                title="Onboarding Complete",
+                message=f"Employee {data.get('employee_name', '')} has completed all onboarding tasks.",
+                notif_type="success",
+                module="hr",
+                link_url="/hr/onboarding-tracker",
+            )
+
+    @event_bus.on("hr.offboarding_started")
+    async def on_offboarding_started(data: dict) -> None:
+        logger.info("Event: hr.offboarding_started — employee %s", data.get("employee_id"))
+        await _log_activity("updated", f"Offboarding started for employee {data.get('employee_id', '')}", "hr", data.get("initiated_by", ""), data)
 
 
 async def _seed_superadmin() -> None:

@@ -5,18 +5,16 @@ import uuid
 from datetime import date, datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel
-from sqlalchemy import and_, func, select
+from sqlalchemy import func, select
 
 from app.core.deps import CurrentUser, DBSession
 from app.models.projects import (
-    Milestone,
     Project,
     ProjectMilestone,
     ProjectTemplate,
     Task,
-    TaskAttachment,
     TaskDependency,
     TimeLog,
 )

@@ -13,7 +13,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import delete, select, text, update
+from sqlalchemy import select, text
 
 from app.core.deps import CurrentUser, DBSession
 from app.models.analytics import (

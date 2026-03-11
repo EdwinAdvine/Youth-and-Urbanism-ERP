@@ -4,11 +4,9 @@ import {
   useMeetingsConfig, useUpdateMeetingsConfig,
   useMeetingsDefaults, useUpdateMeetingsDefaults,
   useMeetingsRecording, useUpdateMeetingsRecording,
-  useMeetingsLobby, useUpdateMeetingsLobby,
   useMeetingsTheme, useUpdateMeetingsTheme,
   useMeetingsSIP, useUpdateMeetingsSIP,
-  type MeetingsServerConfig, type MeetingsDefaults, type MeetingsRecording,
-  type LobbySettings, type JitsiTheme, type SIPConfig,
+  type MeetingsServerConfig, type MeetingsDefaults, type MeetingsRecording, type JitsiTheme, type SIPConfig,
 } from '../../api/adminConfig'
 import LobbyCustomization from '../teams/LobbyCustomization'
 

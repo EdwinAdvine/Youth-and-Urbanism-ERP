@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone
-from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -14,7 +13,6 @@ from app.core.deps import CurrentUser, DBSession, require_app_admin
 from app.models.manufacturing import (
     BillOfMaterials,
     MaintenanceSchedule,
-    QualityCheck,
     QualityControl,
     RoutingStep,
     ScrapEntry,

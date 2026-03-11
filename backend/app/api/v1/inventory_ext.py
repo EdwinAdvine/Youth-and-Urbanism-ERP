@@ -9,9 +9,8 @@ from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, File, status
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 from sqlalchemy import and_, func, select
-from sqlalchemy.orm import selectinload
 
 from app.core.deps import CurrentUser, DBSession, require_app_admin
 from app.core.events import event_bus

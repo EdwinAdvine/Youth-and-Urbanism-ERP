@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  Button, Badge, Card, Table, Modal, Input, Select, Spinner, toast,
+  Button, Badge, Card, Table, Modal, Input, Select, toast,
 } from '../../components/ui'
 import {
   useAITemplates,

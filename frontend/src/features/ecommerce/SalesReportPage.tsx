@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, Select, Spinner, Badge } from '../../components/ui'
+import { Card, Select, Spinner } from '../../components/ui'
 import { useSalesReport, useTopProducts, useConversionFunnel } from '../../api/ecommerce_ext'
 
 export default function SalesReportPage() {

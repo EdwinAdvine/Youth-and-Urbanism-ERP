@@ -8,7 +8,6 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from sqlalchemy import or_
 
 from app.core.deps import CurrentUser, DBSession
 from app.models.notes import Note

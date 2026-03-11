@@ -1,14 +1,13 @@
 """Handbook API — categories, articles, search, feedback, progress, and admin."""
 from __future__ import annotations
 
-import re
 import uuid
 from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Response, UploadFile, File, status
 from pydantic import BaseModel
-from sqlalchemy import and_, func, or_, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import selectinload
 
 from app.core.deps import CurrentUser, DBSession, require_app_admin

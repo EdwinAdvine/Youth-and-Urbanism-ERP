@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { cn, Button, Spinner, Badge, Card, Table, Modal, Input, toast } from '../../components/ui'
+import { cn, Button, Spinner, Badge, Card, Table, Modal, toast } from '../../components/ui'
 import {
   usePOSDashboardStats,
   usePOSTransactions,

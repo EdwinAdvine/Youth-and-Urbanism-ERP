@@ -19,7 +19,9 @@ from app.models.manufacturing import (
     BOMItem,
     MaterialConsumption,
     QualityCheck,
+    ReworkOrder,
     WorkOrder,
+    WorkOrderVariance,
     WorkStation,
 )
 
@@ -1288,3 +1290,274 @@ async def manufacturing_dashboard(
         "in_progress_material_cost": str(in_progress_cost),
         "defect_rate_percent": defect_rate,
     }
+
+
+# ── Variance Analysis ────────────────────────────────────────────────────────
+
+class VarianceOut(BaseModel):
+    id: uuid.UUID
+    work_order_id: uuid.UUID
+    variance_type: str
+    planned_value: Decimal
+    actual_value: Decimal
+    variance_amount: Decimal
+    variance_percent: Decimal
+    calculated_at: Any
+    notes: str | None
+
+    model_config = {"from_attributes": True}
+
+
+@router.get("/work-orders/{wo_id}/variance", response_model=list[VarianceOut])
+async def get_work_order_variance(wo_id: uuid.UUID, db: DBSession, user: CurrentUser):
+    wo = await db.get(WorkOrder, wo_id)
+    if not wo:
+        raise HTTPException(status_code=404, detail="Work order not found")
+    if wo.status not in ("completed", "in_progress"):
+        raise HTTPException(status_code=400, detail="Variance only available for in-progress or completed WOs")
+
+    # Delete old variance records for this WO and recalculate
+    old = await db.execute(
+        select(WorkOrderVariance).where(WorkOrderVariance.work_order_id == wo_id)
+    )
+    for v in old.scalars().all():
+        await db.delete(v)
+
+    variances = []
+
+    # Material variance
+    mat_result = await db.execute(
+        select(MaterialConsumption).where(MaterialConsumption.work_order_id == wo_id)
+    )
+    materials = mat_result.scalars().all()
+    planned_mat = sum(float(m.planned_quantity) for m in materials)
+    actual_mat = sum(float(m.actual_quantity) for m in materials)
+    if planned_mat > 0:
+        mat_var = actual_mat - planned_mat
+        mat_pct = round(mat_var / planned_mat * 100, 2) if planned_mat else 0
+        v = WorkOrderVariance(
+            work_order_id=wo_id,
+            variance_type="material",
+            planned_value=Decimal(str(planned_mat)),
+            actual_value=Decimal(str(actual_mat)),
+            variance_amount=Decimal(str(round(mat_var, 2))),
+            variance_percent=Decimal(str(mat_pct)),
+        )
+        db.add(v)
+        variances.append(v)
+
+    # Labor/time variance (planned vs actual duration)
+    if wo.planned_start and wo.planned_end and wo.actual_start:
+        planned_hours = (wo.planned_end - wo.planned_start).total_seconds() / 3600
+        actual_end = wo.actual_end or datetime.now(wo.actual_start.tzinfo)
+        actual_hours = (actual_end - wo.actual_start).total_seconds() / 3600
+        time_var = actual_hours - planned_hours
+        time_pct = round(time_var / planned_hours * 100, 2) if planned_hours else 0
+        v = WorkOrderVariance(
+            work_order_id=wo_id,
+            variance_type="time",
+            planned_value=Decimal(str(round(planned_hours, 2))),
+            actual_value=Decimal(str(round(actual_hours, 2))),
+            variance_amount=Decimal(str(round(time_var, 2))),
+            variance_percent=Decimal(str(time_pct)),
+        )
+        db.add(v)
+        variances.append(v)
+
+    # Cost variance
+    planned_cost = float(wo.total_material_cost + wo.total_labor_cost)
+    if wo.status == "completed" and planned_cost > 0:
+        # Actual cost from material consumption × item cost_price
+        actual_cost = 0
+        for m in materials:
+            item = await db.get(InventoryItem, m.item_id)
+            if item:
+                actual_cost += float(m.actual_quantity) * float(item.cost_price)
+        actual_cost += float(wo.total_labor_cost)
+        cost_var = actual_cost - planned_cost
+        cost_pct = round(cost_var / planned_cost * 100, 2) if planned_cost else 0
+        v = WorkOrderVariance(
+            work_order_id=wo_id,
+            variance_type="labor",
+            planned_value=Decimal(str(round(planned_cost, 2))),
+            actual_value=Decimal(str(round(actual_cost, 2))),
+            variance_amount=Decimal(str(round(cost_var, 2))),
+            variance_percent=Decimal(str(cost_pct)),
+        )
+        db.add(v)
+        variances.append(v)
+
+    await db.commit()
+    for v in variances:
+        await db.refresh(v)
+    return variances
+
+
+# ── Backflush Consumption ────────────────────────────────────────────────────
+
+@router.post(
+    "/work-orders/{wo_id}/backflush",
+    summary="Auto-consume materials based on BOM quantities × completed quantity",
+    dependencies=[Depends(require_app_admin("manufacturing"))],
+)
+async def backflush_consumption(
+    wo_id: uuid.UUID,
+    db: DBSession,
+    user: CurrentUser,
+    completed_quantity: int = Query(..., description="Quantity produced to backflush for"),
+) -> dict[str, Any]:
+    result = await db.execute(
+        select(WorkOrder).options(selectinload(WorkOrder.bom)).where(WorkOrder.id == wo_id)
+    )
+    wo = result.scalar_one_or_none()
+    if not wo:
+        raise HTTPException(status_code=404, detail="Work order not found")
+    if wo.status != "in_progress":
+        raise HTTPException(status_code=400, detail="Can only backflush in-progress work orders")
+
+    # Load BOM items
+    bom_result = await db.execute(
+        select(BOMItem).where(BOMItem.bom_id == wo.bom_id)
+    )
+    bom_items = bom_result.scalars().all()
+
+    consumed = []
+    for bi in bom_items:
+        if bi.is_phantom:
+            continue
+
+        qty_needed = float(bi.quantity_required) * completed_quantity
+        scrap_adj = qty_needed * float(bi.scrap_percentage) / 100
+        total_qty = int(qty_needed + scrap_adj)
+        if total_qty <= 0:
+            continue
+
+        # Check and consume stock
+        sl_result = await db.execute(
+            select(StockLevel).where(
+                and_(
+                    StockLevel.item_id == bi.item_id,
+                    StockLevel.warehouse_id == wo.source_warehouse_id,
+                )
+            )
+        )
+        stock_level = sl_result.scalar_one_or_none()
+        if not stock_level or stock_level.quantity_on_hand < total_qty:
+            item = await db.get(InventoryItem, bi.item_id)
+            raise HTTPException(
+                status_code=422,
+                detail=f"Insufficient stock for '{item.name if item else bi.item_id}'. "
+                       f"Required: {total_qty}, Available: {stock_level.quantity_on_hand if stock_level else 0}",
+            )
+
+        movement = StockMovement(
+            item_id=bi.item_id,
+            warehouse_id=wo.source_warehouse_id,
+            movement_type="issue",
+            quantity=-total_qty,
+            reference_type="work_order",
+            reference_id=wo.id,
+            notes=f"Backflush for WO {wo.wo_number}",
+            created_by=user.id,
+        )
+        db.add(movement)
+        await db.flush()
+
+        stock_level.quantity_on_hand -= total_qty
+
+        mc = MaterialConsumption(
+            work_order_id=wo.id,
+            item_id=bi.item_id,
+            planned_quantity=Decimal(str(qty_needed)),
+            actual_quantity=Decimal(str(total_qty)),
+            warehouse_id=wo.source_warehouse_id,
+            stock_movement_id=movement.id,
+            consumed_at=func.now(),
+            notes="Backflush consumption",
+        )
+        db.add(mc)
+        consumed.append({"item_id": str(bi.item_id), "quantity": total_qty})
+
+    await db.commit()
+    return {"status": "ok", "backflushed_items": consumed, "completed_quantity": completed_quantity}
+
+
+# ── Rework Orders ────────────────────────────────────────────────────────────
+
+class ReworkOrderCreate(BaseModel):
+    quality_check_id: uuid.UUID | None = None
+    reason: str
+    quantity: int
+
+
+class ReworkOrderOut(BaseModel):
+    id: uuid.UUID
+    rework_number: str
+    parent_wo_id: uuid.UUID
+    child_wo_id: uuid.UUID | None
+    quality_check_id: uuid.UUID | None
+    reason: str
+    quantity: int
+    status: str
+    rework_cost: Decimal
+    created_by: uuid.UUID
+    created_at: Any
+    updated_at: Any
+
+    model_config = {"from_attributes": True}
+
+
+@router.post("/work-orders/{wo_id}/rework", response_model=ReworkOrderOut, status_code=status.HTTP_201_CREATED)
+async def create_rework_order(
+    wo_id: uuid.UUID,
+    body: ReworkOrderCreate,
+    db: DBSession,
+    user: CurrentUser,
+):
+    wo = await db.get(WorkOrder, wo_id)
+    if not wo:
+        raise HTTPException(status_code=404, detail="Work order not found")
+
+    # Generate rework number
+    count_result = await db.execute(select(func.count(ReworkOrder.id)))
+    count = count_result.scalar() or 0
+
+    rework = ReworkOrder(
+        rework_number=f"RW-{count + 1:05d}",
+        parent_wo_id=wo_id,
+        quality_check_id=body.quality_check_id,
+        reason=body.reason,
+        quantity=body.quantity,
+        created_by=user.id,
+    )
+    db.add(rework)
+    await db.commit()
+    await db.refresh(rework)
+    return rework
+
+
+@router.get("/rework-orders", response_model=list[ReworkOrderOut])
+async def list_rework_orders(
+    db: DBSession,
+    user: CurrentUser,
+    parent_wo_id: uuid.UUID | None = None,
+    rework_status: str | None = Query(None, alias="status"),
+    skip: int = 0,
+    limit: int = 50,
+):
+    q = select(ReworkOrder).order_by(ReworkOrder.created_at.desc())
+    if parent_wo_id:
+        q = q.where(ReworkOrder.parent_wo_id == parent_wo_id)
+    if rework_status:
+        q = q.where(ReworkOrder.status == rework_status)
+    q = q.offset(skip).limit(limit)
+    result = await db.execute(q)
+    return result.scalars().all()
+
+
+@router.get("/rework-orders/{rework_id}", response_model=ReworkOrderOut)
+async def get_rework_order(rework_id: uuid.UUID, db: DBSession, user: CurrentUser):
+    rework = await db.get(ReworkOrder, rework_id)
+    if not rework:
+        raise HTTPException(status_code=404, detail="Rework order not found")
+    return rework

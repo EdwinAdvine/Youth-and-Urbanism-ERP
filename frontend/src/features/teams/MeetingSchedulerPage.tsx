@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, Button, Input, Spinner, Badge, toast } from '../../components/ui'
+import { Card, Button, Input, Badge, toast } from '../../components/ui'
 import { useCreateMeeting } from '../../api/meetings'
 
 export default function MeetingSchedulerPage() {

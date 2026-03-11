@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, func, or_, select
 
@@ -17,7 +17,6 @@ from app.models.support import (
     Ticket,
     TicketComment,
     TicketRoutingRule,
-    TicketTag,
 )
 
 router = APIRouter()

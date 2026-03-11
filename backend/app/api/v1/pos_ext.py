@@ -6,7 +6,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import selectinload
@@ -15,9 +15,14 @@ from app.core.deps import CurrentUser, DBSession
 from app.core.events import event_bus
 from app.models.inventory import InventoryItem, StockLevel, StockMovement
 from app.models.pos import (
+    POSBundle,
+    POSBundleItem,
     POSCashMovement,
     POSDiscount,
+    POSModifier,
+    POSModifierGroup,
     POSPayment,
+    POSProductModifierLink,
     POSReceipt,
     POSSession,
     POSTerminal,
@@ -1198,4 +1203,532 @@ async def sync_from_ecommerce(
         "skipped": skipped,
         "warehouse_id": str(payload.warehouse_id),
         "message": f"Synced {created} e-commerce products to inventory for POS",
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  BUNDLES
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class BundleItemIn(BaseModel):
+    item_id: uuid.UUID
+    quantity: int = 1
+
+
+class BundleIn(BaseModel):
+    name: str
+    description: str | None = None
+    bundle_price: Decimal
+    is_active: bool = True
+    items: list[BundleItemIn] = []
+
+
+class BundleOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    description: str | None
+    bundle_price: Decimal
+    is_active: bool
+    created_at: Any
+    updated_at: Any
+    items: list[dict[str, Any]] = []
+    model_config = {"from_attributes": True}
+
+
+@router.post("/bundles", status_code=status.HTTP_201_CREATED, summary="Create a product bundle")
+async def create_bundle(
+    payload: BundleIn,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    bundle = POSBundle(
+        name=payload.name,
+        description=payload.description,
+        bundle_price=payload.bundle_price,
+        is_active=payload.is_active,
+    )
+    db.add(bundle)
+    await db.flush()
+
+    for bi in payload.items:
+        item = await db.get(InventoryItem, bi.item_id)
+        if not item:
+            raise HTTPException(status_code=404, detail=f"Item {bi.item_id} not found")
+        db.add(POSBundleItem(bundle_id=bundle.id, item_id=bi.item_id, quantity=bi.quantity))
+
+    await db.commit()
+    await db.refresh(bundle)
+    return await _bundle_to_dict(db, bundle)
+
+
+@router.get("/bundles", summary="List product bundles")
+async def list_bundles(
+    current_user: CurrentUser,
+    db: DBSession,
+    active_only: bool = Query(True),
+) -> list[dict[str, Any]]:
+    query = select(POSBundle)
+    if active_only:
+        query = query.where(POSBundle.is_active == True)  # noqa: E712
+    query = query.order_by(POSBundle.name.asc())
+    result = await db.execute(query)
+    bundles = result.scalars().all()
+    return [await _bundle_to_dict(db, b) for b in bundles]
+
+
+@router.get("/bundles/{bundle_id}", summary="Get bundle detail")
+async def get_bundle(
+    bundle_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    bundle = await db.get(POSBundle, bundle_id)
+    if not bundle:
+        raise HTTPException(status_code=404, detail="Bundle not found")
+    return await _bundle_to_dict(db, bundle)
+
+
+@router.put("/bundles/{bundle_id}", summary="Update a bundle")
+async def update_bundle(
+    bundle_id: uuid.UUID,
+    payload: BundleIn,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    bundle = await db.get(POSBundle, bundle_id)
+    if not bundle:
+        raise HTTPException(status_code=404, detail="Bundle not found")
+
+    bundle.name = payload.name
+    bundle.description = payload.description
+    bundle.bundle_price = payload.bundle_price
+    bundle.is_active = payload.is_active
+
+    # Replace items
+    await db.execute(
+        select(POSBundleItem).where(POSBundleItem.bundle_id == bundle_id)
+    )
+    existing = (await db.execute(
+        select(POSBundleItem).where(POSBundleItem.bundle_id == bundle_id)
+    )).scalars().all()
+    for ei in existing:
+        await db.delete(ei)
+
+    for bi in payload.items:
+        db.add(POSBundleItem(bundle_id=bundle.id, item_id=bi.item_id, quantity=bi.quantity))
+
+    await db.commit()
+    await db.refresh(bundle)
+    return await _bundle_to_dict(db, bundle)
+
+
+@router.delete("/bundles/{bundle_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a bundle")
+async def delete_bundle(
+    bundle_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+):
+    bundle = await db.get(POSBundle, bundle_id)
+    if not bundle:
+        raise HTTPException(status_code=404, detail="Bundle not found")
+    await db.delete(bundle)
+    await db.commit()
+
+
+async def _bundle_to_dict(db: DBSession, bundle: POSBundle) -> dict[str, Any]:
+    items_result = await db.execute(
+        select(POSBundleItem).where(POSBundleItem.bundle_id == bundle.id)
+    )
+    items = items_result.scalars().all()
+    items_out = []
+    for bi in items:
+        item = await db.get(InventoryItem, bi.item_id)
+        items_out.append({
+            "id": str(bi.id),
+            "item_id": str(bi.item_id),
+            "item_name": item.name if item else "Unknown",
+            "item_sku": item.sku if item else "",
+            "quantity": bi.quantity,
+        })
+    return {
+        "id": str(bundle.id),
+        "name": bundle.name,
+        "description": bundle.description,
+        "bundle_price": str(bundle.bundle_price),
+        "is_active": bundle.is_active,
+        "created_at": bundle.created_at.isoformat() if bundle.created_at else None,
+        "updated_at": bundle.updated_at.isoformat() if bundle.updated_at else None,
+        "items": items_out,
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  MODIFIER GROUPS & MODIFIERS
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class ModifierIn(BaseModel):
+    name: str
+    price_adjustment: Decimal = Decimal("0")
+    is_active: bool = True
+
+
+class ModifierGroupIn(BaseModel):
+    name: str
+    selection_type: str = "single"  # single, multiple
+    is_required: bool = False
+    min_selections: int = 0
+    max_selections: int = 0
+    modifiers: list[ModifierIn] = []
+
+
+class ModifierGroupOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    selection_type: str
+    is_required: bool
+    min_selections: int
+    max_selections: int
+    modifiers: list[dict[str, Any]] = []
+    model_config = {"from_attributes": True}
+
+
+@router.post("/modifier-groups", status_code=status.HTTP_201_CREATED, summary="Create a modifier group")
+async def create_modifier_group(
+    payload: ModifierGroupIn,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    group = POSModifierGroup(
+        name=payload.name,
+        selection_type=payload.selection_type,
+        is_required=payload.is_required,
+        min_selections=payload.min_selections,
+        max_selections=payload.max_selections,
+    )
+    db.add(group)
+    await db.flush()
+
+    for m in payload.modifiers:
+        db.add(POSModifier(
+            group_id=group.id, name=m.name,
+            price_adjustment=m.price_adjustment, is_active=m.is_active,
+        ))
+
+    await db.commit()
+    await db.refresh(group)
+    return await _modifier_group_to_dict(db, group)
+
+
+@router.get("/modifier-groups", summary="List modifier groups")
+async def list_modifier_groups(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> list[dict[str, Any]]:
+    result = await db.execute(select(POSModifierGroup).order_by(POSModifierGroup.name.asc()))
+    groups = result.scalars().all()
+    return [await _modifier_group_to_dict(db, g) for g in groups]
+
+
+@router.put("/modifier-groups/{group_id}", summary="Update a modifier group")
+async def update_modifier_group(
+    group_id: uuid.UUID,
+    payload: ModifierGroupIn,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    group = await db.get(POSModifierGroup, group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Modifier group not found")
+
+    group.name = payload.name
+    group.selection_type = payload.selection_type
+    group.is_required = payload.is_required
+    group.min_selections = payload.min_selections
+    group.max_selections = payload.max_selections
+
+    # Replace modifiers
+    existing = (await db.execute(
+        select(POSModifier).where(POSModifier.group_id == group_id)
+    )).scalars().all()
+    for em in existing:
+        await db.delete(em)
+
+    for m in payload.modifiers:
+        db.add(POSModifier(
+            group_id=group.id, name=m.name,
+            price_adjustment=m.price_adjustment, is_active=m.is_active,
+        ))
+
+    await db.commit()
+    await db.refresh(group)
+    return await _modifier_group_to_dict(db, group)
+
+
+@router.delete("/modifier-groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a modifier group")
+async def delete_modifier_group(
+    group_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+):
+    group = await db.get(POSModifierGroup, group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Modifier group not found")
+    await db.delete(group)
+    await db.commit()
+
+
+@router.post("/products/{item_id}/modifier-groups/{group_id}", status_code=status.HTTP_201_CREATED,
+             summary="Link a modifier group to a product")
+async def link_modifier_group_to_product(
+    item_id: uuid.UUID,
+    group_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    existing = await db.execute(
+        select(POSProductModifierLink).where(and_(
+            POSProductModifierLink.item_id == item_id,
+            POSProductModifierLink.modifier_group_id == group_id,
+        ))
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Already linked")
+
+    link = POSProductModifierLink(item_id=item_id, modifier_group_id=group_id)
+    db.add(link)
+    await db.commit()
+    return {"message": "Modifier group linked to product", "item_id": str(item_id), "group_id": str(group_id)}
+
+
+@router.delete("/products/{item_id}/modifier-groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT,
+               summary="Unlink a modifier group from a product")
+async def unlink_modifier_group_from_product(
+    item_id: uuid.UUID,
+    group_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+):
+    result = await db.execute(
+        select(POSProductModifierLink).where(and_(
+            POSProductModifierLink.item_id == item_id,
+            POSProductModifierLink.modifier_group_id == group_id,
+        ))
+    )
+    link = result.scalar_one_or_none()
+    if not link:
+        raise HTTPException(status_code=404, detail="Link not found")
+    await db.delete(link)
+    await db.commit()
+
+
+async def _modifier_group_to_dict(db: DBSession, group: POSModifierGroup) -> dict[str, Any]:
+    mod_result = await db.execute(
+        select(POSModifier).where(POSModifier.group_id == group.id)
+    )
+    modifiers = mod_result.scalars().all()
+    return {
+        "id": str(group.id),
+        "name": group.name,
+        "selection_type": group.selection_type,
+        "is_required": group.is_required,
+        "min_selections": group.min_selections,
+        "max_selections": group.max_selections,
+        "modifiers": [
+            {
+                "id": str(m.id),
+                "name": m.name,
+                "price_adjustment": str(m.price_adjustment),
+                "is_active": m.is_active,
+            }
+            for m in modifiers
+        ],
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  X/Z READINGS (Fiscal Reports)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/sessions/{session_id}/x-reading", summary="X-reading: mid-shift fiscal report (non-closing)")
+async def x_reading(
+    session_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    return await _generate_reading(db, session_id, reading_type="x")
+
+
+@router.get("/sessions/{session_id}/z-reading", summary="Z-reading: end-of-day fiscal report")
+async def z_reading(
+    session_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    return await _generate_reading(db, session_id, reading_type="z")
+
+
+async def _generate_reading(db: DBSession, session_id: uuid.UUID, reading_type: str) -> dict[str, Any]:
+    session = await db.get(POSSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if reading_type == "z" and session.status == "open":
+        raise HTTPException(status_code=409, detail="Z-reading requires a closed session")
+
+    # Transaction counts
+    status_result = await db.execute(
+        select(POSTransaction.status, func.count()).where(
+            POSTransaction.session_id == session_id
+        ).group_by(POSTransaction.status)
+    )
+    status_counts = dict(status_result.all())
+
+    # Sales totals
+    sales_result = await db.execute(
+        select(
+            func.coalesce(func.sum(POSTransaction.total), 0),
+            func.coalesce(func.sum(POSTransaction.tax_amount), 0),
+            func.coalesce(func.sum(POSTransaction.discount_amount), 0),
+            func.coalesce(func.sum(POSTransaction.tip_amount), 0),
+        ).where(and_(
+            POSTransaction.session_id == session_id,
+            POSTransaction.status == "completed",
+        ))
+    )
+    sales_row = sales_result.one()
+
+    # Refund totals
+    refund_result = await db.execute(
+        select(func.coalesce(func.sum(POSTransaction.total), 0)).where(and_(
+            POSTransaction.session_id == session_id,
+            POSTransaction.status == "refunded",
+        ))
+    )
+    total_refunds = refund_result.scalar() or Decimal("0")
+
+    # Payment method breakdown
+    method_result = await db.execute(
+        select(POSPayment.payment_method, func.sum(POSPayment.amount)).join(
+            POSTransaction, POSPayment.transaction_id == POSTransaction.id
+        ).where(and_(
+            POSTransaction.session_id == session_id,
+            POSTransaction.status == "completed",
+        )).group_by(POSPayment.payment_method)
+    )
+    payment_methods = {m: str(a) for m, a in method_result.all()}
+
+    # Cash movements
+    cash_result = await db.execute(
+        select(
+            POSCashMovement.movement_type,
+            func.sum(POSCashMovement.amount),
+        ).where(POSCashMovement.session_id == session_id)
+        .group_by(POSCashMovement.movement_type)
+    )
+    cash_movements = {t: str(a) for t, a in cash_result.all()}
+
+    net_sales = (sales_row[0] or Decimal("0")) - total_refunds
+    expected_cash = session.opening_balance + Decimal(payment_methods.get("cash", "0")) - total_refunds + Decimal(cash_movements.get("in", "0")) - Decimal(cash_movements.get("out", "0"))
+
+    return {
+        "reading_type": reading_type,
+        "session_id": str(session_id),
+        "session_number": session.session_number,
+        "cashier_id": str(session.cashier_id),
+        "opened_at": session.opened_at.isoformat(),
+        "closed_at": session.closed_at.isoformat() if session.closed_at else None,
+        "opening_balance": str(session.opening_balance),
+        "closing_balance": str(session.closing_balance) if session.closing_balance else None,
+        "transaction_counts": status_counts,
+        "gross_sales": str(sales_row[0]),
+        "total_tax": str(sales_row[1]),
+        "total_discounts": str(sales_row[2]),
+        "total_tips": str(sales_row[3]),
+        "total_refunds": str(total_refunds),
+        "net_sales": str(net_sales),
+        "payment_methods": payment_methods,
+        "cash_movements": cash_movements,
+        "expected_cash_in_drawer": str(expected_cash),
+        "actual_cash_in_drawer": str(session.closing_balance) if session.closing_balance else None,
+        "cash_variance": str(session.difference) if session.difference else None,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PROFITABILITY REPORT
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/reports/profitability", summary="Profitability report — COGS vs revenue vs margin")
+async def profitability_report(
+    current_user: CurrentUser,
+    db: DBSession,
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    group_by: str = Query("product", description="Group by: product, category, date"),
+    limit_val: int = Query(50, alias="limit", ge=1, le=500),
+) -> dict[str, Any]:
+    base_query = select(
+        POSTransactionLine.item_id,
+        POSTransactionLine.item_name,
+        POSTransactionLine.item_sku,
+        func.sum(POSTransactionLine.quantity).label("qty_sold"),
+        func.sum(POSTransactionLine.line_total).label("revenue"),
+    ).join(
+        POSTransaction, POSTransactionLine.transaction_id == POSTransaction.id
+    ).where(POSTransaction.status == "completed")
+
+    if date_from:
+        base_query = base_query.where(func.date(POSTransaction.created_at) >= date_from)
+    if date_to:
+        base_query = base_query.where(func.date(POSTransaction.created_at) <= date_to)
+
+    base_query = base_query.group_by(
+        POSTransactionLine.item_id, POSTransactionLine.item_name, POSTransactionLine.item_sku
+    ).order_by(func.sum(POSTransactionLine.line_total).desc()).limit(limit_val)
+
+    result = await db.execute(base_query)
+    rows = result.all()
+
+    products = []
+    total_revenue = Decimal("0")
+    total_cogs = Decimal("0")
+
+    for r in rows:
+        item = await db.get(InventoryItem, r.item_id)
+        cost_price = item.cost_price if item else Decimal("0")
+        cogs = cost_price * r.qty_sold
+        margin = r.revenue - cogs
+        margin_pct = (margin / r.revenue * 100) if r.revenue > 0 else Decimal("0")
+
+        total_revenue += r.revenue
+        total_cogs += cogs
+
+        products.append({
+            "item_id": str(r.item_id),
+            "item_name": r.item_name,
+            "item_sku": r.item_sku,
+            "category": item.category if item else None,
+            "quantity_sold": r.qty_sold,
+            "revenue": str(r.revenue),
+            "cost_price": str(cost_price),
+            "cogs": str(cogs),
+            "gross_margin": str(margin),
+            "margin_percentage": str(round(margin_pct, 2)),
+        })
+
+    total_margin = total_revenue - total_cogs
+
+    return {
+        "products": products,
+        "summary": {
+            "total_revenue": str(total_revenue),
+            "total_cogs": str(total_cogs),
+            "total_gross_margin": str(total_margin),
+            "overall_margin_percentage": str(round((total_margin / total_revenue * 100) if total_revenue > 0 else Decimal("0"), 2)),
+        },
     }

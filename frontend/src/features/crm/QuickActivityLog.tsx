@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Modal, Input, Select } from '../../components/ui'
+import { Button, Modal, Input } from '../../components/ui'
 import { toast } from '../../components/ui'
 import apiClient from '../../api/client'
 import { useQueryClient } from '@tanstack/react-query'

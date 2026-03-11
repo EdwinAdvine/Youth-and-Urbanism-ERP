@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, Button, Spinner, Modal, Input, Badge, Table, toast } from '../../components/ui'
+import { Card, Button, Modal, Input, Badge, Table, toast } from '../../components/ui'
 import { useMailLabels, useCreateLabel, useUpdateLabel, useDeleteLabel, type MailLabel } from '../../api/mail_ext'
 
 const PRESET_COLORS = [

@@ -14,7 +14,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.deps import CurrentUser
 from app.core.security import decode_token
-from app.models.agent import AgentApproval, AgentRun, AgentRunStep
+from app.models.agent import AgentApproval, AgentRun
 from app.models.user import User
 from app.schemas.agent import AgentApprovalOut, AgentRunOut, ApprovalDecision
 from app.services.agent_orchestrator import AgentOrchestrator

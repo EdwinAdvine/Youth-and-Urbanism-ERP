@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import enum
-import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Enum, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import JSON, UUID
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, BaseModel
+from app.models.base import BaseModel
 
 
 class LicenseType(str, enum.Enum):

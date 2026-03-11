@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Input, Spinner, cn } from '@/components/ui'
+import { Button, Input, Spinner } from '@/components/ui'
 import {
   useHandbookCategories,
   useCreateCategory,

@@ -263,7 +263,6 @@ async def onlyoffice_callback(
     Any other response causes the server to retry.
     """
     from app.integrations import onlyoffice  # noqa: PLC0415
-    from app.integrations import minio_client  # noqa: PLC0415
 
     try:
         body: dict[str, Any] = await request.json()

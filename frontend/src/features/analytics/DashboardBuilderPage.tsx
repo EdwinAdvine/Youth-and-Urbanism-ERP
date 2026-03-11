@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Card, Input, Select, Modal, Spinner, toast } from '../../components/ui'
+import { Button, Input, Select, Modal, Spinner, toast } from '../../components/ui'
 import {
   useDashboard, useUpdateDashboard, useDashboardWidgets,
   useCreateWidget, useUpdateWidget, useDeleteWidget,

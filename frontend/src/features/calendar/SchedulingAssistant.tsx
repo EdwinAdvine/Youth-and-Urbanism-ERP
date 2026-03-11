@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Card, Button, Spinner, Input, Badge, toast } from '../../components/ui'
-import { useAvailability, type Availability, type AvailabilitySlot } from '../../api/calendar_ext'
+import { useAvailability } from '../../api/calendar_ext'
 
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 8) // 8am-7pm
 

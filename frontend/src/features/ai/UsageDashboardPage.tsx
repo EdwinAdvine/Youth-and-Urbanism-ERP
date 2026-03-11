@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Card, Spinner, Button, Badge } from '../../components/ui'
+import { Card, Spinner, Button } from '../../components/ui'
 import { useAIUsage } from '../../api/ai_ext'
 
 function formatNumber(n: number): string {

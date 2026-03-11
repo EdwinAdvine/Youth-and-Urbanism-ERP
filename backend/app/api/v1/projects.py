@@ -9,11 +9,11 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel
 from sqlalchemy import and_, cast, func, or_, select
 from sqlalchemy.dialects.postgresql import JSONB as JSONB_TYPE
-from sqlalchemy.orm import selectinload
 
 from app.core.deps import CurrentUser, DBSession
 from app.core.events import event_bus
 from app.models.projects import Milestone, Project, Task, TimeLog
+from app.models.projects_enhanced import TaskAuditLog
 
 router = APIRouter()
 
@@ -68,8 +68,12 @@ class TaskCreate(BaseModel):
     status: str = "todo"
     priority: str = "medium"
     due_date: datetime | None = None
+    start_date: datetime | None = None
+    estimated_hours: float | None = None
     order: int = 0
     tags: list[str] | None = None
+    parent_id: uuid.UUID | None = None
+    sprint_id: uuid.UUID | None = None
 
 
 class TaskUpdate(BaseModel):
@@ -79,19 +83,26 @@ class TaskUpdate(BaseModel):
     status: str | None = None
     priority: str | None = None
     due_date: datetime | None = None
+    start_date: datetime | None = None
+    estimated_hours: float | None = None
     order: int | None = None
     tags: list[str] | None = None
+    sprint_id: uuid.UUID | None = None
 
 
 class TaskOut(BaseModel):
     id: uuid.UUID
     project_id: uuid.UUID
+    parent_id: uuid.UUID | None = None
     title: str
     description: str | None
     assignee_id: uuid.UUID | None
     status: str
     priority: str
     due_date: datetime | None
+    start_date: datetime | None = None
+    estimated_hours: float | None = None
+    sprint_id: uuid.UUID | None = None
     order: int
     tags: list[str] | None
     created_at: Any
@@ -334,10 +345,20 @@ async def create_task(
         status=payload.status,
         priority=payload.priority,
         due_date=payload.due_date,
+        start_date=payload.start_date,
+        estimated_hours=payload.estimated_hours,
         order=payload.order,
         tags=payload.tags or [],
+        parent_id=payload.parent_id,
+        sprint_id=payload.sprint_id,
     )
     db.add(task)
+    await db.flush()
+
+    # Audit log
+    audit = TaskAuditLog(task_id=task.id, user_id=current_user.id, action="created")
+    db.add(audit)
+
     await db.commit()
     await db.refresh(task)
 
@@ -386,8 +407,22 @@ async def update_task(
     old_status = task.status
     old_assignee_id = task.assignee_id
 
+    # Track changes for audit log
+    changes = {}
     for field, value in payload.model_dump(exclude_none=True).items():
+        old_val = getattr(task, field, None)
+        if old_val != value:
+            changes[field] = {
+                "old": str(old_val) if old_val is not None else None,
+                "new": str(value) if value is not None else None,
+            }
         setattr(task, field, value)
+
+    # Write audit log if anything changed
+    if changes:
+        action = "status_changed" if "status" in changes else "assigned" if "assignee_id" in changes else "updated"
+        audit = TaskAuditLog(task_id=task.id, user_id=current_user.id, action=action, changes=changes)
+        db.add(audit)
 
     await db.commit()
     await db.refresh(task)

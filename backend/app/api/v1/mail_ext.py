@@ -7,8 +7,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import delete, func, or_, select, update
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, or_, select
 
 from app.core.config import settings
 from app.core.deps import CurrentUser, DBSession

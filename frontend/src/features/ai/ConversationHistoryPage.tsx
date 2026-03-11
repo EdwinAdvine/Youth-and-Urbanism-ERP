@@ -4,7 +4,6 @@ import {
   useAIConversations,
   useAIConversationMessages,
   type AIConversation,
-  type AIConversationMessage,
 } from '../../api/ai_ext'
 
 function formatDate(dateStr: string) {

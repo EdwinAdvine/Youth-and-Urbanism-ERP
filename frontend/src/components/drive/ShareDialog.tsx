@@ -3,7 +3,6 @@ import {
   useShareFile,
   useShareFolder,
   useFileShares,
-  useUpdateShare,
   useRevokeShare,
   type FileShare,
   type ShareFilePayload,

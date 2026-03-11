@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Card, Spinner, Select, Badge } from '../../components/ui'
 import { useProjects } from '../../api/projects'
-import { useProjectReport, type WorkloadEntry } from '../../api/projects_ext'
+import { useProjectReport } from '../../api/projects_ext'
 
 export default function WorkloadPage() {
   const { data: projects, isLoading: loadingProjects } = useProjects()

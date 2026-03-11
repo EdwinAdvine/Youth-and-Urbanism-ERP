@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, Button, Spinner, Modal, Input, Table, Badge, toast } from '../../components/ui'
+import { Card, Button, Modal, Input, Table, Badge, toast } from '../../components/ui'
 import {
   useCalendarSubscriptions,
   useCreateSubscription,

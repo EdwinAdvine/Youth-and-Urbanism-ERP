@@ -8,7 +8,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
-from sqlalchemy import and_, case, func, or_, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import selectinload
 
 from app.core.deps import CurrentUser, DBSession
@@ -20,7 +20,6 @@ from app.models.ecommerce import (
     EcomOrder,
     EcomProduct,
     OrderLine,
-    PaymentGateway,
     Review,
     ShippingMethod,
     Store,

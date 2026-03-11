@@ -1,4 +1,4 @@
-import { Card, Button, Spinner, Table, Badge, toast } from '../../components/ui'
+import { Card, Button, Table, Badge, toast } from '../../components/ui'
 import { useTrash, useRestoreFile, useEmptyTrash, type TrashItem } from '../../api/drive_ext'
 import { formatFileSize } from '../../api/drive'
 

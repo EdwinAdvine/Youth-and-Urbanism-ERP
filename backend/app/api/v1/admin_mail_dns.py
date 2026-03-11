@@ -14,7 +14,7 @@ import ssl
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 
 from app.core.config import settings
 from app.core.deps import SuperAdminUser

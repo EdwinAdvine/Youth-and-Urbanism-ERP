@@ -8,6 +8,9 @@ export interface Warehouse {
   name: string
   location: string | null
   is_active: boolean
+  address: string | null
+  warehouse_type: string
+  manager_id: string | null
   created_at: string
 }
 
@@ -22,6 +25,16 @@ export interface InventoryItem {
   selling_price: number
   reorder_level: number
   is_active: boolean
+  item_type: string
+  tracking_type: string
+  weight: number | null
+  dimensions: Record<string, number> | null
+  barcode: string | null
+  min_order_qty: number
+  lead_time_days: number
+  preferred_supplier_id: string | null
+  custom_fields: Record<string, unknown> | null
+  max_stock_level: number | null
   created_at: string
 }
 
@@ -30,6 +43,10 @@ export interface StockLevel {
   warehouse_id: string
   quantity_on_hand: number
   quantity_reserved: number
+  quantity_committed: number
+  quantity_incoming: number
+  quantity_available: number
+  bin_location: string | null
   item_name?: string
   warehouse_name?: string
 }
@@ -87,8 +104,10 @@ export interface ReorderAlert {
 export interface InventoryStats {
   total_items: number
   low_stock_count: number
+  overstock_count: number
   pending_pos: number
   total_inventory_value: number
+  total_incoming_units: number
 }
 
 export interface PaginatedResponse<T> {
@@ -101,6 +120,9 @@ export interface PaginatedResponse<T> {
 export interface CreateWarehousePayload {
   name: string
   location?: string
+  address?: string
+  warehouse_type?: string
+  manager_id?: string
 }
 
 export interface UpdateWarehousePayload extends Partial<CreateWarehousePayload> {
@@ -117,6 +139,16 @@ export interface CreateItemPayload {
   cost_price: number
   selling_price: number
   reorder_level?: number
+  item_type?: string
+  tracking_type?: string
+  weight?: number
+  dimensions?: Record<string, number>
+  barcode?: string
+  min_order_qty?: number
+  lead_time_days?: number
+  preferred_supplier_id?: string
+  custom_fields?: Record<string, unknown>
+  max_stock_level?: number
 }
 
 export interface UpdateItemPayload extends Partial<CreateItemPayload> {
@@ -824,5 +856,729 @@ export function useExportItems() {
       })
       return data
     },
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 1 — Serial Numbers, Units of Measure, Blanket Orders
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface UnitOfMeasure {
+  id: string
+  name: string
+  abbreviation: string
+  category: string
+  is_base: boolean
+  is_active: boolean
+}
+
+export interface UoMConversion {
+  id: string
+  from_uom_id: string
+  to_uom_id: string
+  factor: number
+  item_id: string | null
+  from_uom_name: string | null
+  to_uom_name: string | null
+}
+
+export interface SerialNumber {
+  id: string
+  item_id: string
+  serial_no: string
+  warehouse_id: string | null
+  batch_id: string | null
+  purchase_order_id: string | null
+  status: string
+  sold_to_reference: string | null
+  notes: string | null
+  item_name: string | null
+  created_at: string
+}
+
+export interface BlanketOrder {
+  id: string
+  bo_number: string
+  supplier_id: string
+  start_date: string
+  end_date: string | null
+  total_value_limit: number | null
+  released_value: number
+  status: string
+  terms: string | null
+  notes: string | null
+  supplier_name: string | null
+  utilization_pct: number | null
+  created_at: string
+}
+
+export function useUoM() {
+  return useQuery({
+    queryKey: ['inventory', 'uom'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<UnitOfMeasure[]>('/inventory/uom')
+      return data
+    },
+  })
+}
+
+export function useCreateUoM() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Omit<UnitOfMeasure, 'id'>) => {
+      const { data } = await apiClient.post<UnitOfMeasure>('/inventory/uom', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'uom'] }),
+  })
+}
+
+export function useUoMConversions(itemId?: string) {
+  return useQuery({
+    queryKey: ['inventory', 'uom-conversions', itemId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<UoMConversion[]>('/inventory/uom/conversions', { params: itemId ? { item_id: itemId } : {} })
+      return data
+    },
+  })
+}
+
+export function useSerialNumbers(params: { item_id?: string; status?: string; warehouse_id?: string } = {}) {
+  return useQuery({
+    queryKey: ['inventory', 'serials', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<SerialNumber[]>('/inventory/serials', { params })
+      return data
+    },
+  })
+}
+
+export function useCreateSerial() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Partial<SerialNumber>) => {
+      const { data } = await apiClient.post<SerialNumber>('/inventory/serials', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'serials'] }),
+  })
+}
+
+export function useUpdateSerial() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: Partial<SerialNumber> & { id: string }) => {
+      const { data } = await apiClient.patch<SerialNumber>(`/inventory/serials/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'serials'] }),
+  })
+}
+
+export function useBlanketOrders(status?: string) {
+  return useQuery({
+    queryKey: ['inventory', 'blanket-orders', status],
+    queryFn: async () => {
+      const { data } = await apiClient.get<BlanketOrder[]>('/inventory/blanket-orders', { params: status ? { status } : {} })
+      return data
+    },
+  })
+}
+
+export function useCreateBlanketOrder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Partial<BlanketOrder>) => {
+      const { data } = await apiClient.post<BlanketOrder>('/inventory/blanket-orders', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'blanket-orders'] }),
+  })
+}
+
+export function useUpdateBlanketOrder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: Partial<BlanketOrder> & { id: string }) => {
+      const { data } = await apiClient.patch<BlanketOrder>(`/inventory/blanket-orders/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'blanket-orders'] }),
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 2 — WMS: Zones, Bins, Putaway, Pick Lists
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface WarehouseZone {
+  id: string
+  warehouse_id: string
+  name: string
+  zone_type: string
+  description: string | null
+  is_active: boolean
+}
+
+export interface WarehouseBin {
+  id: string
+  zone_id: string
+  warehouse_id: string
+  bin_code: string
+  bin_type: string
+  max_weight: number | null
+  max_volume: number | null
+  is_active: boolean
+}
+
+export interface BinContent {
+  id: string
+  bin_id: string
+  item_id: string
+  variant_id: string | null
+  batch_id: string | null
+  serial_id: string | null
+  quantity: number
+  item_name: string | null
+  bin_code: string | null
+}
+
+export interface PutawayRule {
+  id: string
+  warehouse_id: string
+  item_id: string | null
+  category: string | null
+  zone_id: string | null
+  bin_id: string | null
+  priority: number
+  is_active: boolean
+}
+
+export interface PickListLine {
+  id: string
+  item_id: string
+  bin_id: string | null
+  quantity_requested: number
+  quantity_picked: number
+  item_name: string | null
+}
+
+export interface PickList {
+  id: string
+  pick_number: string
+  warehouse_id: string
+  status: string
+  pick_strategy: string
+  assigned_to: string | null
+  reference_type: string | null
+  notes: string | null
+  lines: PickListLine[]
+  created_at: string
+}
+
+export function useWarehouseZones(warehouseId: string) {
+  return useQuery({
+    queryKey: ['inventory', 'zones', warehouseId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<WarehouseZone[]>(`/inventory/warehouses/${warehouseId}/zones`)
+      return data
+    },
+    enabled: !!warehouseId,
+  })
+}
+
+export function useCreateZone() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Partial<WarehouseZone> & { warehouse_id: string }) => {
+      const { data } = await apiClient.post<WarehouseZone>(`/inventory/warehouses/${payload.warehouse_id}/zones`, payload)
+      return data
+    },
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['inventory', 'zones', v.warehouse_id] }),
+  })
+}
+
+export function useWarehouseBins(zoneId: string) {
+  return useQuery({
+    queryKey: ['inventory', 'bins', zoneId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<WarehouseBin[]>(`/inventory/zones/${zoneId}/bins`)
+      return data
+    },
+    enabled: !!zoneId,
+  })
+}
+
+export function useCreateBin() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Partial<WarehouseBin> & { zone_id: string }) => {
+      const { data } = await apiClient.post<WarehouseBin>(`/inventory/zones/${payload.zone_id}/bins`, payload)
+      return data
+    },
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['inventory', 'bins', v.zone_id] }),
+  })
+}
+
+export function useBinContents(binId: string) {
+  return useQuery({
+    queryKey: ['inventory', 'bin-contents', binId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<BinContent[]>(`/inventory/bins/${binId}/contents`)
+      return data
+    },
+    enabled: !!binId,
+  })
+}
+
+export function usePutawayRules(warehouseId?: string) {
+  return useQuery({
+    queryKey: ['inventory', 'putaway-rules', warehouseId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PutawayRule[]>('/inventory/putaway-rules', { params: warehouseId ? { warehouse_id: warehouseId } : {} })
+      return data
+    },
+  })
+}
+
+export function useCreatePutawayRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Partial<PutawayRule>) => {
+      const { data } = await apiClient.post<PutawayRule>('/inventory/putaway-rules', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'putaway-rules'] }),
+  })
+}
+
+export function usePickLists(params: { warehouse_id?: string; status?: string } = {}) {
+  return useQuery({
+    queryKey: ['inventory', 'pick-lists', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PickList[]>('/inventory/pick-lists', { params })
+      return data
+    },
+  })
+}
+
+export function useCreatePickList() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Partial<PickList> & { warehouse_id: string; lines: { item_id: string; quantity_requested: number }[] }) => {
+      const { data } = await apiClient.post<PickList>('/inventory/pick-lists', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'pick-lists'] }),
+  })
+}
+
+export function useUpdatePickListStatus() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { data } = await apiClient.patch(`/inventory/pick-lists/${id}/status`, null, { params: { status } })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'pick-lists'] }),
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 3 — Replenishment & ABC/XYZ Analysis
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface PurchaseSuggestion {
+  id: string
+  item_id: string
+  warehouse_id: string
+  supplier_id: string | null
+  suggested_qty: number
+  reason: string | null
+  status: string
+  item_name: string | null
+  warehouse_name: string | null
+  created_at: string
+}
+
+export interface ItemClassification {
+  id: string
+  item_id: string
+  warehouse_id: string
+  abc_class: string | null
+  xyz_class: string | null
+  combined_class: string | null
+  annual_consumption_value: number
+  demand_variability: number | null
+  calculated_at: string | null
+  item_name: string | null
+}
+
+export function usePurchaseSuggestions(status = 'pending') {
+  return useQuery({
+    queryKey: ['inventory', 'purchase-suggestions', status],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PurchaseSuggestion[]>('/inventory/purchase-suggestions', { params: { status } })
+      return data
+    },
+  })
+}
+
+export function useRunReplenishmentCheck() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post('/inventory/purchase-suggestions/run')
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'purchase-suggestions'] }),
+  })
+}
+
+export function useAcceptSuggestion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.post(`/inventory/purchase-suggestions/${id}/accept`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'purchase-suggestions'] }),
+  })
+}
+
+export function useDismissSuggestion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.post(`/inventory/purchase-suggestions/${id}/dismiss`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'purchase-suggestions'] }),
+  })
+}
+
+export function useABCAnalysis(warehouseId?: string) {
+  return useQuery({
+    queryKey: ['inventory', 'abc-analysis', warehouseId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ItemClassification[]>('/inventory/abc-analysis', { params: warehouseId ? { warehouse_id: warehouseId } : {} })
+      return data
+    },
+  })
+}
+
+export function useCalculateABC() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (warehouseId?: string) => {
+      const { data } = await apiClient.post('/inventory/abc-analysis/calculate', null, { params: warehouseId ? { warehouse_id: warehouseId } : {} })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'abc-analysis'] }),
+  })
+}
+
+export function useOverstockAlerts() {
+  return useQuery({
+    queryKey: ['inventory', 'overstock-alerts'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ item_id: string; item_name: string; sku: string; quantity_on_hand: number; max_stock_level: number; excess: number }[]>('/inventory/overstock-alerts')
+      return data
+    },
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 4 — Kits, Supplier Pricing, Landed Costs
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface KitComponent {
+  id: string
+  component_item_id: string
+  quantity: number
+  is_optional: boolean
+  item_name: string | null
+}
+
+export interface Kit {
+  id: string
+  kit_item_id: string
+  description: string | null
+  is_active: boolean
+  kit_item_name: string | null
+  components: KitComponent[]
+}
+
+export interface SupplierPrice {
+  id: string
+  supplier_id: string
+  item_id: string
+  unit_price: number
+  min_order_qty: number
+  lead_time_days: number
+  currency: string
+  valid_from: string | null
+  valid_to: string | null
+  is_active: boolean
+  supplier_name: string | null
+  item_name: string | null
+}
+
+export interface LandedCostLine {
+  id: string
+  cost_type: string
+  amount: number
+  currency: string
+  description: string | null
+}
+
+export interface LandedCostVoucher {
+  id: string
+  voucher_number: string
+  purchase_order_id: string | null
+  status: string
+  notes: string | null
+  cost_lines: LandedCostLine[]
+  total_cost: number
+  created_at: string
+}
+
+export function useKits() {
+  return useQuery({
+    queryKey: ['inventory', 'kits'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<Kit[]>('/inventory/kits')
+      return data
+    },
+  })
+}
+
+export function useCreateKit() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { kit_item_id: string; description?: string; components: { component_item_id: string; quantity: number; is_optional?: boolean }[] }) => {
+      const { data } = await apiClient.post<Kit>('/inventory/kits', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'kits'] }),
+  })
+}
+
+export function useSupplierPrices(params: { item_id?: string; supplier_id?: string } = {}) {
+  return useQuery({
+    queryKey: ['inventory', 'supplier-prices', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<SupplierPrice[]>('/inventory/supplier-prices', { params })
+      return data
+    },
+  })
+}
+
+export function useCreateSupplierPrice() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Partial<SupplierPrice>) => {
+      const { data } = await apiClient.post<SupplierPrice>('/inventory/supplier-prices', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'supplier-prices'] }),
+  })
+}
+
+export function useLandedCosts() {
+  return useQuery({
+    queryKey: ['inventory', 'landed-costs'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<LandedCostVoucher[]>('/inventory/landed-costs')
+      return data
+    },
+  })
+}
+
+export function useCreateLandedCost() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { purchase_order_id?: string; notes?: string; cost_lines: { cost_type: string; amount: number; currency?: string; description?: string }[] }) => {
+      const { data } = await apiClient.post<LandedCostVoucher>('/inventory/landed-costs', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'landed-costs'] }),
+  })
+}
+
+export function useApplyLandedCost() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, allocation_method = 'by_value' }: { id: string; allocation_method?: string }) => {
+      const { data } = await apiClient.post(`/inventory/landed-costs/${id}/apply`, null, { params: { allocation_method } })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'landed-costs'] }),
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 5 — Costing & Audit Trail
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface CostingConfig {
+  id: string
+  item_id: string
+  method: string
+  standard_cost: number | null
+  item_name: string | null
+}
+
+export interface CostLayer {
+  id: string
+  item_id: string
+  warehouse_id: string
+  purchase_order_id: string | null
+  quantity_received: number
+  quantity_remaining: number
+  unit_cost: number
+  receipt_date: string
+  item_name: string | null
+  created_at: string
+}
+
+export interface InventoryAuditEntry {
+  id: string
+  entity_type: string
+  entity_id: string
+  field_name: string
+  old_value: string | null
+  new_value: string | null
+  changed_by: string
+  changed_at: string
+}
+
+export function useCostingConfigs() {
+  return useQuery({
+    queryKey: ['inventory', 'costing-config'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<CostingConfig[]>('/inventory/costing-config')
+      return data
+    },
+  })
+}
+
+export function useCreateCostingConfig() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { item_id: string; method: string; standard_cost?: number }) => {
+      const { data } = await apiClient.post<CostingConfig>('/inventory/costing-config', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'costing-config'] }),
+  })
+}
+
+export function useCostLayers(params: { item_id?: string; warehouse_id?: string } = {}) {
+  return useQuery({
+    queryKey: ['inventory', 'cost-layers', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<CostLayer[]>('/inventory/cost-layers', { params })
+      return data
+    },
+  })
+}
+
+export function useProfitabilityReport() {
+  return useQuery({
+    queryKey: ['inventory', 'profitability'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ item_id: string; sku: string; name: string; cost_price: number; selling_price: number; margin: number; margin_pct: number }[]>('/inventory/profitability')
+      return data
+    },
+  })
+}
+
+export function useInventoryAuditTrail(params: { entity_type?: string; entity_id?: string; limit?: number } = {}) {
+  return useQuery({
+    queryKey: ['inventory', 'audit-trail', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<InventoryAuditEntry[]>('/inventory/audit-trail', { params })
+      return data
+    },
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 6 — Automation Rules & AI Forecasting
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface InventoryAutomationRule {
+  id: string
+  name: string
+  trigger_event: string
+  conditions: Record<string, unknown> | null
+  action_type: string
+  action_config: Record<string, unknown> | null
+  is_active: boolean
+  last_triggered_at: string | null
+  created_at: string
+}
+
+export function useAutomationRules() {
+  return useQuery({
+    queryKey: ['inventory', 'automation-rules'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<InventoryAutomationRule[]>('/inventory/automation-rules')
+      return data
+    },
+  })
+}
+
+export function useCreateAutomationRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Partial<InventoryAutomationRule>) => {
+      const { data } = await apiClient.post<InventoryAutomationRule>('/inventory/automation-rules', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'automation-rules'] }),
+  })
+}
+
+export function useUpdateAutomationRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: Partial<InventoryAutomationRule> & { id: string }) => {
+      const { data } = await apiClient.patch<InventoryAutomationRule>(`/inventory/automation-rules/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'automation-rules'] }),
+  })
+}
+
+export function useDeleteAutomationRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/inventory/automation-rules/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'automation-rules'] }),
+  })
+}
+
+export function useInventoryInsights() {
+  return useQuery({
+    queryKey: ['inventory', 'forecast', 'insights'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ generated_at: string; summary: Record<string, number>; insights: { type: string; message: string }[] }>('/inventory/forecast/insights')
+      return data
+    },
+  })
+}
+
+export function useDemandForecast(itemId: string, periods = 3) {
+  return useQuery({
+    queryKey: ['inventory', 'forecast', 'demand', itemId, periods],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ item_id: string; item_name: string | null; data_points_used: number; forecast: { period: number; forecasted_demand: number; confidence: string }[] }>(`/inventory/forecast/demand/${itemId}`, { params: { periods } })
+      return data
+    },
+    enabled: !!itemId,
   })
 }

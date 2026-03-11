@@ -16,17 +16,15 @@ from typing import Any, AsyncGenerator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.rbac import get_user_permissions, is_app_admin
+from app.core.rbac import get_user_permissions
 from app.models.agent import AgentApproval, AgentRun, AgentRunStep
 from app.models.settings import SystemSettings
 from app.models.user import User
 from app.schemas.agent import PlanStepSchema
 from app.services.agent_prompts import (
-    EXECUTOR_SYSTEM_PROMPT,
     ORCHESTRATOR_SUMMARIZE_PROMPT,
     ORCHESTRATOR_SYSTEM_PROMPT,
     RESEARCHER_SYSTEM_PROMPT,
-    VERIFIER_SYSTEM_PROMPT,
 )
 from app.services.ai import AIService
 from app.services.ai_tools import (

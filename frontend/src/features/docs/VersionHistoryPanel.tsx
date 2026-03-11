@@ -1,4 +1,4 @@
-import { Card, Button, Spinner, Badge, toast } from '../../components/ui'
+import { Button, Spinner, Badge, toast } from '../../components/ui'
 import { useDocVersionsExt, useRestoreVersion } from '../../api/docs_ext'
 import type { DocVersion } from '../../api/docs'
 

@@ -2,17 +2,17 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel
-from sqlalchemy import and_, func, select
+from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DBSession
 from app.core.events import event_bus
 from app.models.drive import DriveFile
-from app.models.doc_comment import DocComment, DocVersion
+from app.models.doc_comment import DocVersion
 from app.models.docs import DocumentComment, DocumentTemplate, RecentDocument
 
 router = APIRouter()

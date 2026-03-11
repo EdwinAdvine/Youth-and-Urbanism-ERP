@@ -8,7 +8,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, select
 
 from app.core.deps import CurrentUser, DBSession, require_app_admin
 from app.core.events import event_bus

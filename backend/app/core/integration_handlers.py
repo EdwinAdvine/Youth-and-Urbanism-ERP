@@ -235,7 +235,7 @@ async def on_ecommerce_order_created(data: dict) -> None:
     try:
         from app.core.database import AsyncSessionLocal  # noqa: PLC0415
         from app.models.finance import Invoice  # noqa: PLC0415
-        from app.models.ecommerce import EcomOrder, OrderLine  # noqa: PLC0415
+        from app.models.ecommerce import EcomOrder  # noqa: PLC0415
         from sqlalchemy import func, select  # noqa: PLC0415
         from sqlalchemy.orm import selectinload  # noqa: PLC0415
 
@@ -1184,7 +1184,7 @@ async def on_ecommerce_order_sync_crm(data: dict) -> None:
     )
     try:
         from app.core.database import AsyncSessionLocal  # noqa: PLC0415
-        from app.models.ecommerce import EcomOrder, CustomerAccount  # noqa: PLC0415
+        from app.models.ecommerce import EcomOrder  # noqa: PLC0415
         from app.models.crm import Contact  # noqa: PLC0415
         from sqlalchemy import select  # noqa: PLC0415
         from sqlalchemy.orm import selectinload  # noqa: PLC0415
@@ -1264,7 +1264,7 @@ async def on_supplychain_po_completed(data: dict) -> None:
     try:
         from app.core.database import AsyncSessionLocal  # noqa: PLC0415
         from app.models.finance import Invoice  # noqa: PLC0415
-        from app.models.inventory import PurchaseOrder, PurchaseOrderLine  # noqa: PLC0415
+        from app.models.inventory import PurchaseOrder  # noqa: PLC0415
         from sqlalchemy import func, select  # noqa: PLC0415
         from sqlalchemy.orm import selectinload  # noqa: PLC0415
 
@@ -1623,7 +1623,6 @@ async def on_form_submitted_email_owner(data: dict) -> None:
         from app.core.database import AsyncSessionLocal  # noqa: PLC0415
         from app.models.forms import Form  # noqa: PLC0415
         from app.models.user import User  # noqa: PLC0415
-        from sqlalchemy import select  # noqa: PLC0415
 
         async with AsyncSessionLocal() as db:
             form = await db.get(Form, form_id)
@@ -1684,6 +1683,568 @@ async def on_form_submitted_email_owner(data: dict) -> None:
         logger.exception("Failed to send form submission email notification for form %s", form_id)
 
 
+# ── Manufacturing ECO handlers ────────────────────────────────────────────────
+
+@event_bus.on("eco.submitted")
+async def on_eco_submitted(data: dict) -> None:
+    """Notify manufacturing admins when an ECO is submitted for review."""
+    logger.info("Integration: eco.submitted → Notifications (ECO: %s)", data.get("eco_number"))
+    await _log_activity(
+        activity_type="eco_submitted",
+        message=f"ECO {data.get('eco_number')} submitted: {data.get('title', '')}",
+        module="manufacturing",
+        user_id=data.get("requested_by", "system"),
+        metadata=data,
+    )
+
+
+@event_bus.on("eco.implemented")
+async def on_eco_implemented(data: dict) -> None:
+    """Log activity when an ECO is implemented (new BOM version created)."""
+    logger.info("Integration: eco.implemented → Activity log (ECO: %s)", data.get("eco_number"))
+    await _log_activity(
+        activity_type="eco_implemented",
+        message=f"ECO {data.get('eco_number')} implemented — new BOM version {data.get('new_bom_version')}",
+        module="manufacturing",
+        user_id="system",
+        metadata=data,
+    )
+
+
+@event_bus.on("ncr.created")
+async def on_ncr_created(data: dict) -> None:
+    """Notify quality managers when a non-conformance report is filed."""
+    logger.info("Integration: ncr.created → Notifications (NCR: %s)", data.get("ncr_number"))
+    await _log_activity(
+        activity_type="ncr_created",
+        message=f"NCR {data.get('ncr_number')} filed — severity: {data.get('severity', 'unknown')}",
+        module="manufacturing",
+        user_id=data.get("reported_by", "system"),
+        metadata=data,
+    )
+
+
+@event_bus.on("mfg.timesheet.push")
+async def on_mfg_timesheet_push(data: dict) -> None:
+    """Push manufacturing crew hours → HR attendance record."""
+    logger.info(
+        "Integration: mfg.timesheet.push → HR attendance (employee: %s, hours: %s)",
+        data.get("employee_id"),
+        data.get("hours_worked"),
+    )
+    await _log_activity(
+        activity_type="mfg_timesheet_pushed",
+        message=(
+            f"Manufacturing timesheet pushed for employee {data.get('employee_id')} — "
+            f"{data.get('hours_worked')}h on {data.get('date')} ({data.get('shift')} shift)"
+        ),
+        module="hr",
+        user_id=data.get("employee_id", "system"),
+        metadata=data,
+    )
+
+
+# ── Supply Chain Planning & Ops Handlers ─────────────────────────────────────
+
+
+@event_bus.on("supplychain.forecast.generated")
+async def on_sc_forecast_generated(data: dict) -> None:
+    """Log activity when demand forecasts are generated."""
+    logger.info("Integration: supplychain.forecast.generated → Activity log (%s items)", data.get("item_count"))
+    await _log_activity(
+        activity_type="forecast_generated",
+        message=f"Demand forecasts generated for {data.get('item_count')} items ({data.get('forecast_count')} forecasts)",
+        module="supply_chain",
+        user_id=data.get("generated_by", "system"),
+        metadata=data,
+    )
+
+
+@event_bus.on("supplychain.sop.approved")
+async def on_sc_sop_approved(data: dict) -> None:
+    """Log activity and notify when an S&OP cycle is approved."""
+    logger.info("Integration: supplychain.sop.approved → Activity log (SOP: %s)", data.get("sop_id"))
+    await _log_activity(
+        activity_type="sop_approved",
+        message=f"S&OP plan approved — ready for supply plan generation",
+        module="supply_chain",
+        user_id=data.get("approved_by", "system"),
+        metadata=data,
+    )
+
+
+@event_bus.on("supplychain.supply_plan.executed")
+async def on_sc_supply_plan_executed(data: dict) -> None:
+    """Log activity when a supply plan is executed (lines converted to POs)."""
+    logger.info(
+        "Integration: supplychain.supply_plan.executed → Activity log (plan: %s, %s lines)",
+        data.get("plan_id"), data.get("lines_converted"),
+    )
+    await _log_activity(
+        activity_type="supply_plan_executed",
+        message=f"Supply plan executed — {data.get('lines_converted')} lines converted to purchase orders",
+        module="supply_chain",
+        user_id=data.get("executed_by", "system"),
+        metadata=data,
+    )
+
+
+@event_bus.on("supplychain.rfx.published")
+async def on_sc_rfx_published(data: dict) -> None:
+    """Notify invited suppliers when an RFx is published."""
+    logger.info("Integration: supplychain.rfx.published → Notifications (RFx: %s)", data.get("rfx_id"))
+    await _log_activity(
+        activity_type="rfx_published",
+        message=f"RFx ({data.get('rfx_type', 'RFQ')}) published to {len(data.get('invited_suppliers', []))} suppliers",
+        module="supply_chain",
+        user_id="system",
+        metadata=data,
+    )
+
+
+@event_bus.on("supplychain.rfx.awarded")
+async def on_sc_rfx_awarded(data: dict) -> None:
+    """Log activity when an RFx is awarded to a supplier."""
+    logger.info("Integration: supplychain.rfx.awarded → Activity log (supplier: %s)", data.get("supplier_id"))
+    await _log_activity(
+        activity_type="rfx_awarded",
+        message=f"RFx awarded to supplier (value: {data.get('total_value', '0')})",
+        module="supply_chain",
+        user_id="system",
+        metadata=data,
+    )
+
+
+@event_bus.on("supplychain.alert.created")
+async def on_sc_alert_created(data: dict) -> None:
+    """Log activity and send notification for supply chain alerts."""
+    severity = data.get("severity", "medium")
+    logger.info("Integration: supplychain.alert.created → Activity log (severity: %s)", severity)
+    await _log_activity(
+        activity_type="sc_alert",
+        message=f"Supply chain alert ({severity}): {data.get('alert_type', 'unknown')}",
+        module="supply_chain",
+        user_id="system",
+        metadata=data,
+    )
+
+
+@event_bus.on("supplychain.replenishment.triggered")
+async def on_sc_replenishment_triggered(data: dict) -> None:
+    """Log replenishment trigger event."""
+    logger.info("Integration: supplychain.replenishment.triggered → Activity log (item: %s)", data.get("item_id"))
+    await _log_activity(
+        activity_type="replenishment_triggered",
+        message=f"Replenishment triggered for item {data.get('item_id')} (auto_po: {data.get('auto_generate_po')})",
+        module="supply_chain",
+        user_id="system",
+        metadata=data,
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  POS UPGRADE HANDLERS — CRM auto-create, loyalty, HR sync, commission,
+#  auto-reorder, KDS routing, BOPIS
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@event_bus.on("pos.sale.completed")
+async def on_pos_sale_crm_contact(data: dict) -> None:
+    """Auto-create CRM contact from POS sale if customer_email is provided."""
+    customer_email = data.get("customer_email")
+    if not customer_email:
+        return
+
+    logger.info("Integration: pos.sale.completed → CRM contact auto-create (email: %s)", customer_email)
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.crm import Contact  # noqa: PLC0415
+        from app.models.pos import POSTransaction  # noqa: PLC0415
+        from sqlalchemy import select  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            existing = await db.execute(
+                select(Contact).where(Contact.email == customer_email)
+            )
+            contact = existing.scalar_one_or_none()
+
+            if not contact:
+                contact = Contact(
+                    contact_type="person",
+                    first_name=data.get("customer_name", "").split()[0] if data.get("customer_name") else "POS",
+                    last_name=data.get("customer_name", "").split()[-1] if data.get("customer_name") else "Customer",
+                    email=customer_email,
+                    source="pos",
+                    lifecycle_stage="customer",
+                    tags=["pos-customer"],
+                )
+                db.add(contact)
+                await db.flush()
+                logger.info("POS→CRM: Created contact %s for %s", contact.id, customer_email)
+
+            # Link contact to the transaction if not already linked
+            txn_id = data.get("transaction_id")
+            if txn_id and not data.get("customer_id"):
+                import uuid as uuid_mod  # noqa: PLC0415
+                txn = await db.get(POSTransaction, uuid_mod.UUID(txn_id))
+                if txn and not txn.customer_id:
+                    txn.customer_id = contact.id
+
+            await db.commit()
+    except Exception:
+        logger.exception("POS→CRM: Failed to auto-create contact for %s", customer_email)
+
+
+@event_bus.on("pos.sale.completed")
+async def on_pos_sale_loyalty_points(data: dict) -> None:
+    """Auto-earn loyalty points when a POS sale completes."""
+    customer_id = data.get("customer_id")
+    if not customer_id:
+        return
+
+    logger.info("Integration: pos.sale.completed → Loyalty points (customer: %s)", customer_id)
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.loyalty import LoyaltyMember, LoyaltyProgram, LoyaltyTier, LoyaltyTransaction  # noqa: PLC0415
+        from sqlalchemy import select  # noqa: PLC0415
+        import uuid as uuid_mod  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            member_result = await db.execute(
+                select(LoyaltyMember).where(
+                    LoyaltyMember.customer_id == uuid_mod.UUID(customer_id)
+                )
+            )
+            member = member_result.scalar_one_or_none()
+            if not member:
+                return
+
+            program = await db.get(LoyaltyProgram, member.program_id)
+            if not program or not program.is_active:
+                return
+
+            total = Decimal(data.get("total", "0"))
+            tip = Decimal(data.get("tip_amount", "0"))
+            sale_amount = total - tip  # Points on sale amount, not tips
+
+            # Apply tier multiplier
+            multiplier = Decimal("1")
+            if member.tier_id:
+                tier = await db.get(LoyaltyTier, member.tier_id)
+                if tier:
+                    multiplier = tier.points_multiplier
+
+            points_earned = int(sale_amount * program.points_per_unit_currency * multiplier)
+            if points_earned <= 0:
+                return
+
+            member.points_balance += points_earned
+            member.lifetime_points += points_earned
+
+            txn = LoyaltyTransaction(
+                member_id=member.id,
+                pos_transaction_id=uuid_mod.UUID(data.get("transaction_id")),
+                points_change=points_earned,
+                reason=f"POS sale {data.get('transaction_number', '')}",
+                balance_after=member.points_balance,
+            )
+            db.add(txn)
+
+            # Check tier upgrade
+            tier_result = await db.execute(
+                select(LoyaltyTier).where(
+                    LoyaltyTier.program_id == member.program_id,
+                    LoyaltyTier.min_points <= member.lifetime_points,
+                ).order_by(LoyaltyTier.min_points.desc())
+            )
+            best_tier = tier_result.scalar_one_or_none()
+            if best_tier and best_tier.id != member.tier_id:
+                member.tier_id = best_tier.id
+                logger.info("Loyalty: Member %s upgraded to tier %s", member.id, best_tier.name)
+
+            await db.commit()
+            logger.info("Loyalty: Earned %d points for member %s", points_earned, member.id)
+
+    except Exception:
+        logger.exception("Loyalty: Failed to earn points for customer %s", customer_id)
+
+
+@event_bus.on("pos.sale.completed")
+async def on_pos_sale_commission(data: dict) -> None:
+    """Calculate commission for cashier based on active rules."""
+    logger.info("Integration: pos.sale.completed → Commission calc (cashier: %s)", data.get("cashier_id"))
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.pos import POSCommission, POSCommissionRule  # noqa: PLC0415
+        from sqlalchemy import select  # noqa: PLC0415
+        import uuid as uuid_mod  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            rules_result = await db.execute(
+                select(POSCommissionRule).where(POSCommissionRule.is_active == True)  # noqa: E712
+            )
+            rules = rules_result.scalars().all()
+            if not rules:
+                return
+
+            total = Decimal(data.get("total", "0"))
+            if total <= 0:
+                return
+
+            for rule in rules:
+                commission_amount = Decimal("0")
+                if rule.rule_type == "flat_per_sale":
+                    commission_amount = rule.value
+                elif rule.rule_type == "percentage":
+                    commission_amount = total * rule.value / 100
+                elif rule.rule_type == "tiered" and rule.tiers:
+                    for tier in sorted(rule.tiers, key=lambda t: t.get("min", 0), reverse=True):
+                        if total >= Decimal(str(tier.get("min", 0))):
+                            commission_amount = total * Decimal(str(tier.get("rate", 0)))
+                            break
+
+                if commission_amount > 0:
+                    db.add(POSCommission(
+                        cashier_id=uuid_mod.UUID(data["cashier_id"]),
+                        session_id=uuid_mod.UUID(data["session_id"]),
+                        transaction_id=uuid_mod.UUID(data["transaction_id"]),
+                        rule_id=rule.id,
+                        amount=commission_amount,
+                        status="calculated",
+                    ))
+
+            await db.commit()
+    except Exception:
+        logger.exception("Commission: Failed to calculate for transaction %s", data.get("transaction_id"))
+
+
+@event_bus.on("pos.sale.completed")
+async def on_pos_sale_kds_route(data: dict) -> None:
+    """Route POS transaction lines to active KDS stations by product category."""
+    transaction_id = data.get("transaction_id")
+    warehouse_id = data.get("warehouse_id")
+    if not transaction_id or not warehouse_id:
+        return
+
+    logger.info("Integration: pos.sale.completed → KDS routing (txn: %s)", transaction_id)
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.kds import KDSOrder, KDSOrderItem, KDSStation  # noqa: PLC0415
+        from app.models.pos import POSTransactionLine  # noqa: PLC0415
+        from sqlalchemy import select  # noqa: PLC0415
+        import uuid as uuid_mod  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            # Fetch active stations for this warehouse
+            stations_result = await db.execute(
+                select(KDSStation).where(
+                    KDSStation.warehouse_id == uuid_mod.UUID(warehouse_id),
+                    KDSStation.is_active == True,  # noqa: E712
+                )
+            )
+            stations = stations_result.scalars().all()
+            if not stations:
+                return  # No KDS stations configured — skip silently
+
+            # Fetch transaction lines
+            lines_result = await db.execute(
+                select(POSTransactionLine).where(
+                    POSTransactionLine.transaction_id == uuid_mod.UUID(transaction_id)
+                )
+            )
+            lines = lines_result.scalars().all()
+            if not lines:
+                return
+
+            # Route all items to first active station
+            # (production: extend with product-category → station mapping table)
+            station = stations[0]
+            kds_order = KDSOrder(
+                transaction_id=uuid_mod.UUID(transaction_id),
+                station_id=station.id,
+                status="new",
+                priority=0,
+            )
+            db.add(kds_order)
+            await db.flush()
+
+            for line in lines:
+                db.add(KDSOrderItem(
+                    kds_order_id=kds_order.id,
+                    line_id=line.id,
+                    item_name=line.item_name,
+                    quantity=line.quantity,
+                    modifiers=line.modifiers,
+                    status="pending",
+                ))
+
+            await db.commit()
+            logger.info("KDS: Routed %d items to station '%s'", len(lines), station.name)
+    except Exception:
+        logger.exception("KDS: Failed to route transaction %s to KDS", transaction_id)
+
+
+@event_bus.on("pos.session.opened")
+async def on_pos_session_clock_in(data: dict) -> None:
+    """Sync POS session open → HR attendance clock-in."""
+    cashier_id = data.get("cashier_id")
+    if not cashier_id:
+        return
+
+    logger.info("Integration: pos.session.opened → HR clock-in (cashier: %s)", cashier_id)
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.hr import Attendance, Employee  # noqa: PLC0415
+        from sqlalchemy import select  # noqa: PLC0415
+        import uuid as uuid_mod  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            emp_result = await db.execute(
+                select(Employee).where(Employee.user_id == uuid_mod.UUID(cashier_id))
+            )
+            employee = emp_result.scalar_one_or_none()
+            if not employee:
+                return
+
+            attendance = Attendance(
+                employee_id=employee.id,
+                clock_in=datetime.now(timezone.utc),
+                notes=f"POS session opened: {data.get('session_number', '')}",
+            )
+            db.add(attendance)
+            await db.commit()
+            logger.info("POS→HR: Clock-in recorded for employee %s", employee.id)
+    except Exception:
+        logger.exception("POS→HR: Failed to clock in for cashier %s", cashier_id)
+
+
+@event_bus.on("pos.session.closed")
+async def on_pos_session_clock_out(data: dict) -> None:
+    """Sync POS session close → HR attendance clock-out."""
+    cashier_id = data.get("cashier_id")
+    if not cashier_id:
+        return
+
+    logger.info("Integration: pos.session.closed → HR clock-out (cashier: %s)", cashier_id)
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.hr import Attendance, Employee  # noqa: PLC0415
+        from sqlalchemy import and_, select  # noqa: PLC0415
+        import uuid as uuid_mod  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            emp_result = await db.execute(
+                select(Employee).where(Employee.user_id == uuid_mod.UUID(cashier_id))
+            )
+            employee = emp_result.scalar_one_or_none()
+            if not employee:
+                return
+
+            # Find latest open attendance for this employee
+            att_result = await db.execute(
+                select(Attendance).where(and_(
+                    Attendance.employee_id == employee.id,
+                    Attendance.clock_out == None,  # noqa: E711
+                )).order_by(Attendance.clock_in.desc())
+            )
+            attendance = att_result.scalar_one_or_none()
+            if attendance:
+                attendance.clock_out = datetime.now(timezone.utc)
+                diff = attendance.clock_out - attendance.clock_in
+                attendance.hours_worked = round(diff.total_seconds() / 3600, 2)
+                await db.commit()
+                logger.info("POS→HR: Clock-out recorded for employee %s (%.2f hours)", employee.id, attendance.hours_worked)
+    except Exception:
+        logger.exception("POS→HR: Failed to clock out for cashier %s", cashier_id)
+
+
+@event_bus.on("stock.low")
+async def on_stock_low_auto_reorder(data: dict) -> None:
+    """Auto-create procurement requisition when stock hits reorder level."""
+    item_id = data.get("item_id")
+    if not item_id:
+        return
+
+    logger.info("Integration: stock.low → Supply Chain auto-reorder (item: %s)", item_id)
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.inventory import InventoryItem  # noqa: PLC0415
+        from app.models.supplychain import ProcurementRequisition, RequisitionLine  # noqa: PLC0415
+        from sqlalchemy import func, select  # noqa: PLC0415
+        import uuid as uuid_mod  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            item = await db.get(InventoryItem, uuid_mod.UUID(item_id))
+            if not item:
+                return
+
+            reorder_qty = max(item.reorder_level * 2, 10)  # Order at least 2x reorder level
+
+            # Generate requisition number
+            count_result = await db.execute(
+                select(func.count()).select_from(ProcurementRequisition)
+            )
+            seq = (count_result.scalar() or 0) + 1
+            req_number = f"PR-AUTO-{datetime.now(timezone.utc).year}-{seq:05d}"
+
+            requisition = ProcurementRequisition(
+                requisition_number=req_number,
+                requested_by="system",
+                status="submitted",
+                priority="high",
+                notes=f"Auto-generated from low stock alert. Item: {item.name} (SKU: {item.sku}). Current stock: {data.get('quantity_on_hand', 0)}, reorder level: {item.reorder_level}",
+            )
+            db.add(requisition)
+            await db.flush()
+
+            db.add(RequisitionLine(
+                requisition_id=requisition.id,
+                item_id=item.id,
+                quantity=reorder_qty,
+                unit_price=item.cost_price,
+                notes=f"Auto-reorder for {item.name}",
+            ))
+
+            await db.commit()
+            logger.info("Stock→SC: Created requisition %s for %s (qty: %d)", req_number, item.name, reorder_qty)
+
+            await event_bus.publish("supplychain.requisition.auto_created", {
+                "requisition_number": req_number,
+                "item_id": item_id,
+                "item_name": item.name,
+                "quantity": reorder_qty,
+            })
+    except Exception:
+        logger.exception("Stock→SC: Failed to auto-create requisition for item %s", item_id)
+
+
+@event_bus.on("ecommerce.order.created")
+async def on_ecom_order_bopis(data: dict) -> None:
+    """Create a BOPIS pickup order when an e-commerce order uses in-store pickup."""
+    fulfillment_type = data.get("fulfillment_type")
+    if fulfillment_type != "pickup":
+        return
+
+    logger.info("Integration: ecommerce.order.created → BOPIS pickup order (order: %s)", data.get("order_id"))
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.pos import POSPickupOrder  # noqa: PLC0415
+        import uuid as uuid_mod  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            pickup = POSPickupOrder(
+                ecom_order_id=uuid_mod.UUID(data["order_id"]),
+                warehouse_id=uuid_mod.UUID(data.get("warehouse_id", data.get("pickup_warehouse_id", ""))),
+                status="pending_prep",
+                notes=data.get("pickup_notes"),
+            )
+            db.add(pickup)
+            await db.commit()
+            logger.info("BOPIS: Created pickup order for e-commerce order %s", data.get("order_id"))
+    except Exception:
+        logger.exception("BOPIS: Failed to create pickup order for %s", data.get("order_id"))
+
+
 def register_integration_handlers() -> None:
     """No-op function — importing this module registers the @event_bus.on decorators.
 
@@ -1699,5 +2260,13 @@ def register_integration_handlers() -> None:
         "ecommerce.order.created (CRM sync), supplychain.po.completed, "
         "leave.approved (→ Mail), leave.rejected (→ Mail), "
         "calendar.event.created (→ Mail invites), "
-        "support.ticket.created (→ routing rules)"
+        "support.ticket.created (→ routing rules), "
+        "eco.submitted, eco.implemented, ncr.created, "
+        "supplychain.forecast.generated, supplychain.sop.approved, "
+        "supplychain.supply_plan.executed, supplychain.rfx.published, "
+        "supplychain.rfx.awarded, supplychain.alert.created, "
+        "supplychain.replenishment.triggered, "
+        "pos.sale.completed (CRM contact + loyalty + commission), "
+        "pos.session.opened / closed (HR attendance sync), "
+        "stock.low (auto-reorder), ecommerce.order.created (BOPIS)"
     )

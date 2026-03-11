@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Card, Button, Spinner, Badge, Table } from '../../components/ui'
+import { Card, Button, Spinner, Badge } from '../../components/ui'
 import { useMeetings } from '../../api/meetings'
-import { useMeetingRecording, type MeetingRecording } from '../../api/meetings_ext'
+import { useMeetingRecording } from '../../api/meetings_ext'
 
 export default function RecordingsPage() {
   const { data: meetingsData, isLoading } = useMeetings()

@@ -26,6 +26,19 @@ const UOM_OPTIONS = [
   { value: 'pair', label: 'Pair' },
 ]
 
+const ITEM_TYPE_OPTIONS = [
+  { value: 'stockable', label: 'Stockable' },
+  { value: 'consumable', label: 'Consumable' },
+  { value: 'service', label: 'Service' },
+  { value: 'kit', label: 'Kit / Bundle' },
+]
+
+const TRACKING_TYPE_OPTIONS = [
+  { value: 'none', label: 'None' },
+  { value: 'batch', label: 'Batch / Lot' },
+  { value: 'serial', label: 'Serial Number' },
+]
+
 interface ItemFormState {
   sku: string
   name: string
@@ -35,6 +48,12 @@ interface ItemFormState {
   cost_price: string
   selling_price: string
   reorder_level: string
+  item_type: string
+  tracking_type: string
+  barcode: string
+  lead_time_days: string
+  max_stock_level: string
+  min_order_qty: string
 }
 
 const defaultForm: ItemFormState = {
@@ -46,6 +65,12 @@ const defaultForm: ItemFormState = {
   cost_price: '0',
   selling_price: '0',
   reorder_level: '0',
+  item_type: 'stockable',
+  tracking_type: 'none',
+  barcode: '',
+  lead_time_days: '0',
+  max_stock_level: '',
+  min_order_qty: '1',
 }
 
 async function handleExport(endpoint: string, filename: string) {
@@ -125,6 +150,12 @@ export default function ItemsPage() {
       cost_price: String(item.cost_price),
       selling_price: String(item.selling_price),
       reorder_level: String(item.reorder_level),
+      item_type: item.item_type ?? 'stockable',
+      tracking_type: item.tracking_type ?? 'none',
+      barcode: item.barcode ?? '',
+      lead_time_days: String(item.lead_time_days ?? 0),
+      max_stock_level: item.max_stock_level != null ? String(item.max_stock_level) : '',
+      min_order_qty: String(item.min_order_qty ?? 1),
     })
     setModalOpen(true)
   }
@@ -153,6 +184,12 @@ export default function ItemsPage() {
       cost_price: Number(form.cost_price),
       selling_price: Number(form.selling_price),
       reorder_level: Number(form.reorder_level),
+      item_type: form.item_type,
+      tracking_type: form.tracking_type,
+      barcode: form.barcode.trim() || undefined,
+      lead_time_days: Number(form.lead_time_days),
+      max_stock_level: form.max_stock_level ? Number(form.max_stock_level) : undefined,
+      min_order_qty: Number(form.min_order_qty),
     }
 
     try {
@@ -183,6 +220,14 @@ export default function ItemsPage() {
     { key: 'sku', label: 'SKU' },
     { key: 'name', label: 'Name', render: (row: InventoryItem) => <span className="font-medium text-gray-900 dark:text-gray-100">{row.name}</span> },
     { key: 'category', label: 'Category', render: (row: InventoryItem) => row.category ?? <span className="text-gray-400">—</span> },
+    {
+      key: 'item_type',
+      label: 'Type',
+      render: (row: InventoryItem) => {
+        const colors: Record<string, 'primary' | 'info' | 'warning' | 'success'> = { stockable: 'primary', consumable: 'info', service: 'warning', kit: 'success' }
+        return <Badge variant={colors[row.item_type] ?? 'default'}>{row.item_type}</Badge>
+      },
+    },
     { key: 'unit_of_measure', label: 'UOM' },
     { key: 'cost_price', label: 'Cost', render: (row: InventoryItem) => formatCurrency(row.cost_price) },
     { key: 'selling_price', label: 'Sell Price', render: (row: InventoryItem) => formatCurrency(row.selling_price) },
@@ -358,6 +403,50 @@ export default function ItemsPage() {
               min="0"
               value={form.reorder_level}
               onChange={(e) => setForm({ ...form, reorder_level: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Select
+              label="Item Type"
+              options={ITEM_TYPE_OPTIONS}
+              value={form.item_type}
+              onChange={(e) => setForm({ ...form, item_type: e.target.value })}
+            />
+            <Select
+              label="Tracking Type"
+              options={TRACKING_TYPE_OPTIONS}
+              value={form.tracking_type}
+              onChange={(e) => setForm({ ...form, tracking_type: e.target.value })}
+            />
+            <Input
+              label="Barcode"
+              value={form.barcode}
+              onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+              placeholder="Scan or enter barcode"
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Input
+              label="Lead Time (days)"
+              type="number"
+              min="0"
+              value={form.lead_time_days}
+              onChange={(e) => setForm({ ...form, lead_time_days: e.target.value })}
+            />
+            <Input
+              label="Max Stock Level"
+              type="number"
+              min="0"
+              value={form.max_stock_level}
+              onChange={(e) => setForm({ ...form, max_stock_level: e.target.value })}
+              placeholder="Optional"
+            />
+            <Input
+              label="Min Order Qty"
+              type="number"
+              min="1"
+              value={form.min_order_qty}
+              onChange={(e) => setForm({ ...form, min_order_qty: e.target.value })}
             />
           </div>
           <div className="space-y-1">

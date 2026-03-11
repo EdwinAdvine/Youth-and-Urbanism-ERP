@@ -12,7 +12,7 @@ interface PieChartProps {
 const COLORS = ['#51459d', '#6fd943', '#3ec9d6', '#ffa21d', '#ff3a6e', '#4a90d9', '#9b59b6', '#e67e22']
 
 const RADIAN = Math.PI / 180
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 function renderLabel(props: any) {
   const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props as {
     cx: number; cy: number; midAngle: number; innerRadius: number; outerRadius: number; percent: number

@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Button, Badge, Card, Spinner, Table, toast } from '../../components/ui'
+import { Button, Badge, Card, Table, toast } from '../../components/ui'
 import {
   useKnowledgeBases,
   useCreateKnowledgeBase,

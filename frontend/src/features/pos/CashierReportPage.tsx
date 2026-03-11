@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, Table, Spinner } from '../../components/ui'
+import { Card, Table } from '../../components/ui'
 import { useCashierReport, type CashierReportData } from '../../api/pos_ext'
 
 function formatCurrency(amount: number | null) {

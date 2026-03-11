@@ -6,7 +6,7 @@ import uuid
 from typing import Any
 
 import httpx
-from sqlalchemy import delete, select, text
+from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings

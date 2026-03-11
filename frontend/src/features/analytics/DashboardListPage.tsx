@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, Modal, Input, Badge, Spinner, toast } from '../../components/ui'
 import { useSwipeGesture } from '../../hooks/useSwipeGesture'
-import { useDashboards, useCreateDashboard, useDeleteDashboard, type Dashboard, type CreateDashboardPayload } from '../../api/analytics_ext'
+import { useDashboards, useCreateDashboard, useDeleteDashboard, type CreateDashboardPayload } from '../../api/analytics_ext'
 
 export default function DashboardListPage() {
   const navigate = useNavigate()

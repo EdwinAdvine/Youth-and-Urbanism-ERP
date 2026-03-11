@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 from typing import Any
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter
 from pydantic import BaseModel as PydanticBase
-from sqlalchemy import select, delete
+from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DBSession, SuperAdminUser
 from app.models.settings import SystemSettings, UserPreferences

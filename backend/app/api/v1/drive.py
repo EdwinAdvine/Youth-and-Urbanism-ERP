@@ -7,20 +7,17 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from app.core.database import get_db
 from app.core.deps import CurrentUser, DBSession
 from app.core.events import event_bus
 from app.core.sanitize import like_pattern
 from app.models.drive import DriveFile, DriveFolder
 from app.models.file_share import FileShare, ShareAuditLog, TeamFolder, TeamFolderMember
-from app.models.user import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

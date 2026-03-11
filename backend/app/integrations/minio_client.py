@@ -22,7 +22,6 @@ from typing import Any
 try:
     import boto3
     from botocore.client import Config
-    from botocore.exceptions import BotoCoreError, ClientError
 
     _BOTO3_AVAILABLE = True
 except ImportError:  # pragma: no cover

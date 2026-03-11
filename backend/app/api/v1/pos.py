@@ -6,7 +6,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import selectinload
@@ -14,8 +14,11 @@ from sqlalchemy.orm import selectinload
 from app.core.deps import CurrentUser, DBSession
 from app.core.events import event_bus
 from app.models.finance import Invoice, Payment
-from app.models.inventory import InventoryItem, StockLevel, StockMovement, Warehouse
-from app.models.pos import POSPayment, POSSession, POSTransaction, POSTransactionLine
+from app.models.inventory import InventoryItem, ItemVariant, StockLevel, StockMovement, Warehouse
+from app.models.pos import (
+    POSModifier, POSPayment, POSProductModifierLink, POSSession, POSTransaction,
+    POSTransactionLine,
+)
 
 router = APIRouter()
 
@@ -26,6 +29,7 @@ router = APIRouter()
 
 class SessionOpenIn(BaseModel):
     warehouse_id: uuid.UUID
+    terminal_id: uuid.UUID | None = None
     opening_balance: Decimal = Decimal("0")
     notes: str | None = None
 
@@ -40,6 +44,7 @@ class SessionOut(BaseModel):
     session_number: str
     cashier_id: uuid.UUID
     warehouse_id: uuid.UUID
+    terminal_id: uuid.UUID | None = None
     opened_at: Any
     closed_at: Any | None
     opening_balance: Decimal
@@ -58,13 +63,17 @@ class SessionOut(BaseModel):
 
 class TransactionLineIn(BaseModel):
     item_id: uuid.UUID
+    variant_id: uuid.UUID | None = None
+    batch_id: uuid.UUID | None = None
+    bundle_id: uuid.UUID | None = None
     quantity: int
     unit_price: Decimal
     discount_amount: Decimal = Decimal("0")
+    modifier_ids: list[uuid.UUID] = []
 
 
 class TransactionPaymentIn(BaseModel):
-    payment_method: str  # cash, card, mobile_money, split
+    payment_method: str  # cash, card, mobile_money, gift_card, store_credit, split
     amount: Decimal
     reference: str | None = None
 
@@ -72,9 +81,11 @@ class TransactionPaymentIn(BaseModel):
 class TransactionCreateIn(BaseModel):
     customer_name: str | None = None
     customer_email: str | None = None
+    customer_id: uuid.UUID | None = None
     discount_amount: Decimal = Decimal("0")
     discount_type: str | None = None  # percentage, fixed
     tax_amount: Decimal = Decimal("0")
+    tip_amount: Decimal = Decimal("0")
     lines: list[TransactionLineIn]
     payments: list[TransactionPaymentIn]
 
@@ -83,12 +94,16 @@ class TransactionLineOut(BaseModel):
     id: uuid.UUID
     transaction_id: uuid.UUID
     item_id: uuid.UUID
+    variant_id: uuid.UUID | None = None
+    batch_id: uuid.UUID | None = None
+    bundle_id: uuid.UUID | None = None
     item_name: str
     item_sku: str
     quantity: int
     unit_price: Decimal
     discount_amount: Decimal
     line_total: Decimal
+    modifiers: dict | None = None
 
     model_config = {"from_attributes": True}
 
@@ -110,12 +125,15 @@ class TransactionOut(BaseModel):
     session_id: uuid.UUID
     customer_name: str | None
     customer_email: str | None
+    customer_id: uuid.UUID | None = None
     subtotal: Decimal
     discount_amount: Decimal
     discount_type: str | None
     tax_amount: Decimal
+    tip_amount: Decimal = Decimal("0")
     total: Decimal
     status: str
+    held_at: Any | None = None
     created_by: uuid.UUID
     created_at: Any
     updated_at: Any
@@ -191,12 +209,21 @@ async def open_session(
         session_number=session_number,
         cashier_id=current_user.id,
         warehouse_id=payload.warehouse_id,
+        terminal_id=payload.terminal_id,
         opening_balance=payload.opening_balance,
         notes=payload.notes,
     )
     db.add(session)
     await db.commit()
     await db.refresh(session)
+
+    await event_bus.publish("pos.session.opened", {
+        "session_id": str(session.id),
+        "session_number": session.session_number,
+        "cashier_id": str(current_user.id),
+        "warehouse_id": str(payload.warehouse_id),
+    })
+
     return SessionOut.model_validate(session).model_dump()
 
 
@@ -250,6 +277,15 @@ async def close_session(
 
     await db.commit()
     await db.refresh(session)
+
+    await event_bus.publish("pos.session.closed", {
+        "session_id": str(session.id),
+        "session_number": session.session_number,
+        "cashier_id": str(session.cashier_id),
+        "warehouse_id": str(session.warehouse_id),
+        "total_sales": str(total_sales),
+    })
+
     return SessionOut.model_validate(session).model_dump()
 
 
@@ -448,21 +484,39 @@ async def create_transaction(
                 detail=f"Insufficient stock for {item.name} (SKU: {item.sku}). Available: {available}, requested: {line_in.quantity}",
             )
 
-        line_total = (line_in.unit_price * line_in.quantity) - line_in.discount_amount
+        # Resolve modifiers for price adjustment
+        modifier_data: dict | None = None
+        modifier_price_adj = Decimal("0")
+        if line_in.modifier_ids:
+            modifier_list = []
+            for mid in line_in.modifier_ids:
+                mod = await db.get(POSModifier, mid)
+                if mod and mod.is_active:
+                    modifier_price_adj += mod.price_adjustment
+                    modifier_list.append({"id": str(mod.id), "name": mod.name, "price": str(mod.price_adjustment)})
+            if modifier_list:
+                modifier_data = {"applied": modifier_list}
+
+        effective_unit_price = line_in.unit_price + modifier_price_adj
+        line_total = (effective_unit_price * line_in.quantity) - line_in.discount_amount
         subtotal += line_total
 
         line_models.append(POSTransactionLine(
             item_id=item.id,
+            variant_id=line_in.variant_id,
+            batch_id=line_in.batch_id,
+            bundle_id=line_in.bundle_id,
             item_name=item.name,
             item_sku=item.sku,
             quantity=line_in.quantity,
-            unit_price=line_in.unit_price,
+            unit_price=effective_unit_price,
             discount_amount=line_in.discount_amount,
             line_total=line_total,
+            modifiers=modifier_data,
         ))
 
-    # Calculate totals
-    total = subtotal - payload.discount_amount + payload.tax_amount
+    # Calculate totals (tip is added on top)
+    total = subtotal - payload.discount_amount + payload.tax_amount + payload.tip_amount
 
     # Validate payment covers total
     total_tendered = sum(p.amount for p in payload.payments)
@@ -482,10 +536,12 @@ async def create_transaction(
         session_id=session.id,
         customer_name=payload.customer_name,
         customer_email=payload.customer_email,
+        customer_id=payload.customer_id,
         subtotal=subtotal,
         discount_amount=payload.discount_amount,
         discount_type=payload.discount_type,
         tax_amount=payload.tax_amount,
+        tip_amount=payload.tip_amount,
         total=total,
         created_by=current_user.id,
     )
@@ -633,8 +689,12 @@ async def create_transaction(
         "transaction_id": str(txn.id),
         "transaction_number": txn_number,
         "total": str(total),
+        "tip_amount": str(payload.tip_amount),
         "session_id": str(session.id),
+        "warehouse_id": str(session.warehouse_id),
         "cashier_id": str(current_user.id),
+        "customer_email": payload.customer_email,
+        "customer_id": str(payload.customer_id) if payload.customer_id else None,
     })
 
     for alert in low_stock_alerts:
@@ -1039,4 +1099,436 @@ async def pos_dashboard(
         "today_sales_count": today_count,
         "today_avg_sale": str(today_avg),
         "top_products": top_products,
+    }
+
+
+# ── Hold / Suspend / Layaway ────────────────────────────────────────────────
+
+class HoldTransactionIn(BaseModel):
+    lines: list[TransactionLineIn]
+    customer_name: str | None = None
+    customer_email: str | None = None
+    customer_id: uuid.UUID | None = None
+    discount_amount: Decimal = Decimal("0")
+    discount_type: str | None = None
+    tax_amount: Decimal = Decimal("0")
+    notes: str | None = None
+
+
+@router.post("/transactions/hold", status_code=status.HTTP_201_CREATED, summary="Hold / suspend a transaction")
+async def hold_transaction(
+    payload: HoldTransactionIn,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Create a held transaction and reserve stock for each line item."""
+    if not payload.lines:
+        raise HTTPException(status_code=422, detail="At least one line item is required")
+
+    session = await _get_active_session(db, current_user.id)
+    if not session:
+        raise HTTPException(status_code=409, detail="No active POS session")
+
+    line_models: list[POSTransactionLine] = []
+    subtotal = Decimal("0")
+
+    for line_in in payload.lines:
+        item = await db.get(InventoryItem, line_in.item_id)
+        if not item or not item.is_active:
+            raise HTTPException(status_code=404, detail=f"Item {line_in.item_id} not found")
+
+        sl_result = await db.execute(
+            select(StockLevel).where(and_(
+                StockLevel.item_id == line_in.item_id,
+                StockLevel.warehouse_id == session.warehouse_id,
+            ))
+        )
+        stock_level = sl_result.scalar_one_or_none()
+        available = (stock_level.quantity_on_hand - stock_level.quantity_reserved) if stock_level else 0
+        if available < line_in.quantity:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Insufficient stock for {item.name}. Available: {available}, requested: {line_in.quantity}",
+            )
+
+        # Reserve stock
+        stock_level.quantity_reserved += line_in.quantity
+
+        line_total = (line_in.unit_price * line_in.quantity) - line_in.discount_amount
+        subtotal += line_total
+        line_models.append(POSTransactionLine(
+            item_id=item.id, variant_id=line_in.variant_id, batch_id=line_in.batch_id,
+            item_name=item.name, item_sku=item.sku,
+            quantity=line_in.quantity, unit_price=line_in.unit_price,
+            discount_amount=line_in.discount_amount, line_total=line_total,
+        ))
+
+    total = subtotal - payload.discount_amount + payload.tax_amount
+    txn_number = await _generate_sequence(db, POSTransaction, "TXN", "transaction_number")
+
+    txn = POSTransaction(
+        transaction_number=txn_number, session_id=session.id,
+        customer_name=payload.customer_name, customer_email=payload.customer_email,
+        customer_id=payload.customer_id,
+        subtotal=subtotal, discount_amount=payload.discount_amount,
+        discount_type=payload.discount_type, tax_amount=payload.tax_amount,
+        total=total, status="held", held_at=datetime.now(timezone.utc),
+        receipt_data={"notes": payload.notes} if payload.notes else None,
+        created_by=current_user.id,
+    )
+    db.add(txn)
+    await db.flush()
+
+    for lm in line_models:
+        lm.transaction_id = txn.id
+        db.add(lm)
+
+    await db.commit()
+
+    result = await db.execute(
+        select(POSTransaction).options(selectinload(POSTransaction.lines))
+        .where(POSTransaction.id == txn.id)
+    )
+    txn = result.scalar_one()
+    return TransactionDetailOut.model_validate(txn).model_dump()
+
+
+@router.get("/transactions/held", summary="List held / suspended transactions")
+async def list_held_transactions(
+    current_user: CurrentUser,
+    db: DBSession,
+    session_id: uuid.UUID | None = Query(None),
+) -> list[dict[str, Any]]:
+    query = select(POSTransaction).options(
+        selectinload(POSTransaction.lines)
+    ).where(POSTransaction.status == "held")
+
+    if session_id:
+        query = query.where(POSTransaction.session_id == session_id)
+
+    query = query.order_by(POSTransaction.held_at.desc())
+    result = await db.execute(query)
+    txns = result.scalars().all()
+    return [TransactionDetailOut.model_validate(t).model_dump() for t in txns]
+
+
+@router.post("/transactions/{txn_id}/resume", summary="Resume a held transaction")
+async def resume_held_transaction(
+    txn_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    result = await db.execute(
+        select(POSTransaction).options(selectinload(POSTransaction.lines))
+        .where(POSTransaction.id == txn_id)
+    )
+    txn = result.scalar_one_or_none()
+    if not txn:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    if txn.status != "held":
+        raise HTTPException(status_code=409, detail="Transaction is not held")
+
+    session = await db.get(POSSession, txn.session_id)
+
+    # Release reserved stock
+    for line in txn.lines:
+        sl_result = await db.execute(
+            select(StockLevel).where(and_(
+                StockLevel.item_id == line.item_id,
+                StockLevel.warehouse_id == session.warehouse_id,
+            ))
+        )
+        stock_level = sl_result.scalar_one_or_none()
+        if stock_level:
+            stock_level.quantity_reserved = max(0, stock_level.quantity_reserved - line.quantity)
+
+    # Return cart data — the frontend will populate the cart from lines and allow checkout
+    return {
+        "message": "Transaction resumed. Complete checkout with the returned cart data.",
+        "transaction": TransactionDetailOut.model_validate(txn).model_dump(),
+    }
+
+
+@router.post("/transactions/{txn_id}/cancel-hold", summary="Cancel a held transaction")
+async def cancel_held_transaction(
+    txn_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    result = await db.execute(
+        select(POSTransaction).options(selectinload(POSTransaction.lines))
+        .where(POSTransaction.id == txn_id)
+    )
+    txn = result.scalar_one_or_none()
+    if not txn:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    if txn.status != "held":
+        raise HTTPException(status_code=409, detail="Transaction is not held")
+
+    session = await db.get(POSSession, txn.session_id)
+
+    # Release reserved stock
+    for line in txn.lines:
+        sl_result = await db.execute(
+            select(StockLevel).where(and_(
+                StockLevel.item_id == line.item_id,
+                StockLevel.warehouse_id == session.warehouse_id,
+            ))
+        )
+        stock_level = sl_result.scalar_one_or_none()
+        if stock_level:
+            stock_level.quantity_reserved = max(0, stock_level.quantity_reserved - line.quantity)
+
+    txn.status = "voided"
+    await db.commit()
+    return {"message": "Held transaction cancelled", "transaction_id": str(txn.id)}
+
+
+# ── Quick-Add Product ────────────────────────────────────────────────────────
+
+class QuickAddProductIn(BaseModel):
+    name: str
+    selling_price: Decimal
+    cost_price: Decimal = Decimal("0")
+    category: str | None = None
+    initial_stock: int = 0
+
+
+@router.post("/products/quick-add", status_code=status.HTTP_201_CREATED, summary="Quick-add a product from the register")
+async def quick_add_product(
+    payload: QuickAddProductIn,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    session = await _get_active_session(db, current_user.id)
+    if not session:
+        raise HTTPException(status_code=409, detail="No active POS session")
+
+    # Auto-generate SKU
+    sku_count_result = await db.execute(
+        select(func.count()).select_from(InventoryItem).where(
+            InventoryItem.sku.like("QA-%")
+        )
+    )
+    sku_count = (sku_count_result.scalar() or 0) + 1
+    sku = f"QA-{sku_count:05d}"
+
+    item = InventoryItem(
+        sku=sku,
+        name=payload.name,
+        category=payload.category or "General",
+        unit_of_measure="unit",
+        cost_price=payload.cost_price,
+        selling_price=payload.selling_price,
+        reorder_level=0,
+        is_active=True,
+    )
+    db.add(item)
+    await db.flush()
+
+    if payload.initial_stock > 0:
+        stock_level = StockLevel(
+            item_id=item.id,
+            warehouse_id=session.warehouse_id,
+            quantity_on_hand=payload.initial_stock,
+            quantity_reserved=0,
+        )
+        db.add(stock_level)
+
+        movement = StockMovement(
+            item_id=item.id,
+            warehouse_id=session.warehouse_id,
+            movement_type="receipt",
+            quantity=payload.initial_stock,
+            reference_type="pos_quick_add",
+            reference_id=item.id,
+            notes=f"Quick-add from POS register",
+            created_by=current_user.id,
+        )
+        db.add(movement)
+
+    await db.commit()
+    await db.refresh(item)
+
+    return {
+        "id": str(item.id),
+        "sku": item.sku,
+        "name": item.name,
+        "category": item.category,
+        "selling_price": str(item.selling_price),
+        "cost_price": str(item.cost_price),
+        "stock_on_hand": payload.initial_stock,
+    }
+
+
+# ── Variant Selection ────────────────────────────────────────────────────────
+
+@router.get("/products/{item_id}/variants", summary="Get variants for a product")
+async def get_product_variants(
+    item_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> list[dict[str, Any]]:
+    session = await _get_active_session(db, current_user.id)
+    warehouse_id = session.warehouse_id if session else None
+
+    result = await db.execute(
+        select(ItemVariant).where(ItemVariant.item_id == item_id)
+    )
+    variants = result.scalars().all()
+
+    out = []
+    for v in variants:
+        stock = 0
+        if warehouse_id:
+            sl_result = await db.execute(
+                select(StockLevel.quantity_on_hand).where(and_(
+                    StockLevel.item_id == item_id,
+                    StockLevel.warehouse_id == warehouse_id,
+                ))
+            )
+            stock = sl_result.scalar() or 0
+
+        out.append({
+            "id": str(v.id),
+            "item_id": str(v.item_id),
+            "variant_name": v.variant_name,
+            "variant_value": v.variant_value,
+            "sku_suffix": v.sku_suffix,
+            "price_adjustment": str(v.price_adjustment),
+            "is_active": v.is_active,
+            "stock_on_hand": stock,
+        })
+    return out
+
+
+# ── Product Modifiers ────────────────────────────────────────────────────────
+
+@router.get("/products/{item_id}/modifiers", summary="Get modifier groups for a product")
+async def get_product_modifiers(
+    item_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> list[dict[str, Any]]:
+    result = await db.execute(
+        select(POSProductModifierLink).where(POSProductModifierLink.item_id == item_id)
+    )
+    links = result.scalars().all()
+
+    groups_out = []
+    for link in links:
+        from app.models.pos import POSModifierGroup  # noqa: PLC0415
+        group = await db.get(POSModifierGroup, link.modifier_group_id)
+        if not group:
+            continue
+
+        mod_result = await db.execute(
+            select(POSModifier).where(and_(
+                POSModifier.group_id == group.id,
+                POSModifier.is_active == True,  # noqa: E712
+            ))
+        )
+        modifiers = mod_result.scalars().all()
+
+        groups_out.append({
+            "id": str(group.id),
+            "name": group.name,
+            "selection_type": group.selection_type,
+            "is_required": group.is_required,
+            "min_selections": group.min_selections,
+            "max_selections": group.max_selections,
+            "modifiers": [
+                {
+                    "id": str(m.id),
+                    "name": m.name,
+                    "price_adjustment": str(m.price_adjustment),
+                }
+                for m in modifiers
+            ],
+        })
+    return groups_out
+
+
+# ── Tips Report ──────────────────────────────────────────────────────────────
+
+@router.get("/reports/tips", summary="Tips report by cashier / session / date")
+async def tips_report(
+    current_user: CurrentUser,
+    db: DBSession,
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    session_id: uuid.UUID | None = Query(None),
+) -> dict[str, Any]:
+    query = select(
+        POSTransaction.session_id,
+        POSSession.cashier_id,
+        func.sum(POSTransaction.tip_amount).label("total_tips"),
+        func.count().label("txn_count"),
+    ).join(
+        POSSession, POSTransaction.session_id == POSSession.id
+    ).where(
+        and_(
+            POSTransaction.status == "completed",
+            POSTransaction.tip_amount > 0,
+        )
+    )
+
+    if date_from:
+        query = query.where(func.date(POSTransaction.created_at) >= date_from)
+    if date_to:
+        query = query.where(func.date(POSTransaction.created_at) <= date_to)
+    if session_id:
+        query = query.where(POSTransaction.session_id == session_id)
+
+    query = query.group_by(POSTransaction.session_id, POSSession.cashier_id)
+    result = await db.execute(query)
+    rows = result.all()
+
+    return {
+        "tips": [
+            {
+                "session_id": str(r.session_id),
+                "cashier_id": str(r.cashier_id),
+                "total_tips": str(r.total_tips),
+                "transaction_count": r.txn_count,
+            }
+            for r in rows
+        ],
+    }
+
+
+# ── RFID Product Lookup ──────────────────────────────────────────────────────
+
+
+@router.get("/products/rfid/{tag}")
+async def lookup_product_by_rfid(
+    tag: str,
+    db: DBSession,
+    _user: CurrentUser,
+):
+    """Look up a product by its RFID tag."""
+    result = await db.execute(
+        select(InventoryItem).where(InventoryItem.rfid_tag == tag, InventoryItem.is_active.is_(True))
+    )
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail="No product found for this RFID tag")
+
+    # Get stock level
+    stock_result = await db.execute(
+        select(func.coalesce(func.sum(StockLevel.quantity_on_hand), 0)).where(
+            StockLevel.item_id == item.id
+        )
+    )
+    stock = stock_result.scalar() or 0
+
+    return {
+        "id": str(item.id),
+        "sku": item.sku,
+        "name": item.name,
+        "selling_price": str(item.selling_price),
+        "stock_on_hand": int(stock),
+        "category": item.category,
+        "barcode": item.barcode,
+        "rfid_tag": item.rfid_tag,
     }

@@ -5,14 +5,13 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel as PydanticBase, Field
-from sqlalchemy import select, update
+from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DBSession
 from app.core.rbac import get_user_app_scopes
 from app.core.security import verify_password, hash_password
-from app.models.user import User
 from app.models.activity import ActivityFeedEntry
 from app.models.settings import UserPreferences
 

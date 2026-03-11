@@ -4,7 +4,7 @@ import json
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,7 +15,6 @@ from app.core.security import decode_token
 from app.models.ai import AIChatHistory
 from app.models.user import User
 from app.schemas.ai import (
-    AIAuditLogResponse,
     ChatHistoryItem,
     ChatMessage,
     ChatResponse,

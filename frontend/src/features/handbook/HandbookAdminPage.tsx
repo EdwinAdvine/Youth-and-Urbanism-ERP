@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button, Badge, Spinner, cn } from '@/components/ui'
 import { useHandbookArticles, useDeleteArticle, usePublishArticle, useArchiveArticle } from '@/api/handbook'
-import type { HandbookArticle } from '@/api/handbook'
 
 const STATUS_BADGES: Record<string, { variant: 'success' | 'warning' | 'default'; label: string }> = {
   published: { variant: 'success', label: 'Published' },

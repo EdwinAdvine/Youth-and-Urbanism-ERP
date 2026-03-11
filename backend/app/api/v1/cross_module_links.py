@@ -363,7 +363,7 @@ async def create_procurement_from_order(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
-    from app.models.ecommerce import EcomOrder, OrderLine, EcomProduct  # noqa: PLC0415
+    from app.models.ecommerce import EcomOrder, EcomProduct  # noqa: PLC0415
     from app.models.inventory import InventoryItem, StockLevel  # noqa: PLC0415
     from app.models.supplychain import ProcurementRequisition, RequisitionLine  # noqa: PLC0415
 
@@ -478,7 +478,7 @@ async def get_work_order_cost_breakdown(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
-    from app.models.manufacturing import WorkOrder, BOMItem, MaterialConsumption, RoutingStep  # noqa: PLC0415
+    from app.models.manufacturing import WorkOrder, RoutingStep  # noqa: PLC0415
     from app.models.inventory import InventoryItem  # noqa: PLC0415
 
     result = await db.execute(

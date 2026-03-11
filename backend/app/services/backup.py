@@ -172,7 +172,6 @@ class BackupService:
         - Keep one per month for the last `keep_monthly` months
         - Delete everything else
         """
-        from datetime import timedelta
 
         backups = self.list_backups()
         if not backups:

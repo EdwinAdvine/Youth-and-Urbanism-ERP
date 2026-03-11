@@ -64,6 +64,16 @@ export default function TaskCard({ task, onClick }: TaskCardProps) {
         </div>
       )}
 
+      {/* Enhanced indicators */}
+      {(task.parent_id || (task.estimated_hours != null && task.estimated_hours > 0)) && (
+        <div className="flex items-center gap-2 mt-2 text-[10px] text-gray-400">
+          {task.parent_id && <span className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">Subtask</span>}
+          {task.estimated_hours != null && task.estimated_hours > 0 && (
+            <span className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">{task.estimated_hours}h est</span>
+          )}
+        </div>
+      )}
+
       {/* Bottom row: priority, assignee, due date */}
       <div className="flex items-center justify-between mt-3 gap-2">
         <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold', priority.color)}>

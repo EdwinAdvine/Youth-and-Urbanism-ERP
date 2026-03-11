@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel
-from sqlalchemy import and_, or_, select, func
+from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DBSession
 from app.core.events import event_bus

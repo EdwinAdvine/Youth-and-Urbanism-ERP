@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Card, Table, Badge, Select, Spinner, toast } from '../../components/ui'
+import { Button, Card, Table, Badge, Select, toast } from '../../components/ui'
 import {
   useProductReviews,
   useApproveReview,

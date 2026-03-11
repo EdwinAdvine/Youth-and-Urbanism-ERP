@@ -1,4 +1,4 @@
-import { Card, Button, Spinner, Badge } from '../../components/ui'
+import { Button, Spinner, Badge } from '../../components/ui'
 import { useDriveFile, useDownloadFile, formatFileSize, getFileType } from '../../api/drive'
 
 interface Props {

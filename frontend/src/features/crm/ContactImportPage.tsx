@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Card, Button, Spinner, Select, Badge } from '../../components/ui'
+import { Card, Button, Select, Badge } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useImportContacts } from '../../api/crm'
 

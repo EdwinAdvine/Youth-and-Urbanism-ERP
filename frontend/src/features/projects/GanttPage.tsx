@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Card, Spinner, Select, Badge } from '../../components/ui'
+import { Card, Spinner, Select } from '../../components/ui'
 import { useProjects } from '../../api/projects'
 import { useProjectTimeline, type GanttTask } from '../../api/projects_ext'
 

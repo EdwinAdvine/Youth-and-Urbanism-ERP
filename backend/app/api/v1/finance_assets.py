@@ -2,15 +2,15 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import and_, func, select
+from sqlalchemy import func, select
 
-from app.core.deps import CurrentUser, DBSession, require_app_admin
+from app.core.deps import CurrentUser, DBSession
 from app.core.events import event_bus
 from app.core.export import rows_to_csv
 from app.models.finance import FixedAsset

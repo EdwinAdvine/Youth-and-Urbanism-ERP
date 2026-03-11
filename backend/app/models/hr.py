@@ -2,13 +2,12 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, time
+from datetime import date, time
 from decimal import Decimal
 
 from sqlalchemy import (
     Boolean,
     Date,
-    DateTime,
     ForeignKey,
     Integer,
     Numeric,
@@ -67,6 +66,11 @@ class Employee(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     department = relationship("Department", back_populates="employees")
     leave_requests = relationship("LeaveRequest", back_populates="employee")
     attendance_records = relationship("Attendance", back_populates="employee")
+
+    # Phase 1 relationships
+    skills = relationship("EmployeeSkill", lazy="selectin", foreign_keys="EmployeeSkill.employee_id")
+    activity_log = relationship("EmployeeActivityLog", lazy="noload", foreign_keys="EmployeeActivityLog.employee_id")
+    goals = relationship("Goal", lazy="noload", primaryjoin="and_(Employee.id == foreign(Goal.owner_id), Goal.owner_type == 'employee')", viewonly=True)
 
 
 class LeaveRequest(UUIDPrimaryKeyMixin, TimestampMixin, Base):

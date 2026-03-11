@@ -96,6 +96,31 @@ TOOL_APPROVAL_TIERS: dict[str, str] = {
     "search_handbook": "auto_approve",
     "get_handbook_article": "auto_approve",
     "list_handbook_guides": "auto_approve",
+    # ── Supply Chain Planning & Ops ──────────────────────────────────────────
+    "get_demand_forecast": "auto_approve",
+    "get_sc_kpis": "auto_approve",
+    "get_stock_health": "auto_approve",
+    "get_supplier_risk_profile": "auto_approve",
+    "get_sc_alerts": "auto_approve",
+    "get_rfx_status": "auto_approve",
+    "generate_demand_forecast": "warn",
+    "trigger_replenishment_check": "warn",
+    "calculate_safety_stock": "warn",
+    "execute_supply_plan": "require_approval",
+    "auto_create_po_from_replenishment": "require_approval",
+    "award_rfx": "require_approval",
+    # ── POS AI Cashier Assistant ────────────────────────────────────────────
+    "pos_suggest_upsell": "auto_approve",
+    "pos_predict_demand": "auto_approve",
+    "pos_detect_pricing_anomaly": "auto_approve",
+    "pos_slow_mover_report": "auto_approve",
+    "pos_cashier_performance": "auto_approve",
+    "pos_auto_discount": "warn",
+    "pos_dynamic_pricing": "require_approval",
+    # ── CRM Sequences & Contacts ─────────────────────────────────────────────
+    "enroll_in_sequence": "warn",
+    "suggest_duplicates": "auto_approve",
+    "summarize_contact_360": "auto_approve",
 }
 
 
@@ -1069,6 +1094,204 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    # ── Supply Chain Planning & Ops Tools ────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "get_demand_forecast",
+            "description": "Retrieve demand forecast for an inventory item",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "item_id": {"type": "string", "description": "Inventory item ID"},
+                    "scenario_id": {"type": "string", "description": "Forecast scenario ID (optional)"},
+                },
+                "required": ["item_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_sc_kpis",
+            "description": "Retrieve current supply chain KPIs (OTIF, lead times, inventory turns)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "kpi_name": {"type": "string", "description": "Filter by KPI name (otif_rate, lead_time_avg, inventory_turns, fill_rate)"},
+                    "period": {"type": "string", "description": "Period (e.g. 2026-03)"},
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_stock_health",
+            "description": "Check stock health score for an inventory item",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "item_id": {"type": "string", "description": "Inventory item ID"},
+                },
+                "required": ["item_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_supplier_risk_profile",
+            "description": "Get risk summary for a supplier",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "supplier_id": {"type": "string", "description": "Supplier ID"},
+                },
+                "required": ["supplier_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_sc_alerts",
+            "description": "List current open supply chain control tower alerts",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "severity": {"type": "string", "enum": ["low", "medium", "high", "critical"], "description": "Filter by severity"},
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_rfx_status",
+            "description": "Check the status and responses for an RFx",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "rfx_id": {"type": "string", "description": "RFx ID"},
+                },
+                "required": ["rfx_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_demand_forecast",
+            "description": "Run demand forecast generation for inventory items",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "item_ids": {"type": "array", "items": {"type": "string"}, "description": "List of inventory item IDs"},
+                    "horizon_months": {"type": "integer", "description": "Forecast horizon in months (default 3)"},
+                    "method": {"type": "string", "enum": ["moving_avg", "linear_trend", "ml_model"], "description": "Forecasting method"},
+                },
+                "required": ["item_ids"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "trigger_replenishment_check",
+            "description": "Check all active replenishment rules and flag items for reorder",
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "calculate_safety_stock",
+            "description": "Recalculate safety stock levels for items",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "item_ids": {"type": "array", "items": {"type": "string"}, "description": "List of inventory item IDs (empty = all)"},
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "execute_supply_plan",
+            "description": "Execute a supply plan — convert plan lines to purchase orders",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "plan_id": {"type": "string", "description": "Supply plan ID"},
+                },
+                "required": ["plan_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "award_rfx",
+            "description": "Award an RFx to a supplier response",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "rfx_id": {"type": "string", "description": "RFx ID"},
+                    "response_id": {"type": "string", "description": "Winning response ID"},
+                },
+                "required": ["rfx_id", "response_id"],
+            },
+        },
+    },
+    # ── CRM Sequences & Contacts ─────────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "enroll_in_sequence",
+            "description": "Enroll a CRM contact in a sales sequence",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "contact_id": {"type": "string", "description": "UUID of the contact to enroll"},
+                    "sequence_id": {"type": "string", "description": "UUID of the sales sequence"},
+                },
+                "required": ["contact_id", "sequence_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "suggest_duplicates",
+            "description": "Find potential duplicate contacts for a given contact",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "contact_id": {"type": "string", "description": "UUID of the contact to check for duplicates"},
+                },
+                "required": ["contact_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "summarize_contact_360",
+            "description": "Generate a full 360° AI summary of a contact including activities, deals, score, and lifecycle stage",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "contact_id": {"type": "string", "description": "UUID of the contact to summarize"},
+                },
+                "required": ["contact_id"],
+            },
+        },
+    },
 ]
 
 
@@ -1259,6 +1482,101 @@ ADMIN_TOOL_DEFINITIONS = [
                     "receipt_number": {"type": "string", "description": "Receipt or transaction number"},
                 },
                 "required": ["receipt_number"],
+            },
+        },
+    },
+    # ── POS AI Cashier Assistant tools ───────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "pos_suggest_upsell",
+            "description": "Suggest upsell/cross-sell products based on current cart contents and customer purchase history",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "cart_item_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of item IDs currently in the cart",
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "description": "Optional customer ID for personalised suggestions",
+                    },
+                },
+                "required": ["cart_item_ids"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "pos_predict_demand",
+            "description": "Predict demand for the current day/week — peak hours, popular items, expected revenue",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "warehouse_id": {"type": "string", "description": "Store/warehouse ID"},
+                    "horizon": {"type": "string", "enum": ["today", "this_week"], "default": "today"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "pos_detect_pricing_anomaly",
+            "description": "Detect unusual discounts or pricing anomalies in recent POS transactions",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "days": {"type": "integer", "default": 7, "description": "Number of days to analyse"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "pos_slow_mover_report",
+            "description": "Identify slow-moving inventory items that haven't sold recently",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "days_threshold": {"type": "integer", "default": 30, "description": "Days without a sale to qualify as slow-moving"},
+                    "warehouse_id": {"type": "string", "description": "Optional warehouse filter"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "pos_cashier_performance",
+            "description": "Get cashier performance metrics: avg transaction value, speed, items per transaction",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "cashier_id": {"type": "string", "description": "Optional specific cashier ID"},
+                    "days": {"type": "integer", "default": 7},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "pos_auto_discount",
+            "description": "Automatically apply a discount to a transaction based on rules (e.g. happy hour, bulk buy)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "transaction_id": {"type": "string", "description": "Transaction ID to apply discount to"},
+                    "discount_type": {"type": "string", "enum": ["percentage", "flat"], "default": "percentage"},
+                    "value": {"type": "number", "description": "Discount value (percentage or flat amount)"},
+                    "reason": {"type": "string", "description": "Reason for the discount"},
+                },
+                "required": ["transaction_id", "value", "reason"],
             },
         },
     },
@@ -1533,7 +1851,6 @@ class ToolExecutor:
     async def _exec_lookup_employee(self, query: str) -> dict[str, Any]:
         from app.models.hr import Employee  # noqa: PLC0415
         from app.models.user import User  # noqa: PLC0415
-        from sqlalchemy.orm import selectinload  # noqa: PLC0415
 
         result = await self.db.execute(
             select(Employee).join(User, Employee.user_id == User.id).where(
@@ -2338,6 +2655,187 @@ class ToolExecutor:
             "result": f"Receipt {txn.receipt_number}: {txn.status}, total: {float(txn.total_amount):,.2f}, payment: {txn.payment_method}",
         }
 
+    # ── POS AI Cashier Assistant tools ───────────────────────────────────
+
+    async def _exec_pos_suggest_upsell(self, cart_item_ids: list[str], customer_id: str | None = None) -> dict[str, Any]:
+        from app.models.pos import POSTransactionLine  # noqa: PLC0415
+        from app.models.inventory import InventoryItem  # noqa: PLC0415
+        from sqlalchemy import func  # noqa: PLC0415
+
+        # Find items frequently bought together with the cart items
+        cart_uuids = [uuid.UUID(i) for i in cart_item_ids]
+        # Get transaction IDs that contain these items
+        txn_ids_q = select(POSTransactionLine.transaction_id).where(
+            POSTransactionLine.item_id.in_(cart_uuids)
+        ).distinct()
+        # Find other items in those transactions, excluding cart items
+        result = await self.db.execute(
+            select(
+                POSTransactionLine.item_id,
+                func.count().label("freq"),
+            ).where(
+                POSTransactionLine.transaction_id.in_(txn_ids_q),
+                ~POSTransactionLine.item_id.in_(cart_uuids),
+            ).group_by(POSTransactionLine.item_id).order_by(func.count().desc()).limit(5)
+        )
+        suggestions = []
+        for row in result.all():
+            item_r = await self.db.execute(select(InventoryItem).where(InventoryItem.id == row.item_id))
+            item = item_r.scalar_one_or_none()
+            if item:
+                suggestions.append({"id": str(item.id), "name": item.name, "price": float(item.selling_price), "frequency": row.freq})
+
+        return {
+            "suggestions": suggestions,
+            "result": f"Upsell suggestions: " + ", ".join(s["name"] for s in suggestions) if suggestions else "No upsell suggestions available.",
+        }
+
+    async def _exec_pos_predict_demand(self, warehouse_id: str | None = None, horizon: str = "today") -> dict[str, Any]:
+        from app.models.pos import POSTransaction, POSTransactionLine  # noqa: PLC0415
+        from app.models.inventory import InventoryItem  # noqa: PLC0415
+        from sqlalchemy import func  # noqa: PLC0415
+        from datetime import date, timedelta  # noqa: PLC0415
+
+        # Analyse last 4 weeks of same day-of-week data
+        today = date.today()
+        lookback_dates = [today - timedelta(weeks=w) for w in range(1, 5)]
+        dow = today.weekday()
+
+        result = await self.db.execute(
+            select(
+                POSTransactionLine.item_id,
+                InventoryItem.name,
+                func.sum(POSTransactionLine.quantity).label("total_qty"),
+                func.avg(POSTransactionLine.quantity).label("avg_qty"),
+            ).join(InventoryItem, POSTransactionLine.item_id == InventoryItem.id
+            ).join(POSTransaction, POSTransactionLine.transaction_id == POSTransaction.id
+            ).where(
+                func.extract("dow", POSTransaction.created_at) == dow,
+                POSTransaction.status == "completed",
+            ).group_by(POSTransactionLine.item_id, InventoryItem.name
+            ).order_by(func.sum(POSTransactionLine.quantity).desc()
+            ).limit(10)
+        )
+        items = [{"name": r.name, "avg_daily_qty": round(float(r.avg_qty or 0), 1)} for r in result.all()]
+        return {
+            "horizon": horizon,
+            "day_of_week": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][dow],
+            "top_predicted_items": items,
+            "result": f"Demand prediction for {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][dow]}: " + ", ".join(f"{i['name']} (~{i['avg_daily_qty']})" for i in items[:5]),
+        }
+
+    async def _exec_pos_detect_pricing_anomaly(self, days: int = 7) -> dict[str, Any]:
+        from app.models.pos import POSTransaction, POSTransactionLine  # noqa: PLC0415
+        from app.models.inventory import InventoryItem  # noqa: PLC0415
+        from sqlalchemy import func  # noqa: PLC0415
+        from datetime import date, timedelta  # noqa: PLC0415
+
+        cutoff = date.today() - timedelta(days=days)
+        result = await self.db.execute(
+            select(
+                POSTransactionLine.item_id,
+                InventoryItem.name,
+                InventoryItem.selling_price,
+                func.min(POSTransactionLine.unit_price).label("min_sold"),
+                func.max(POSTransactionLine.unit_price).label("max_sold"),
+                func.avg(POSTransactionLine.unit_price).label("avg_sold"),
+                func.sum(POSTransactionLine.discount_amount).label("total_discounts"),
+            ).join(InventoryItem, POSTransactionLine.item_id == InventoryItem.id
+            ).join(POSTransaction, POSTransactionLine.transaction_id == POSTransaction.id
+            ).where(POSTransaction.created_at >= cutoff
+            ).group_by(POSTransactionLine.item_id, InventoryItem.name, InventoryItem.selling_price
+            ).having(func.max(POSTransactionLine.unit_price) - func.min(POSTransactionLine.unit_price) > 0)
+        )
+        anomalies = []
+        for r in result.all():
+            if float(r.min_sold or 0) < float(r.selling_price or 0) * 0.7:
+                anomalies.append({
+                    "item": r.name, "list_price": float(r.selling_price),
+                    "min_sold": float(r.min_sold), "max_sold": float(r.max_sold),
+                    "total_discounts": float(r.total_discounts or 0),
+                })
+        return {
+            "anomalies": anomalies,
+            "result": f"Found {len(anomalies)} pricing anomalies in last {days} days." + (
+                " Items: " + ", ".join(a["item"] for a in anomalies[:5]) if anomalies else ""
+            ),
+        }
+
+    async def _exec_pos_slow_mover_report(self, days_threshold: int = 30, warehouse_id: str | None = None) -> dict[str, Any]:
+        from app.models.pos import POSTransaction, POSTransactionLine  # noqa: PLC0415
+        from app.models.inventory import InventoryItem, StockLevel  # noqa: PLC0415
+        from sqlalchemy import func  # noqa: PLC0415
+        from datetime import date, timedelta  # noqa: PLC0415
+
+        cutoff = date.today() - timedelta(days=days_threshold)
+        # Items with stock but no sales in the period
+        sold_items = select(POSTransactionLine.item_id).join(
+            POSTransaction, POSTransactionLine.transaction_id == POSTransaction.id
+        ).where(POSTransaction.created_at >= cutoff).distinct()
+
+        q = select(InventoryItem.id, InventoryItem.name, InventoryItem.sku,
+                    func.sum(StockLevel.quantity_on_hand).label("stock")
+        ).join(StockLevel, InventoryItem.id == StockLevel.item_id
+        ).where(~InventoryItem.id.in_(sold_items), StockLevel.quantity_on_hand > 0
+        ).group_by(InventoryItem.id, InventoryItem.name, InventoryItem.sku
+        ).order_by(func.sum(StockLevel.quantity_on_hand).desc()).limit(20)
+
+        result = await self.db.execute(q)
+        slow = [{"name": r.name, "sku": r.sku, "stock": int(r.stock)} for r in result.all()]
+        return {
+            "threshold_days": days_threshold,
+            "slow_movers": slow,
+            "result": f"{len(slow)} slow-moving items (no sales in {days_threshold} days): " + ", ".join(f"{s['name']} ({s['stock']} units)" for s in slow[:5]),
+        }
+
+    async def _exec_pos_cashier_performance(self, cashier_id: str | None = None, days: int = 7) -> dict[str, Any]:
+        from app.models.pos import POSSession, POSTransaction  # noqa: PLC0415
+        from sqlalchemy import func  # noqa: PLC0415
+        from datetime import date, timedelta  # noqa: PLC0415
+
+        cutoff = date.today() - timedelta(days=days)
+        q = select(
+            POSSession.cashier_id,
+            func.count(POSTransaction.id).label("txn_count"),
+            func.coalesce(func.sum(POSTransaction.total_amount), 0).label("total_sales"),
+            func.coalesce(func.avg(POSTransaction.total_amount), 0).label("avg_txn"),
+        ).join(POSTransaction, POSSession.id == POSTransaction.session_id
+        ).where(POSTransaction.created_at >= cutoff, POSTransaction.status == "completed"
+        ).group_by(POSSession.cashier_id)
+
+        if cashier_id:
+            q = q.where(POSSession.cashier_id == uuid.UUID(cashier_id))
+
+        result = await self.db.execute(q)
+        perf = [{"cashier_id": str(r.cashier_id), "transactions": r.txn_count,
+                 "total_sales": float(r.total_sales), "avg_transaction": round(float(r.avg_txn), 2)} for r in result.all()]
+        return {
+            "period_days": days,
+            "cashiers": perf,
+            "result": f"Cashier performance ({days} days): " + "; ".join(
+                f"Cashier {p['cashier_id'][:8]}: {p['transactions']} txns, avg {p['avg_transaction']:,.2f}" for p in perf[:5]
+            ),
+        }
+
+    async def _exec_pos_auto_discount(self, transaction_id: str, discount_type: str = "percentage", value: float = 0, reason: str = "") -> dict[str, Any]:
+        from app.models.pos import POSTransaction  # noqa: PLC0415
+
+        result = await self.db.execute(
+            select(POSTransaction).where(POSTransaction.id == uuid.UUID(transaction_id))
+        )
+        txn = result.scalar_one_or_none()
+        if not txn:
+            return {"result": f"Transaction {transaction_id} not found."}
+        if txn.status != "completed":
+            return {"result": f"Cannot apply discount — transaction status is '{txn.status}'."}
+        return {
+            "transaction_id": transaction_id,
+            "discount_type": discount_type,
+            "value": value,
+            "reason": reason,
+            "result": f"Discount of {value}{'%' if discount_type == 'percentage' else ' flat'} would be applied. Reason: {reason}. (Approval required for execution)",
+        }
+
     # ── E-Commerce tools ─────────────────────────────────────────────────
 
     async def _exec_get_ecommerce_sales_summary(self) -> dict[str, Any]:
@@ -2397,10 +2895,9 @@ class ToolExecutor:
         metric: str = "revenue",
     ) -> dict[str, Any]:
         """Simple linear trend forecast based on last 6 months of data."""
-        from app.models.finance import Invoice, Expense, Payment  # noqa: PLC0415
+        from app.models.finance import Invoice, Expense  # noqa: PLC0415
         from sqlalchemy import func, extract, and_  # noqa: PLC0415
         from datetime import date  # noqa: PLC0415
-        from decimal import Decimal  # noqa: PLC0415
 
         today = date.today()
         six_months_ago = today.replace(day=1)
@@ -2511,7 +3008,7 @@ class ToolExecutor:
     ) -> dict[str, Any]:
         """Detect anomalous transactions using z-score on payment/invoice amounts."""
         from app.models.finance import Invoice, Payment  # noqa: PLC0415
-        from sqlalchemy import func, and_  # noqa: PLC0415
+        from sqlalchemy import and_  # noqa: PLC0415
         from datetime import date  # noqa: PLC0415
         import math  # noqa: PLC0415
 
@@ -2707,7 +3204,6 @@ class ToolExecutor:
         """Forecast demand using simple moving average + trend detection on stock movements."""
         from app.models.inventory import InventoryItem, StockMovement  # noqa: PLC0415
         from sqlalchemy import func, extract, and_, or_  # noqa: PLC0415
-        import math  # noqa: PLC0415
 
         # Find item
         conditions = []
@@ -2803,7 +3299,7 @@ class ToolExecutor:
     async def _exec_optimize_reorder_point(self, item_id: str) -> dict[str, Any]:
         """Analyze stock movements and suggest optimal reorder point and quantity."""
         from app.models.inventory import InventoryItem, StockMovement  # noqa: PLC0415
-        from sqlalchemy import func, and_  # noqa: PLC0415
+        from sqlalchemy import and_  # noqa: PLC0415
         import math  # noqa: PLC0415
 
         # Find item
@@ -3727,7 +4223,7 @@ class ToolExecutor:
     ) -> dict[str, Any]:
         """Generate an analytics report from a natural language query."""
         from app.models.finance import Invoice, Payment  # noqa: PLC0415
-        from app.models.crm import Lead, Opportunity, Deal  # noqa: PLC0415
+        from app.models.crm import Lead, Opportunity  # noqa: PLC0415
         from app.models.hr import Employee  # noqa: PLC0415
         from app.models.inventory import InventoryItem  # noqa: PLC0415
         from sqlalchemy import func  # noqa: PLC0415
@@ -3922,7 +4418,6 @@ class ToolExecutor:
             context_parts.append(f"Source: {contact.source or 'Unknown'}")
 
             # Check for linked leads
-            from sqlalchemy import func  # noqa: PLC0415
             leads_result = await self.db.execute(
                 select(Lead).where(Lead.contact_id == contact.id).limit(5)
             )
@@ -4158,7 +4653,6 @@ class ToolExecutor:
         """Detect payroll anomalies by comparing payslips against historical patterns using z-scores."""
         from app.models.hr import Employee, Payslip  # noqa: PLC0415
         from app.models.user import User  # noqa: PLC0415
-        from sqlalchemy import func  # noqa: PLC0415
         from datetime import date  # noqa: PLC0415
         import math  # noqa: PLC0415
 
@@ -4371,7 +4865,7 @@ class ToolExecutor:
 
     async def _exec_optimize_production(self) -> dict[str, Any]:
         """Analyze pending work orders, workstation capacity, and material availability to suggest scheduling."""
-        from app.models.manufacturing import BOMItem, BillOfMaterials, WorkOrder, WorkStation  # noqa: PLC0415
+        from app.models.manufacturing import BOMItem, WorkOrder, WorkStation  # noqa: PLC0415
         from app.models.inventory import InventoryItem, StockLevel  # noqa: PLC0415
         from sqlalchemy import func  # noqa: PLC0415
 
@@ -4599,8 +5093,8 @@ class ToolExecutor:
         limit: int = 5,
     ) -> dict[str, Any]:
         """Recommend products based on co-purchase patterns."""
-        from app.models.ecommerce import EcomOrder, EcomProduct  # noqa: PLC0415
-        from sqlalchemy import func, text  # noqa: PLC0415
+        from app.models.ecommerce import EcomProduct  # noqa: PLC0415
+        from sqlalchemy import text  # noqa: PLC0415
 
         recommendations: list[dict[str, Any]] = []
 
@@ -4726,9 +5220,8 @@ class ToolExecutor:
 
     async def _exec_optimize_pricing(self, product_id: str) -> dict[str, Any]:
         """Analyze sales history and demand to suggest optimal pricing for a product."""
-        from app.models.ecommerce import EcomOrder, EcomProduct  # noqa: PLC0415
-        from sqlalchemy import func, text  # noqa: PLC0415
-        import math  # noqa: PLC0415
+        from app.models.ecommerce import EcomProduct  # noqa: PLC0415
+        from sqlalchemy import text  # noqa: PLC0415
 
         product_result = await self.db.execute(
             select(EcomProduct).where(EcomProduct.id == uuid.UUID(product_id))
@@ -4844,8 +5337,7 @@ class ToolExecutor:
 
     async def _exec_analyze_project_risk(self, project_id: str) -> dict[str, Any]:
         """Analyze project tasks, deadlines, and progress to identify risk factors."""
-        from app.models.projects import Project, Task, TimeLog  # noqa: PLC0415
-        from sqlalchemy import func  # noqa: PLC0415
+        from app.models.projects import Project, Task  # noqa: PLC0415
 
         project_result = await self.db.execute(
             select(Project).where(Project.id == uuid.UUID(project_id))
@@ -5361,7 +5853,6 @@ class ToolExecutor:
         """Analyze all files in Drive and suggest a comprehensive folder structure."""
         from app.models.drive import DriveFile  # noqa: PLC0415
         from app.models.file_share import FileShare  # noqa: PLC0415
-        from sqlalchemy import or_  # noqa: PLC0415
 
         # Get user's files
         conditions = [DriveFile.owner_id == self.user_id]
@@ -5607,4 +6098,354 @@ class ToolExecutor:
                 if items
                 else f"No handbook guides found{filter_desc}."
             ),
+        }
+
+    # ── Supply Chain Planning & Ops Tools ────────────────────────────────────
+
+    async def _exec_get_demand_forecast(self, item_id: str, scenario_id: str | None = None) -> dict[str, Any]:
+        from app.models.supplychain_planning import DemandForecast  # noqa: PLC0415
+
+        query = select(DemandForecast).where(
+            DemandForecast.item_id == uuid.UUID(item_id)
+        ).order_by(DemandForecast.forecast_date).limit(12)
+        if scenario_id:
+            query = query.where(DemandForecast.scenario_id == uuid.UUID(scenario_id))
+        result = await self.db.execute(query)
+        forecasts = result.scalars().all()
+        items = [
+            {"date": f.forecast_date.isoformat(), "quantity": f.predicted_quantity, "method": f.method}
+            for f in forecasts
+        ]
+        return {
+            "forecasts": items,
+            "total": len(items),
+            "result": f"Found {len(items)} forecasts for item {item_id}." if items else f"No forecasts found for item {item_id}.",
+        }
+
+    async def _exec_get_sc_kpis(self, kpi_name: str | None = None, period: str | None = None) -> dict[str, Any]:
+        from app.models.supplychain_ops import SupplyChainKPI  # noqa: PLC0415
+
+        query = select(SupplyChainKPI).order_by(SupplyChainKPI.created_at.desc()).limit(20)
+        if kpi_name:
+            query = query.where(SupplyChainKPI.kpi_name == kpi_name)
+        if period:
+            query = query.where(SupplyChainKPI.period == period)
+        result = await self.db.execute(query)
+        kpis = [
+            {"name": k.kpi_name, "period": k.period, "value": str(k.value), "unit": k.unit}
+            for k in result.scalars().all()
+        ]
+        return {"kpis": kpis, "result": f"Found {len(kpis)} KPIs." if kpis else "No KPIs found."}
+
+    async def _exec_get_stock_health(self, item_id: str) -> dict[str, Any]:
+        from app.models.supplychain_ops import StockHealthScore  # noqa: PLC0415
+
+        result = await self.db.execute(
+            select(StockHealthScore).where(StockHealthScore.item_id == uuid.UUID(item_id))
+        )
+        scores = result.scalars().all()
+        items = [
+            {"warehouse_id": str(s.warehouse_id) if s.warehouse_id else None, "status": s.health_status, "days_of_stock": s.days_of_stock, "action": s.recommended_action}
+            for s in scores
+        ]
+        return {"scores": items, "result": f"Stock health for item {item_id}: {', '.join(s['status'] for s in items)}" if items else f"No health data for item {item_id}."}
+
+    async def _exec_get_supplier_risk_profile(self, supplier_id: str) -> dict[str, Any]:
+        from app.models.supplychain_ops import SupplierRisk  # noqa: PLC0415
+
+        result = await self.db.execute(
+            select(SupplierRisk).where(
+                SupplierRisk.supplier_id == uuid.UUID(supplier_id),
+                SupplierRisk.status == "active",
+            )
+        )
+        risks = [
+            {"type": r.risk_type, "severity": r.severity, "description": r.description[:100]}
+            for r in result.scalars().all()
+        ]
+        return {"risks": risks, "total": len(risks), "result": f"Supplier has {len(risks)} active risks." if risks else "No active risks for this supplier."}
+
+    async def _exec_get_sc_alerts(self, severity: str | None = None) -> dict[str, Any]:
+        from app.models.supplychain_ops import ControlTowerAlert  # noqa: PLC0415
+
+        query = select(ControlTowerAlert).where(ControlTowerAlert.status == "open").order_by(ControlTowerAlert.created_at.desc()).limit(20)
+        if severity:
+            query = query.where(ControlTowerAlert.severity == severity)
+        result = await self.db.execute(query)
+        alerts = [
+            {"id": str(a.id), "type": a.alert_type, "severity": a.severity, "title": a.title}
+            for a in result.scalars().all()
+        ]
+        return {"alerts": alerts, "total": len(alerts), "result": f"{len(alerts)} open alerts." if alerts else "No open alerts."}
+
+    async def _exec_get_rfx_status(self, rfx_id: str) -> dict[str, Any]:
+        from app.models.supplychain_ops import RFx  # noqa: PLC0415
+        from sqlalchemy.orm import selectinload as si  # noqa: PLC0415
+
+        result = await self.db.execute(
+            select(RFx).options(si(RFx.responses)).where(RFx.id == uuid.UUID(rfx_id))
+        )
+        rfx = result.scalar_one_or_none()
+        if not rfx:
+            return {"error": "RFx not found", "result": f"No RFx found with ID {rfx_id}."}
+        return {
+            "rfx_number": rfx.rfx_number, "status": rfx.status, "type": rfx.rfx_type,
+            "responses": len(rfx.responses),
+            "result": f"RFx {rfx.rfx_number} ({rfx.rfx_type}) — status: {rfx.status}, {len(rfx.responses)} responses.",
+        }
+
+    async def _exec_generate_demand_forecast(self, item_ids: list[str], horizon_months: int = 3, method: str = "moving_avg") -> dict[str, Any]:
+        from app.models.supplychain_planning import DemandForecast  # noqa: PLC0415
+        from app.models.inventory import StockMovement  # noqa: PLC0415
+        from sqlalchemy import func as sqla_func  # noqa: PLC0415
+        from datetime import date, timedelta  # noqa: PLC0415
+
+        created = 0
+        for item_id_str in item_ids:
+            item_uuid = uuid.UUID(item_id_str)
+            six_months_ago = datetime.utcnow() - timedelta(days=180)
+            result = await self.db.execute(
+                select(sqla_func.coalesce(sqla_func.sum(StockMovement.quantity), 0)).where(
+                    StockMovement.item_id == item_uuid,
+                    StockMovement.movement_type == "issue",
+                    StockMovement.created_at >= six_months_ago,
+                )
+            )
+            avg_monthly = max(abs(result.scalar() or 0) // 6, 1)
+            today = datetime.utcnow().date()
+            for m in range(horizon_months):
+                fc_date = date(today.year + (today.month + m - 1) // 12, (today.month + m - 1) % 12 + 1, 1)
+                self.db.add(DemandForecast(
+                    item_id=item_uuid, forecast_date=fc_date, period_type="monthly",
+                    predicted_quantity=avg_monthly, method=method, created_by=self.user_id,
+                ))
+                created += 1
+        await self.db.commit()
+        return {"created": created, "result": f"Generated {created} forecasts for {len(item_ids)} items."}
+
+    async def _exec_trigger_replenishment_check(self) -> dict[str, Any]:
+        from app.models.supplychain_ops import ReplenishmentRule  # noqa: PLC0415
+        from app.models.inventory import StockLevel  # noqa: PLC0415
+
+        rules = await self.db.execute(select(ReplenishmentRule).where(ReplenishmentRule.is_active.is_(True)))
+        triggered = 0
+        for rule in rules.scalars().all():
+            sl = await self.db.execute(select(StockLevel).where(StockLevel.item_id == rule.item_id, StockLevel.warehouse_id == rule.warehouse_id))
+            stock = sl.scalar_one_or_none()
+            if (stock.quantity_on_hand if stock else 0) <= rule.reorder_point:
+                triggered += 1
+        return {"triggered": triggered, "result": f"{triggered} items below reorder point."}
+
+    async def _exec_calculate_safety_stock(self, item_ids: list[str] | None = None) -> dict[str, Any]:
+        from app.models.supplychain_ops import SafetyStockConfig  # noqa: PLC0415
+        import math  # noqa: PLC0415
+
+        query = select(SafetyStockConfig)
+        if item_ids:
+            query = query.where(SafetyStockConfig.item_id.in_([uuid.UUID(i) for i in item_ids]))
+        rows = await self.db.execute(query)
+        updated = 0
+        for cfg in rows.scalars().all():
+            if cfg.method == "service_level" and cfg.demand_std_dev:
+                z = 1.65 if (cfg.service_level_pct or 0) >= 95 else 1.28
+                cfg.safety_stock_qty = int(z * float(cfg.demand_std_dev) * math.sqrt(float(cfg.lead_time_std_dev or 1)))
+                cfg.recalculated_at = datetime.utcnow()
+                updated += 1
+        await self.db.commit()
+        return {"updated": updated, "result": f"Recalculated safety stock for {updated} configs."}
+
+    async def _exec_execute_supply_plan(self, plan_id: str) -> dict[str, Any]:
+        from app.models.supplychain_planning import SupplyPlan  # noqa: PLC0415
+        from sqlalchemy.orm import selectinload as si  # noqa: PLC0415
+
+        result = await self.db.execute(select(SupplyPlan).options(si(SupplyPlan.lines)).where(SupplyPlan.id == uuid.UUID(plan_id)))
+        plan = result.scalar_one_or_none()
+        if not plan:
+            return {"error": "Plan not found", "result": f"Supply plan {plan_id} not found."}
+        if plan.status != "draft":
+            return {"error": f"Plan in status {plan.status}", "result": f"Cannot execute plan in status '{plan.status}'."}
+        plan.status = "active"
+        converted = 0
+        for line in plan.lines:
+            if line.status == "planned":
+                line.status = "ordered"
+                converted += 1
+        await self.db.commit()
+        return {"converted": converted, "result": f"Executed supply plan: {converted} lines converted to orders."}
+
+    async def _exec_award_rfx(self, rfx_id: str, response_id: str) -> dict[str, Any]:
+        from app.models.supplychain_ops import RFx  # noqa: PLC0415
+        from sqlalchemy.orm import selectinload as si  # noqa: PLC0415
+
+        result = await self.db.execute(select(RFx).options(si(RFx.responses)).where(RFx.id == uuid.UUID(rfx_id)))
+        rfx = result.scalar_one_or_none()
+        if not rfx:
+            return {"error": "RFx not found", "result": f"RFx {rfx_id} not found."}
+        resp_uuid = uuid.UUID(response_id)
+        winning = None
+        for resp in rfx.responses:
+            if resp.id == resp_uuid:
+                resp.status = "awarded"
+                winning = resp
+            elif resp.status not in ("rejected",):
+                resp.status = "rejected"
+        if not winning:
+            return {"error": "Response not found", "result": f"Response {response_id} not found on this RFx."}
+        rfx.status = "awarded"
+        await self.db.commit()
+        return {"result": f"RFx {rfx.rfx_number} awarded to supplier {winning.supplier_id}."}
+
+    # ── CRM Sequences & Contacts ─────────────────────────────────────────────
+
+    async def _exec_enroll_in_sequence(self, contact_id: str, sequence_id: str) -> dict[str, Any]:
+        """Enroll a contact in a sales sequence."""
+        from app.models.crm import Contact, SalesSequence, SequenceEnrollment  # noqa: PLC0415
+
+        contact_uuid = uuid.UUID(contact_id)
+        sequence_uuid = uuid.UUID(sequence_id)
+
+        contact_result = await self.db.execute(
+            select(Contact).where(Contact.id == contact_uuid)
+        )
+        contact = contact_result.scalar_one_or_none()
+        if not contact:
+            return {"error": f"Contact '{contact_id}' not found."}
+
+        sequence_result = await self.db.execute(
+            select(SalesSequence).where(SalesSequence.id == sequence_uuid)
+        )
+        sequence = sequence_result.scalar_one_or_none()
+        if not sequence:
+            return {"error": f"SalesSequence '{sequence_id}' not found."}
+
+        # Check not already actively enrolled
+        existing_result = await self.db.execute(
+            select(SequenceEnrollment).where(
+                SequenceEnrollment.contact_id == contact_uuid,
+                SequenceEnrollment.sequence_id == sequence_uuid,
+                SequenceEnrollment.status.not_in(["completed", "unsubscribed"]),
+            )
+        )
+        existing = existing_result.scalar_one_or_none()
+        if existing:
+            return {
+                "error": f"Contact is already enrolled in this sequence (status: {existing.status}).",
+                "enrollment_id": str(existing.id),
+            }
+
+        enrollment = SequenceEnrollment(
+            contact_id=contact_uuid,
+            sequence_id=sequence_uuid,
+            status="active",
+            current_step_id=None,
+            enrolled_at=datetime.now(timezone.utc),
+            enrolled_by=self.user_id,
+        )
+        self.db.add(enrollment)
+        await self.db.commit()
+        await self.db.refresh(enrollment)
+        return {
+            "success": True,
+            "enrollment_id": str(enrollment.id),
+            "sequence_name": sequence.name,
+        }
+
+    async def _exec_suggest_duplicates(self, contact_id: str) -> dict[str, Any]:
+        """Find potential duplicate contacts for a given contact."""
+        from app.models.crm import Contact, DuplicateCandidate  # noqa: PLC0415
+
+        contact_uuid = uuid.UUID(contact_id)
+
+        contact_result = await self.db.execute(
+            select(Contact).where(Contact.id == contact_uuid)
+        )
+        contact = contact_result.scalar_one_or_none()
+        if not contact:
+            return {"error": f"Contact '{contact_id}' not found."}
+
+        dupes_result = await self.db.execute(
+            select(DuplicateCandidate)
+            .where(
+                or_(
+                    DuplicateCandidate.contact_a_id == contact_uuid,
+                    DuplicateCandidate.contact_b_id == contact_uuid,
+                ),
+                DuplicateCandidate.status == "pending",
+            )
+            .limit(10)
+        )
+        rows = dupes_result.scalars().all()
+
+        duplicates = []
+        for row in rows:
+            other_id = row.contact_b_id if row.contact_a_id == contact_uuid else row.contact_a_id
+            duplicates.append({
+                "id": str(row.id),
+                "other_contact_id": str(other_id),
+                "similarity_score": row.confidence_score,
+                "status": row.status,
+            })
+
+        return {
+            "contact_id": str(contact_uuid),
+            "duplicates": duplicates,
+        }
+
+    async def _exec_summarize_contact_360(self, contact_id: str) -> dict[str, Any]:
+        """Generate a full 360° summary of a contact's history, deals, and activities."""
+        from app.models.crm import Contact, SalesActivity, Opportunity, Lead  # noqa: PLC0415
+        from sqlalchemy import func  # noqa: PLC0415
+
+        contact_uuid = uuid.UUID(contact_id)
+
+        contact_result = await self.db.execute(
+            select(Contact).where(Contact.id == contact_uuid)
+        )
+        contact = contact_result.scalar_one_or_none()
+        if not contact:
+            return {"error": f"Contact '{contact_id}' not found."}
+
+        # Count sales activities for this contact
+        activity_count_result = await self.db.execute(
+            select(func.count()).select_from(SalesActivity).where(
+                SalesActivity.contact_id == contact_uuid
+            )
+        )
+        activity_count = activity_count_result.scalar() or 0
+
+        # Count opportunities via linked leads
+        deal_count_result = await self.db.execute(
+            select(func.count()).select_from(Opportunity).join(
+                Lead, Opportunity.lead_id == Lead.id
+            ).where(
+                Lead.contact_id == contact_uuid,
+                Opportunity.stage.not_in(["closed_won", "closed_lost"]),
+            )
+        )
+        deal_count = deal_count_result.scalar() or 0
+
+        name_parts = [p for p in [contact.first_name, contact.last_name] if p]
+        name = " ".join(name_parts) if name_parts else (contact.company_name or "Unknown")
+        email = contact.email or "N/A"
+        score = contact.score or 0
+        lifecycle_stage = contact.lifecycle_stage or "subscriber"
+        last_activity_at = (
+            contact.last_activity_at.isoformat() if contact.last_activity_at else None
+        )
+
+        summary = (
+            f"Contact {name} ({email}) is in {lifecycle_stage} stage with score {score}/100. "
+            f"They have {activity_count} logged activities and {deal_count} active deals."
+        )
+
+        return {
+            "contact_id": str(contact_uuid),
+            "name": name,
+            "email": email,
+            "score": score,
+            "lifecycle_stage": lifecycle_stage,
+            "activity_count": activity_count,
+            "deal_count": deal_count,
+            "last_activity_at": last_activity_at,
+            "summary": summary,
         }

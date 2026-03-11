@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Badge, Card, Table, Input, Modal } from '../../components/ui'
+import { Button, Badge, Card, Table, Input, Select, Modal } from '../../components/ui'
 import { toast } from '../../components/ui'
 import {
   useWarehouses,
@@ -10,12 +10,21 @@ import {
   type CreateWarehousePayload,
 } from '../../api/inventory'
 
+const WAREHOUSE_TYPE_OPTIONS = [
+  { value: 'standard', label: 'Standard' },
+  { value: 'transit', label: 'Transit' },
+  { value: 'drop_ship', label: 'Drop Ship' },
+  { value: 'consignment', label: 'Consignment' },
+]
+
 interface WarehouseFormState {
   name: string
   location: string
+  address: string
+  warehouse_type: string
 }
 
-const defaultForm: WarehouseFormState = { name: '', location: '' }
+const defaultForm: WarehouseFormState = { name: '', location: '', address: '', warehouse_type: 'standard' }
 
 export default function WarehousesPage() {
   const [modalOpen, setModalOpen] = useState(false)
@@ -36,7 +45,12 @@ export default function WarehousesPage() {
 
   function openEdit(wh: Warehouse) {
     setEditingWarehouse(wh)
-    setForm({ name: wh.name, location: wh.location ?? '' })
+    setForm({
+      name: wh.name,
+      location: wh.location ?? '',
+      address: wh.address ?? '',
+      warehouse_type: wh.warehouse_type ?? 'standard',
+    })
     setModalOpen(true)
   }
 
@@ -54,6 +68,8 @@ export default function WarehousesPage() {
     const payload: CreateWarehousePayload = {
       name: form.name.trim(),
       location: form.location.trim() || undefined,
+      address: form.address.trim() || undefined,
+      warehouse_type: form.warehouse_type,
     }
 
     try {
@@ -91,6 +107,14 @@ export default function WarehousesPage() {
 
   const columns = [
     { key: 'name', label: 'Name', render: (row: Warehouse) => <span className="font-medium text-gray-900">{row.name}</span> },
+    {
+      key: 'warehouse_type',
+      label: 'Type',
+      render: (row: Warehouse) => {
+        const colors: Record<string, 'primary' | 'info' | 'warning' | 'success'> = { standard: 'primary', transit: 'info', drop_ship: 'warning', consignment: 'success' }
+        return <Badge variant={colors[row.warehouse_type] ?? 'default'}>{row.warehouse_type?.replace('_', ' ')}</Badge>
+      },
+    },
     {
       key: 'location',
       label: 'Location',
@@ -183,6 +207,22 @@ export default function WarehousesPage() {
             onChange={(e) => setForm({ ...form, location: e.target.value })}
             placeholder="e.g. 123 Industrial Road, Nairobi"
           />
+          <Select
+            label="Warehouse Type"
+            options={WAREHOUSE_TYPE_OPTIONS}
+            value={form.warehouse_type}
+            onChange={(e) => setForm({ ...form, warehouse_type: e.target.value })}
+          />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Address</label>
+            <textarea
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              rows={2}
+              className="w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
+              placeholder="Full warehouse address"
+            />
+          </div>
           <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button variant="secondary" size="sm" onClick={closeModal}>Cancel</Button>
             <Button

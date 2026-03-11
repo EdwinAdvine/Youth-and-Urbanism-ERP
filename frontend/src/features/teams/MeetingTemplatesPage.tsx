@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Card, Button, Spinner, Modal, Input, Badge, toast } from '../../components/ui'
-import { useMeetingTemplates, useCreateMeetingTemplate, type MeetingTemplate } from '../../api/meetings_ext'
+import { useMeetingTemplates, useCreateMeetingTemplate } from '../../api/meetings_ext'
 
 export default function MeetingTemplatesPage() {
   const { data: templates, isLoading } = useMeetingTemplates()

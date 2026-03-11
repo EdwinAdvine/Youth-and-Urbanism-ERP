@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Card, Table, Modal, Input, Badge, Spinner, toast } from '../../components/ui'
+import { Button, Card, Table, Modal, Input, Badge, toast } from '../../components/ui'
 import {
   useShippingMethods,
   useCreateShippingMethod,

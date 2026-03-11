@@ -73,6 +73,17 @@ export default function InventoryDashboard() {
       badge: null,
     },
     {
+      label: 'Overstock',
+      value: String(stats?.overstock_count ?? 0),
+      icon: (
+        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+      ),
+      color: (stats?.overstock_count ?? 0) > 0 ? 'text-amber-600 bg-amber-50' : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-950',
+      badge: (stats?.overstock_count ?? 0) > 0 ? 'warning' : null,
+    },
+    {
       label: 'Inventory Value',
       value: formatCurrency(stats?.total_inventory_value ?? 0),
       icon: (
@@ -81,6 +92,17 @@ export default function InventoryDashboard() {
         </svg>
       ),
       color: 'text-green-600 bg-green-50',
+      badge: null,
+    },
+    {
+      label: 'Incoming Units',
+      value: String(stats?.total_incoming_units ?? 0),
+      icon: (
+        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+      ),
+      color: 'text-blue-600 bg-blue-50',
       badge: null,
     },
   ]
@@ -179,7 +201,7 @@ export default function InventoryDashboard() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {statCards.map((stat) => (
           <Card key={stat.label}>
             <div className="flex items-start gap-4">

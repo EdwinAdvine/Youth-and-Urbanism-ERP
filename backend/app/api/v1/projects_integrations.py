@@ -9,16 +9,14 @@ Provides soft links between Projects and other modules:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel
-from sqlalchemy import and_, func, select
+from sqlalchemy import func, select
 
 from app.core.deps import CurrentUser, DBSession
-from app.core.events import event_bus
 from app.models.crm import Deal
 from app.models.drive import DriveFile, DriveFolder
 from app.models.finance import Expense

@@ -197,6 +197,171 @@ export default function HRDashboard() {
         </Card>
       </div>
 
+      {/* Phase 1 — New Modules */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">People & Performance</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/skills-matrix')}>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Skills Matrix</p>
+            <p className="text-xs text-gray-400 mt-1">Org-wide skills & gap analysis</p>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/goals')}>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Goals & OKR</p>
+            <p className="text-xs text-gray-400 mt-1">Objectives & key results</p>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/feedback')}>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Feedback</p>
+            <p className="text-xs text-gray-400 mt-1">Continuous peer feedback</p>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/review-cycles')}>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">360° Reviews</p>
+            <p className="text-xs text-gray-400 mt-1">Review cycles & assignments</p>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/succession-planning')}>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Succession Planning</p>
+            <p className="text-xs text-gray-400 mt-1">Plan for key positions</p>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/manager-dashboard')}>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Manager Dashboard</p>
+            <p className="text-xs text-gray-400 mt-1">Team insights & delegation</p>
+          </Card>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Compensation & Scheduling</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/compensation-bands')}>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Compensation Bands</p>
+            <p className="text-xs text-gray-400 mt-1">Salary ranges by level</p>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/merit-planning')}>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Merit Planning</p>
+            <p className="text-xs text-gray-400 mt-1">Budget pools & increases</p>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/bonuses')}>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Bonuses</p>
+            <p className="text-xs text-gray-400 mt-1">Propose & manage bonuses</p>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/equity-grants')}>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Equity Grants</p>
+            <p className="text-xs text-gray-400 mt-1">Stock options & RSU vesting</p>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/shift-scheduling')}>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Shift Scheduling</p>
+            <p className="text-xs text-gray-400 mt-1">Templates & calendar</p>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/holiday-calendar')}>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Holiday Calendar</p>
+            <p className="text-xs text-gray-400 mt-1">Country-specific holidays</p>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/hr/audit-log')}>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Audit Trail</p>
+            <p className="text-xs text-gray-400 mt-1">Field-level change history</p>
+          </Card>
+        </div>
+      </div>
+
+      {/* Phase 2 — ATS, LMS, Engagement, Onboarding */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Talent & Learning</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'ATS Dashboard', icon: '🎯', path: '/hr/ats', desc: 'Recruiting pipeline' },
+            { label: 'Job Requisitions', icon: '📋', path: '/hr/ats/requisitions', desc: 'Open positions' },
+            { label: 'Candidates', icon: '👤', path: '/hr/ats/candidates', desc: 'Candidate database' },
+            { label: 'Interviews', icon: '🎤', path: '/hr/ats/interviews', desc: 'Scheduled interviews' },
+            { label: 'Learning', icon: '🎓', path: '/hr/learning', desc: 'My learning path' },
+            { label: 'Course Catalog', icon: '📚', path: '/hr/courses', desc: 'Browse courses' },
+            { label: 'Certifications', icon: '🏆', path: '/hr/certifications', desc: 'Track credentials' },
+            { label: 'Build Course', icon: '✏️', path: '/hr/courses/new', desc: 'Create LMS content' },
+          ].map((item) => (
+            <Card
+              key={item.path}
+              className="cursor-pointer hover:border-primary/40 hover:shadow-md transition-all"
+              onClick={() => navigate(item.path)}
+            >
+              <div className="text-2xl mb-2">{item.icon}</div>
+              <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.label}</p>
+              <p className="text-xs text-gray-400 mt-1">{item.desc}</p>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Engagement & Onboarding</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Engagement', icon: '💬', path: '/hr/engagement', desc: 'Surveys & pulse' },
+            { label: 'Recognition', icon: '⭐', path: '/hr/recognition', desc: 'Kudos & badges feed' },
+            { label: 'Create Survey', icon: '📊', path: '/hr/surveys/new', desc: 'Build a new survey' },
+            { label: 'Onboarding', icon: '🤝', path: '/hr/onboarding-tracker', desc: 'Track new hires' },
+            { label: 'Templates', icon: '📝', path: '/hr/onboarding-templates', desc: 'Onboarding checklists' },
+            { label: 'Import Data', icon: '📥', path: '/hr/import', desc: 'Rippling/BambooHR/ADP' },
+          ].map((item) => (
+            <Card
+              key={item.path}
+              className="cursor-pointer hover:border-primary/40 hover:shadow-md transition-all"
+              onClick={() => navigate(item.path)}
+            >
+              <div className="text-2xl mb-2">{item.icon}</div>
+              <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.label}</p>
+              <p className="text-xs text-gray-400 mt-1">{item.desc}</p>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Phase 3 — AI, Workflows, Analytics */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">AI Insights</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Flight Risk', icon: '✈️', path: '/hr/ai/flight-risk', desc: 'Attrition prediction' },
+            { label: 'Burnout Alerts', icon: '🔥', path: '/hr/ai/burnout', desc: 'Wellbeing monitoring' },
+            { label: 'Skills Ontology', icon: '🧠', path: '/hr/ai/skills-ontology', desc: 'Skill taxonomy' },
+            { label: 'HR Chatbot', icon: '🤖', path: '/hr/ai/chatbot', desc: 'AI HR assistant' },
+            { label: 'Workforce Planning', icon: '📈', path: '/hr/ai/workforce-planning', desc: 'Headcount scenarios' },
+          ].map((item) => (
+            <Card
+              key={item.path}
+              className="cursor-pointer hover:border-primary/40 hover:shadow-md transition-all"
+              onClick={() => navigate(item.path)}
+            >
+              <div className="text-2xl mb-2">{item.icon}</div>
+              <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.label}</p>
+              <p className="text-xs text-gray-400 mt-1">{item.desc}</p>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Automation & Analytics</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Workflows', icon: '⚙️', path: '/hr/workflows', desc: 'Automate HR processes' },
+            { label: 'Build Workflow', icon: '🔧', path: '/hr/workflows/builder', desc: 'Visual workflow editor' },
+            { label: 'Approvals', icon: '✅', path: '/hr/workflows/approvals', desc: 'Pending decisions' },
+            { label: 'People Analytics', icon: '📊', path: '/hr/analytics', desc: 'Custom dashboards' },
+            { label: 'DEI Dashboard', icon: '🌍', path: '/hr/analytics/dei', desc: 'Diversity & inclusion' },
+            { label: 'Predictive Reports', icon: '🔮', path: '/hr/analytics/predictive', desc: 'AI forecasting' },
+            { label: 'Cost Modeling', icon: '💰', path: '/hr/analytics/cost', desc: 'Headcount cost analysis' },
+          ].map((item) => (
+            <Card
+              key={item.path}
+              className="cursor-pointer hover:border-primary/40 hover:shadow-md transition-all"
+              onClick={() => navigate(item.path)}
+            >
+              <div className="text-2xl mb-2">{item.icon}</div>
+              <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.label}</p>
+              <p className="text-xs text-gray-400 mt-1">{item.desc}</p>
+            </Card>
+          ))}
+        </div>
+      </div>
+
       {/* Recent Leave Requests */}
       <Card>
         <div className="flex items-center justify-between mb-4">

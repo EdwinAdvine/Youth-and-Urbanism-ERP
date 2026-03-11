@@ -21,6 +21,7 @@ export interface Project {
 export interface Task {
   id: string
   project_id: string
+  parent_id: string | null
   title: string
   description: string
   assignee_id: string | null
@@ -28,6 +29,10 @@ export interface Task {
   status: TaskStatus
   priority: TaskPriority
   due_date: string | null
+  start_date: string | null
+  estimated_hours: number | null
+  sprint_id: string | null
+  order: number
   tags: string[]
   created_at: string
   updated_at: string
@@ -80,7 +85,11 @@ export interface CreateTaskPayload {
   status?: TaskStatus
   priority?: TaskPriority
   due_date?: string | null
+  start_date?: string | null
+  estimated_hours?: number | null
   tags?: string[]
+  parent_id?: string | null
+  sprint_id?: string | null
 }
 
 export interface UpdateTaskPayload {
@@ -92,7 +101,10 @@ export interface UpdateTaskPayload {
   status?: TaskStatus
   priority?: TaskPriority
   due_date?: string | null
+  start_date?: string | null
+  estimated_hours?: number | null
   tags?: string[]
+  sprint_id?: string | null
 }
 
 export interface CreateMilestonePayload {
