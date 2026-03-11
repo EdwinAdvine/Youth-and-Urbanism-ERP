@@ -1,0 +1,94 @@
+from __future__ import annotations
+
+from functools import lru_cache
+from typing import Literal
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    # ── Application ──────────────────────────────────────────────────────────
+    APP_NAME: str = "Urban ERP"
+    APP_URL: str = "http://localhost:3010"
+    DEBUG: bool = False
+
+    # ── Database ─────────────────────────────────────────────────────────────
+    DATABASE_URL: str = "postgresql+asyncpg://urban:urban_secret@postgres:5432/urban_erp"
+
+    # ── Redis ─────────────────────────────────────────────────────────────────
+    REDIS_URL: str = "redis://redis:6379/0"
+
+    # ── JWT ───────────────────────────────────────────────────────────────────
+    SECRET_KEY: str = "urban-erp-super-secret-key-change-in-production-2026"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # ── AI / Ollama ───────────────────────────────────────────────────────────
+    OLLAMA_URL: str = "http://ollama:11434"
+    OLLAMA_MODEL: str = "llama3.2"
+    AI_PROVIDER: Literal["ollama", "openai", "grok", "anthropic"] = "ollama"
+
+    OPENAI_API_KEY: str | None = None
+    GROK_API_KEY: str | None = None
+    ANTHROPIC_API_KEY: str | None = None
+
+    # ── MinIO / Object Storage ────────────────────────────────────────────────
+    MINIO_URL: str = "http://minio:9000"
+    MINIO_ACCESS_KEY: str = "minioadmin"
+    MINIO_SECRET_KEY: str = "minioadmin123"
+
+    # ── First Super-Admin seed ────────────────────────────────────────────────
+    FIRST_SUPERADMIN_EMAIL: str = "super-admin@youthandurbanism.org"
+    FIRST_SUPERADMIN_PASSWORD: str = "super-admin@2026!"
+
+    # ── ONLYOFFICE ────────────────────────────────────────────────────────────
+    ONLYOFFICE_URL: str = "http://onlyoffice:80"  # internal Docker network
+    ONLYOFFICE_PUBLIC_URL: str = "http://localhost:8083"  # browser-accessible
+    ONLYOFFICE_JWT_SECRET: str = "onlyoffice-jwt-secret-2026-urban-erp"
+
+    # ── Jitsi ─────────────────────────────────────────────────────────────────
+    JITSI_PUBLIC_URL: str = "http://localhost:8080"
+
+    # ── Superset ──────────────────────────────────────────────────────────────
+    SUPERSET_URL: str = "http://superset:8088"
+    SUPERSET_SECRET_KEY: str = "superset-secret-key-2026"
+    SUPERSET_ADMIN_USERNAME: str = "super-admin"
+    SUPERSET_ADMIN_PASSWORD: str = "super-admin@2026!"
+
+    # ── Stalwart Mail ─────────────────────────────────────────────────────────
+    STALWART_URL: str = "http://stalwart:8080"
+    MAIL_DOMAIN: str = "youthandurbanism.org"
+
+    # ── Nextcloud ────────────────────────────────────────────────────────────
+    NEXTCLOUD_URL: str = "http://nextcloud-web:80"
+    NEXTCLOUD_ADMIN_USER: str = "admin"
+    NEXTCLOUD_ADMIN_PASSWORD: str = "super-admin@2026!"
+
+    # ── CORS ──────────────────────────────────────────────────────────────────
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:3010",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3010",
+        "http://0.0.0.0:3000",
+    ]
+
+    # ── Celery ────────────────────────────────────────────────────────────────
+    CELERY_BROKER_URL: str = "redis://redis:6379/1"
+    CELERY_RESULT_BACKEND: str = "redis://redis:6379/2"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()

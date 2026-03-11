@@ -1,0 +1,411 @@
+
+networks:
+  urban-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  ollama_data:
+  stalwart_data:
+  onlyoffice_data:
+  onlyoffice_logs:
+  jitsi_web_config:
+  jitsi_prosody_config:
+  jitsi_prosody_plugins:
+  superset_data:
+  nextcloud_data:
+  nextcloud_db:
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: urban-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-urban}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-urban_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-urban_erp}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-urban} -d ${POSTGRES_DB:-urban_erp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - urban-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: urban-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - urban-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: urban-minio
+    restart: unless-stopped
+    ports:
+      - "9010:9000"
+      - "9011:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - urban-net
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: urban-ollama
+    ports:
+      - "11435:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - urban-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: urban-backend
+    restart: unless-stopped
+    ports:
+      - "8010:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - urban-net
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: urban-celery-worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    command: celery -A app.tasks.celery_app worker -l info
+    networks:
+      - urban-net
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: urban-celery-beat
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    command: celery -A app.tasks.celery_app beat -l info
+    networks:
+      - urban-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: urban-frontend
+    restart: unless-stopped
+    ports:
+      - "3010:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - VITE_API_TARGET=http://backend:8000
+      - VITE_WS_TARGET=ws://backend:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - urban-net
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: urban-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5051:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: super-admin@youthandurbanism.org
+      PGADMIN_DEFAULT_PASSWORD: "super-admin@2026!"
+    depends_on:
+      - postgres
+    networks:
+      - urban-net
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: urban-mailhog
+    restart: unless-stopped
+    ports:
+      - "1026:1025"
+      - "8026:8025"
+    networks:
+      - urban-net
+
+  stalwart:
+    image: stalwartlabs/stalwart:latest
+    container_name: urban-stalwart
+    restart: unless-stopped
+    ports:
+      - "25:25"      # SMTP
+      - "143:143"    # IMAP
+      - "587:587"    # SMTP submission
+      - "993:993"    # IMAPS
+      - "8082:8080"  # Web admin UI
+    volumes:
+      - stalwart_data:/opt/stalwart
+    networks:
+      - urban-net
+
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: urban-onlyoffice
+    restart: unless-stopped
+    ports:
+      - "8083:80"
+    environment:
+      - JWT_ENABLED=true
+      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-onlyoffice-jwt-secret-2026}
+      - JWT_HEADER=Authorization
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_logs:/var/log/onlyoffice
+    networks:
+      - urban-net
+
+  jitsi-web:
+    image: jitsi/web:stable
+    container_name: urban-jitsi-web
+    restart: unless-stopped
+    ports:
+      - "8443:443"
+      - "8080:80"
+    environment:
+      - PUBLIC_URL=https://localhost:8443
+      - XMPP_SERVER=jitsi-prosody
+      - XMPP_BOSH_URL_BASE=http://jitsi-prosody:5280
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_MUC_DOMAIN=muc.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - XMPP_GUEST_DOMAIN=guest.meet.jitsi
+      - JICOFO_AUTH_USER=focus
+      - TZ=UTC
+    volumes:
+      - jitsi_web_config:/config
+    networks:
+      - urban-net
+
+  jitsi-prosody:
+    image: jitsi/prosody:stable
+    container_name: urban-jitsi-prosody
+    restart: unless-stopped
+    expose:
+      - "5222"
+      - "5269"
+      - "5280"
+      - "5347"
+    environment:
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_MUC_DOMAIN=muc.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - XMPP_GUEST_DOMAIN=guest.meet.jitsi
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET:-jitsi-jicofo-secret}
+      - JICOFO_AUTH_USER=focus
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD:-jitsi-focus-password}
+      - JVB_AUTH_USER=jvb
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD:-jitsi-jvb-password}
+      - TZ=UTC
+    volumes:
+      - jitsi_prosody_config:/config
+      - jitsi_prosody_plugins:/prosody-plugins-custom
+    networks:
+      urban-net:
+        aliases:
+          - meet.jitsi
+          - auth.meet.jitsi
+          - muc.meet.jitsi
+          - internal-muc.meet.jitsi
+          - guest.meet.jitsi
+
+  jitsi-jicofo:
+    image: jitsi/jicofo:stable
+    container_name: urban-jitsi-jicofo
+    restart: unless-stopped
+    environment:
+      - XMPP_SERVER=jitsi-prosody
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET:-jitsi-jicofo-secret}
+      - JICOFO_AUTH_USER=focus
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD:-jitsi-focus-password}
+      - JVB_BREWERY_MUC=jvbbrewery
+      - TZ=UTC
+    depends_on:
+      - jitsi-prosody
+    networks:
+      - urban-net
+
+  jitsi-jvb:
+    image: jitsi/jvb:stable
+    container_name: urban-jitsi-jvb
+    restart: unless-stopped
+    ports:
+      - "10000:10000/udp"
+    environment:
+      - XMPP_SERVER=jitsi-prosody
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - JVB_AUTH_USER=jvb
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD:-jitsi-jvb-password}
+      - JVB_BREWERY_MUC=jvbbrewery
+      - JVB_PORT=10000
+      - JVB_TCP_HARVESTER_DISABLED=true
+      - TZ=UTC
+    depends_on:
+      - jitsi-prosody
+    networks:
+      - urban-net
+
+  # ── Nextcloud (SharePoint-level sharing engine for Y&U Drive) ──────────────
+  nextcloud-db:
+    image: postgres:16-alpine
+    container_name: urban-nextcloud-db
+    restart: unless-stopped
+    volumes:
+      - nextcloud_db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASS:-nextcloud_secret}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - urban-net
+
+  nextcloud:
+    image: nextcloud:fpm
+    container_name: urban-nextcloud
+    restart: unless-stopped
+    depends_on:
+      nextcloud-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - nextcloud_data:/var/www/html
+    environment:
+      POSTGRES_HOST: nextcloud-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASS:-nextcloud_secret}
+      REDIS_HOST: redis
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-admin}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD:-super-admin@2026!}
+      NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud-web nextcloud localhost ${DOMAIN:-localhost}"
+      OVERWRITEPROTOCOL: http
+    networks:
+      - urban-net
+
+  nextcloud-web:
+    image: nginx:alpine
+    container_name: urban-nextcloud-web
+    restart: unless-stopped
+    depends_on:
+      - nextcloud
+    ports:
+      - "8085:80"
+    volumes:
+      - ./nginx-nextcloud.conf:/etc/nginx/nginx.conf:ro
+      - nextcloud_data:/var/www/html:ro
+    networks:
+      - urban-net
+
+  superset:
+    build:
+      context: ./superset
+      dockerfile: Dockerfile
+    container_name: urban-superset
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY:-superset-secret-key-2026-urban-erp}
+      - SUPERSET_CONFIG_PATH=/app/superset_config.py
+      - ADMIN_USERNAME=super-admin
+      - ADMIN_EMAIL=super-admin@youthandurbanism.org
+      - ADMIN_PASSWORD=${SUPERSET_ADMIN_PASSWORD:-super-admin@2026!}
+      - DATABASE_URL=postgresql+psycopg2://urban:urban_secret@postgres:5432/superset
+      - APP_URL=${APP_URL:-http://localhost:3010}
+    volumes:
+      - superset_data:/app/superset_home
+      - ./superset/superset_config.py:/app/superset_config.py:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "
+        superset db upgrade &&
+        superset fab create-admin --username admin --firstname Admin --lastname User --email super-admin@youthandurbanism.org --password 'super-admin@2026!' || true &&
+        superset init &&
+        superset run -h 0.0.0.0 -p 8088
+      "
+    networks:
+      - urban-net

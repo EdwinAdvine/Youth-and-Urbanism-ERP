@@ -1,0 +1,137 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import apiClient from './client'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type EventType = 'meeting' | 'task' | 'reminder' | 'holiday'
+
+export interface CalendarEvent {
+  id: string
+  title: string
+  description: string | null
+  start_time: string
+  end_time: string
+  all_day: boolean
+  event_type: EventType
+  color: string | null
+  location: string | null
+  attendees: string[] | null
+  jitsi_room: string | null
+  recurrence_rule: string | null
+  recurrence_end: string | null
+  parent_event_id: string | null
+  organizer_id: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateEventPayload {
+  title: string
+  description?: string
+  start_time: string
+  end_time: string
+  all_day?: boolean
+  event_type?: string
+  color?: string
+  location?: string
+  attendees?: string[]
+  jitsi_room?: string
+  recurrence_rule?: string
+  recurrence_end?: string
+}
+
+export interface UpdateEventPayload extends Partial<CreateEventPayload> {
+  id: string
+}
+
+interface EventsResponse {
+  total: number
+  events: CalendarEvent[]
+}
+
+interface SyncResponse {
+  synced: number
+  total_remote?: number
+  message?: string
+}
+
+interface ExpandResponse {
+  parent_event_id: string
+  instances_created: number
+  events: CalendarEvent[]
+}
+
+// ─── Events ──────────────────────────────────────────────────────────────────
+
+export function useCalendarEvents(params?: { start?: string; end?: string; event_type?: string }) {
+  return useQuery({
+    queryKey: ['calendar', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<EventsResponse>('/calendar/events', { params })
+      return data
+    },
+  })
+}
+
+export function useCreateCalendarEvent() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateEventPayload) => {
+      const { data } = await apiClient.post<CalendarEvent>('/calendar/events', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['calendar'] }),
+  })
+}
+
+export function useUpdateCalendarEvent() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: UpdateEventPayload) => {
+      const { data } = await apiClient.put<CalendarEvent>(`/calendar/events/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['calendar'] }),
+  })
+}
+
+export function useDeleteCalendarEvent() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/calendar/events/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['calendar'] }),
+  })
+}
+
+// ─── CalDAV Sync ─────────────────────────────────────────────────────────────
+
+export function useSyncCalDAV() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post<SyncResponse>('/calendar/sync')
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['calendar'] }),
+  })
+}
+
+// ─── Expand Recurring ────────────────────────────────────────────────────────
+
+export function useExpandRecurring() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ eventId, count }: { eventId: string; count?: number }) => {
+      const params = count ? { count } : {}
+      const { data } = await apiClient.post<ExpandResponse>(
+        `/calendar/events/${eventId}/expand`,
+        null,
+        { params },
+      )
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['calendar'] }),
+  })
+}

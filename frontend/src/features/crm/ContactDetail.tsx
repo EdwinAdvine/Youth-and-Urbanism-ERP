@@ -1,0 +1,273 @@
+import { useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useContact, useUpdateContact, type ContactType, type CreateContactPayload } from '../../api/crm'
+import { Button, Spinner, Modal, Input, Badge, Card, Select } from '../../components/ui'
+import { toast } from '../../components/ui'
+
+const STATUS_BADGE: Record<string, 'default' | 'info' | 'warning' | 'success' | 'danger' | 'primary'> = {
+  new: 'info',
+  contacted: 'primary',
+  qualified: 'success',
+  unqualified: 'danger',
+  converted: 'warning',
+}
+
+const STAGE_BADGE: Record<string, 'default' | 'info' | 'warning' | 'success' | 'danger' | 'primary'> = {
+  prospecting: 'info',
+  proposal: 'primary',
+  negotiation: 'warning',
+  closed_won: 'success',
+  closed_lost: 'danger',
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
+}
+
+export default function ContactDetail() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { data: contact, isLoading } = useContact(id ?? '')
+  const updateMutation = useUpdateContact()
+  const [editOpen, setEditOpen] = useState(false)
+  const [form, setForm] = useState<CreateContactPayload>({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    contact_type: 'person',
+    notes: '',
+  })
+
+  const openEdit = () => {
+    if (!contact) return
+    setForm({
+      name: contact.name,
+      email: contact.email,
+      phone: contact.phone ?? '',
+      company: contact.company ?? '',
+      contact_type: contact.contact_type,
+      notes: contact.notes ?? '',
+    })
+    setEditOpen(true)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!contact) return
+    try {
+      await updateMutation.mutateAsync({ id: contact.id, ...form })
+      toast('success', 'Contact updated')
+      setEditOpen(false)
+    } catch {
+      toast('error', 'Failed to update contact')
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  if (!contact) {
+    return (
+      <div className="text-center py-20 text-gray-400">
+        Contact not found
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/crm/contacts')}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{contact.name}</h1>
+            <p className="text-sm text-gray-500 mt-0.5">{contact.email}</p>
+          </div>
+          <Badge variant={contact.contact_type === 'company' ? 'primary' : 'info'}>
+            {contact.contact_type}
+          </Badge>
+          <Badge variant={contact.is_active ? 'success' : 'default'}>
+            {contact.is_active ? 'Active' : 'Inactive'}
+          </Badge>
+        </div>
+        <Button onClick={openEdit}>Edit Contact</Button>
+      </div>
+
+      {/* Contact Info */}
+      <Card>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-gray-500">Email</span>
+            <p className="font-medium text-gray-900">{contact.email}</p>
+          </div>
+          <div>
+            <span className="text-gray-500">Phone</span>
+            <p className="font-medium text-gray-900">{contact.phone || '---'}</p>
+          </div>
+          <div>
+            <span className="text-gray-500">Company</span>
+            <p className="font-medium text-gray-900">{contact.company || '---'}</p>
+          </div>
+          <div>
+            <span className="text-gray-500">Created</span>
+            <p className="font-medium text-gray-900">{new Date(contact.created_at).toLocaleDateString()}</p>
+          </div>
+          {contact.notes && (
+            <div className="md:col-span-2">
+              <span className="text-gray-500">Notes</span>
+              <p className="font-medium text-gray-900 whitespace-pre-wrap">{contact.notes}</p>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Related Leads */}
+      <Card padding={false}>
+        <div className="p-6 pb-0">
+          <h2 className="text-lg font-semibold text-gray-900">Related Leads</h2>
+        </div>
+        {contact.leads?.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Title</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                  <th className="text-right py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Est. Value</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contact.leads.map((lead) => (
+                  <tr key={lead.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                    <td className="py-3 px-6 font-medium text-gray-900">{lead.title}</td>
+                    <td className="py-3 px-6">
+                      <Badge variant={STATUS_BADGE[lead.status] ?? 'default'}>{lead.status}</Badge>
+                    </td>
+                    <td className="py-3 px-6 text-right text-gray-700">
+                      {lead.estimated_value != null ? formatCurrency(lead.estimated_value) : '---'}
+                    </td>
+                    <td className="py-3 px-6 text-gray-500">{new Date(lead.created_at).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-gray-400 text-sm text-center py-8">No leads for this contact</p>
+        )}
+      </Card>
+
+      {/* Related Opportunities */}
+      <Card padding={false}>
+        <div className="p-6 pb-0">
+          <h2 className="text-lg font-semibold text-gray-900">Related Opportunities</h2>
+        </div>
+        {contact.opportunities?.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Title</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Stage</th>
+                  <th className="text-right py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Value</th>
+                  <th className="text-right py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Probability</th>
+                  <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wide">Close Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contact.opportunities.map((opp) => (
+                  <tr key={opp.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                    <td className="py-3 px-6 font-medium text-gray-900">{opp.title}</td>
+                    <td className="py-3 px-6">
+                      <Badge variant={STAGE_BADGE[opp.stage] ?? 'default'}>{opp.stage.replace('_', ' ')}</Badge>
+                    </td>
+                    <td className="py-3 px-6 text-right text-gray-700">{formatCurrency(opp.value)}</td>
+                    <td className="py-3 px-6 text-right text-gray-700">{opp.probability}%</td>
+                    <td className="py-3 px-6 text-gray-500">
+                      {opp.expected_close_date ? new Date(opp.expected_close_date).toLocaleDateString() : '---'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-gray-400 text-sm text-center py-8">No opportunities for this contact</p>
+        )}
+      </Card>
+
+      {/* Edit Modal */}
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Contact" size="lg">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            label="Name"
+            required
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          />
+          <Input
+            label="Email"
+            type="email"
+            required
+            value={form.email}
+            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Phone"
+              value={form.phone ?? ''}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+            />
+            <Input
+              label="Company"
+              value={form.company ?? ''}
+              onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
+            />
+          </div>
+          <Select
+            label="Contact Type"
+            options={[
+              { value: 'person', label: 'Person' },
+              { value: 'company', label: 'Company' },
+            ]}
+            value={form.contact_type}
+            onChange={(e) => setForm((f) => ({ ...f, contact_type: e.target.value as ContactType }))}
+          />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <textarea
+              className="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              rows={3}
+              value={form.notes ?? ''}
+              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={updateMutation.isPending}>
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  )
+}

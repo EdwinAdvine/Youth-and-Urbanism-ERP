@@ -1,0 +1,23 @@
+import { lazyWithPreload } from './lazyWithPreload'
+
+// Sidebar-linked dashboards — prefetch on hover
+export const FinanceDashboard = lazyWithPreload(() => import('../features/finance/FinanceDashboard'))
+export const HRDashboard      = lazyWithPreload(() => import('../features/hr/HRDashboard'))
+export const CRMDashboard     = lazyWithPreload(() => import('../features/crm/CRMDashboard'))
+export const ProjectsPage     = lazyWithPreload(() => import('../features/projects/ProjectsPage'))
+export const InventoryDashboard  = lazyWithPreload(() => import('../features/inventory/InventoryDashboard'))
+export const SupplyChainDashboard = lazyWithPreload(() => import('../features/supplychain/SupplyChainDashboard'))
+export const ManufacturingDashboard = lazyWithPreload(() => import('../features/manufacturing/ManufacturingDashboard'))
+export const POSDashboard         = lazyWithPreload(() => import('../features/pos/POSDashboard'))
+export const EcommerceDashboard  = lazyWithPreload(() => import('../features/ecommerce/EcommerceDashboard'))
+export const SupportDashboard    = lazyWithPreload(() => import('../features/support/SupportDashboard'))
+export const MailPage         = lazyWithPreload(() => import('../features/mail/MailPage'))
+export const CalendarPage     = lazyWithPreload(() => import('../features/calendar/CalendarPage'))
+export const TeamsPage        = lazyWithPreload(() => import('../features/teams/TeamsPage'))
+export const DocsPage         = lazyWithPreload(() => import('../features/docs/DocsPage'))
+export const DrivePage        = lazyWithPreload(() => import('../features/drive/DrivePage'))
+export const NotesPage        = lazyWithPreload(() => import('../features/notes/NotesPage'))
+export const AnalyticsPage    = lazyWithPreload(() => import('../features/analytics/AnalyticsPage'))
+export const FormsPage        = lazyWithPreload(() => import('../features/forms/FormsPage'))
+export const AdminDashboard   = lazyWithPreload(() => import('../features/admin/AdminDashboard'))
+export const SettingsPage     = lazyWithPreload(() => import('../features/settings/SettingsPage'))

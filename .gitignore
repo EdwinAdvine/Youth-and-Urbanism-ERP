@@ -1,0 +1,76 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build output
+frontend/dist/
+frontend/build/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker volumes (persistent data)
+volumes/
+
+# Logs
+*.log
+logs/
+
+# Coverage & testing
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+.mypy_cache/
+
+# MinIO data
+minio-data/
+
+# Postgres data
+pgdata/
+
+# Redis data
+redis-data/
+
+# Backup files
+*.bak
+*.backup
+
+# SSL certificates (sensitive)
+certs/
+*.pem
+*.key
+*.crt
+
+# Secrets
+credentials.json
+secrets.yaml
+*.secret
