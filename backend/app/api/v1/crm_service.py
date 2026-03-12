@@ -15,8 +15,8 @@ from app.core.sanitize import like_pattern
 from app.models.crm_service import (
     Conversation,
     ConversationMessage,
-    KnowledgeBaseArticle,
-    SLAPolicy,
+    CRMKnowledgeBaseArticle as KnowledgeBaseArticle,
+    CRMSLAPolicy as SLAPolicy,
     SLATracker,
 )
 
@@ -453,7 +453,7 @@ async def update_kb_article(
     return ArticleOut.model_validate(article).model_dump()
 
 
-@router.delete("/kb/articles/{article_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete KB article")
+@router.delete("/kb/articles/{article_id}", status_code=status.HTTP_200_OK, summary="Delete KB article")
 async def delete_kb_article(
     article_id: uuid.UUID,
     current_user: CurrentUser,
@@ -464,7 +464,7 @@ async def delete_kb_article(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article not found")
     await db.delete(article)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.post("/kb/search", summary="Semantic search KB articles")
@@ -536,7 +536,7 @@ async def update_sla_policy(
     return SLAPolicyOut.model_validate(policy).model_dump()
 
 
-@router.delete("/sla/policies/{policy_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete SLA policy")
+@router.delete("/sla/policies/{policy_id}", status_code=status.HTTP_200_OK, summary="Delete SLA policy")
 async def delete_sla_policy(
     policy_id: uuid.UUID,
     current_user: CurrentUser,
@@ -547,7 +547,7 @@ async def delete_sla_policy(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SLA policy not found")
     await db.delete(policy)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.get("/sla/tickets/{ticket_id}", summary="Get SLA tracker for a ticket")

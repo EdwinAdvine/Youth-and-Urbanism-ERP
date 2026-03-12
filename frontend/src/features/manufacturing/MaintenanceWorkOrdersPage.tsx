@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Button, Badge, Card, Table, Modal, Input, Select } from '../../components/ui'
+import { Button, Badge, Card, Modal, Input, Select } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useMaintenanceWorkOrders, useCreateMWO, useCompleteMWO, type MWOCreate } from '../../api/manufacturing_equipment'
 
-const statusColors: Record<string, string> = { open: 'yellow', in_progress: 'blue', completed: 'green', cancelled: 'gray' }
-const typeColors: Record<string, string> = { preventive: 'blue', corrective: 'red', predictive: 'purple', emergency: 'red' }
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const statusColors: Record<string, BadgeVariant> = { open: 'warning', in_progress: 'info', completed: 'success', cancelled: 'default' }
+const typeColors: Record<string, BadgeVariant> = { preventive: 'info', corrective: 'danger', predictive: 'primary', emergency: 'danger' }
 
 function formatDate(d: string | null) {
   if (!d) return '—'
@@ -23,14 +25,14 @@ export default function MaintenanceWorkOrdersPage() {
   const completeMWO = useCompleteMWO()
 
   const handleCreate = async () => {
-    if (!form.asset_id || !form.description) return toast({ title: 'Asset ID and description required', variant: 'destructive' })
+    if (!form.asset_id || !form.description) return toast('error', 'Asset ID and description required')
     try {
       await createMWO.mutateAsync(form)
-      toast({ title: 'Maintenance work order created' })
+      toast('success', 'Maintenance work order created')
       setCreateOpen(false)
       setForm({ asset_id: '', maintenance_type: 'preventive', description: '' })
     } catch {
-      toast({ title: 'Failed to create', variant: 'destructive' })
+      toast('error', 'Failed to create')
     }
   }
 
@@ -38,11 +40,11 @@ export default function MaintenanceWorkOrdersPage() {
     if (!completeId) return
     try {
       await completeMWO.mutateAsync({ id: completeId, completion_notes: completeNotes || undefined })
-      toast({ title: 'MWO completed' })
+      toast('success', 'MWO completed')
       setCompleteId(null)
       setCompleteNotes('')
     } catch {
-      toast({ title: 'Failed to complete', variant: 'destructive' })
+      toast('error', 'Failed to complete')
     }
   }
 
@@ -61,15 +63,15 @@ export default function MaintenanceWorkOrdersPage() {
       </Select>
 
       <Card>
-        <Table>
+        <table className="w-full text-sm">
           <thead>
             <tr>
-              <th>MWO #</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Priority</th>
-              <th>Planned Date</th>
-              <th>Description</th>
+              <th className="text-left py-3 px-4">MWO #</th>
+              <th className="text-left py-3 px-4">Type</th>
+              <th className="text-left py-3 px-4">Status</th>
+              <th className="text-left py-3 px-4">Priority</th>
+              <th className="text-left py-3 px-4">Planned Date</th>
+              <th className="text-left py-3 px-4">Description</th>
               <th></th>
             </tr>
           </thead>
@@ -81,8 +83,8 @@ export default function MaintenanceWorkOrdersPage() {
             ) : mwos?.map(mwo => (
               <tr key={mwo.id}>
                 <td className="font-mono text-sm font-medium">{mwo.mwo_number}</td>
-                <td><Badge variant={typeColors[mwo.maintenance_type] || 'gray'}>{mwo.maintenance_type}</Badge></td>
-                <td><Badge variant={statusColors[mwo.status] || 'gray'}>{mwo.status.replace('_', ' ')}</Badge></td>
+                <td><Badge variant={typeColors[mwo.maintenance_type] || 'default'}>{mwo.maintenance_type}</Badge></td>
+                <td><Badge variant={statusColors[mwo.status] || 'default'}>{mwo.status.replace('_', ' ')}</Badge></td>
                 <td className={`text-sm font-medium ${mwo.priority === 'high' ? 'text-red-600' : mwo.priority === 'low' ? 'text-gray-400' : ''}`}>
                   {mwo.priority}
                 </td>
@@ -96,7 +98,7 @@ export default function MaintenanceWorkOrdersPage() {
               </tr>
             ))}
           </tbody>
-        </Table>
+        </table>
       </Card>
 
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create Maintenance Work Order">

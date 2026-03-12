@@ -311,7 +311,7 @@ async def update_survey(
 
 @router.delete(
     "/surveys/{survey_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete survey (draft only, HR admin)",
     response_model=None,
 )
@@ -798,7 +798,7 @@ async def get_recognition(
 
 @router.delete(
     "/recognitions/{rec_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete recognition (own or admin)",
 )
 async def delete_recognition(

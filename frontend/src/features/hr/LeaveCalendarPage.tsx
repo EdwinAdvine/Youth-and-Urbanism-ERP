@@ -28,7 +28,7 @@ export default function LeaveCalendarPage() {
 
   const approvedLeaves = useMemo(() => {
     if (!leaveData?.items) return []
-    return leaveData.items.filter((l) => {
+    return leaveData.items.filter((_l) => {
       if (deptFilter) return false // would need dept info on leave
       return true
     })

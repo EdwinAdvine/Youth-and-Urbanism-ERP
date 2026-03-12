@@ -30,7 +30,7 @@ export default function SupplierPricingPage() {
         currency: form.currency,
         valid_from: form.valid_from || undefined,
         valid_to: form.valid_to || undefined,
-      } as unknown)
+      } as Partial<import('../../api/inventory').SupplierPrice>)
       toast('success', 'Price list entry created')
       setModalOpen(false)
       setForm({ supplier_id: '', item_id: '', unit_price: '', min_order_qty: '1', lead_time_days: '0', currency: 'USD', valid_from: '', valid_to: '' })

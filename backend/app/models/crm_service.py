@@ -81,7 +81,7 @@ class ConversationMessage(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     conversation = relationship("Conversation", back_populates="messages")
 
 
-class KnowledgeBaseArticle(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class CRMKnowledgeBaseArticle(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Self-service knowledge base article with optional vector embedding."""
 
     __tablename__ = "crm_knowledge_base_articles"
@@ -111,7 +111,7 @@ class KnowledgeBaseArticle(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     author = relationship("User", foreign_keys=[author_id])
 
 
-class SLAPolicy(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class CRMSLAPolicy(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Service-level agreement policy defining response/resolution targets."""
 
     __tablename__ = "crm_sla_policies"
@@ -156,4 +156,4 @@ class SLATracker(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_resolution_breached: Mapped[bool] = mapped_column(Boolean, default=False)
 
     ticket = relationship("CRMTicket", foreign_keys=[ticket_id])
-    sla_policy = relationship("SLAPolicy", back_populates="trackers")
+    sla_policy = relationship("CRMSLAPolicy", back_populates="trackers")

@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.crm_automations import Workflow, WorkflowExecution, WorkflowNode
+from app.models.crm_automations import CRMWorkflow as Workflow, CRMWorkflowExecution as WorkflowExecution, WorkflowNode
 
 logger = logging.getLogger(__name__)
 

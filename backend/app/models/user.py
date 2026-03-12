@@ -19,6 +19,10 @@ class User(BaseModel):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_superadmin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_bot: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False,
+        comment="System bot users (AI assistant, webhook bots)",
+    )
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

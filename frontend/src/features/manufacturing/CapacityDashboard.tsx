@@ -45,7 +45,7 @@ export default function CapacityDashboard() {
               <div className="flex items-center justify-between">
                 <div className="text-sm font-medium truncate">{row.workstation_id.slice(0, 8)}...</div>
                 {row.overloaded && (
-                  <Badge variant="red" className="text-xs">Overloaded</Badge>
+                  <Badge variant="danger" className="text-xs">Overloaded</Badge>
                 )}
               </div>
 

@@ -60,6 +60,9 @@ class FileShare(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True,
     )
 
+    # Link scope: anyone, organization, specific_people
+    link_scope: Mapped[str | None] = mapped_column(String(30), nullable=True, default="anyone")
+
     # Notification
     notify_on_access: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 

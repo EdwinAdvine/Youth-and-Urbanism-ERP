@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { Button, Badge, Card, Table, Modal, Input } from '../../components/ui'
+import { Button, Badge, Card, Modal, Input } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useScenarios, useCreateScenario, useRunScenario, useDeleteScenario } from '../../api/manufacturing_planning'
 
-const statusColors: Record<string, string> = {
-  draft: 'gray',
-  running: 'yellow',
-  completed: 'green',
-  failed: 'red',
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const statusColors: Record<string, BadgeVariant> = {
+  draft: 'default',
+  running: 'warning',
+  completed: 'success',
+  failed: 'danger',
 }
 
 function formatDate(d: string) {
@@ -24,32 +26,32 @@ export default function ScenarioPlanner() {
   const deleteScenario = useDeleteScenario()
 
   const handleCreate = async () => {
-    if (!form.name) return toast({ title: 'Name required', variant: 'destructive' })
+    if (!form.name) return toast('error', 'Name required')
     try {
       await createScenario.mutateAsync({ name: form.name, description: form.description || undefined })
-      toast({ title: 'Scenario created' })
+      toast('success', 'Scenario created')
       setModalOpen(false)
       setForm({ name: '', description: '' })
     } catch {
-      toast({ title: 'Failed to create', variant: 'destructive' })
+      toast('error', 'Failed to create')
     }
   }
 
   const handleRun = async (id: string) => {
     try {
       const result = await runScenario.mutateAsync(id)
-      toast({ title: `Scenario ran — ${result.scheduled} operations scheduled` })
+      toast('success', `Scenario ran — ${result.scheduled} operations scheduled`)
     } catch {
-      toast({ title: 'Scenario run failed', variant: 'destructive' })
+      toast('error', 'Scenario run failed')
     }
   }
 
   const handleDelete = async (id: string) => {
     try {
       await deleteScenario.mutateAsync(id)
-      toast({ title: 'Scenario deleted' })
+      toast('success', 'Scenario deleted')
     } catch {
-      toast({ title: 'Failed to delete', variant: 'destructive' })
+      toast('error', 'Failed to delete')
     }
   }
 
@@ -61,13 +63,13 @@ export default function ScenarioPlanner() {
       </div>
 
       <Card>
-        <Table>
+        <table className="w-full text-sm">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Status</th>
-              <th>Results</th>
-              <th>Created</th>
+              <th className="text-left py-3 px-4">Name</th>
+              <th className="text-left py-3 px-4">Status</th>
+              <th className="text-left py-3 px-4">Results</th>
+              <th className="text-left py-3 px-4">Created</th>
               <th></th>
             </tr>
           </thead>
@@ -82,7 +84,7 @@ export default function ScenarioPlanner() {
                   <div className="font-medium">{s.name}</div>
                   {s.description && <div className="text-xs text-gray-500">{s.description}</div>}
                 </td>
-                <td><Badge variant={statusColors[s.status] || 'gray'}>{s.status}</Badge></td>
+                <td><Badge variant={statusColors[s.status] || 'default'}>{s.status}</Badge></td>
                 <td className="text-sm text-gray-500">
                   {s.results ? `${(s.results as { scheduled_entries?: number }).scheduled_entries ?? 0} entries` : '—'}
                 </td>
@@ -107,7 +109,7 @@ export default function ScenarioPlanner() {
               </tr>
             ))}
           </tbody>
-        </Table>
+        </table>
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="New Scenario">

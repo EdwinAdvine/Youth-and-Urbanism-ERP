@@ -175,7 +175,7 @@ async def update_custom_field(
 
 @router.delete(
     "/{project_id}/custom-fields/{field_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a custom field definition (cascades values)",
 )
 async def delete_custom_field(
@@ -194,7 +194,7 @@ async def delete_custom_field(
 
     await db.delete(field)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Task custom field value endpoints ────────────────────────────────────────

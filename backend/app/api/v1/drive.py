@@ -156,13 +156,18 @@ def _minio_available() -> bool:
 
 
 def _hash_password(password: str) -> str:
-    import hashlib
-    return hashlib.sha256(password.encode()).hexdigest()
+    from passlib.hash import bcrypt
+    return bcrypt.hash(password)
 
 
 def _verify_password(password: str, hashed: str) -> bool:
-    import hashlib
-    return hashlib.sha256(password.encode()).hexdigest() == hashed
+    from passlib.hash import bcrypt
+    try:
+        return bcrypt.verify(password, hashed)
+    except Exception:
+        # Fallback for legacy SHA256 hashes during migration
+        import hashlib
+        return hashlib.sha256(password.encode()).hexdigest() == hashed
 
 
 async def _log_share_action(
@@ -237,6 +242,25 @@ async def upload_file(
     filename = file.filename or "untitled"
     content_type = file.content_type or "application/octet-stream"
 
+    # ── Quota enforcement ─────────────────────────────────────────────────
+    try:
+        from sqlalchemy import func as sa_func
+        total_result = await db.execute(
+            select(sa_func.sum(DriveFile.size)).where(DriveFile.owner_id == current_user.id)
+        )
+        current_usage = total_result.scalar() or 0
+        # Default quota: 10GB (10240 MB). TODO: read from SystemSettings for per-user overrides.
+        quota_bytes = 10240 * 1024 * 1024  # 10 GB
+        if current_usage + len(file_data) > quota_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"Storage quota exceeded. Used: {current_usage / (1024*1024):.1f}MB / {quota_bytes / (1024*1024):.0f}MB",
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Quota check failed (allowing upload): %s", exc)
+
     # Resolve folder path
     folder_path = "/"
     resolved_folder_id: uuid.UUID | None = None
@@ -301,6 +325,27 @@ async def upload_file(
             )
         except Exception as exc:
             logger.warning("Failed to enqueue thumbnail task for %s: %s", drive_file.id, exc)
+
+    # Trigger AI content extraction + embedding + analysis pipeline
+    try:
+        from app.tasks.file_processing import extract_file_content  # noqa: PLC0415
+        extract_file_content.delay(str(drive_file.id))
+    except Exception as exc:
+        logger.warning("Failed to enqueue AI processing for %s: %s", drive_file.id, exc)
+
+    # Log activity
+    try:
+        from app.models.drive import FileAccessLog  # noqa: PLC0415
+        log = FileAccessLog(
+            user_id=current_user.id,
+            file_id=drive_file.id,
+            action="upload",
+            metadata_json={"filename": filename, "size": record["size"], "content_type": content_type},
+        )
+        db.add(log)
+        await db.commit()
+    except Exception:
+        pass
 
     return FileOut.model_validate(drive_file).model_dump()
 
@@ -374,7 +419,7 @@ async def get_file_thumbnail(
     return RedirectResponse(url=url, status_code=status.HTTP_302_FOUND)
 
 
-@router.delete("/file/{file_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a file")
+@router.delete("/file/{file_id}", status_code=status.HTTP_200_OK, summary="Delete a file")
 async def delete_file(
     file_id: uuid.UUID,
     current_user: CurrentUser,
@@ -398,7 +443,7 @@ async def delete_file(
         "owner_id": str(current_user.id),
     })
 
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Folder Endpoints ──────────────────────────────────────────────────────────
@@ -605,7 +650,7 @@ async def update_share(
     return ShareOut.model_validate(share).model_dump()
 
 
-@router.delete("/share/{share_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Revoke a share")
+@router.delete("/share/{share_id}", status_code=status.HTTP_200_OK, summary="Revoke a share")
 async def revoke_share(
     share_id: uuid.UUID,
     current_user: CurrentUser,
@@ -622,7 +667,7 @@ async def revoke_share(
     )
     await db.delete(share)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.get("/shared-with-me", summary="List files shared with the current user")
@@ -970,7 +1015,7 @@ async def list_team_members(
     return {"total": len(members), "members": [TeamMemberOut.model_validate(m) for m in members]}
 
 
-@router.delete("/team-folders/{team_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remove team folder member")
+@router.delete("/team-folders/{team_id}/members/{user_id}", status_code=status.HTTP_200_OK, summary="Remove team folder member")
 async def remove_team_member(
     team_id: uuid.UUID,
     user_id: uuid.UUID,
@@ -993,10 +1038,10 @@ async def remove_team_member(
 
     await db.delete(member)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
-@router.delete("/team-folders/{team_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a team folder")
+@router.delete("/team-folders/{team_id}", status_code=status.HTTP_200_OK, summary="Delete a team folder")
 async def delete_team_folder(
     team_id: uuid.UUID,
     current_user: CurrentUser,
@@ -1008,7 +1053,7 @@ async def delete_team_folder(
 
     await db.delete(tf)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Sharing Policies (Super Admin) ───────────────────────────────────────────

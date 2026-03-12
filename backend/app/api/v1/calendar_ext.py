@@ -333,7 +333,7 @@ async def create_subscription(
 
 @router.delete(
     "/subscriptions/{sub_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Remove a calendar subscription",
 )
 async def delete_subscription(
@@ -346,7 +346,7 @@ async def delete_subscription(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found")
     await db.delete(sub)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Categories ───────────────────────────────────────────────────────────────
@@ -410,7 +410,7 @@ async def update_category(
 
 @router.delete(
     "/categories/{cat_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a calendar category",
 )
 async def delete_category(
@@ -423,7 +423,7 @@ async def delete_category(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
     await db.delete(cat)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Utilities ────────────────────────────────────────────────────────────────

@@ -195,7 +195,7 @@ async def get_meeting(
     return MeetingOut.model_validate(event).model_dump()
 
 
-@router.delete("/{meeting_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a meeting")
+@router.delete("/{meeting_id}", status_code=status.HTTP_200_OK, summary="Delete a meeting")
 async def delete_meeting(
     meeting_id: uuid.UUID,
     current_user: CurrentUser,
@@ -215,7 +215,7 @@ async def delete_meeting(
         "organizer_id": str(current_user.id),
     })
 
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.get("/{meeting_id}/join", summary="Get Jitsi room URL and JWT for joining")

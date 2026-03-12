@@ -24,6 +24,7 @@ from app.api.v1 import inventory_ext
 from app.api.v1 import pos_ext
 from app.api.v1 import ecommerce_ext
 from app.api.v1 import analytics_ext
+from app.api.v1 import analytics_schema as analytics_schema_mod
 from app.api.v1 import finance_recurring
 from app.api.v1 import finance_expenses
 from app.api.v1 import finance_vendor_bills
@@ -39,6 +40,7 @@ from app.api.v1 import manufacturing_trace as manufacturing_trace_mod
 from app.api.v1 import manufacturing_planning as manufacturing_planning_mod
 from app.api.v1 import manufacturing_equipment as manufacturing_equipment_mod
 from app.api.v1 import manufacturing_labor as manufacturing_labor_mod
+from app.api.v1 import manufacturing_ai as manufacturing_ai_mod
 from app.api.v1 import projects_ext as projects_ext_mod
 from app.api.v1 import mail_ext as mail_ext_mod
 from app.api.v1 import support_ext as support_ext_mod
@@ -123,6 +125,35 @@ from app.api.v1 import inventory_replenishment as inv_replenishment_mod
 from app.api.v1 import inventory_kits as inv_kits_mod
 from app.api.v1 import inventory_costing as inv_costing_mod
 from app.api.v1 import inventory_automation as inv_automation_mod
+from app.api.v1 import ecommerce_b2b as ecommerce_b2b_mod
+from app.api.v1 import ecommerce_loyalty as ecommerce_loyalty_mod
+from app.api.v1 import ecommerce_subscriptions as ecommerce_subscriptions_mod
+from app.api.v1 import ecommerce_import as ecommerce_import_mod
+from app.api.v1 import ecommerce_blog as ecommerce_blog_mod
+# Support Phase 1 — Live Chat, Audit, Time Tracking, Views, Templates, Presence, Inbound Email
+from app.api.v1 import support_livechat as support_livechat_mod
+from app.api.v1 import support_audit as support_audit_mod
+from app.api.v1 import support_time as support_time_mod
+from app.api.v1 import support_views as support_views_mod
+from app.api.v1 import support_templates as support_templates_mod
+from app.api.v1 import support_presence as support_presence_mod
+from app.api.v1 import support_inbound as support_inbound_mod
+# Y&U Teams — Chat & Channels
+from app.api.v1 import chat as chat_mod
+from app.api.v1 import chat_ws as chat_ws_mod
+# Calendar Mega-Upgrade — Booking Pages, Analytics, Focus Time, Resources, Automation
+from app.api.v1 import booking as booking_mod
+from app.api.v1 import calendar_analytics as calendar_analytics_mod
+from app.api.v1 import calendar_focus as calendar_focus_mod
+from app.api.v1 import calendar_resources as calendar_resources_mod
+from app.api.v1 import calendar_automation as calendar_automation_mod
+from app.api.v1 import calendar_ai_router as calendar_ai_mod
+# Era Mail Advanced — AI Triage, Focused Inbox, Smart Folders, FTS, Cross-Module
+from app.api.v1 import mail_advanced as mail_advanced_mod
+# Y&U Notes Mega-Upgrade — Notebooks, Hierarchy, Versions, Comments, Entity Links
+from app.api.v1 import notebooks as notebooks_mod
+from app.api.v1 import notes_ai as notes_ai_mod
+from app.api.v1 import notes_widgets as notes_widgets_mod
 
 api_router = APIRouter()
 
@@ -183,6 +214,7 @@ api_router.include_router(manufacturing_trace_mod.router, prefix="/manufacturing
 api_router.include_router(manufacturing_planning_mod.router, prefix="/manufacturing", tags=["Manufacturing Planning"])
 api_router.include_router(manufacturing_equipment_mod.router, prefix="/manufacturing", tags=["Manufacturing Equipment"])
 api_router.include_router(manufacturing_labor_mod.router, prefix="/manufacturing", tags=["Manufacturing Labor"])
+api_router.include_router(manufacturing_ai_mod.router, prefix="/manufacturing", tags=["Manufacturing AI"])
 api_router.include_router(projects_ext_mod.router, prefix="/projects", tags=["Projects Extensions"])
 api_router.include_router(mail_ext_mod.router, prefix="/mail", tags=["Mail Extensions"])
 api_router.include_router(support_ext_mod.router, prefix="/support", tags=["Support Extensions"])
@@ -263,3 +295,38 @@ api_router.include_router(inv_replenishment_mod.router, prefix="/inventory", tag
 api_router.include_router(inv_kits_mod.router, prefix="/inventory", tags=["Inventory Kits & Pricing"])
 api_router.include_router(inv_costing_mod.router, prefix="/inventory", tags=["Inventory Costing"])
 api_router.include_router(inv_automation_mod.router, prefix="/inventory", tags=["Inventory Automation"])
+# E-Commerce Upgrade — B2B, Loyalty, Subscriptions, Import, Blog
+api_router.include_router(ecommerce_b2b_mod.router, prefix="/ecommerce", tags=["E-Commerce B2B"])
+api_router.include_router(ecommerce_loyalty_mod.router, prefix="/ecommerce", tags=["E-Commerce Loyalty"])
+api_router.include_router(ecommerce_subscriptions_mod.router, prefix="/ecommerce", tags=["E-Commerce Subscriptions"])
+api_router.include_router(ecommerce_import_mod.router, prefix="/ecommerce", tags=["E-Commerce Import"])
+api_router.include_router(ecommerce_blog_mod.router, prefix="/ecommerce", tags=["E-Commerce Blog"])
+api_router.include_router(ecommerce_blog_mod.storefront_blog_router, prefix="/storefront", tags=["Storefront Blog"])
+# Support Phase 1
+api_router.include_router(support_livechat_mod.router, prefix="/support", tags=["Support Live Chat"])
+api_router.include_router(support_audit_mod.router, prefix="/support", tags=["Support Audit Log"])
+api_router.include_router(support_time_mod.router, prefix="/support", tags=["Support Time Tracking"])
+api_router.include_router(support_views_mod.router, prefix="/support", tags=["Support Saved Views"])
+api_router.include_router(support_templates_mod.router, prefix="/support", tags=["Support Templates"])
+api_router.include_router(support_presence_mod.router, prefix="/support", tags=["Support Presence"])
+api_router.include_router(support_inbound_mod.router, prefix="/support", tags=["Support Inbound Email"])
+# Y&U Teams — Chat & Channels
+api_router.include_router(chat_mod.router, prefix="/chat", tags=["Y&U Teams Chat"])
+api_router.include_router(chat_ws_mod.router, prefix="/chat", tags=["Y&U Teams Chat WebSocket"])
+from app.api.v1 import chat_extended as chat_ext_mod
+api_router.include_router(chat_ext_mod.router, prefix="/chat", tags=["Y&U Teams Extended"])
+# Calendar Mega-Upgrade — Booking Pages, Analytics, Focus Time, Resources, Automation
+api_router.include_router(booking_mod.router, prefix="/booking", tags=["Booking Pages"])
+api_router.include_router(calendar_analytics_mod.router, prefix="/calendar", tags=["Calendar Analytics & Prep"])
+api_router.include_router(calendar_focus_mod.router, prefix="/calendar", tags=["Calendar - Focus Time"])
+api_router.include_router(calendar_resources_mod.router)
+api_router.include_router(calendar_automation_mod.router)
+api_router.include_router(calendar_ai_mod.router)
+# Era Mail Advanced
+api_router.include_router(mail_advanced_mod.router, prefix="/mail", tags=["Mail Advanced"])
+# Y&U Notes Mega-Upgrade — Notebooks, Hierarchy, Versions, Comments, Entity Links
+api_router.include_router(notebooks_mod.router, prefix="/notebooks", tags=["Notebooks"])
+api_router.include_router(notes_ai_mod.router, prefix="/notes/ai", tags=["Notes AI"])
+api_router.include_router(notes_widgets_mod.router, prefix="/notes/widgets", tags=["Notes Widgets"])
+# Y&U Analytics Upgrade — Schema Introspection, Copilot, Semantic Models
+api_router.include_router(analytics_schema_mod.router, prefix="/analytics", tags=["Analytics Schema & Copilot"])

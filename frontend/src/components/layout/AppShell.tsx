@@ -22,6 +22,8 @@ const BASE_MODULES = [
   { id: 'supply-chain', label: 'Supply Chain', href: '/supply-chain', icon: <SupplyChainIcon /> },
   { id: 'manufacturing', label: 'Manufacturing', href: '/manufacturing', icon: <ManufacturingIcon /> },
   { id: 'pos', label: 'POS', href: '/pos', icon: <POSIcon /> },
+  { id: 'kds', label: 'KDS', href: '/kds', icon: <KDSIcon /> },
+  { id: 'loyalty', label: 'Loyalty', href: '/loyalty', icon: <LoyaltyIcon /> },
   { id: 'ecommerce', label: 'E-Commerce', href: '/ecommerce', icon: <ECommerceIcon /> },
   { id: 'support', label: 'Support', href: '/support', icon: <SupportIcon /> },
   // Workspace
@@ -381,4 +383,10 @@ function SettingsIcon() {
 }
 function AdminIcon() {
   return <RailIcon path="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+}
+function KDSIcon() {
+  return <RailIcon path="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+}
+function LoyaltyIcon() {
+  return <RailIcon path="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
 }

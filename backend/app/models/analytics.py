@@ -34,12 +34,12 @@ class Dashboard(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_shared: Mapped[bool] = mapped_column(Boolean, default=False)
 
     widgets = relationship(
-        "DashboardWidget", back_populates="dashboard", cascade="all, delete-orphan"
+        "AnalyticsDashboardWidget", back_populates="dashboard", cascade="all, delete-orphan"
     )
 
 
 # ── DashboardWidget ──────────────────────────────────────────────────────────
-class DashboardWidget(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class AnalyticsDashboardWidget(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Single widget on a dashboard (chart, KPI card, table, etc.)."""
 
     __tablename__ = "analytics_dashboard_widgets"
@@ -112,7 +112,7 @@ class DataAlert(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     condition: Mapped[str] = mapped_column(
         String(20), nullable=False
-    )  # gt, lt, gte, lte, eq, neq
+    )  # gt, lt, gte, lte, eq, neq, variance_from_goal, pct_change
     threshold: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     query_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("analytics_saved_queries.id"), nullable=False
@@ -124,3 +124,174 @@ class DataAlert(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     query = relationship("SavedQuery")
+
+
+# ── SemanticModel ────────────────────────────────────────────────────────────
+class SemanticModel(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Semantic data model — defines tables, relationships, and measures for BI."""
+
+    __tablename__ = "analytics_semantic_models"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    module: Mapped[str] = mapped_column(String(50), nullable=False)
+    tables: Mapped[dict] = mapped_column(JSON, default=dict)
+    relationships: Mapped[dict] = mapped_column(JSON, default=dict)
+    measures: Mapped[list] = mapped_column(JSON, default=list)
+    calculated_columns: Mapped[list] = mapped_column(JSON, default=list)
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False)
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+
+
+# ── DataTransformPipeline ────────────────────────────────────────────────────
+class DataTransformPipeline(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Ordered transform steps — Power Query equivalent for ERP data."""
+
+    __tablename__ = "analytics_transform_pipelines"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_table: Mapped[str] = mapped_column(String(200), nullable=False)
+    steps: Mapped[list] = mapped_column(JSON, default=list)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    is_shared: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+# ── DashboardBookmark ────────────────────────────────────────────────────────
+class DashboardBookmark(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Saved filter/view state for a dashboard."""
+
+    __tablename__ = "analytics_dashboard_bookmarks"
+
+    dashboard_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("analytics_dashboards.id"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    filter_state: Mapped[dict] = mapped_column(JSON, default=dict)
+    visual_states: Mapped[dict] = mapped_column(JSON, default=dict)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+    dashboard = relationship("Dashboard")
+
+
+# ── DashboardVersion ─────────────────────────────────────────────────────────
+class DashboardVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Auto-saved version snapshot of a dashboard for history/rollback."""
+
+    __tablename__ = "analytics_dashboard_versions"
+
+    dashboard_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("analytics_dashboards.id"), nullable=False
+    )
+    version_number: Mapped[int] = mapped_column(nullable=False, default=1)
+    layout_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    widgets_snapshot: Mapped[list] = mapped_column(JSON, default=list)
+    change_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+    dashboard = relationship("Dashboard")
+
+
+# ── Scorecard & Goals ────────────────────────────────────────────────────────
+class Scorecard(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Scorecard — hierarchical container for KPI goals."""
+
+    __tablename__ = "analytics_scorecards"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("analytics_scorecards.id"), nullable=True
+    )
+    period: Mapped[str] = mapped_column(String(20), default="quarterly")
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+    goals = relationship("AnalyticsGoal", back_populates="scorecard", cascade="all, delete-orphan")
+
+
+class AnalyticsGoal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Individual KPI goal with target vs actual tracking."""
+
+    __tablename__ = "analytics_goals"
+
+    scorecard_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("analytics_scorecards.id"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    metric_query: Mapped[str | None] = mapped_column(Text, nullable=True)
+    target_value: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    actual_value: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=Decimal("0"))
+    status: Mapped[str] = mapped_column(
+        String(20), default="on_track"
+    )  # on_track, at_risk, behind, exceeded
+    unit: Mapped[str] = mapped_column(String(20), default="number")
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+
+    scorecard = relationship("Scorecard", back_populates="goals")
+    check_ins = relationship("AnalyticsGoalCheckIn", back_populates="goal", cascade="all, delete-orphan")
+
+
+class AnalyticsGoalCheckIn(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Periodic check-in entry for a goal."""
+
+    __tablename__ = "analytics_goal_check_ins"
+
+    goal_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("analytics_goals.id"), nullable=False
+    )
+    value: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    goal = relationship("AnalyticsGoal", back_populates="check_ins")
+
+
+# ── Analytics Audit Log ──────────────────────────────────────────────────────
+class AnalyticsAuditLog(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Tracks all analytics access — queries, views, exports."""
+
+    __tablename__ = "analytics_audit_log"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    action: Mapped[str] = mapped_column(String(50), nullable=False)
+    resource_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    resource_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    query_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    execution_time_ms: Mapped[int | None] = mapped_column(nullable=True)
+    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
+
+
+# ── Analytics Insight (Proactive AI) ─────────────────────────────────────────
+class AnalyticsInsight(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """AI-discovered insight from proactive KPI scanning."""
+
+    __tablename__ = "analytics_insights"
+
+    insight_type: Mapped[str] = mapped_column(
+        String(30), nullable=False
+    )  # anomaly, trend_change, correlation, forecast
+    module: Mapped[str] = mapped_column(String(50), nullable=False)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    severity: Mapped[str] = mapped_column(
+        String(20), default="info"
+    )  # info, warning, critical
+    data: Mapped[dict] = mapped_column(JSON, default=dict)
+    is_dismissed: Mapped[bool] = mapped_column(Boolean, default=False)
+    dismissed_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )

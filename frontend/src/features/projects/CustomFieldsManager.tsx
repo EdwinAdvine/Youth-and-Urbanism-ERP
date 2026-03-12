@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams } from 'react-router-dom'
 import {
   useCustomFields,
   useCreateCustomField,
@@ -9,7 +10,7 @@ import {
 } from '@/api/projects_enhanced'
 
 interface CustomFieldsManagerProps {
-  projectId: string
+  projectId?: string
 }
 
 const fieldTypeLabels: Record<CustomFieldType, string> = {
@@ -20,7 +21,9 @@ const fieldTypeLabels: Record<CustomFieldType, string> = {
   formula: 'Formula',
 }
 
-export default function CustomFieldsManager({ projectId }: CustomFieldsManagerProps) {
+export default function CustomFieldsManager({ projectId: propProjectId }: CustomFieldsManagerProps) {
+  const { id: routeId } = useParams<{ id: string }>()
+  const projectId = propProjectId ?? routeId ?? ''
   const { data: fields, isLoading } = useCustomFields(projectId)
   const createField = useCreateCustomField()
   const updateField = useUpdateCustomField()

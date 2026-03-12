@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Button, Card, Modal, Input, Select, Badge } from '../../components/ui'
+import { Button, Card, Modal, Input, Badge } from '../../components/ui'
 import { toast } from '../../components/ui'
-import { useCrewSchedule, useCreateCrewAssignment, useLogHours, usePushTimesheet } from '../../api/manufacturing_labor'
+import { useCrewSchedule, useCreateCrewAssignment, usePushTimesheet } from '../../api/manufacturing_labor'
 
-const shiftColors: Record<string, string> = { morning: 'blue', afternoon: 'yellow', night: 'purple' }
-const roleColors: Record<string, string> = { operator: 'gray', lead: 'blue', supervisor: 'green' }
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const shiftColors: Record<string, BadgeVariant> = { morning: 'info', afternoon: 'warning', night: 'primary' }
+const roleColors: Record<string, BadgeVariant> = { operator: 'default', lead: 'info', supervisor: 'success' }
 
 function getWeekDates() {
   const today = new Date()
@@ -37,25 +39,25 @@ export default function CrewSchedulingPage() {
 
   const handleAdd = async () => {
     if (!form.work_order_id || !form.workstation_id || !form.employee_id) {
-      return toast({ title: 'WO, workstation, and employee required', variant: 'destructive' })
+      return toast('error', 'WO, workstation, and employee required')
     }
     try {
       await createAssignment.mutateAsync(form)
-      toast({ title: 'Crew assigned' })
+      toast('success', 'Crew assigned')
       setAddOpen(false)
     } catch {
-      toast({ title: 'Failed to assign crew', variant: 'destructive' })
+      toast('error', 'Failed to assign crew')
     }
   }
 
   const handlePushTimesheet = async () => {
-    if (selected.length === 0) return toast({ title: 'Select assignments to push', variant: 'destructive' })
+    if (selected.length === 0) return toast('error', 'Select assignments to push')
     try {
       const result = await pushTimesheet.mutateAsync(selected)
-      toast({ title: `Pushed ${result.pushed} timesheets to HR` })
+      toast('success', `Pushed ${result.pushed} timesheets to HR`)
       setSelected([])
     } catch {
-      toast({ title: 'Failed to push timesheet', variant: 'destructive' })
+      toast('error', 'Failed to push timesheet')
     }
   }
 
@@ -105,10 +107,10 @@ export default function CrewSchedulingPage() {
                   <div className="flex-1 grid grid-cols-4 gap-2 text-sm">
                     <div>
                       <div className="font-mono text-xs">{a.employee_id.slice(0, 8)}...</div>
-                      <Badge variant={roleColors[a.role] || 'gray'} className="text-xs">{a.role}</Badge>
+                      <Badge variant={roleColors[a.role] || 'default'} className="text-xs">{a.role}</Badge>
                     </div>
                     <div>
-                      <Badge variant={shiftColors[a.shift] || 'gray'} className="text-xs">{a.shift}</Badge>
+                      <Badge variant={shiftColors[a.shift] || 'default'} className="text-xs">{a.shift}</Badge>
                     </div>
                     <div className="text-gray-500">{a.hours_worked}h worked</div>
                     <div>

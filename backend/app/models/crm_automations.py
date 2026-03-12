@@ -18,7 +18,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 
-class Workflow(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class CRMWorkflow(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Configurable automation workflow with trigger, conditions, and actions."""
 
     __tablename__ = "crm_workflows"
@@ -44,7 +44,7 @@ class Workflow(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         "WorkflowNode", back_populates="workflow", cascade="all, delete-orphan"
     )
     executions = relationship(
-        "WorkflowExecution", back_populates="workflow", cascade="all, delete-orphan"
+        "CRMWorkflowExecution", back_populates="workflow", cascade="all, delete-orphan"
     )
 
 
@@ -72,10 +72,10 @@ class WorkflowNode(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         UUID(as_uuid=True), nullable=True
     )
 
-    workflow = relationship("Workflow", back_populates="nodes")
+    workflow = relationship("CRMWorkflow", back_populates="nodes")
 
 
-class WorkflowExecution(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class CRMWorkflowExecution(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Record of a single workflow run."""
 
     __tablename__ = "crm_workflow_executions"
@@ -96,7 +96,7 @@ class WorkflowExecution(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     steps_log: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
-    workflow = relationship("Workflow", back_populates="executions")
+    workflow = relationship("CRMWorkflow", back_populates="executions")
 
 
 class WorkflowTemplate(UUIDPrimaryKeyMixin, TimestampMixin, Base):

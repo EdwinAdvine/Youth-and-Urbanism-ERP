@@ -246,8 +246,7 @@ export default function PickupOrdersPage() {
           data={data?.orders ?? []}
           loading={isLoading}
           emptyText="No pickup orders found"
-          keyExtractor={(row) => row.id}
-          onRowClick={(row) => navigate(`/pos/pickup-orders/${row.id}`)}
+          keyExtractor={(row: PickupOrder) => row.id}
         />
       </Card>
     </div>

@@ -272,7 +272,7 @@ async def update_account(
 
 @router.delete(
     "/accounts/{account_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Soft-delete an account",
 )
 async def delete_account(
@@ -286,7 +286,7 @@ async def delete_account(
 
     account.is_active = False
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Journal Entry endpoints ──────────────────────────────────────────────────
@@ -675,7 +675,7 @@ async def mark_invoice_paid(
 
 @router.delete(
     "/invoices/{invoice_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Cancel an invoice (soft-delete)",
 )
 async def delete_invoice(
@@ -695,7 +695,7 @@ async def delete_invoice(
 
     invoice.status = "cancelled"
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Payment endpoints ────────────────────────────────────────────────────────
@@ -1211,7 +1211,7 @@ async def update_budget(
 
 @router.delete(
     "/budgets/{budget_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a budget (only if draft)",
 )
 async def delete_budget(
@@ -1232,7 +1232,7 @@ async def delete_budget(
 
     await db.delete(budget)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.get("/reports/budget-vs-actual", summary="Budget vs actual spending report")

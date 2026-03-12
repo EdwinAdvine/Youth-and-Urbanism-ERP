@@ -163,7 +163,7 @@ async def rename_folder(
     return {"old_name": folder_name, "new_name": payload.name, "updated": len(tags)}
 
 
-@router.delete("/folders/{folder_name}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a note folder")
+@router.delete("/folders/{folder_name}", status_code=status.HTTP_200_OK, summary="Delete a note folder")
 async def delete_folder(
     folder_name: str,
     current_user: CurrentUser,
@@ -179,7 +179,7 @@ async def delete_folder(
     for tag in tags:
         await db.delete(tag)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Sharing ──────────────────────────────────────────────────────────────────
@@ -223,7 +223,7 @@ async def share_note(
     return NoteShareOut.model_validate(share).model_dump()
 
 
-@router.delete("/notes/{note_id}/share/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Revoke note share")
+@router.delete("/notes/{note_id}/share/{user_id}", status_code=status.HTTP_200_OK, summary="Revoke note share")
 async def revoke_note_share(
     note_id: uuid.UUID,
     user_id: uuid.UUID,
@@ -250,7 +250,7 @@ async def revoke_note_share(
     note.is_shared = len(shared_list) > 0
 
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Tags ─────────────────────────────────────────────────────────────────────
@@ -297,7 +297,7 @@ async def add_note_tag(
     return TagOut.model_validate(tag).model_dump()
 
 
-@router.delete("/notes/{note_id}/tags/{tag_name}", status_code=status.HTTP_204_NO_CONTENT, summary="Remove a tag from a note")
+@router.delete("/notes/{note_id}/tags/{tag_name}", status_code=status.HTTP_200_OK, summary="Remove a tag from a note")
 async def remove_note_tag(
     note_id: uuid.UUID,
     tag_name: str,
@@ -315,7 +315,7 @@ async def remove_note_tag(
 
     await db.delete(tag)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Utilities ────────────────────────────────────────────────────────────────

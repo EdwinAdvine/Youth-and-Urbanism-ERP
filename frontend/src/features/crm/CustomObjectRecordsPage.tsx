@@ -155,7 +155,7 @@ export default function CustomObjectRecordsPage() {
     // Validate required fields
     for (const f of fields) {
       if (f.required && (formData[f.name] == null || formData[f.name] === '')) {
-        toast.error(`"${f.label}" is required`)
+        toast('error', `"${f.label}" is required`)
         return
       }
     }
@@ -167,17 +167,17 @@ export default function CustomObjectRecordsPage() {
           recordId: editingRecordId,
           data: formData,
         })
-        toast.success('Record updated')
+        toast('success', 'Record updated')
       } else {
         await createRecord.mutateAsync({
           objectId: definitionId,
           data: formData,
         })
-        toast.success('Record created')
+        toast('success', 'Record created')
       }
       setModalOpen(false)
     } catch {
-      toast.error('Failed to save record')
+      toast('error', 'Failed to save record')
     }
   }
 
@@ -185,9 +185,9 @@ export default function CustomObjectRecordsPage() {
     if (!confirm('Delete this record?')) return
     try {
       await deleteRecord.mutateAsync({ objectId: definitionId, recordId })
-      toast.success('Record deleted')
+      toast('success', 'Record deleted')
     } catch {
-      toast.error('Failed to delete record')
+      toast('error', 'Failed to delete record')
     }
   }
 

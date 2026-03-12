@@ -123,7 +123,7 @@ export default function QueryBuilderPage() {
       return
     }
     try {
-      const res = await executeQuery.mutateAsync({ query, params: {} })
+      const res = await executeQuery.mutateAsync({ query_text: query, data_source: module || 'default' })
       setResult(res)
       toast('success', `Query returned ${res.rows.length} rows in ${res.execution_time_ms}ms`)
     } catch {
@@ -136,7 +136,7 @@ export default function QueryBuilderPage() {
     if (!queryName.trim()) { toast('error', 'Enter a name for this query'); return }
     if (!query.trim()) { toast('error', 'Build a query first'); return }
     try {
-      await createSavedQuery.mutateAsync({ name: queryName, query, description: `${module}.${table}` })
+      await createSavedQuery.mutateAsync({ name: queryName, query_text: query, data_source: module || 'default', description: `${module}.${table}` })
       toast('success', 'Query saved')
       setQueryName('')
     } catch {
@@ -310,7 +310,7 @@ export default function QueryBuilderPage() {
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {savedQueries.map((sq) => (
                   <div key={sq.id} className="flex items-center justify-between p-2 rounded-[8px] bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800">
-                    <button className="text-xs text-primary hover:underline truncate flex-1 text-left" onClick={() => handleLoadQuery(sq.query)}>
+                    <button className="text-xs text-primary hover:underline truncate flex-1 text-left" onClick={() => handleLoadQuery(sq.query_text)}>
                       {sq.name}
                     </button>
                     <button className="text-gray-300 hover:text-red-500 ml-2 shrink-0" onClick={() => handleDeleteSaved(sq.id)}>
@@ -378,7 +378,7 @@ export default function QueryBuilderPage() {
               columns={resultColumns}
               data={result.rows}
               emptyText="No results"
-              keyExtractor={(_, i) => String(i)}
+              keyExtractor={(row) => String(row['id'] ?? JSON.stringify(row).slice(0, 64))}
             />
           )}
         </Card>

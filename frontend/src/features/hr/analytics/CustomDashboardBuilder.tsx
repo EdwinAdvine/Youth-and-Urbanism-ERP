@@ -1,12 +1,10 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import {
   Card,
   Button,
   Badge,
   Input,
   Modal,
-  Spinner,
 } from '@/components/ui'
 import {
   useAnalyticsDashboards,
@@ -19,8 +17,10 @@ import {
   useHeadcountCost,
   useDEIOverview,
   type AnalyticsDashboard,
-  type WidgetType,
+  type HeadcountCost,
 } from '@/api/hr_phase3'
+
+type WidgetType = 'headcount' | 'attrition' | 'compensation' | 'diversity' | 'performance' | 'burnout'
 
 // ─── Widget Type Config ────────────────────────────────────────────────────────
 
@@ -47,18 +47,18 @@ const WIDGET_TYPE_COLORS: Record<WidgetType, string> = {
 function HeadcountWidget() {
   const { data, isLoading } = useHeadcountCost()
   if (isLoading) return <SkeletonWidget />
-  const depts = Array.isArray(data) ? data : (data as { by_department?: { department_name: string; headcount: number; total_salary: number }[] })?.by_department ?? []
-  const maxCount = Math.max(...depts.map((d: { headcount: number }) => d.headcount), 1)
+  const rawDepts: HeadcountCost[] = Array.isArray(data) ? data : []
+  const maxCount = Math.max(...rawDepts.map((d) => d.headcount), 1)
   return (
     <div className="space-y-2">
       <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-        {depts.reduce((sum: number, d: { headcount: number }) => sum + d.headcount, 0)}
+        {rawDepts.reduce((sum, d) => sum + d.headcount, 0)}
       </p>
       <p className="text-xs text-gray-500 mb-3">Total headcount</p>
       <div className="space-y-1.5">
-        {depts.slice(0, 5).map((d: { department_name: string; headcount: number }) => (
-          <div key={d.department_name} className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 w-20 truncate">{d.department_name}</span>
+        {rawDepts.slice(0, 5).map((d) => (
+          <div key={d.department} className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 w-20 truncate">{d.department}</span>
             <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
               <div
                 className="h-2 rounded-full"
@@ -128,14 +128,15 @@ function DiversityWidget() {
   const { data, isLoading } = useDEIOverview()
   if (isLoading) return <SkeletonWidget />
 
-  const distribution: { gender: string; count: number; percentage?: number }[] = (data as {
-    gender_distribution?: { gender: string; count: number; percentage?: number }[]
-  })?.gender_distribution ?? [
-    { gender: 'male', count: 55, percentage: 55 },
-    { gender: 'female', count: 38, percentage: 38 },
-    { gender: 'other', count: 5, percentage: 5 },
-    { gender: 'not_specified', count: 2, percentage: 2 },
-  ]
+  const genderDist = data?.gender_distribution
+  const distribution: { gender: string; count: number; percentage?: number }[] = genderDist
+    ? Object.entries(genderDist).map(([gender, count]) => ({ gender, count: count as number }))
+    : [
+      { gender: 'male', count: 55, percentage: 55 },
+      { gender: 'female', count: 38, percentage: 38 },
+      { gender: 'other', count: 5, percentage: 5 },
+      { gender: 'not_specified', count: 2, percentage: 2 },
+    ]
 
   const colorMap: Record<string, string> = {
     male: '#51459d',
@@ -271,8 +272,6 @@ function SkeletonWidget() {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CustomDashboardBuilder() {
-  const _navigate = useNavigate()
-
   const { data: dashboards, isLoading: loadingList } = useAnalyticsDashboards()
   const [activeDashboardId, setActiveDashboardId] = useState<string>('')
 
@@ -339,12 +338,10 @@ export default function CustomDashboardBuilder() {
   async function handleUpdate() {
     if (!detail) return
     await updateDashboard.mutateAsync({
-      dashboardId: detail.id,
-      data: {
-        name: dashboardForm.name,
-        description: dashboardForm.description || undefined,
-        is_shared: dashboardForm.is_shared,
-      },
+      id: detail.id,
+      name: dashboardForm.name,
+      description: dashboardForm.description || undefined,
+      is_shared: dashboardForm.is_shared,
     })
     setShowEditModal(false)
   }
@@ -360,7 +357,7 @@ export default function CustomDashboardBuilder() {
     if (!detail || !widgetForm.title.trim()) return
     await addWidget.mutateAsync({
       dashboardId: detail.id,
-      data: { widget_type: widgetForm.widget_type, title: widgetForm.title },
+      widget: { widget_type: widgetForm.widget_type, title: widgetForm.title },
     })
     setShowAddWidget(false)
     setWidgetForm({ widget_type: 'headcount', title: '' })
@@ -375,8 +372,8 @@ export default function CustomDashboardBuilder() {
   async function handleShareToggle() {
     if (!detail) return
     await updateDashboard.mutateAsync({
-      dashboardId: detail.id,
-      data: { is_shared: !detail.is_shared },
+      id: detail.id,
+      is_shared: !detail.is_shared,
     })
   }
 

@@ -1,10 +1,13 @@
 """Docs API — ONLYOFFICE document management endpoints."""
 from __future__ import annotations
 
+import asyncio
+import json
+import logging
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, Response, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -17,6 +20,8 @@ from app.models.doc_comment import DocComment, DocVersion
 from app.models.projects import Project, Task
 from app.models.finance import Invoice
 from app.models.notes import Note
+
+_logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -436,7 +441,7 @@ async def list_docs_for_task(
     return {"total": len(docs), "documents": docs}
 
 
-@router.delete("/link/{link_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remove a doc-task link")
+@router.delete("/link/{link_id}", status_code=status.HTTP_200_OK, summary="Remove a doc-task link")
 async def delete_doc_link(
     link_id: uuid.UUID,
     current_user: CurrentUser,
@@ -453,7 +458,7 @@ async def delete_doc_link(
 
     await db.delete(link)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Doc Comment schemas ─────────────────────────────────────────────────────
@@ -577,7 +582,7 @@ async def update_comment(
     return CommentOut.model_validate(comment).model_dump()
 
 
-@router.delete("/comment/{comment_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a comment")
+@router.delete("/comment/{comment_id}", status_code=status.HTTP_200_OK, summary="Delete a comment")
 async def delete_comment(
     comment_id: uuid.UUID,
     current_user: CurrentUser,
@@ -594,7 +599,7 @@ async def delete_comment(
 
     await db.delete(comment)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Doc Version endpoints ──────────────────────────────────────────────────
@@ -1096,5 +1101,252 @@ async def _persist_saved_doc(file_id: uuid.UUID, url: str) -> None:
             file.size = len(file_data)
             await db.commit()
     except Exception as exc:
-        import logging  # noqa: PLC0415
-        logging.getLogger(__name__).error("_persist_saved_doc failed for %s: %s", file_id, exc)
+        _logger.error("_persist_saved_doc failed for %s: %s", file_id, exc)
+
+
+# ── WebSocket Presence Manager ───────────────────────────────────────────────
+
+
+class DocPresenceManager:
+    """Manages real-time WebSocket presence for document editing sessions."""
+
+    def __init__(self) -> None:
+        # file_id -> {user_id: {"ws": WebSocket, "name": str, "cursor": dict | None}}
+        self._connections: dict[str, dict[str, dict[str, Any]]] = {}
+
+    async def connect(
+        self, file_id: str, user_id: str, user_name: str, ws: WebSocket
+    ) -> None:
+        await ws.accept()
+        if file_id not in self._connections:
+            self._connections[file_id] = {}
+        self._connections[file_id][user_id] = {
+            "ws": ws,
+            "name": user_name,
+            "cursor": None,
+        }
+        await self._broadcast(file_id, {
+            "type": "user_joined",
+            "user_id": user_id,
+            "user_name": user_name,
+            "users": self._user_list(file_id),
+        })
+
+    def disconnect(self, file_id: str, user_id: str) -> None:
+        if file_id in self._connections:
+            self._connections[file_id].pop(user_id, None)
+            if not self._connections[file_id]:
+                del self._connections[file_id]
+
+    async def broadcast_leave(self, file_id: str, user_id: str, user_name: str) -> None:
+        await self._broadcast(file_id, {
+            "type": "user_left",
+            "user_id": user_id,
+            "user_name": user_name,
+            "users": self._user_list(file_id),
+        })
+
+    async def update_cursor(
+        self, file_id: str, user_id: str, cursor_data: dict
+    ) -> None:
+        if file_id in self._connections and user_id in self._connections[file_id]:
+            self._connections[file_id][user_id]["cursor"] = cursor_data
+        await self._broadcast(
+            file_id,
+            {
+                "type": "cursor_position",
+                "user_id": user_id,
+                "user_name": self._connections.get(file_id, {}).get(user_id, {}).get("name", ""),
+                "cursor": cursor_data,
+            },
+            exclude_user=user_id,
+        )
+
+    def _user_list(self, file_id: str) -> list[dict[str, str]]:
+        conns = self._connections.get(file_id, {})
+        return [
+            {"user_id": uid, "user_name": info["name"]}
+            for uid, info in conns.items()
+        ]
+
+    async def _broadcast(
+        self, file_id: str, message: dict, *, exclude_user: str | None = None
+    ) -> None:
+        conns = self._connections.get(file_id, {})
+        payload = json.dumps(message)
+        dead: list[str] = []
+        for uid, info in conns.items():
+            if uid == exclude_user:
+                continue
+            try:
+                await info["ws"].send_text(payload)
+            except Exception:
+                dead.append(uid)
+        for uid in dead:
+            self.disconnect(file_id, uid)
+
+
+_presence_manager = DocPresenceManager()
+
+
+@router.websocket("/ws/presence/{file_id}")
+async def doc_presence_ws(
+    websocket: WebSocket,
+    file_id: str,
+) -> None:
+    """Real-time document presence via WebSocket.
+
+    Query params: ``token`` (JWT) — used for auth.
+    Messages from client: ``{"type": "cursor_position", "cursor": {...}}``
+    Messages to client: ``user_joined``, ``user_left``, ``cursor_position``
+    """
+    token = websocket.query_params.get("token", "")
+    if not token:
+        await websocket.close(code=4001, reason="Missing token")
+        return
+
+    # Authenticate
+    try:
+        from app.core.security import decode_token  # noqa: PLC0415
+        payload = decode_token(token)
+        user_id = payload.get("sub", "")
+        user_name = payload.get("name", payload.get("email", "User"))
+    except Exception:
+        await websocket.close(code=4001, reason="Invalid token")
+        return
+
+    await _presence_manager.connect(file_id, user_id, user_name, websocket)
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            try:
+                msg = json.loads(data)
+            except json.JSONDecodeError:
+                continue
+
+            if msg.get("type") == "cursor_position":
+                await _presence_manager.update_cursor(
+                    file_id, user_id, msg.get("cursor", {})
+                )
+            elif msg.get("type") == "ping":
+                await websocket.send_text(json.dumps({"type": "pong"}))
+
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass
+    finally:
+        _presence_manager.disconnect(file_id, user_id)
+        await _presence_manager.broadcast_leave(file_id, user_id, user_name)
+
+
+# ── WebSocket Document AI Copilot ───────────────────────────────────────────
+
+
+@router.websocket("/ws/copilot/{file_id}")
+async def doc_copilot_ws(
+    websocket: WebSocket,
+    file_id: str,
+) -> None:
+    """Document-context AI copilot chat via WebSocket.
+
+    Query params: ``token`` (JWT).
+    Client sends: ``{"type": "prompt", "message": "..."}``
+    Server sends: ``{"type": "chunk", "content": "..."}`` (streaming),
+                  ``{"type": "done", "full_content": "..."}``,
+                  ``{"type": "error", "message": "..."}``.
+    """
+    token = websocket.query_params.get("token", "")
+    if not token:
+        await websocket.close(code=4001, reason="Missing token")
+        return
+
+    try:
+        from app.core.security import decode_token  # noqa: PLC0415
+        payload = decode_token(token)
+        user_id = payload.get("sub", "")
+    except Exception:
+        await websocket.close(code=4001, reason="Invalid token")
+        return
+
+    await websocket.accept()
+
+    # Load file context
+    from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+    async with AsyncSessionLocal() as db:
+        file = await db.get(DriveFile, uuid.UUID(file_id))
+        file_name = file.name if file else "Unknown Document"
+
+    # Conversation history for this session
+    messages: list[dict[str, str]] = []
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            try:
+                msg = json.loads(data)
+            except json.JSONDecodeError:
+                continue
+
+            if msg.get("type") == "ping":
+                await websocket.send_text(json.dumps({"type": "pong"}))
+                continue
+
+            if msg.get("type") != "prompt":
+                continue
+
+            user_message = msg.get("message", "").strip()
+            if not user_message:
+                continue
+
+            messages.append({"role": "user", "content": user_message})
+
+            # Call AI with document context
+            try:
+                async with AsyncSessionLocal() as db:
+                    from app.services.doc_ai import DocAIService  # noqa: PLC0415
+                    svc = DocAIService(db, uuid.UUID(user_id))
+
+                    # Build context-enriched prompt
+                    context_prompt = (
+                        f"You are an AI assistant helping with the document '{file_name}'. "
+                        f"Provide helpful, concise responses about document content, formatting, "
+                        f"and writing assistance.\n\n"
+                        f"User: {user_message}"
+                    )
+
+                    result = await svc.generate(
+                        prompt=context_prompt,
+                        doc_name=file_name,
+                    )
+                    reply = result["content"]
+                    messages.append({"role": "assistant", "content": reply})
+
+                    # Send in chunks for streaming feel
+                    chunk_size = 50
+                    for i in range(0, len(reply), chunk_size):
+                        chunk = reply[i:i + chunk_size]
+                        await websocket.send_text(json.dumps({
+                            "type": "chunk",
+                            "content": chunk,
+                        }))
+                        await asyncio.sleep(0.02)
+
+                    await websocket.send_text(json.dumps({
+                        "type": "done",
+                        "full_content": reply,
+                        "model": result.get("model", "unknown"),
+                    }))
+
+            except Exception as exc:
+                _logger.error("Copilot error for file %s: %s", file_id, exc)
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": f"AI service error: {exc}",
+                }))
+
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass

@@ -25,7 +25,7 @@ const emptyForm: CreateScrapEntryPayload = {
 }
 
 export default function ScrapPage() {
-  const [page, setPage] = useState(1)
+  const [page] = useState(1)
   const limit = 20
   const { data, isLoading, error } = useScrapEntries({ skip: (page - 1) * limit, limit })
   const createScrap = useCreateScrapEntry()

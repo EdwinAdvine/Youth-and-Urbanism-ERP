@@ -324,7 +324,7 @@ async def add_inspection_plan_item(plan_id: uuid.UUID, body: InspectionPlanItemI
     return item
 
 
-@router.delete("/inspection-plans/{plan_id}/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/inspection-plans/{plan_id}/items/{item_id}", status_code=status.HTTP_200_OK)
 async def delete_inspection_plan_item(plan_id: uuid.UUID, item_id: uuid.UUID, db: DBSession, user: CurrentUser):
     item = await db.get(InspectionPlanItem, item_id)
     if not item or item.plan_id != plan_id:

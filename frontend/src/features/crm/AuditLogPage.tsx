@@ -72,9 +72,12 @@ export default function AuditLogPage() {
       key: 'entity_type',
       label: 'Entity Type',
       render: (row: AuditLogEntry) => (
-        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">
+        <button
+          className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize hover:text-[#51459d] cursor-pointer"
+          onClick={() => setExpandedId(expandedId === row.id ? null : row.id)}
+        >
           {row.entity_type}
-        </span>
+        </button>
       ),
     },
     {
@@ -90,7 +93,7 @@ export default function AuditLogPage() {
       key: 'action',
       label: 'Action',
       render: (row: AuditLogEntry) => (
-        <Badge variant={ACTION_VARIANTS[row.action] ?? 'default'}>
+        <Badge variant={(ACTION_VARIANTS[row.action] ?? 'default') as 'primary' | 'danger' | 'default' | 'success' | 'warning' | 'info'}>
           {row.action}
         </Badge>
       ),
@@ -179,13 +182,13 @@ export default function AuditLogPage() {
           <Select
             label="Entity Type"
             value={entityTypeFilter}
-            onChange={setEntityTypeFilter}
+            onChange={(e) => setEntityTypeFilter(e.target.value)}
             options={ENTITY_TYPE_OPTIONS}
           />
           <Select
             label="Action"
             value={actionFilter}
-            onChange={setActionFilter}
+            onChange={(e) => setActionFilter(e.target.value)}
             options={ACTION_OPTIONS}
           />
           <Input
@@ -223,9 +226,6 @@ export default function AuditLogPage() {
               loading={isLoading}
               emptyText="No audit log entries found"
               keyExtractor={(row) => row.id}
-              onRowClick={(row) =>
-                setExpandedId(expandedId === row.id ? null : row.id)
-              }
             />
 
             {/* Expanded changes detail */}

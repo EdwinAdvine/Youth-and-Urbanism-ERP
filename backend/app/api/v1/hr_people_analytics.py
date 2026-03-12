@@ -207,7 +207,7 @@ async def update_dashboard(
     return DashboardOut.model_validate(dashboard)
 
 
-@router.delete("/analytics/dashboards/{dashboard_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+@router.delete("/analytics/dashboards/{dashboard_id}", status_code=status.HTTP_200_OK, response_model=None)
 async def delete_dashboard(
     dashboard_id: uuid.UUID,
     current_user: CurrentUser,

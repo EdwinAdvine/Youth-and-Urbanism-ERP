@@ -199,7 +199,7 @@ async def update_recurring_config(
 
 @router.delete(
     "/{project_id}/recurring/{config_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a recurring task configuration",
 )
 async def delete_recurring_config(
@@ -218,7 +218,7 @@ async def delete_recurring_config(
 
     await db.delete(config)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.post(

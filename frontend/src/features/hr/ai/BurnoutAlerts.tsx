@@ -97,10 +97,10 @@ function EmployeeCard({ indicator }: { indicator: BurnoutIndicator }) {
   const warningSigns = (indicator.warning_signs ?? []).slice(0, 3)
 
   function handleSchedule() {
-    toast('info', `1:1 meeting scheduling opened for ${indicator.employee_name ?? 'employee'}.`)
+    toast('info', `1:1 meeting scheduling opened for ${(indicator as unknown as Record<string, string>).employee_name ?? 'employee'}.`)
   }
   function handleWorkload() {
-    toast('info', `Workload adjustment workflow initiated for ${indicator.employee_name ?? 'employee'}.`)
+    toast('info', `Workload adjustment workflow initiated for ${(indicator as unknown as Record<string, string>).employee_name ?? 'employee'}.`)
   }
 
   return (
@@ -109,15 +109,15 @@ function EmployeeCard({ indicator }: { indicator: BurnoutIndicator }) {
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-semibold text-gray-900 dark:text-gray-100">
-            {indicator.employee_name ?? indicator.employee_id.slice(0, 8)}
+            {(indicator as unknown as Record<string, string>).employee_name ?? indicator.employee_id.slice(0, 8)}
           </p>
-          <p className="text-xs text-gray-400 mt-0.5">{indicator.department ?? '—'}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{(indicator as unknown as Record<string, string>).department ?? '—'}</p>
         </div>
         <Badge variant={badgeMeta.variant}>{badgeMeta.label}</Badge>
       </div>
 
       {/* Score gauge */}
-      <ScoreGauge score={indicator.burnout_score ?? 0} level={level} />
+      <ScoreGauge score={indicator.risk_score ?? 0} level={level} />
 
       {/* Factor chips */}
       <div className="flex flex-wrap gap-1.5">
@@ -165,7 +165,7 @@ export default function BurnoutAlerts() {
   const { data: indicators, isLoading } = useBurnoutIndicators()
   const calcMutation = useCalculateBurnout()
 
-  const allIndicators: BurnoutIndicator[] = indicators ?? []
+  const allIndicators: BurnoutIndicator[] = indicators?.items ?? []
   const immediate = allIndicators.filter((i) => i.immediate_action_required)
 
   const filtered =
@@ -184,7 +184,7 @@ export default function BurnoutAlerts() {
   async function handleRecalcAll() {
     setRecalcAll(true)
     try {
-      await calcMutation.mutateAsync({ bulk: true })
+      await calcMutation.mutateAsync('__bulk__')
       toast('success', 'Burnout indicators recalculated for all employees.')
     } finally {
       setRecalcAll(false)

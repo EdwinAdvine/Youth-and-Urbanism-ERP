@@ -235,7 +235,7 @@ async def update_recurring_invoice(
 
 @router.delete(
     "/recurring-invoices/{recurring_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a recurring invoice config",
 )
 async def delete_recurring_invoice(
@@ -251,7 +251,7 @@ async def delete_recurring_invoice(
 
     await db.delete(recurring)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.post(

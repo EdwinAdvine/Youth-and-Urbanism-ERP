@@ -373,7 +373,7 @@ async def get_forecast(
 
 @router.delete(
     "/forecasts/{forecast_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     dependencies=[Depends(require_app_admin("supply_chain"))],
     response_model=None,
 )

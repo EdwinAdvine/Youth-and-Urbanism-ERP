@@ -3,6 +3,7 @@ import { Button, Card, Select } from '../../components/ui'
 import { useGanttData, useRunScheduler, useScenarios } from '../../api/manufacturing_planning'
 import { toast } from '../../components/ui'
 
+
 function formatDateTime(dt: string) {
   return new Date(dt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
@@ -27,9 +28,9 @@ export default function GanttScheduler() {
   const handleRun = async () => {
     try {
       const result = await runScheduler.mutateAsync(scenarioId || undefined)
-      toast({ title: `Scheduled ${result.scheduled} operations` })
+      toast('success', `Scheduled ${result.scheduled} operations`)
     } catch {
-      toast({ title: 'Scheduling failed', variant: 'destructive' })
+      toast('error', 'Scheduling failed')
     }
   }
 

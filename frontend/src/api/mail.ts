@@ -79,6 +79,12 @@ export interface SendMessagePayload {
   references?: string
   signature_id?: string
   request_read_receipt?: boolean
+  attachments?: Array<{
+    storage_key: string
+    filename: string
+    size: number
+    content_type: string
+  }>
 }
 
 // ── Rules & Signatures & Read Receipts ──────────────────────────────────────
@@ -601,6 +607,31 @@ export function useSaveMailAsNote() {
   })
 }
 
+// ── Attachment upload hook ───────────────────────────────────────────────────
+
+export interface UploadAttachmentResponse {
+  storage_key: string
+  filename: string
+  size: number
+  content_type: string
+}
+
+/** Upload a file attachment to MinIO for use in compose. */
+export function useUploadMailAttachment() {
+  return useMutation({
+    mutationFn: async (file: File): Promise<UploadAttachmentResponse> => {
+      const formData = new FormData()
+      formData.append('file', file)
+      const { data } = await apiClient.post<UploadAttachmentResponse>(
+        '/mail/attachments/upload',
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      )
+      return data
+    },
+  })
+}
+
 // ── Snooze hook ─────────────────────────────────────────────────────────────
 
 export function useSnoozeMail() {
@@ -655,5 +686,780 @@ export function useAISuggestReply() {
       const { data } = await apiClient.post<AISuggestResponse>('/mail/ai-suggest-reply', payload)
       return data
     },
+  })
+}
+
+// ── Era Mail Advanced API hooks ───────────────────────────────────────────────
+
+// Interfaces
+export interface TriageSummary {
+  category: string
+  count: number
+}
+
+export interface SmartFolder {
+  id: string
+  name: string
+  query: string
+  icon?: string
+  is_ai_suggested: boolean
+  message_count: number
+}
+
+export interface MailCategory {
+  id: string
+  name: string
+  color: string
+  keyboard_shortcut?: string
+}
+
+export interface MailQuickStep {
+  id: string
+  name: string
+  icon?: string
+  keyboard_shortcut?: string
+  actions: Array<Record<string, unknown>>
+}
+
+export interface MailTemplate {
+  id: string
+  name: string
+  subject_template: string
+  body_html_template: string
+  variables: string[]
+  category?: string
+  is_shared: boolean
+}
+
+export interface ContactProfile {
+  id: string
+  email: string
+  display_name?: string
+  avatar_url?: string
+  title?: string
+  company?: string
+  crm_contact_id?: string
+  email_count: number
+  last_email_at?: string
+  avg_response_time_minutes?: number
+  sentiment_trend?: string
+}
+
+export interface MailAnalyticsOverview {
+  sent_count: number
+  received_count: number
+  avg_response_time_minutes: number
+  unread_count: number
+  period_days: number
+}
+
+export interface TopContact {
+  email: string
+  name: string
+  count: number
+}
+
+export interface HourlyHeatmap {
+  hour: number
+  count: number
+}
+
+export interface ActionItem {
+  action: string
+  due_date?: string
+  assignee_hint?: string
+}
+
+// ── AI Triage ──────────────────────────────────────────────────────────────
+
+export function useTriageInbox() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post('/mail/triage')
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail'] }),
+  })
+}
+
+export function useTriageMessage() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (messageId: string) => {
+      const { data } = await apiClient.post(`/mail/triage/${messageId}`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail'] }),
+  })
+}
+
+export function useTriageSummary() {
+  return useQuery({
+    queryKey: ['mail', 'triage-summary'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ categories: TriageSummary[] }>('/mail/triage/summary')
+      return data.categories ?? []
+    },
+  })
+}
+
+export function useExtractActions() {
+  return useMutation({
+    mutationFn: async (messageId: string) => {
+      const { data } = await apiClient.post<{ actions: ActionItem[] }>(`/mail/extract-actions/${messageId}`)
+      return data.actions ?? []
+    },
+  })
+}
+
+// ── Focused Inbox ──────────────────────────────────────────────────────────
+
+export function useFocusedInbox(params?: { page?: number; limit?: number }) {
+  return useQuery({
+    queryKey: ['mail', 'focused', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<MailMessagesResponse>('/mail/focused', {
+        params: { page: params?.page ?? 1, limit: params?.limit ?? 50 },
+      })
+      return data
+    },
+  })
+}
+
+export function useOtherInbox(params?: { page?: number; limit?: number }) {
+  return useQuery({
+    queryKey: ['mail', 'other', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<MailMessagesResponse>('/mail/other', {
+        params: { page: params?.page ?? 1, limit: params?.limit ?? 50 },
+      })
+      return data
+    },
+  })
+}
+
+// ── Smart Folders ─────────────────────────────────────────────────────────
+
+export function useSmartFolders() {
+  return useQuery({
+    queryKey: ['mail', 'smart-folders'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ folders: SmartFolder[] }>('/mail/smart-folders')
+      return data.folders ?? []
+    },
+  })
+}
+
+export function useCreateSmartFolder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { name: string; query: string; icon?: string }) => {
+      const { data } = await apiClient.post<SmartFolder>('/mail/smart-folders', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail', 'smart-folders'] }),
+  })
+}
+
+export function useDeleteSmartFolder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/mail/smart-folders/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail', 'smart-folders'] }),
+  })
+}
+
+// ── Search ──────────────────────────────────────────────────────────────────
+
+export function useMailSearch(params: {
+  q?: string
+  from_addr?: string
+  has_attachment?: boolean
+  is_unread?: boolean
+  label?: string
+  before?: string
+  after?: string
+  page?: number
+  limit?: number
+}) {
+  return useQuery({
+    queryKey: ['mail', 'search', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get<MailMessagesResponse>('/mail/search', { params })
+      return data
+    },
+    enabled: !!(params.q || params.from_addr || params.has_attachment || params.is_unread),
+  })
+}
+
+// ── Pin / Flag / Categorize ────────────────────────────────────────────────
+
+export function usePinMessage() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ messageId, pinned }: { messageId: string; pinned: boolean }) => {
+      const { data } = await apiClient.put(`/mail/message/${messageId}/pin`, null, {
+        params: { pinned },
+      })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail'] }),
+  })
+}
+
+export function useFlagMessage() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: {
+      messageId: string
+      flag_status: string
+      due_date?: string
+      reminder_at?: string
+    }) => {
+      const { messageId, ...body } = payload
+      const { data } = await apiClient.put(`/mail/message/${messageId}/flag`, body)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail'] }),
+  })
+}
+
+export function useCategorizeMessage() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ messageId, category_ids }: { messageId: string; category_ids: string[] }) => {
+      const { data } = await apiClient.put(`/mail/message/${messageId}/categorize`, { category_ids })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail'] }),
+  })
+}
+
+// ── Categories ──────────────────────────────────────────────────────────────
+
+export function useMailCategories() {
+  return useQuery({
+    queryKey: ['mail', 'categories'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ categories: MailCategory[] }>('/mail/categories')
+      return data.categories ?? []
+    },
+  })
+}
+
+export function useCreateCategory() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { name: string; color: string; keyboard_shortcut?: string }) => {
+      const { data } = await apiClient.post<MailCategory>('/mail/categories', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail', 'categories'] }),
+  })
+}
+
+// ── Quick Steps ──────────────────────────────────────────────────────────────
+
+export function useQuickSteps() {
+  return useQuery({
+    queryKey: ['mail', 'quick-steps'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ quick_steps: MailQuickStep[] }>('/mail/quick-steps')
+      return data.quick_steps ?? []
+    },
+  })
+}
+
+export function useExecuteQuickStep() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ stepId, messageId }: { stepId: string; messageId: string }) => {
+      const { data } = await apiClient.post(`/mail/quick-steps/${stepId}/execute/${messageId}`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail'] }),
+  })
+}
+
+// ── Templates ────────────────────────────────────────────────────────────────
+
+export function useMailTemplates() {
+  return useQuery({
+    queryKey: ['mail', 'templates'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ templates: MailTemplate[] }>('/mail/templates')
+      return data.templates ?? []
+    },
+  })
+}
+
+export function useRenderTemplate() {
+  return useMutation({
+    mutationFn: async ({ templateId, variables }: { templateId: string; variables: Record<string, string> }) => {
+      const { data } = await apiClient.post<{ rendered_subject: string; rendered_body: string }>(
+        `/mail/templates/${templateId}/render`,
+        { variables },
+      )
+      return data
+    },
+  })
+}
+
+// ── AI Thread Summarization & Draft ──────────────────────────────────────────
+
+export function useSummarizeThread() {
+  return useMutation({
+    mutationFn: async (messageIds: string[]) => {
+      const { data } = await apiClient.post<{ summary: string }>('/mail/summarize-thread', { message_ids: messageIds })
+      return data.summary ?? ''
+    },
+  })
+}
+
+export function useAIDraft() {
+  return useMutation({
+    mutationFn: async (payload: { message_id: string; tone?: string; instructions?: string }) => {
+      const { data } = await apiClient.post<{ draft_html: string; draft_text: string; context_used: string[] }>(
+        '/mail/ai-draft',
+        payload,
+      )
+      return data
+    },
+  })
+}
+
+// ── Cross-Module Routing ─────────────────────────────────────────────────────
+
+export function useCreateTicketFromMail() {
+  return useMutation({
+    mutationFn: async (messageId: string) => {
+      const { data } = await apiClient.post(`/mail/create-ticket/${messageId}`)
+      return data
+    },
+  })
+}
+
+export function useCreateInvoiceFromMail() {
+  return useMutation({
+    mutationFn: async (messageId: string) => {
+      const { data } = await apiClient.post(`/mail/create-invoice/${messageId}`)
+      return data
+    },
+  })
+}
+
+export function useCreateCRMLeadFromMail() {
+  return useMutation({
+    mutationFn: async (messageId: string) => {
+      const { data } = await apiClient.post(`/mail/create-crm-lead/${messageId}`)
+      return data
+    },
+  })
+}
+
+// ── Analytics ──────────────────────────────────────────────────────────────────
+
+export function useMailAnalytics(days: number = 30) {
+  return useQuery({
+    queryKey: ['mail', 'analytics', 'overview', days],
+    queryFn: async () => {
+      const { data } = await apiClient.get<MailAnalyticsOverview>('/mail/analytics/overview', {
+        params: { days },
+      })
+      return data
+    },
+  })
+}
+
+export function useTopContacts() {
+  return useQuery({
+    queryKey: ['mail', 'analytics', 'top-contacts'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ contacts: TopContact[] }>('/mail/analytics/top-contacts')
+      return data.contacts ?? []
+    },
+  })
+}
+
+export function useHourlyHeatmap() {
+  return useQuery({
+    queryKey: ['mail', 'analytics', 'hourly-heatmap'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ hours: HourlyHeatmap[] }>('/mail/analytics/hourly-heatmap')
+      return data.hours ?? []
+    },
+  })
+}
+
+// ── Contact Profiles ───────────────────────────────────────────────────────────
+
+export function useContactProfiles(page: number = 1, limit: number = 50) {
+  return useQuery({
+    queryKey: ['mail', 'contact-profiles', page],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ profiles: ContactProfile[]; total: number }>(
+        '/mail/contacts/profiles',
+        { params: { page, limit } },
+      )
+      return data
+    },
+  })
+}
+
+export function useContactProfile(email: string) {
+  return useQuery({
+    queryKey: ['mail', 'contact-profile', email],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ profile: ContactProfile; crm_data: Record<string, unknown> }>(
+        `/mail/contacts/profile/${encodeURIComponent(email)}`,
+      )
+      return data
+    },
+    enabled: !!email,
+  })
+}
+
+// ── Rule Testing ──────────────────────────────────────────────────────────────
+
+export function useTestRule() {
+  return useMutation({
+    mutationFn: async ({ ruleId, messageId }: { ruleId: string; messageId: string }) => {
+      const { data } = await apiClient.post<{ would_match: boolean; actions_preview: Array<Record<string, unknown>> }>(
+        `/mail/rules/${ruleId}/test/${messageId}`,
+      )
+      return data
+    },
+  })
+}
+
+export function useRunRuleNow() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ ruleId, folder }: { ruleId: string; folder?: string }) => {
+      const { data } = await apiClient.post(`/mail/rules/${ruleId}/run-now`, null, {
+        params: folder ? { folder } : {},
+      })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail'] }),
+  })
+}
+
+// ── Calendar Extraction ────────────────────────────────────────────────────────
+
+export function useExtractCalendar() {
+  return useMutation({
+    mutationFn: async (messageId: string) => {
+      const { data } = await apiClient.post<{
+        has_event: boolean
+        title?: string
+        start_time?: string
+        end_time?: string
+        participants?: string[]
+        location?: string
+      }>(`/mail/extract-calendar/${messageId}`)
+      return data
+    },
+  })
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Phase 2 — Context-Aware AI Copilot, Contact Intelligence, Offline, Automation
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Interfaces ──────────────────────────────────────────────────────────────
+
+export interface ContextAwareDraft {
+  draft_html: string
+  draft_text: string
+  context_used: string[]
+  tone: string
+}
+
+export interface EnhancedThreadSummary {
+  message_count: number
+  summary: string
+  key_decisions: string[]
+  action_items: Array<{ action: string; assignee_hint?: string; due_date?: string }>
+  unresolved_questions: string[]
+  sentiment_overview: string
+}
+
+export interface ToneCheckResult {
+  tone: string
+  confidence: number
+  suggestions: string[]
+  emoji_summary: string
+}
+
+export interface SmartComposeSuggestion {
+  suggestion: string
+}
+
+export interface FinancialRibbon {
+  sender_email: string
+  is_known: boolean
+  crm: {
+    contact_name?: string
+    deal_stage?: string
+    deal_value?: number
+    lifetime_revenue?: number
+  }
+  finance: {
+    open_po_count?: number
+    open_po_value?: number
+    overdue_invoice_count?: number
+    overdue_invoice_value?: number
+    last_payment_date?: string
+    total_spent?: number
+  }
+  support: {
+    open_ticket_count?: number
+  }
+}
+
+export interface MeetingPrepBriefing {
+  briefing_text: string
+  attendees: Array<{
+    email: string
+    name?: string
+    recent_emails: number
+    crm_status?: string
+    open_tasks?: number
+    open_tickets?: number
+  }>
+}
+
+export interface ContactRelationship {
+  email: string
+  frequency_trend: Array<{ month: string; count: number }>
+  sentiment_trend: Array<{ month: string; sentiment: string }>
+  thread_count: number
+}
+
+export interface DuplicateContact {
+  profile_email: string
+  crm_email: string
+  confidence: number
+  suggested_action: string
+}
+
+export interface MailAnnotation {
+  id: string
+  user_id: string
+  content: string
+  is_internal: boolean
+  created_at?: string
+}
+
+// ── Context-Aware AI Copilot ────────────────────────────────────────────────
+
+export function useContextAwareDraft() {
+  return useMutation({
+    mutationFn: async (payload: {
+      message_id: string
+      tone?: string
+      instructions?: string
+      include_era_context?: boolean
+    }) => {
+      const { data } = await apiClient.post<ContextAwareDraft>('/mail/ai-draft-context', payload)
+      return data
+    },
+  })
+}
+
+export function useEnhancedThreadSummary() {
+  return useMutation({
+    mutationFn: async (messageIds: string[]) => {
+      const { data } = await apiClient.post<EnhancedThreadSummary>(
+        '/mail/summarize-thread-enhanced',
+        { message_ids: messageIds },
+      )
+      return data
+    },
+  })
+}
+
+export function useToneCheck() {
+  return useMutation({
+    mutationFn: async (text: string) => {
+      const { data } = await apiClient.post<ToneCheckResult>('/mail/tone-check', { text })
+      return data
+    },
+  })
+}
+
+export function useSmartCompose() {
+  return useMutation({
+    mutationFn: async (payload: { partial_text: string; context_message_id?: string }) => {
+      const { data } = await apiClient.post<SmartComposeSuggestion>('/mail/smart-compose', payload)
+      return data
+    },
+  })
+}
+
+// ── Financial Context Ribbon ────────────────────────────────────────────────
+
+export function useFinancialRibbon(senderEmail: string) {
+  return useQuery({
+    queryKey: ['mail', 'financial-ribbon', senderEmail],
+    queryFn: async () => {
+      const { data } = await apiClient.get<FinancialRibbon>(
+        `/mail/financial-ribbon/${encodeURIComponent(senderEmail)}`,
+      )
+      return data
+    },
+    enabled: !!senderEmail,
+    staleTime: 5 * 60 * 1000, // 5 min cache
+  })
+}
+
+// ── Meeting Prep ────────────────────────────────────────────────────────────
+
+export function useMeetingPrep() {
+  return useMutation({
+    mutationFn: async (attendeeEmails: string[]) => {
+      const { data } = await apiClient.post<MeetingPrepBriefing>('/mail/meeting-prep', {
+        attendee_emails: attendeeEmails,
+      })
+      return data
+    },
+  })
+}
+
+// ── Contact Intelligence ────────────────────────────────────────────────────
+
+export function useSyncContactProfiles() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post('/mail/contacts/sync')
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail', 'contact-profiles'] }),
+  })
+}
+
+export function useContactRelationship(email: string) {
+  return useQuery({
+    queryKey: ['mail', 'contact-relationship', email],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ContactRelationship>(
+        `/mail/contacts/relationship/${encodeURIComponent(email)}`,
+      )
+      return data
+    },
+    enabled: !!email,
+  })
+}
+
+export function useDetectDuplicateContacts() {
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post<{ duplicates: DuplicateContact[] }>('/mail/contacts/detect-duplicates')
+      return data.duplicates ?? []
+    },
+  })
+}
+
+// ── Scheduled Send ──────────────────────────────────────────────────────────
+
+export function useScheduleSend() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { message_id: string; scheduled_at: string }) => {
+      const { data } = await apiClient.post('/mail/schedule-send', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail'] }),
+  })
+}
+
+export function useCancelScheduledSend() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (messageId: string) => {
+      const { data } = await apiClient.delete(`/mail/schedule-send/${messageId}`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail'] }),
+  })
+}
+
+// ── ERP Template Rendering ──────────────────────────────────────────────────
+
+export function useRenderTemplateERP() {
+  return useMutation({
+    mutationFn: async (payload: {
+      templateId: string
+      contact_email?: string
+      deal_id?: string
+      invoice_id?: string
+    }) => {
+      const { templateId, ...body } = payload
+      const { data } = await apiClient.post<{ rendered_subject: string; rendered_body: string }>(
+        `/mail/templates/${templateId}/render-erp`,
+        { template_id: templateId, ...body },
+      )
+      return data
+    },
+  })
+}
+
+// ── AI Rule Conditions ──────────────────────────────────────────────────────
+
+export function useAddAIRuleCondition() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { rule_id: string; ai_condition: string }) => {
+      const { data } = await apiClient.post(`/mail/rules/${payload.rule_id}/ai-condition`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail', 'rules'] }),
+  })
+}
+
+// ── Annotations (Internal Team Comments) ────────────────────────────────────
+
+export function useMessageAnnotations(messageId: string) {
+  return useQuery({
+    queryKey: ['mail', 'annotations', messageId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ annotations: MailAnnotation[]; total: number }>(
+        `/mail/message/${messageId}/annotations`,
+      )
+      return data
+    },
+    enabled: !!messageId,
+  })
+}
+
+export function useCreateAnnotation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
+      const { data } = await apiClient.post(`/mail/message/${messageId}/annotations`, {
+        content,
+        is_internal: true,
+      })
+      return data
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['mail', 'annotations', variables.messageId] })
+    },
+  })
+}
+
+export function useDeleteAnnotation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (annotationId: string) => {
+      await apiClient.delete(`/mail/annotations/${annotationId}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail', 'annotations'] }),
   })
 }

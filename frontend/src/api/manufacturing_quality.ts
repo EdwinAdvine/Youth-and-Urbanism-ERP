@@ -240,7 +240,7 @@ export const useUpdateInspectionPlan = () => {
 export const useAddInspectionPlanItem = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ planId, ...data }: { planId: string } & InspectionPlanCreate['items'] extends (infer T)[] ? T : never) =>
+    mutationFn: ({ planId, ...data }: { planId: string; sequence: number; parameter_name: string; measurement_type?: string; target_value?: string; lower_limit?: number; upper_limit?: number; unit_of_measure?: string; is_critical?: boolean; instructions?: string; sample_size?: number }) =>
       apiClient.post<InspectionPlanItem>(`/manufacturing/inspection-plans/${planId}/items`, data).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['inspection-plan'] }),
   })

@@ -6,7 +6,7 @@ import logging
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.crm_service import KnowledgeBaseArticle
+from app.models.crm_service import CRMKnowledgeBaseArticle as KnowledgeBaseArticle
 
 logger = logging.getLogger(__name__)
 

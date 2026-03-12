@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Button, Spinner, Badge } from '../../components/ui'
 import { useDriveFile, useDownloadFile, formatFileSize, getFileType } from '../../api/drive'
+import AIInsightsPanel from './AIInsightsPanel'
 
 interface Props {
   fileId: string
@@ -7,6 +9,7 @@ interface Props {
 }
 
 export default function FilePreviewPanel({ fileId, onClose }: Props) {
+  const [activeTab, setActiveTab] = useState<'preview' | 'ai'>('preview')
   const { data: file, isLoading } = useDriveFile(fileId)
   const downloadFile = useDownloadFile()
 
@@ -60,6 +63,28 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b border-gray-100 dark:border-gray-800 shrink-0">
+        <button
+          onClick={() => setActiveTab('preview')}
+          className={`flex-1 text-xs py-2 font-medium transition-colors ${activeTab === 'preview' ? 'text-[#51459d] border-b-2 border-[#51459d]' : 'text-gray-400 hover:text-gray-600'}`}
+        >
+          Preview
+        </button>
+        <button
+          onClick={() => setActiveTab('ai')}
+          className={`flex-1 text-xs py-2 font-medium transition-colors ${activeTab === 'ai' ? 'text-[#51459d] border-b-2 border-[#51459d]' : 'text-gray-400 hover:text-gray-600'}`}
+        >
+          AI Insights
+        </button>
+      </div>
+
+      {activeTab === 'ai' ? (
+        <div className="flex-1 overflow-auto">
+          <AIInsightsPanel fileId={fileId} />
+        </div>
+      ) : (
+      <>
       {/* Preview */}
       <div className="flex-1 overflow-auto p-4">
         {isImage ? (
@@ -120,6 +145,8 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
           <span className="text-gray-700 dark:text-gray-300 truncate max-w-[180px]">{file.folder_path || '/'}</span>
         </div>
       </div>
+      </>
+      )}
     </div>
   )
 }

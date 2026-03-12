@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button, Badge, Card, Table, Input, Select, Modal } from '../../components/ui'
 import { toast } from '../../components/ui'
-import { useBlanketOrders, useCreateBlanketOrder, useUpdateBlanketOrder, useSuppliers, type BlanketOrder } from '../../api/inventory'
+import { useBlanketOrders, useCreateBlanketOrder, useSuppliers, type BlanketOrder } from '../../api/inventory'
 
 const STATUS_COLORS: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
   active: 'success', draft: 'default', exhausted: 'warning', expired: 'danger', cancelled: 'danger',
@@ -41,7 +41,7 @@ export default function BlanketOrdersPage() {
         total_value_limit: form.total_value_limit ? parseFloat(form.total_value_limit) : undefined,
         terms: form.terms || undefined,
         notes: form.notes || undefined,
-      } as unknown)
+      } as Partial<BlanketOrder>)
       toast('success', 'Blanket order created')
       setModalOpen(false)
       setForm(defaultForm)

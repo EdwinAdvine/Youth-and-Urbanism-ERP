@@ -82,7 +82,7 @@ export default function CustomObjectListPage() {
 
   async function handleSave() {
     if (!form.name.trim() || !form.label.trim()) {
-      toast.error('Name and label are required')
+      toast('error', 'Name and label are required')
       return
     }
 
@@ -99,14 +99,14 @@ export default function CustomObjectListPage() {
     try {
       if (editingId) {
         await updateObject.mutateAsync({ id: editingId, ...payload })
-        toast.success('Custom object updated')
+        toast('success', 'Custom object updated')
       } else {
         await createObject.mutateAsync(payload)
-        toast.success('Custom object created')
+        toast('success', 'Custom object created')
       }
       setModalOpen(false)
     } catch {
-      toast.error('Failed to save custom object')
+      toast('error', 'Failed to save custom object')
     }
   }
 
@@ -114,9 +114,9 @@ export default function CustomObjectListPage() {
     if (!confirm('Delete this custom object definition? All records will also be deleted.')) return
     try {
       await deleteObject.mutateAsync(id)
-      toast.success('Custom object deleted')
+      toast('success', 'Custom object deleted')
     } catch {
-      toast.error('Failed to delete custom object')
+      toast('error', 'Failed to delete custom object')
     }
   }
 
@@ -299,7 +299,7 @@ export default function CustomObjectListPage() {
                     <Select
                       label="Type"
                       value={field.type}
-                      onChange={(val) => updateField(idx, { type: val })}
+                      onChange={(e) => updateField(idx, { type: e.target.value })}
                       options={FIELD_TYPES}
                     />
                     <div className="flex items-end gap-2 pb-1">

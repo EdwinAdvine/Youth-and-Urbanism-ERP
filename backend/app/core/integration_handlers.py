@@ -637,6 +637,58 @@ async def on_work_order_completed(data: dict) -> None:
         data,
     )
 
+    # ── WO → Finance: create production cost journal entry ──────────────────
+    total_cost = (
+        float(data.get("total_material_cost", 0))
+        + float(data.get("total_labor_cost", 0))
+        + float(data.get("total_overhead_cost", 0))
+    )
+    if total_cost > 0:
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                from app.models.finance import JournalEntry, JournalEntryLine  # noqa: PLC0415
+                import uuid as _uuid  # noqa: PLC0415
+
+                je = JournalEntry(
+                    entry_number=f"JE-MFG-{data.get('wo_number', 'UNK')}",
+                    description=f"Production costs for WO {data.get('wo_number', '')}",
+                    entry_date=__import__("datetime").date.today(),
+                    status="posted",
+                    reference_type="work_order",
+                    reference_id=_uuid.UUID(data["work_order_id"]) if data.get("work_order_id") else None,
+                    total_debit=total_cost,
+                    total_credit=total_cost,
+                    created_by=_uuid.UUID(data["owner_id"]) if data.get("owner_id") else None,
+                )
+                db.add(je)
+                await db.flush()
+
+                # Debit WIP / Finished Goods account
+                db.add(JournalEntryLine(
+                    journal_entry_id=je.id,
+                    account_code="1300",  # Finished Goods Inventory
+                    description=f"Production output — {data.get('wo_number')}",
+                    debit_amount=total_cost,
+                    credit_amount=0,
+                ))
+                # Credit Manufacturing Cost Clearing
+                db.add(JournalEntryLine(
+                    journal_entry_id=je.id,
+                    account_code="5100",  # Cost of Goods Manufactured
+                    description=f"Manufacturing costs — {data.get('wo_number')}",
+                    debit_amount=0,
+                    credit_amount=total_cost,
+                ))
+                await db.commit()
+                logger.info(
+                    "Integration: wo.completed → Finance journal entry created (WO: %s, cost: %.2f)",
+                    data.get("wo_number"),
+                    total_cost,
+                )
+        except Exception:
+            logger.exception("Integration: wo.completed → Finance journal entry failed for WO %s", data.get("wo_number"))
+
 
 # ── 8. Support → Mail: send email notification on ticket creation ────────────
 
@@ -2245,6 +2297,633 @@ async def on_ecom_order_bopis(data: dict) -> None:
         logger.exception("BOPIS: Failed to create pickup order for %s", data.get("order_id"))
 
 
+# ── E-Commerce Phase 2 — Manufacturing, Projects, Loyalty ────────────────────
+
+@event_bus.on("ecommerce.order.confirmed")
+async def on_ecom_order_confirmed_manufacturing(data: dict) -> None:
+    """On confirmed order: notify manufacturing for made-to-order items + auto-create project for large orders."""
+    order_id = data.get("order_id")
+    order_total = Decimal(str(data.get("total", "0")))
+    logger.info("Integration: ecommerce.order.confirmed — order %s total %s", order_id, order_total)
+
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.ecommerce import EcomOrder, OrderLine, EcomOrderWorkOrderLink, EcomOrderProjectLink  # noqa: PLC0415
+        from app.models.ecommerce import EcomProduct  # noqa: PLC0415
+        from app.core.config import settings  # noqa: PLC0415
+        from sqlalchemy import select  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            # ── Made-to-order: notify manufacturing admins ──
+            order_result = await db.execute(select(EcomOrder).where(EcomOrder.id == order_id))
+            order = order_result.scalar_one_or_none()
+            if order:
+                for line in order.lines:
+                    if line.product and getattr(line.product, "is_made_to_order", False):
+                        # Notify manufacturing admins to create a work order
+                        mfg_admin_ids = await _get_app_admin_ids("manufacturing")
+                        for admin_id in mfg_admin_ids:
+                            await _create_notification(
+                                user_id=admin_id,
+                                title="New Made-to-Order Request",
+                                message=(
+                                    f"Order {order.order_number}: {line.product_name} × {line.quantity} "
+                                    f"requires manufacturing. Lead time: {getattr(line.product, 'lead_time_days', 0)} days."
+                                ),
+                                notif_type="warning",
+                                module="manufacturing",
+                                link_url="/manufacturing",
+                            )
+                        # Save a placeholder work-order link (actual WO created by mfg admin)
+                        link = EcomOrderWorkOrderLink(
+                            order_id=order.id,
+                            order_line_id=line.id,
+                            work_order_id=order.id,  # placeholder until real WO created
+                            work_order_number=f"PENDING-{order.order_number}",
+                        )
+                        db.add(link)
+
+            # ── Large order → auto-create Project ──
+            threshold = Decimal(str(getattr(settings, "ECOM_PROJECT_TRIGGER_THRESHOLD", 50000)))
+            if order and order_total >= threshold:
+                # Check no project already exists
+                existing_link = await db.execute(
+                    select(EcomOrderProjectLink).where(EcomOrderProjectLink.order_id == order.id)
+                )
+                if not existing_link.scalar_one_or_none():
+                    from app.models.projects import Project  # noqa: PLC0415
+                    from app.models.user import User  # noqa: PLC0415
+
+                    # Find a project admin or super admin
+                    admins = await _get_app_admin_ids("projects")
+                    owner_id_str = admins[0] if admins else data.get("user_id")
+                    if owner_id_str:
+                        import uuid as _uuid  # noqa: PLC0415
+                        project_name = f"Order {order.order_number} — Fulfillment Project"
+                        project = Project(
+                            name=project_name,
+                            description=(
+                                f"Auto-created project for large e-commerce order {order.order_number}. "
+                                f"Customer order total: {order.total}. Status: {order.status}."
+                            ),
+                            owner_id=_uuid.UUID(str(owner_id_str)),
+                            status="active",
+                            color="#51459d",
+                        )
+                        db.add(project)
+                        await db.flush()
+
+                        proj_link = EcomOrderProjectLink(
+                            order_id=order.id,
+                            project_id=project.id,
+                            project_name=project_name,
+                        )
+                        db.add(proj_link)
+                        logger.info(
+                            "Auto-created project '%s' for large order %s (total: %s)",
+                            project_name, order.order_number, order_total,
+                        )
+
+                        # Notify project admins
+                        for admin_id in admins:
+                            await _create_notification(
+                                user_id=admin_id,
+                                title="Large Order Project Created",
+                                message=f"Project '{project_name}' created for order {order.order_number} ({order.total}).",
+                                notif_type="info",
+                                module="projects",
+                                link_url="/projects",
+                            )
+
+            await db.commit()
+    except Exception:
+        logger.exception("Integration: ecommerce.order.confirmed handler failed for order %s", order_id)
+
+
+@event_bus.on("ecommerce.order.paid")
+async def on_ecom_order_paid_loyalty(data: dict) -> None:
+    """Award loyalty points to customer when order is paid."""
+    order_id = data.get("order_id")
+    customer_id = data.get("customer_id")
+    order_total = Decimal(str(data.get("total", "0")))
+
+    if not customer_id or order_total <= 0:
+        return
+
+    logger.info("Integration: ecommerce.order.paid — awarding loyalty points for order %s", order_id)
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.ecommerce_loyalty import (  # noqa: PLC0415
+            LoyaltyProgram, CustomerLoyaltyAccount, LoyaltyTransaction, LoyaltyTier,
+        )
+        from app.models.ecommerce import CustomerAccount  # noqa: PLC0415
+        from sqlalchemy import select  # noqa: PLC0415
+        import uuid as _uuid  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            # Get the store for this customer
+            customer_result = await db.execute(
+                select(CustomerAccount).where(CustomerAccount.id == _uuid.UUID(str(customer_id)))
+            )
+            customer = customer_result.scalar_one_or_none()
+            if not customer:
+                return
+
+            # Get loyalty program for this store
+            program_result = await db.execute(
+                select(LoyaltyProgram).where(
+                    LoyaltyProgram.store_id == customer.store_id,
+                    LoyaltyProgram.is_active == True,  # noqa: E712
+                )
+            )
+            program = program_result.scalar_one_or_none()
+            if not program:
+                return
+
+            # Calculate points earned
+            points_earned = int(order_total * program.points_per_unit_spent)
+            if points_earned <= 0:
+                return
+
+            # Get or create loyalty account
+            account_result = await db.execute(
+                select(CustomerLoyaltyAccount).where(
+                    CustomerLoyaltyAccount.customer_id == _uuid.UUID(str(customer_id))
+                )
+            )
+            loyalty_account = account_result.scalar_one_or_none()
+            if not loyalty_account:
+                loyalty_account = CustomerLoyaltyAccount(
+                    customer_id=_uuid.UUID(str(customer_id)),
+                    points_balance=0,
+                    lifetime_points=0,
+                )
+                db.add(loyalty_account)
+                await db.flush()
+
+            loyalty_account.points_balance += points_earned
+            loyalty_account.lifetime_points += points_earned
+
+            # Check tier upgrade
+            tiers_result = await db.execute(
+                select(LoyaltyTier).where(
+                    LoyaltyTier.store_id == customer.store_id
+                ).order_by(LoyaltyTier.min_lifetime_points.desc())
+            )
+            tiers = tiers_result.scalars().all()
+            for tier in tiers:
+                if loyalty_account.lifetime_points >= tier.min_lifetime_points:
+                    loyalty_account.tier_id = tier.id
+                    break
+
+            # Log transaction
+            txn = LoyaltyTransaction(
+                account_id=loyalty_account.id,
+                transaction_type="earned",
+                points=points_earned,
+                reference_id=str(order_id),
+                note=f"Order payment — {points_earned} points awarded",
+            )
+            db.add(txn)
+            await db.commit()
+
+            logger.info(
+                "Loyalty: awarded %d points to customer %s for order %s",
+                points_earned, customer_id, order_id,
+            )
+    except Exception:
+        logger.exception("Integration: loyalty point award failed for order %s", order_id)
+
+
+# ── Y&U Teams Chat — ERP event → channel notification ────────────────────────
+
+async def _post_to_linked_channel(
+    linked_entity_type: str,
+    linked_entity_id: str,
+    content: str,
+    content_type: str = "system",
+    metadata: dict | None = None,
+) -> None:
+    """Post a system message to the auto-created channel for an ERP entity."""
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.chat import Channel, ChatMessage  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            from sqlalchemy import select  # noqa: PLC0415
+
+            result = await db.execute(
+                select(Channel).where(
+                    Channel.linked_entity_type == linked_entity_type,
+                    Channel.linked_entity_id == linked_entity_id,
+                )
+            )
+            channel = result.scalar_one_or_none()
+            if not channel:
+                return
+
+            msg = ChatMessage(
+                channel_id=channel.id,
+                sender_id=None,
+                content=content,
+                content_type=content_type,
+                extra_data=metadata,
+            )
+            db.add(msg)
+            channel.message_count = (channel.message_count or 0) + 1
+            channel.last_message_at = datetime.now(timezone=timezone.utc)
+            await db.commit()
+    except Exception:
+        logger.exception(
+            "Chat: failed to post to %s channel for %s",
+            linked_entity_type, linked_entity_id,
+        )
+
+
+async def _post_to_channel_by_slug(
+    team_id: str | None,
+    slug: str,
+    content: str,
+    content_type: str = "system",
+    metadata: dict | None = None,
+) -> None:
+    """Post a system message to a channel identified by slug (e.g. #sales, #support)."""
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.chat import Channel, ChatMessage  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            from sqlalchemy import select  # noqa: PLC0415
+
+            stmt = select(Channel).where(Channel.slug == slug)
+            if team_id:
+                import uuid as _uuid  # noqa: PLC0415
+                stmt = stmt.where(Channel.team_id == _uuid.UUID(team_id))
+            result = await db.execute(stmt)
+            channel = result.scalars().first()
+            if not channel:
+                return
+
+            msg = ChatMessage(
+                channel_id=channel.id,
+                sender_id=None,
+                content=content,
+                content_type=content_type,
+                extra_data=metadata,
+            )
+            db.add(msg)
+            channel.message_count = (channel.message_count or 0) + 1
+            channel.last_message_at = datetime.now(timezone=timezone.utc)
+            await db.commit()
+    except Exception:
+        logger.exception("Chat: failed to post to #%s channel", slug)
+
+
+@event_bus.on("pos.sale.completed")
+async def _chat_notify_pos_sale(data: dict) -> None:
+    """Post POS sale completion to #sales channel."""
+    total = data.get("total", 0)
+    cashier = data.get("cashier_name", "Unknown")
+    tx_id = data.get("transaction_id", "")
+    content = f"💰 POS Sale completed — ${total:.2f} by {cashier} (Tx: {tx_id[:8]}…)"
+    await _post_to_channel_by_slug(
+        team_id=None, slug="sales", content=content,
+        content_type="card",
+        metadata={"entity_type": "pos_sale", "entity_id": tx_id},
+    )
+
+
+@event_bus.on("support.ticket.created")
+async def _chat_notify_support_ticket(data: dict) -> None:
+    """Post new support ticket to #support channel."""
+    ticket_id = data.get("ticket_id", "")
+    subject = data.get("subject", "New ticket")
+    priority = data.get("priority", "medium")
+    content = f"🎫 New support ticket: {subject} (Priority: {priority})"
+    await _post_to_channel_by_slug(
+        team_id=None, slug="support", content=content,
+        content_type="card",
+        metadata={"entity_type": "ticket", "entity_id": ticket_id},
+    )
+
+
+@event_bus.on("opportunity.stage_changed")
+async def _chat_notify_deal_stage(data: dict) -> None:
+    """Post deal stage change to the deal's auto-created channel."""
+    deal_id = data.get("deal_id", data.get("opportunity_id", ""))
+    deal_name = data.get("deal_name", data.get("title", "Deal"))
+    new_stage = data.get("new_stage", data.get("stage", ""))
+    old_stage = data.get("old_stage", data.get("previous_stage", ""))
+    content = f"📊 Deal '{deal_name}' moved from {old_stage} → {new_stage}"
+    await _post_to_linked_channel(
+        linked_entity_type="deal",
+        linked_entity_id=deal_id,
+        content=content,
+        content_type="card",
+        metadata={"entity_type": "deal", "entity_id": deal_id, "new_stage": new_stage},
+    )
+
+
+@event_bus.on("task.status_changed")
+async def _chat_notify_task_status(data: dict) -> None:
+    """Post task status change to the project's auto-created channel."""
+    project_id = data.get("project_id", "")
+    task_title = data.get("title", data.get("task_title", "Task"))
+    new_status = data.get("new_status", data.get("status", ""))
+    assignee = data.get("assignee_name", "")
+    content = f"✅ Task '{task_title}' → {new_status}"
+    if assignee:
+        content += f" (assigned to {assignee})"
+    await _post_to_linked_channel(
+        linked_entity_type="project",
+        linked_entity_id=project_id,
+        content=content,
+        content_type="card",
+        metadata={"entity_type": "task", "entity_id": data.get("task_id", "")},
+    )
+
+
+# ── Calendar ↔ ERP Deep Integration Handlers ──────────────────────────────────
+
+
+@event_bus.on("invoice.sent")
+async def on_invoice_sent_calendar(data: dict) -> None:
+    """Auto-create a calendar reminder event when an invoice is sent (due date reminder)."""
+    logger.info(
+        "Integration: invoice.sent → Calendar due-date reminder (invoice: %s)",
+        data.get("invoice_number"),
+    )
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.calendar import CalendarEvent  # noqa: PLC0415
+        from app.models.finance import Invoice  # noqa: PLC0415
+        from sqlalchemy import select  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            inv = await db.get(Invoice, data.get("invoice_id"))
+            if not inv or not inv.due_date:
+                return
+
+            due_dt = datetime.combine(inv.due_date, datetime.min.time()).replace(
+                hour=9, tzinfo=timezone.utc
+            )
+            cal_event = CalendarEvent(
+                title=f"Invoice Due: {inv.invoice_number} — {inv.customer_name or 'Customer'}",
+                description=f"Invoice {inv.invoice_number} for {inv.total} {inv.currency} is due today.",
+                start_time=due_dt,
+                end_time=due_dt + timedelta(hours=1),
+                event_type="deadline",
+                organizer_id=inv.created_by,
+                color="#ff3a6e",
+                erp_context={
+                    "invoice_id": str(inv.id),
+                    "invoice_number": inv.invoice_number,
+                    "total": str(inv.total),
+                    "currency": inv.currency,
+                    "customer_name": inv.customer_name,
+                },
+            )
+            db.add(cal_event)
+            await db.commit()
+            logger.info(
+                "Finance→Calendar: Created due-date event for invoice %s on %s",
+                inv.invoice_number,
+                inv.due_date,
+            )
+    except Exception:
+        logger.exception("Finance→Calendar: Failed to create invoice due-date event")
+
+
+@event_bus.on("recurring_invoice.generated")
+async def on_recurring_invoice_calendar(data: dict) -> None:
+    """Auto-create calendar event for recurring invoice due dates."""
+    logger.info(
+        "Integration: recurring_invoice.generated → Calendar (invoice: %s)",
+        data.get("invoice_number"),
+    )
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.calendar import CalendarEvent  # noqa: PLC0415
+        from app.models.finance import Invoice  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as db:
+            inv = await db.get(Invoice, data.get("invoice_id"))
+            if not inv or not inv.due_date:
+                return
+
+            due_dt = datetime.combine(inv.due_date, datetime.min.time()).replace(
+                hour=9, tzinfo=timezone.utc
+            )
+            cal_event = CalendarEvent(
+                title=f"Recurring Invoice Due: {inv.invoice_number}",
+                description=f"Recurring invoice {inv.invoice_number} for {inv.total} {inv.currency} is due.",
+                start_time=due_dt,
+                end_time=due_dt + timedelta(hours=1),
+                event_type="deadline",
+                organizer_id=inv.created_by,
+                color="#ff3a6e",
+                erp_context={
+                    "invoice_id": str(inv.id),
+                    "invoice_number": inv.invoice_number,
+                    "total": str(inv.total),
+                    "source": "recurring",
+                },
+            )
+            db.add(cal_event)
+            await db.commit()
+            logger.info("Finance→Calendar: Recurring invoice due-date event created")
+    except Exception:
+        logger.exception("Finance→Calendar: Failed for recurring invoice")
+
+
+@event_bus.on("support.sla.warning")
+async def on_sla_warning_calendar(data: dict) -> None:
+    """Auto-create urgent calendar event when SLA is about to breach."""
+    logger.info(
+        "Integration: support.sla.warning → Calendar (ticket: %s, type: %s)",
+        data.get("ticket_number"),
+        data.get("sla_type"),
+    )
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.calendar import CalendarEvent  # noqa: PLC0415
+
+        assigned_to = data.get("assigned_to")
+        if not assigned_to:
+            admin_ids = await _get_app_admin_ids("support")
+            assigned_to = admin_ids[0] if admin_ids else None
+        if not assigned_to:
+            return
+
+        due_at_str = data.get("due_at")
+        if due_at_str:
+            due_at = datetime.fromisoformat(due_at_str)
+        else:
+            due_at = datetime.now(timezone.utc) + timedelta(hours=1)
+
+        sla_type = data.get("sla_type", "response")
+        async with AsyncSessionLocal() as db:
+            cal_event = CalendarEvent(
+                title=f"SLA Warning: {data.get('ticket_number')} ({sla_type})",
+                description=f"Ticket {data.get('ticket_number')} SLA {sla_type} deadline approaching. Act now to prevent breach.",
+                start_time=due_at - timedelta(minutes=30),
+                end_time=due_at,
+                event_type="deadline",
+                priority="urgent",
+                organizer_id=assigned_to,
+                color="#ff3a6e",
+                erp_context={
+                    "ticket_id": data.get("ticket_id"),
+                    "ticket_number": data.get("ticket_number"),
+                    "sla_type": sla_type,
+                },
+            )
+            db.add(cal_event)
+            await db.commit()
+            logger.info("Support→Calendar: SLA warning event created for %s", data.get("ticket_number"))
+    except Exception:
+        logger.exception("Support→Calendar: Failed to create SLA warning event")
+
+
+@event_bus.on("task.created")
+async def on_task_created_calendar(data: dict) -> None:
+    """Auto-create calendar event when a project task with a due date is created."""
+    due_date_str = data.get("due_date")
+    if not due_date_str:
+        return
+
+    logger.info(
+        "Integration: task.created → Calendar (task: %s, due: %s)",
+        data.get("title"),
+        due_date_str,
+    )
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.calendar import CalendarEvent  # noqa: PLC0415
+
+        due_dt = datetime.fromisoformat(due_date_str)
+        if due_dt.tzinfo is None:
+            due_dt = due_dt.replace(tzinfo=timezone.utc)
+        # If it's a date-only (midnight), set to 9am
+        if due_dt.hour == 0 and due_dt.minute == 0:
+            due_dt = due_dt.replace(hour=9)
+
+        organizer = data.get("assignee_id") or data.get("owner_id") or data.get("user_id")
+        if not organizer:
+            return
+
+        async with AsyncSessionLocal() as db:
+            cal_event = CalendarEvent(
+                title=f"Task Due: {data.get('title', 'Task')}",
+                description=f"Project task deadline — {data.get('project_name', '')}",
+                start_time=due_dt,
+                end_time=due_dt + timedelta(hours=1),
+                event_type="task",
+                organizer_id=organizer,
+                color="#6fd943",
+                erp_context={
+                    "task_id": data.get("task_id"),
+                    "project_id": data.get("project_id"),
+                    "project_name": data.get("project_name"),
+                },
+            )
+            db.add(cal_event)
+            await db.commit()
+            logger.info("Projects→Calendar: Task due-date event created for %s", data.get("title"))
+    except Exception:
+        logger.exception("Projects→Calendar: Failed to create task due-date event")
+
+
+@event_bus.on("support.sla.breached")
+async def on_sla_breached_calendar(data: dict) -> None:
+    """Auto-create escalation calendar event when SLA is breached."""
+    logger.info(
+        "Integration: support.sla.breached → Calendar escalation (ticket: %s)",
+        data.get("ticket_number"),
+    )
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.calendar import CalendarEvent  # noqa: PLC0415
+
+        admin_ids = await _get_app_admin_ids("support")
+        organizer = data.get("assigned_to") or (admin_ids[0] if admin_ids else None)
+        if not organizer:
+            return
+
+        now = datetime.now(timezone.utc)
+        async with AsyncSessionLocal() as db:
+            cal_event = CalendarEvent(
+                title=f"SLA BREACHED: {data.get('ticket_number')} — Escalate Now",
+                description=f"Ticket {data.get('ticket_number')} has breached its {data.get('sla_type', 'SLA')} deadline. Immediate action required.",
+                start_time=now,
+                end_time=now + timedelta(minutes=30),
+                event_type="deadline",
+                priority="urgent",
+                organizer_id=organizer,
+                attendees=[str(uid) for uid in admin_ids] if admin_ids else [],
+                color="#ff3a6e",
+                erp_context={
+                    "ticket_id": data.get("ticket_id"),
+                    "ticket_number": data.get("ticket_number"),
+                    "sla_type": data.get("sla_type"),
+                    "escalation": True,
+                },
+            )
+            db.add(cal_event)
+            await db.commit()
+            logger.info("Support→Calendar: SLA breach escalation event created")
+    except Exception:
+        logger.exception("Support→Calendar: Failed to create SLA breach event")
+
+
+@event_bus.on("opportunity.stage_changed")
+async def on_deal_stage_calendar(data: dict) -> None:
+    """Auto-schedule follow-up when a CRM deal reaches negotiation or proposal stage."""
+    stage = data.get("new_stage", "").lower()
+    if stage not in ("negotiation", "proposal", "contract"):
+        return
+
+    logger.info(
+        "Integration: opportunity.stage_changed → Calendar follow-up (deal: %s → %s)",
+        data.get("deal_name"),
+        stage,
+    )
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.calendar import CalendarEvent  # noqa: PLC0415
+
+        owner = data.get("owner_id")
+        if not owner:
+            return
+
+        # Schedule follow-up 2 days from now at 10am
+        follow_up = (datetime.now(timezone.utc) + timedelta(days=2)).replace(
+            hour=10, minute=0, second=0, microsecond=0
+        )
+        async with AsyncSessionLocal() as db:
+            cal_event = CalendarEvent(
+                title=f"Follow-up: {data.get('deal_name', 'Deal')} ({stage.title()})",
+                description=f"CRM deal '{data.get('deal_name')}' moved to {stage}. Follow up with contact.",
+                start_time=follow_up,
+                end_time=follow_up + timedelta(minutes=30),
+                event_type="meeting",
+                organizer_id=owner,
+                color="#51459d",
+                erp_context={
+                    "deal_id": data.get("deal_id"),
+                    "deal_name": data.get("deal_name"),
+                    "stage": stage,
+                    "contact_id": data.get("contact_id"),
+                    "value": data.get("value"),
+                },
+            )
+            db.add(cal_event)
+            await db.commit()
+            logger.info("CRM→Calendar: Follow-up event created for deal %s", data.get("deal_name"))
+    except Exception:
+        logger.exception("CRM→Calendar: Failed to create follow-up event")
+
+
 def register_integration_handlers() -> None:
     """No-op function — importing this module registers the @event_bus.on decorators.
 
@@ -2268,5 +2947,12 @@ def register_integration_handlers() -> None:
         "supplychain.replenishment.triggered, "
         "pos.sale.completed (CRM contact + loyalty + commission), "
         "pos.session.opened / closed (HR attendance sync), "
-        "stock.low (auto-reorder), ecommerce.order.created (BOPIS)"
+        "stock.low (auto-reorder), ecommerce.order.created (BOPIS), "
+        "ecommerce.order.confirmed (manufacturing notify + project auto-create), "
+        "ecommerce.order.paid (loyalty points award), "
+        "pos.sale.completed (→ #sales chat), support.ticket.created (→ #support chat), "
+        "opportunity.stage_changed (→ deal channel), task.status_changed (→ project channel), "
+        "invoice.sent (→ Calendar due-date), recurring_invoice.generated (→ Calendar), "
+        "support.sla.warning (→ Calendar SLA event), support.sla.breached (→ Calendar escalation), "
+        "task.created (→ Calendar task due-date), opportunity.stage_changed (→ Calendar follow-up)"
     )

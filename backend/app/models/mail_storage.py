@@ -7,7 +7,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, func
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -79,6 +79,44 @@ class MailboxMessage(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # ── Label IDs (optional) ──────────────────────────────────────────────────
     label_ids: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
 
+    # ── Multi-account ────────────────────────────────────────────────────────
+    account_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True,
+    )
+
+    # ── Pinning & Flags ──────────────────────────────────────────────────────
+    is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    flag_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="none",
+        comment="none, flagged, complete",
+    )
+    flag_due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    flag_reminder_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # ── Categories ───────────────────────────────────────────────────────────
+    category_ids: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+
+    # ── DLP / Security ───────────────────────────────────────────────────────
+    sensitivity_label_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True,
+    )
+
+    # ── Display formatting (from conditional rules) ──────────────────────────
+    display_format: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    # ── Scheduled send ───────────────────────────────────────────────────────
+    scheduled_send_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # ── AI Triage ────────────────────────────────────────────────────────────
+    priority_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ai_category: Mapped[str | None] = mapped_column(
+        String(50), nullable=True,
+        comment="finance-invoice, support-request, deal-related, project-update, personal, newsletter, spam-suspect",
+    )
+    ai_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_triage: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    predicted_actions: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
     # ── Relationships ─────────────────────────────────────────────────────────
     user = relationship("User", foreign_keys=[user_id])
 
@@ -102,6 +140,10 @@ class MailboxMessage(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "is_draft": self.is_draft,
             "has_attachments": bool(self.attachments),
             "label_ids": self.label_ids,
+            "is_pinned": self.is_pinned,
+            "flag_status": self.flag_status,
+            "priority_score": self.priority_score,
+            "ai_category": self.ai_category,
         }
 
     def to_full_dict(self) -> dict:
@@ -128,4 +170,18 @@ class MailboxMessage(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "headers": self.headers,
             "attachments": self.attachments,
             "label_ids": self.label_ids,
+            "account_id": str(self.account_id) if self.account_id else None,
+            "is_pinned": self.is_pinned,
+            "flag_status": self.flag_status,
+            "flag_due_date": self.flag_due_date.isoformat() if self.flag_due_date else None,
+            "flag_reminder_at": self.flag_reminder_at.isoformat() if self.flag_reminder_at else None,
+            "category_ids": self.category_ids,
+            "sensitivity_label_id": str(self.sensitivity_label_id) if self.sensitivity_label_id else None,
+            "display_format": self.display_format,
+            "scheduled_send_at": self.scheduled_send_at.isoformat() if self.scheduled_send_at else None,
+            "priority_score": self.priority_score,
+            "ai_category": self.ai_category,
+            "ai_summary": self.ai_summary,
+            "ai_triage": self.ai_triage,
+            "predicted_actions": self.predicted_actions,
         }

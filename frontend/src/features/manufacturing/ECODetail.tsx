@@ -3,13 +3,15 @@ import { Button, Badge, Card } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useECO, useSubmitECO, useApproveECO, useImplementECO } from '../../api/manufacturing_eco'
 
-const statusColors: Record<string, string> = {
-  draft: 'gray',
-  submitted: 'blue',
-  under_review: 'yellow',
-  approved: 'green',
-  rejected: 'red',
-  implemented: 'purple',
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const statusColors: Record<string, BadgeVariant> = {
+  draft: 'default',
+  submitted: 'info',
+  under_review: 'warning',
+  approved: 'success',
+  rejected: 'danger',
+  implemented: 'primary',
 }
 
 function formatDateTime(dateStr: string | null) {
@@ -31,27 +33,27 @@ export default function ECODetail() {
   const handleSubmit = async () => {
     try {
       await submitECO.mutateAsync(eco.id)
-      toast({ title: 'ECO submitted for approval' })
+      toast('success', 'ECO submitted for approval')
     } catch {
-      toast({ title: 'Failed to submit ECO', variant: 'destructive' })
+      toast('error', 'Failed to submit ECO')
     }
   }
 
   const handleApprove = async (decision: string) => {
     try {
       await approveECO.mutateAsync({ ecoId: eco.id, decision })
-      toast({ title: `ECO ${decision}` })
+      toast('success', `ECO ${decision}`)
     } catch {
-      toast({ title: `Failed to ${decision} ECO`, variant: 'destructive' })
+      toast('error', `Failed to ${decision} ECO`)
     }
   }
 
   const handleImplement = async () => {
     try {
       await implementECO.mutateAsync(eco.id)
-      toast({ title: 'ECO implemented — new BOM version created' })
+      toast('success', 'ECO implemented — new BOM version created')
     } catch {
-      toast({ title: 'Failed to implement ECO', variant: 'destructive' })
+      toast('error', 'Failed to implement ECO')
     }
   }
 
@@ -70,8 +72,8 @@ export default function ECODetail() {
           )}
           {(eco.status === 'submitted' || eco.status === 'under_review') && (
             <>
-              <Button variant="success" onClick={() => handleApprove('approved')} loading={approveECO.isPending}>Approve</Button>
-              <Button variant="destructive" onClick={() => handleApprove('rejected')} loading={approveECO.isPending}>Reject</Button>
+              <Button variant="primary" onClick={() => handleApprove('approved')} loading={approveECO.isPending}>Approve</Button>
+              <Button variant="danger" onClick={() => handleApprove('rejected')} loading={approveECO.isPending}>Reject</Button>
             </>
           )}
           {eco.status === 'approved' && (
@@ -85,7 +87,7 @@ export default function ECODetail() {
           <h2 className="font-semibold text-lg">Details</h2>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <span className="text-gray-500">Status</span>
-            <Badge variant={statusColors[eco.status] || 'gray'}>{eco.status.replace('_', ' ')}</Badge>
+            <Badge variant={statusColors[eco.status] || 'default'}>{eco.status.replace('_', ' ')}</Badge>
             <span className="text-gray-500">Change Type</span>
             <span className="capitalize">{eco.change_type}</span>
             <span className="text-gray-500">Priority</span>
@@ -140,7 +142,7 @@ export default function ECODetail() {
                   <span className="text-xs text-gray-500 ml-2">{approval.approver_id}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={approval.decision === 'approved' ? 'green' : approval.decision === 'rejected' ? 'red' : 'gray'}>
+                  <Badge variant={approval.decision === 'approved' ? 'success' : approval.decision === 'rejected' ? 'danger' : 'default'}>
                     {approval.decision}
                   </Badge>
                   {approval.decided_at && <span className="text-xs text-gray-500">{formatDateTime(approval.decided_at)}</span>}

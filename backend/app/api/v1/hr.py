@@ -238,7 +238,7 @@ async def update_department(
 
 @router.delete(
     "/departments/{department_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Soft-delete a department",
 )
 async def delete_department(
@@ -253,7 +253,7 @@ async def delete_department(
 
     department.is_active = False
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Employee endpoints ────────────────────────────────────────────────────────
@@ -882,7 +882,7 @@ async def update_salary_structure(
 
 @router.delete(
     "/salary-structures/{structure_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Soft-delete a salary structure",
 )
 async def delete_salary_structure(
@@ -897,7 +897,7 @@ async def delete_salary_structure(
 
     structure.is_active = False
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Payslip endpoints ─────────────────────────────────────────────────────────

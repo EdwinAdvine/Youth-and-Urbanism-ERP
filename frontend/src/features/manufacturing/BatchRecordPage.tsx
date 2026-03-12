@@ -1,17 +1,17 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Button, Badge, Card, Table, Input, Modal } from '../../components/ui'
+import { Button, Badge, Card, Input, Modal } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useBatchRecords, useCreateBatchRecord, useApproveBatchRecord, type BatchRecord, type BatchRecordCreate } from '../../api/manufacturing_trace'
 
-const statusColors: Record<string, string> = { in_progress: 'blue', completed: 'yellow', reviewed: 'orange', approved: 'green' }
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const statusColors: Record<string, BadgeVariant> = { in_progress: 'info', completed: 'warning', reviewed: 'warning', approved: 'success' }
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export default function BatchRecordPage() {
-  const navigate = useNavigate()
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState<BatchRecordCreate>({ batch_number: '', work_order_id: '', bom_id: '' })
   const [approveId, setApproveId] = useState<string | null>(null)
@@ -22,14 +22,14 @@ export default function BatchRecordPage() {
   const approveRecord = useApproveBatchRecord()
 
   const handleCreate = async () => {
-    if (!form.batch_number || !form.work_order_id || !form.bom_id) return toast({ title: 'All fields required', variant: 'destructive' })
+    if (!form.batch_number || !form.work_order_id || !form.bom_id) return toast('error', 'All fields required')
     try {
       await createRecord.mutateAsync(form)
-      toast({ title: 'Batch record created' })
+      toast('success', 'Batch record created')
       setModalOpen(false)
       setForm({ batch_number: '', work_order_id: '', bom_id: '' })
     } catch {
-      toast({ title: 'Failed to create', variant: 'destructive' })
+      toast('error', 'Failed to create')
     }
   }
 
@@ -37,11 +37,11 @@ export default function BatchRecordPage() {
     if (!approveId || !signature) return
     try {
       await approveRecord.mutateAsync({ recordId: approveId, electronic_signature: signature })
-      toast({ title: 'Batch record approved' })
+      toast('success', 'Batch record approved')
       setApproveId(null)
       setSignature('')
     } catch {
-      toast({ title: 'Failed to approve', variant: 'destructive' })
+      toast('error', 'Failed to approve')
     }
   }
 
@@ -53,14 +53,14 @@ export default function BatchRecordPage() {
       </div>
 
       <Card>
-        <Table>
+        <table className="w-full text-sm">
           <thead>
             <tr>
-              <th>Batch #</th>
-              <th>Status</th>
-              <th>Work Order</th>
-              <th>Approved By</th>
-              <th>Created</th>
+              <th className="text-left py-3 px-4">Batch #</th>
+              <th className="text-left py-3 px-4">Status</th>
+              <th className="text-left py-3 px-4">Work Order</th>
+              <th className="text-left py-3 px-4">Approved By</th>
+              <th className="text-left py-3 px-4">Created</th>
               <th></th>
             </tr>
           </thead>
@@ -72,7 +72,7 @@ export default function BatchRecordPage() {
             ) : records?.map((r: BatchRecord) => (
               <tr key={r.id}>
                 <td className="font-mono text-sm font-medium">{r.batch_number}</td>
-                <td><Badge variant={statusColors[r.status] || 'gray'}>{r.status.replace('_', ' ')}</Badge></td>
+                <td><Badge variant={statusColors[r.status] || 'default'}>{r.status.replace('_', ' ')}</Badge></td>
                 <td className="text-xs">{r.work_order_id.slice(0, 8)}...</td>
                 <td className="text-xs">{r.approved_by ? r.approved_by.slice(0, 8) + '...' : '—'}</td>
                 <td>{formatDate(r.created_at)}</td>
@@ -84,7 +84,7 @@ export default function BatchRecordPage() {
               </tr>
             ))}
           </tbody>
-        </Table>
+        </table>
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Create Batch Record">

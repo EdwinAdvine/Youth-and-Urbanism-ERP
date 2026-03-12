@@ -301,7 +301,7 @@ async def create_employee_document(
 
 @router.delete(
     "/employees/{employee_id}/documents/{doc_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete an employee document",
 )
 async def delete_employee_document(

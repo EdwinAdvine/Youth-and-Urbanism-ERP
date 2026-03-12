@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { Badge, Button, Spinner, Modal, toast } from '../../../components/ui'
 import {
   useRequisitionPipeline,
@@ -267,10 +268,12 @@ function AddCandidateDialog({
 // ─── Pipeline Board ───────────────────────────────────────────────────────────
 
 interface PipelineBoardProps {
-  requisitionId: string
+  requisitionId?: string
 }
 
-export default function PipelineBoard({ requisitionId }: PipelineBoardProps) {
+export default function PipelineBoard({ requisitionId: propRequisitionId }: PipelineBoardProps) {
+  const { id: routeId } = useParams<{ id: string }>()
+  const requisitionId = propRequisitionId ?? routeId ?? ''
   const [detailApp, setDetailApp] = useState<CandidateApplication | null>(null)
   const [showAddCandidate, setShowAddCandidate] = useState(false)
 

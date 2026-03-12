@@ -227,7 +227,7 @@ async def update_station(
     return StationOut.model_validate(station).model_dump()
 
 
-@router.delete("/stations/{station_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a KDS station")
+@router.delete("/stations/{station_id}", status_code=status.HTTP_200_OK, summary="Delete a KDS station")
 async def delete_station(
     station_id: uuid.UUID,
     current_user: CurrentUser,

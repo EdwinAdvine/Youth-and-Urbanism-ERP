@@ -22,6 +22,8 @@ import ShareDialog from '../../components/drive/ShareDialog'
 import BulkActionsToolbar from './BulkActionsToolbar'
 import FavoritesView, { FavoriteToggle } from './FavoritesView'
 import FileVersionsPanel from './FileVersionsPanel'
+import FilePreviewPanel from './FilePreviewPanel'
+import { useSmartFolders, useSmartFolderFiles, useCreateSmartFolder, useDeleteSmartFolder, type SmartFolder } from '../../api/drive_ext'
 
 // ─── File type config ─────────────────────────────────────────────────────────
 
@@ -128,6 +130,7 @@ function ContextMenu({ x, y, item, onClose, onAction }: {
         { label: 'Share', icon: '⤴', action: 'share' },
         { label: 'Attach to Mail', icon: '✉', action: 'attach-to-mail' },
         { label: 'Link to Task', icon: '☑', action: 'link-to-task' },
+        { label: 'AI Insights', icon: '✨', action: 'ai-preview' },
         { label: 'Version History', icon: '⏱', action: 'versions' },
         { label: 'Move', icon: '↗', action: 'move' },
         null,
@@ -241,10 +244,14 @@ export default function DrivePage() {
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([])
   const [versionsFile, setVersionsFile] = useState<{ id: string; name: string } | null>(null)
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
-  const [globalDragging, setGlobalDragging] = useState(false)
+  // globalDragging state removed - can be re-added for drag UX
   const [linkTaskTarget, setLinkTaskTarget] = useState<{ id: string; name: string } | null>(null)
   const [linkTaskId, setLinkTaskId] = useState('')
   const [linkProjectId, setLinkProjectId] = useState('')
+  const [previewFileId, setPreviewFileId] = useState<string | null>(null)
+  const [activeSmartFolder, setActiveSmartFolder] = useState<string | null>(null)
+  const [showNewSmartFolder, setShowNewSmartFolder] = useState(false)
+  const [newSmartFolderName, setNewSmartFolderName] = useState('')
 
   // ─── API hooks ──────────────────────────────────────────────────────────────
   const isSharedView = activeSection === 'shared'
@@ -266,6 +273,10 @@ export default function DrivePage() {
   const openInEditor = useOpenInEditor()
   const fileAsAttachment = useFileAsAttachment()
   const linkFileToTask = useLinkFileToTask()
+  const { data: smartFoldersData } = useSmartFolders()
+  const { data: smartFolderFiles } = useSmartFolderFiles(activeSmartFolder || '')
+  const createSmartFolder = useCreateSmartFolder()
+  const deleteSmartFolder = useDeleteSmartFolder()
 
   // ─── Build display items ───────────────────────────────────────────────────
 
@@ -367,6 +378,8 @@ export default function DrivePage() {
       }
     } else if (action === 'link-to-task' && !item.isFolder) {
       setLinkTaskTarget({ id: item.id, name: item.name })
+    } else if (action === 'ai-preview' && !item.isFolder) {
+      setPreviewFileId(item.id)
     }
   }
 
@@ -487,6 +500,35 @@ export default function DrivePage() {
                 className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[6px] text-xs text-[#51459d] hover:bg-[#51459d]/5 transition-colors"
               >
                 <span>+</span> New Team Folder
+              </button>
+            </div>
+          )}
+
+          {/* Smart Folders */}
+          {smartFoldersData?.smart_folders && smartFoldersData.smart_folders.length > 0 && (
+            <div className="mt-3 px-1">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1 px-2">Smart Folders</p>
+              {smartFoldersData.smart_folders.map((sf: SmartFolder) => (
+                <button
+                  key={sf.id}
+                  onClick={() => {
+                    setActiveSmartFolder(sf.id)
+                    setActiveSection('smart-folder')
+                    setBreadcrumbs([{ label: sf.name }])
+                  }}
+                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[6px] text-xs transition-colors mb-0.5 ${
+                    activeSmartFolder === sf.id ? 'bg-[#51459d]/10 text-[#51459d] font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <span className="text-sm">{sf.icon || '🔍'}</span>
+                  <span className="truncate">{sf.name}</span>
+                </button>
+              ))}
+              <button
+                onClick={() => setShowNewSmartFolder(true)}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[6px] text-xs text-[#51459d] hover:bg-[#51459d]/5 transition-colors"
+              >
+                <span>+</span> New Smart Folder
               </button>
             </div>
           )}
@@ -698,7 +740,61 @@ export default function DrivePage() {
             <FavoritesView />
           )}
 
-          {activeSection === 'starred' ? null : !isTeamView && items.length === 0 ? (
+          {/* Smart folder files view */}
+          {activeSection === 'smart-folder' && activeSmartFolder && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Smart Folder Results</p>
+                <button
+                  onClick={() => {
+                    if (confirm('Delete this smart folder?')) {
+                      deleteSmartFolder.mutate(activeSmartFolder)
+                      setActiveSmartFolder(null)
+                      setActiveSection('my-files')
+                      setBreadcrumbs([{ label: 'My Files' }])
+                    }
+                  }}
+                  className="text-xs text-red-500 hover:underline"
+                >
+                  Delete
+                </button>
+              </div>
+              {!smartFolderFiles?.files?.length ? (
+                <div className="flex flex-col items-center justify-center h-32 text-center text-gray-400">
+                  <p className="text-sm">No files match this smart folder's criteria</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+                  {smartFolderFiles.files.map((file: DriveFile) => {
+                    const cfg = FILE_ICONS[(getFileType(file.content_type, file.name) as FileType)] ?? FILE_ICONS.other
+                    return (
+                      <FileGridItem
+                        key={file.id}
+                        item={{
+                          id: file.id, name: file.name,
+                          fileType: getFileType(file.content_type, file.name) as FileType,
+                          size: formatFileSize(file.size), modified: new Date(file.updated_at).toLocaleDateString(),
+                          isFolder: false, isPublic: file.is_public, raw: file,
+                        }}
+                        cfg={cfg}
+                        isSelected={selectedFileIds.includes(file.id)}
+                        onSelect={() => {}}
+                        onOpen={() => setPreviewFileId(file.id)}
+                        onContextMenu={(x, y) => setContextMenu({ x, y, item: {
+                          id: file.id, name: file.name,
+                          fileType: getFileType(file.content_type, file.name) as FileType,
+                          size: formatFileSize(file.size), modified: new Date(file.updated_at).toLocaleDateString(),
+                          isFolder: false, isPublic: file.is_public, raw: file,
+                        }})}
+                      />
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeSection === 'starred' ? null : activeSection === 'smart-folder' ? null : !isTeamView && items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-center">
               <div className="text-4xl mb-3">📭</div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -858,6 +954,59 @@ export default function DrivePage() {
             fileName={versionsFile.name}
             onClose={() => setVersionsFile(null)}
           />
+        </div>
+      )}
+
+      {/* Preview panel */}
+      {previewFileId && (
+        <div className="fixed inset-0 z-50 flex">
+          <div className="flex-1 bg-black/20" onClick={() => setPreviewFileId(null)} />
+          <FilePreviewPanel fileId={previewFileId} onClose={() => setPreviewFileId(null)} />
+        </div>
+      )}
+
+      {/* New Smart Folder dialog */}
+      {showNewSmartFolder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowNewSmartFolder(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-xl w-96 p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">New Smart Folder</h3>
+            <p className="text-xs text-gray-400 mb-4">Auto-collects files matching your criteria.</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Name</label>
+                <input
+                  autoFocus
+                  value={newSmartFolderName}
+                  onChange={(e) => setNewSmartFolderName(e.target.value)}
+                  placeholder="e.g. All Finance PDFs"
+                  className="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:border-[#51459d]"
+                />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => {
+                    if (!newSmartFolderName.trim()) return
+                    createSmartFolder.mutate({
+                      name: newSmartFolderName.trim(),
+                      filter_json: { content_type: 'application/pdf' },
+                    })
+                    setNewSmartFolderName('')
+                    setShowNewSmartFolder(false)
+                  }}
+                  disabled={createSmartFolder.isPending}
+                  className="flex-1 text-xs bg-[#51459d] text-white py-2 rounded-[8px] hover:bg-[#3d3480] disabled:opacity-50 transition-colors"
+                >
+                  Create
+                </button>
+                <button
+                  onClick={() => { setShowNewSmartFolder(false); setNewSmartFolderName('') }}
+                  className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-3"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

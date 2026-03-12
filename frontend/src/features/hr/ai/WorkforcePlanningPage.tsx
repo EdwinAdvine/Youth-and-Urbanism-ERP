@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react'
-import { Card, Badge, Button, Input, Select, Modal, Spinner } from '../../../components/ui'
+import { Card, Badge, Button, Input, Modal } from '../../../components/ui'
 import {
   useWorkforceScenarios,
   useCreateWorkforceScenario,
-  type WorkforceScenario,
-  type ScenarioVariant,
-  type WorkforceScenarioCreatePayload,
+  type WorkforcePlanningScenario,
 } from '@/api/hr_phase3'
+
+type WorkforceScenario = WorkforcePlanningScenario
+type ScenarioVariant = NonNullable<WorkforcePlanningScenario['scenarios']>[number] & { salary_increase_pct?: number; attrition_count?: number }
+type WorkforceScenarioCreatePayload = Partial<WorkforcePlanningScenario> & { variants?: Array<{ name: string; growth_rate: number; attrition_rate: number; new_hires: number; salary_increase_pct?: number }> }
 import { toast } from '../../../components/ui'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -90,7 +92,7 @@ function VariantBadge({ name }: { name: string }) {
 // ─── Scenario Card ─────────────────────────────────────────────────────────────
 
 function ScenarioCard({ scenario }: { scenario: WorkforceScenario }) {
-  const variants: ScenarioVariant[] = scenario.variants ?? []
+  const variants: ScenarioVariant[] = scenario.scenarios ?? []
 
   return (
     <Card className="space-y-4">
@@ -108,7 +110,6 @@ function ScenarioCard({ scenario }: { scenario: WorkforceScenario }) {
             const projected = calcProjectedHeadcount(scenario.base_headcount, v)
             const cost = calcProjectedCost(scenario.base_headcount, scenario.base_budget ?? 0, v)
             const delta = projected - scenario.base_headcount
-            const color = getVariantColor(v.name)
             return (
               <div key={i} className="flex items-center gap-3 p-2.5 rounded-[10px] border border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
                 <VariantBadge name={v.name} />
@@ -139,7 +140,7 @@ function ScenarioCard({ scenario }: { scenario: WorkforceScenario }) {
 // ─── Comparison Table ──────────────────────────────────────────────────────────
 
 function ComparisonTable({ scenario }: { scenario: WorkforceScenario }) {
-  const variants: ScenarioVariant[] = scenario.variants ?? []
+  const variants: ScenarioVariant[] = scenario.scenarios ?? []
   if (variants.length === 0) return null
 
   return (
@@ -161,7 +162,6 @@ function ComparisonTable({ scenario }: { scenario: WorkforceScenario }) {
             const baseCost = scenario.base_budget ?? 0
             const hcDelta = projected - scenario.base_headcount
             const costDelta = cost - baseCost
-            const color = getVariantColor(v.name)
             return (
               <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
                 <td className="py-2.5 px-3">
@@ -415,14 +415,14 @@ export default function WorkforcePlanningPage() {
   const { data: scenarios, isLoading } = useWorkforceScenarios()
   const createMutation = useCreateWorkforceScenario()
 
-  const allScenarios: WorkforceScenario[] = scenarios ?? []
+  const allScenarios: WorkforceScenario[] = scenarios?.items ?? []
 
   // Summary stats from first/most recent scenario
   const primaryScenario = allScenarios[0] ?? null
   const totalHeadcount = primaryScenario?.base_headcount ?? 0
   const totalBudget = primaryScenario?.base_budget ?? 0
   const openPositions = allScenarios.reduce((sum, s) => {
-    const maxNewHires = Math.max(...(s.variants ?? []).map((v) => v.new_hires ?? 0), 0)
+    const maxNewHires = Math.max(...(s.scenarios ?? []).map((v) => v.new_hires ?? 0), 0)
     return sum + maxNewHires
   }, 0)
 
@@ -430,7 +430,7 @@ export default function WorkforcePlanningPage() {
   const bestGrowth = useMemo(() => {
     let max = 0
     allScenarios.forEach((s) => {
-      (s.variants ?? []).forEach((v) => {
+      (s.scenarios ?? []).forEach((v) => {
         const projected = calcProjectedHeadcount(s.base_headcount, v)
         const delta = projected - s.base_headcount
         if (delta > max) max = delta

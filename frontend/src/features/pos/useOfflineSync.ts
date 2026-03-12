@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+// Background Sync API augmentation
+interface SyncManager {
+  register(tag: string): Promise<void>;
+}
+
+interface ServiceWorkerRegistrationWithSync extends ServiceWorkerRegistration {
+  sync?: SyncManager;
+}
+
 // ---------------------------------------------------------------------------
 // IndexedDB wrapper (mirrors the service worker's DB for direct reads)
 // ---------------------------------------------------------------------------
@@ -82,7 +91,7 @@ export function useOfflineSync(): OfflineSyncState {
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<{ synced: number; failed: number } | null>(null);
-  const swRef = useRef<ServiceWorkerRegistration | null>(null);
+  const swRef = useRef<ServiceWorkerRegistrationWithSync | null>(null);
 
   // -- Register service worker --
   useEffect(() => {

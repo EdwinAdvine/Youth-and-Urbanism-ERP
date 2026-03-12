@@ -287,7 +287,7 @@ async def update_contact(
 
 @router.delete(
     "/contacts/{contact_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Soft-delete a contact",
 )
 async def delete_contact(
@@ -301,7 +301,7 @@ async def delete_contact(
 
     contact.is_active = False
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Lead endpoints ─────────────────────────────────────────────────────────────

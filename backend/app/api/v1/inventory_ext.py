@@ -317,7 +317,7 @@ async def update_supplier(
 
 @router.delete(
     "/suppliers/{supplier_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Soft-delete a supplier",
     dependencies=[Depends(require_app_admin("inventory"))],
 )
@@ -332,7 +332,7 @@ async def delete_supplier(
 
     supplier.is_active = False
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Stock Adjustment endpoints ───────────────────────────────────────────────
@@ -1128,7 +1128,7 @@ async def update_variant(
 
 @router.delete(
     "/variants/{variant_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Soft-delete a variant",
     dependencies=[Depends(require_app_admin("inventory"))],
 )
@@ -1143,7 +1143,7 @@ async def delete_variant(
 
     variant.is_active = False
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Batch endpoints ──────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { cn, Button, Spinner, Badge, Card, Table } from '../../components/ui'
 import { useSupportStats, useTickets, type Ticket } from '../../api/support'
+import { useActiveChatSessions, useOnlineAgents } from '../../api/support_phase1'
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -26,6 +27,8 @@ export default function SupportDashboard() {
   const navigate = useNavigate()
   const { data: stats, isLoading: statsLoading } = useSupportStats()
   const { data: recentTickets, isLoading: ticketsLoading } = useTickets({ limit: 10 })
+  const { data: chatSessions } = useActiveChatSessions()
+  const { data: onlineAgents } = useOnlineAgents()
 
   if (statsLoading) {
     return (
@@ -151,14 +154,43 @@ export default function SupportDashboard() {
       <div className="flex flex-wrap gap-2 mb-6">
         {[
           { label: 'Tickets', path: '/support/tickets' },
+          { label: 'Live Chat', path: '/support/live-chat' },
           { label: 'Knowledge Base', path: '/support/kb' },
           { label: 'Categories', path: '/support/categories' },
           { label: 'SLA Policies', path: '/support/sla' },
+          { label: 'Views', path: '/support/views' },
+          { label: 'Templates', path: '/support/templates' },
+          { label: 'Inbound Email', path: '/support/inbound-email' },
         ].map((item) => (
           <Button key={item.path} variant="outline" size="sm" onClick={() => navigate(item.path)}>
             {item.label}
           </Button>
         ))}
+      </div>
+
+      {/* Live Chat & Agents Online Bar */}
+      <div className="flex items-center gap-4 mb-6 p-3 bg-gray-50 dark:bg-gray-900 rounded-[10px]">
+        <div className="flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {onlineAgents?.length ?? 0} agents online
+          </span>
+        </div>
+        <div className="h-4 w-px bg-gray-300 dark:bg-gray-700" />
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            {(chatSessions ?? []).filter((s: { status: string }) => s.status === 'queued').length} chats queued
+          </span>
+          <span className="text-gray-400">·</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            {(chatSessions ?? []).filter((s: { status: string }) => s.status === 'active').length} active
+          </span>
+        </div>
+        <div className="ml-auto">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/support/live-chat')}>
+            Open Live Chat
+          </Button>
+        </div>
       </div>
 
       {/* Stat Cards */}

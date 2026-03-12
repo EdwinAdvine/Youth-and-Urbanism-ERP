@@ -150,7 +150,7 @@ async def update_agent_config(
     return AgentConfigOut.model_validate(agent)
 
 
-@router.delete("/ai-agents/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/ai-agents/{agent_id}", status_code=status.HTTP_200_OK)
 async def delete_agent_config(
     agent_id: UUID,
     current_user: CurrentUser,
@@ -162,7 +162,7 @@ async def delete_agent_config(
 
     await db.delete(agent)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ---------------------------------------------------------------------------

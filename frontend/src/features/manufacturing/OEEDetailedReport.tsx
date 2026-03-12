@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, Button, Input } from '../../components/ui'
+import { Card, Button } from '../../components/ui'
 import { useOEEReport } from '../../api/manufacturing_equipment'
 
 function OEEGauge({ label, value, color }: { label: string; value: number; color: string }) {

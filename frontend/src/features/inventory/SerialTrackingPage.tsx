@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button, Badge, Card, Table, Input, Select, Modal } from '../../components/ui'
 import { toast } from '../../components/ui'
 import {
-  useSerialNumbers, useCreateSerial, useUpdateSerial,
+  useSerialNumbers, useCreateSerial,
   useInventoryItems, useWarehouses,
   type SerialNumber,
 } from '../../api/inventory'

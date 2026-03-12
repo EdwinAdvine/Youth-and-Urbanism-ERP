@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, Table, Badge, Select } from '../../components/ui'
+import { Card, Badge, Select } from '../../components/ui'
 import { useExpiringCertifications } from '../../api/manufacturing_labor'
 
 export default function CertificationTracker() {
@@ -27,14 +27,14 @@ export default function CertificationTracker() {
             <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
             Expired ({expired.length})
           </div>
-          <Table>
+          <table className="w-full text-sm">
             <thead>
               <tr>
-                <th>Employee</th>
-                <th>Skill</th>
-                <th>Level</th>
-                <th>Expired On</th>
-                <th>Cert #</th>
+                <th className="text-left py-3 px-4">Employee</th>
+                <th className="text-left py-3 px-4">Skill</th>
+                <th className="text-left py-3 px-4">Level</th>
+                <th className="text-left py-3 px-4">Expired On</th>
+                <th className="text-left py-3 px-4">Cert #</th>
               </tr>
             </thead>
             <tbody>
@@ -42,13 +42,13 @@ export default function CertificationTracker() {
                 <tr key={c.id} className="bg-red-50">
                   <td className="font-mono text-xs">{c.employee_id.slice(0, 8)}...</td>
                   <td className="font-medium">{c.skill_name}</td>
-                  <td><Badge variant="red">{c.proficiency_level}</Badge></td>
+                  <td><Badge variant="danger">{c.proficiency_level}</Badge></td>
                   <td className="text-red-600 font-medium">{c.expiry_date}</td>
                   <td className="text-xs text-gray-500">{c.certification_number || '—'}</td>
                 </tr>
               ))}
             </tbody>
-          </Table>
+          </table>
         </Card>
       )}
 
@@ -62,15 +62,15 @@ export default function CertificationTracker() {
         ) : expiring.length === 0 ? (
           <div className="p-8 text-center text-gray-500">No certifications expiring in this window.</div>
         ) : (
-          <Table>
+          <table className="w-full text-sm">
             <thead>
               <tr>
-                <th>Employee</th>
-                <th>Skill</th>
-                <th>Level</th>
-                <th>Expiry Date</th>
-                <th>Days Left</th>
-                <th>Cert #</th>
+                <th className="text-left py-3 px-4">Employee</th>
+                <th className="text-left py-3 px-4">Skill</th>
+                <th className="text-left py-3 px-4">Level</th>
+                <th className="text-left py-3 px-4">Expiry Date</th>
+                <th className="text-left py-3 px-4">Days Left</th>
+                <th className="text-left py-3 px-4">Cert #</th>
               </tr>
             </thead>
             <tbody>
@@ -78,7 +78,7 @@ export default function CertificationTracker() {
                 <tr key={c.id}>
                   <td className="font-mono text-xs">{c.employee_id.slice(0, 8)}...</td>
                   <td className="font-medium">{c.skill_name}</td>
-                  <td><Badge variant="yellow">{c.proficiency_level}</Badge></td>
+                  <td><Badge variant="warning">{c.proficiency_level}</Badge></td>
                   <td className="text-sm">{c.expiry_date}</td>
                   <td>
                     <span className={`text-sm font-medium ${(c.days_until_expiry ?? 99) <= 7 ? 'text-red-600' : 'text-orange-500'}`}>
@@ -89,7 +89,7 @@ export default function CertificationTracker() {
                 </tr>
               ))}
             </tbody>
-          </Table>
+          </table>
         )}
       </Card>
     </div>

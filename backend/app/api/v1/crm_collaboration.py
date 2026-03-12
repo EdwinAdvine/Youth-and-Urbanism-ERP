@@ -174,7 +174,7 @@ async def update_comment(
     return CommentOut.model_validate(comment)
 
 
-@router.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/comments/{comment_id}", status_code=status.HTTP_200_OK)
 async def delete_comment(
     comment_id: UUID,
     current_user: CurrentUser,
@@ -195,7 +195,7 @@ async def delete_comment(
 
     await db.delete(comment)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ---------------------------------------------------------------------------
@@ -249,7 +249,7 @@ async def follow_record(
     return FollowerOut.model_validate(follower)
 
 
-@router.delete("/followers/{follower_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/followers/{follower_id}", status_code=status.HTTP_200_OK)
 async def unfollow_record(
     follower_id: UUID,
     current_user: CurrentUser,
@@ -265,7 +265,7 @@ async def unfollow_record(
 
     await db.delete(follower)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.get("/followers/my")

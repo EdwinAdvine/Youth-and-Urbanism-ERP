@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { Badge, Card, Table } from '../../components/ui'
+import { Badge, Card } from '../../components/ui'
 import { useInspectionPlan } from '../../api/manufacturing_quality'
 
 export default function InspectionPlanDetail() {
@@ -19,7 +19,7 @@ export default function InspectionPlanDetail() {
           </button>
           <h1 className="text-2xl font-bold">{plan.plan_number}: {plan.name}</h1>
         </div>
-        <Badge variant={plan.is_active ? 'green' : 'gray'}>{plan.is_active ? 'Active' : 'Inactive'}</Badge>
+        <Badge variant={plan.is_active ? 'success' : 'default'}>{plan.is_active ? 'Active' : 'Inactive'}</Badge>
       </div>
 
       <Card className="p-4">
@@ -33,16 +33,16 @@ export default function InspectionPlanDetail() {
 
       <Card className="p-4">
         <h2 className="font-semibold text-lg mb-4">Checklist Items ({plan.items?.length || 0})</h2>
-        <Table>
+        <table className="w-full text-sm">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Parameter</th>
-              <th>Type</th>
-              <th>Target</th>
-              <th>Limits</th>
-              <th>Critical</th>
-              <th>Sample Size</th>
+              <th className="text-left py-3 px-4">#</th>
+              <th className="text-left py-3 px-4">Parameter</th>
+              <th className="text-left py-3 px-4">Type</th>
+              <th className="text-left py-3 px-4">Target</th>
+              <th className="text-left py-3 px-4">Limits</th>
+              <th className="text-left py-3 px-4">Critical</th>
+              <th className="text-left py-3 px-4">Sample Size</th>
             </tr>
           </thead>
           <tbody>
@@ -59,12 +59,12 @@ export default function InspectionPlanDetail() {
                     ? `${item.lower_limit ?? '—'} – ${item.upper_limit ?? '—'} ${item.unit_of_measure || ''}`
                     : '—'}
                 </td>
-                <td>{item.is_critical ? <Badge variant="red">Critical</Badge> : '—'}</td>
+                <td>{item.is_critical ? <Badge variant="danger">Critical</Badge> : '—'}</td>
                 <td>{item.sample_size}</td>
               </tr>
             ))}
           </tbody>
-        </Table>
+        </table>
       </Card>
     </div>
   )

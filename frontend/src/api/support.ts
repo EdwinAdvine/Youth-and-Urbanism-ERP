@@ -39,6 +39,11 @@ export interface Ticket {
   sla_response_breached: boolean
   sla_resolution_breached: boolean
   tags: string[] | null
+  channel: string
+  sentiment_score: number | null
+  sentiment_label: string | null
+  custom_fields: Record<string, unknown> | null
+  viewing_agents?: string[]
   created_at: string
   updated_at: string
 }

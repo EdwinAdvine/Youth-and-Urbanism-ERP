@@ -158,7 +158,7 @@ async def update_tax_bracket(
     return TaxBracketOut.model_validate(bracket).model_dump()
 
 
-@router.delete("/tax-brackets/{bracket_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a tax bracket")
+@router.delete("/tax-brackets/{bracket_id}", status_code=status.HTTP_200_OK, summary="Delete a tax bracket")
 async def delete_tax_bracket(
     bracket_id: uuid.UUID,
     current_user: CurrentUser,
@@ -170,7 +170,7 @@ async def delete_tax_bracket(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tax bracket not found")
     await db.delete(bracket)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Statutory Deduction endpoints ────────────────────────────────────────────
@@ -234,7 +234,7 @@ async def update_statutory_deduction(
     return StatutoryDeductionOut.model_validate(deduction).model_dump()
 
 
-@router.delete("/statutory-deductions/{deduction_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a statutory deduction")
+@router.delete("/statutory-deductions/{deduction_id}", status_code=status.HTTP_200_OK, summary="Delete a statutory deduction")
 async def delete_statutory_deduction(
     deduction_id: uuid.UUID,
     current_user: CurrentUser,
@@ -246,7 +246,7 @@ async def delete_statutory_deduction(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Statutory deduction not found")
     await db.delete(deduction)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Pay Run endpoints ────────────────────────────────────────────────────────

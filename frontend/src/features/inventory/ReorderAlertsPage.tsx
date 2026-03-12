@@ -18,7 +18,7 @@ export default function ReorderAlertsPage() {
     {
       key: 'name',
       label: 'Item Name',
-      render: (row: ReorderAlert) => <span className="font-medium text-gray-900">{row.name}</span>,
+      render: (row: ReorderAlert) => <span className="font-medium text-gray-900">{row.item_name}</span>,
     },
     { key: 'sku', label: 'SKU' },
     {

@@ -240,7 +240,7 @@ async def update_employee_skill(
     return SkillOut.model_validate(skill)
 
 
-@router.delete("/employees/{employee_id}/skills/{skill_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/employees/{employee_id}/skills/{skill_id}", status_code=status.HTTP_200_OK)
 async def delete_employee_skill(
     employee_id: uuid.UUID,
     skill_id: uuid.UUID,
@@ -486,7 +486,7 @@ async def update_succession_plan(
     return SuccessionPlanOut.model_validate(plan)
 
 
-@router.delete("/succession-plans/{plan_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/succession-plans/{plan_id}", status_code=status.HTTP_200_OK)
 async def delete_succession_plan(
     plan_id: uuid.UUID,
     current_user: CurrentUser,

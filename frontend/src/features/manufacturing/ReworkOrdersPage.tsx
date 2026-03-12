@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Badge, Card, Table, Select } from '../../components/ui'
+import { Badge, Card, Select } from '../../components/ui'
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '../../api/client'
+
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
 
 interface ReworkOrder {
   id: string
@@ -18,7 +20,7 @@ interface ReworkOrder {
   updated_at: string
 }
 
-const statusColors: Record<string, string> = { pending: 'yellow', in_progress: 'blue', completed: 'green' }
+const statusColors: Record<string, BadgeVariant> = { pending: 'warning', in_progress: 'info', completed: 'success' }
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -46,16 +48,16 @@ export default function ReworkOrdersPage() {
       </Select>
 
       <Card>
-        <Table>
+        <table className="w-full text-sm">
           <thead>
             <tr>
-              <th>Rework #</th>
-              <th>Status</th>
-              <th>Reason</th>
-              <th>Quantity</th>
-              <th>Cost</th>
-              <th>Parent WO</th>
-              <th>Created</th>
+              <th className="text-left py-3 px-4">Rework #</th>
+              <th className="text-left py-3 px-4">Status</th>
+              <th className="text-left py-3 px-4">Reason</th>
+              <th className="text-left py-3 px-4">Quantity</th>
+              <th className="text-left py-3 px-4">Cost</th>
+              <th className="text-left py-3 px-4">Parent WO</th>
+              <th className="text-left py-3 px-4">Created</th>
             </tr>
           </thead>
           <tbody>
@@ -66,7 +68,7 @@ export default function ReworkOrdersPage() {
             ) : reworks?.map((rw: ReworkOrder) => (
               <tr key={rw.id}>
                 <td className="font-mono text-sm font-medium">{rw.rework_number}</td>
-                <td><Badge variant={statusColors[rw.status] || 'gray'}>{rw.status.replace('_', ' ')}</Badge></td>
+                <td><Badge variant={statusColors[rw.status] || 'default'}>{rw.status.replace('_', ' ')}</Badge></td>
                 <td className="max-w-xs truncate">{rw.reason}</td>
                 <td>{rw.quantity}</td>
                 <td>${rw.rework_cost}</td>
@@ -75,7 +77,7 @@ export default function ReworkOrdersPage() {
               </tr>
             ))}
           </tbody>
-        </Table>
+        </table>
       </Card>
     </div>
   )

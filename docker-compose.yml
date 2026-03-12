@@ -8,6 +8,7 @@ volumes:
   redis_data:
   minio_data:
   ollama_data:
+  stalwart_data:
 
   onlyoffice_data:
   onlyoffice_logs:
@@ -151,7 +152,7 @@ services:
     container_name: urban-erp-frontend
     restart: unless-stopped
     ports:
-      - "3010:3000"
+      - "3010:80"
     depends_on:
       backend:
         condition: service_healthy
@@ -160,12 +161,25 @@ services:
       - WATCHPACK_POLLING=true
       - VITE_API_TARGET=http://backend:8000
       - VITE_WS_TARGET=ws://backend:8000
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     networks:
       - urban-erp-net
 
+
+  stalwart:
+    image: stalwartlabs/mail-server:latest
+    container_name: urban-erp-stalwart
+    restart: unless-stopped
+    ports:
+      - "8082:8080"    # HTTP admin + JMAP
+      - "1025:25"      # SMTP
+      - "1587:587"     # SMTP submission
+      - "1993:993"     # IMAPS
+    environment:
+      - STALWART_HOSTNAME=${MAIL_DOMAIN:-youthandurbanism.org}
+    volumes:
+      - stalwart_data:/opt/stalwart-mail
+    networks:
+      - urban-erp-net
 
   onlyoffice:
     image: onlyoffice/documentserver:latest

@@ -76,7 +76,7 @@ async def list_uom(db: DBSession, _: CurrentUser, category: str | None = None):
     return result.scalars().all()
 
 @router.post("/uom", response_model=UoMOut, status_code=201, tags=["Inventory UoM"])
-async def create_uom(payload: UoMCreate, db: DBSession, _: Depends(require_app_admin("inventory"))):
+async def create_uom(payload: UoMCreate, db: DBSession, _: Any = Depends(require_app_admin("inventory"))):
     uom = UnitOfMeasure(**payload.model_dump())
     db.add(uom)
     await db.commit()
@@ -84,7 +84,7 @@ async def create_uom(payload: UoMCreate, db: DBSession, _: Depends(require_app_a
     return uom
 
 @router.patch("/uom/{uom_id}", response_model=UoMOut, tags=["Inventory UoM"])
-async def update_uom(uom_id: uuid.UUID, payload: UoMUpdate, db: DBSession, _: Depends(require_app_admin("inventory"))):
+async def update_uom(uom_id: uuid.UUID, payload: UoMUpdate, db: DBSession, _: Any = Depends(require_app_admin("inventory"))):
     uom = await db.get(UnitOfMeasure, uom_id)
     if not uom:
         raise HTTPException(status_code=404)
@@ -95,7 +95,7 @@ async def update_uom(uom_id: uuid.UUID, payload: UoMUpdate, db: DBSession, _: De
     return uom
 
 @router.delete("/uom/{uom_id}", status_code=204, tags=["Inventory UoM"])
-async def delete_uom(uom_id: uuid.UUID, db: DBSession, _: Depends(require_app_admin("inventory"))):
+async def delete_uom(uom_id: uuid.UUID, db: DBSession, _: Any = Depends(require_app_admin("inventory"))):
     uom = await db.get(UnitOfMeasure, uom_id)
     if not uom:
         raise HTTPException(status_code=404)
@@ -122,7 +122,7 @@ async def list_uom_conversions(db: DBSession, _: CurrentUser, item_id: uuid.UUID
     return out
 
 @router.post("/uom/conversions", response_model=UoMConversionOut, status_code=201, tags=["Inventory UoM"])
-async def create_uom_conversion(payload: UoMConversionCreate, db: DBSession, _: Depends(require_app_admin("inventory"))):
+async def create_uom_conversion(payload: UoMConversionCreate, db: DBSession, _: Any = Depends(require_app_admin("inventory"))):
     conv = UoMConversion(**payload.model_dump())
     db.add(conv)
     await db.commit()

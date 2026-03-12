@@ -57,11 +57,11 @@ export default function RevenueStreamsPage() {
       <div className="bg-white rounded-[10px] border border-gray-200 p-4 flex gap-4 items-end">
         <div className="space-y-1">
           <Label>Start Date</Label>
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" />
+          <Input type="date" value={startDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)} className="w-40" />
         </div>
         <div className="space-y-1">
           <Label>End Date</Label>
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" />
+          <Input type="date" value={endDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)} className="w-40" />
         </div>
         <Button
           className="bg-[#51459d] hover:bg-[#41358d]"

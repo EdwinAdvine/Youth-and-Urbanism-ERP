@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Badge, Card, Table } from '../../components/ui'
+import { Button, Badge, Card } from '../../components/ui'
 import { useLot, useLotEvents, useTraceForward, useTraceBackward, type TraceEvent } from '../../api/manufacturing_trace'
 
-const statusColors: Record<string, string> = { active: 'green', consumed: 'blue', shipped: 'purple', recalled: 'red' }
-const eventColors: Record<string, string> = { created: 'gray', consumed: 'blue', produced: 'green', inspected: 'yellow', shipped: 'purple', recalled: 'red' }
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const statusColors: Record<string, BadgeVariant> = { active: 'success', consumed: 'info', shipped: 'primary', recalled: 'danger' }
+const eventColors: Record<string, BadgeVariant> = { created: 'default', consumed: 'info', produced: 'success', inspected: 'warning', shipped: 'primary', recalled: 'danger' }
 
 function formatDateTime(dateStr: string | null) {
   if (!dateStr) return '—'
@@ -54,7 +56,7 @@ export default function TraceabilityView() {
         <div className="space-y-2">
           {events?.map((event: TraceEvent) => (
             <div key={event.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded">
-              <Badge variant={eventColors[event.event_type] || 'gray'}>{event.event_type}</Badge>
+              <Badge variant={eventColors[event.event_type] || 'default'}>{event.event_type}</Badge>
               <span className="text-sm flex-1">{event.notes || '—'}</span>
               {event.quantity && <span className="text-sm text-gray-500">Qty: {event.quantity}</span>}
               <span className="text-xs text-gray-400">{formatDateTime(event.event_timestamp)}</span>
@@ -69,50 +71,50 @@ export default function TraceabilityView() {
         <div className="flex items-center gap-3 mb-4">
           <h2 className="font-semibold text-lg">Traceability</h2>
           <div className="flex gap-1">
-            <Button size="sm" variant={direction === 'forward' ? 'default' : 'ghost'} onClick={() => setDirection('forward')}>Forward →</Button>
-            <Button size="sm" variant={direction === 'backward' ? 'default' : 'ghost'} onClick={() => setDirection('backward')}>← Backward</Button>
+            <Button size="sm" variant={direction === 'forward' ? 'secondary' : 'ghost'} onClick={() => setDirection('forward')}>Forward →</Button>
+            <Button size="sm" variant={direction === 'backward' ? 'secondary' : 'ghost'} onClick={() => setDirection('backward')}>← Backward</Button>
           </div>
         </div>
 
         {direction === 'forward' && forward && (
           <div>
             <p className="text-sm text-gray-500 mb-2">Where did this lot go? ({forward.downstream_lots.length} downstream lots)</p>
-            <Table>
-              <thead><tr><th>Tracking #</th><th>Type</th><th>Status</th><th>Qty</th><th>Work Order</th></tr></thead>
+            <table className="w-full text-sm">
+              <thead><tr><th className="text-left py-3 px-4">Tracking #</th><th className="text-left py-3 px-4">Type</th><th className="text-left py-3 px-4">Status</th><th className="text-left py-3 px-4">Qty</th><th className="text-left py-3 px-4">Work Order</th></tr></thead>
               <tbody>
                 {forward.downstream_lots.map(dl => (
                   <tr key={dl.id} className="cursor-pointer hover:bg-gray-50" onClick={() => navigate(`/manufacturing/lots/${dl.id}`)}>
                     <td className="font-mono text-sm">{dl.tracking_number}</td>
                     <td className="capitalize">{dl.tracking_type}</td>
-                    <td><Badge variant={statusColors[dl.status] || 'gray'}>{dl.status}</Badge></td>
+                    <td><Badge variant={statusColors[dl.status] || 'default'}>{dl.status}</Badge></td>
                     <td>{dl.quantity}</td>
                     <td className="text-xs">{dl.work_order_id || '—'}</td>
                   </tr>
                 ))}
                 {forward.downstream_lots.length === 0 && <tr><td colSpan={5} className="text-center py-4 text-gray-500">No downstream lots</td></tr>}
               </tbody>
-            </Table>
+            </table>
           </div>
         )}
 
         {direction === 'backward' && backward && (
           <div>
             <p className="text-sm text-gray-500 mb-2">Where did this come from? ({backward.upstream_lots.length} upstream lots)</p>
-            <Table>
-              <thead><tr><th>Tracking #</th><th>Type</th><th>Status</th><th>Qty</th><th>Supplier</th></tr></thead>
+            <table className="w-full text-sm">
+              <thead><tr><th className="text-left py-3 px-4">Tracking #</th><th className="text-left py-3 px-4">Type</th><th className="text-left py-3 px-4">Status</th><th className="text-left py-3 px-4">Qty</th><th className="text-left py-3 px-4">Supplier</th></tr></thead>
               <tbody>
                 {backward.upstream_lots.map(ul => (
                   <tr key={ul.id} className="cursor-pointer hover:bg-gray-50" onClick={() => navigate(`/manufacturing/lots/${ul.id}`)}>
                     <td className="font-mono text-sm">{ul.tracking_number}</td>
                     <td className="capitalize">{ul.tracking_type}</td>
-                    <td><Badge variant={statusColors[ul.status] || 'gray'}>{ul.status}</Badge></td>
+                    <td><Badge variant={statusColors[ul.status] || 'default'}>{ul.status}</Badge></td>
                     <td>{ul.quantity}</td>
                     <td className="text-xs">{ul.supplier_id || '—'}</td>
                   </tr>
                 ))}
                 {backward.upstream_lots.length === 0 && <tr><td colSpan={5} className="text-center py-4 text-gray-500">No upstream lots</td></tr>}
               </tbody>
-            </Table>
+            </table>
           </div>
         )}
       </Card>

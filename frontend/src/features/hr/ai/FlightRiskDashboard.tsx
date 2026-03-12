@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Card, Badge, Button, Spinner } from '../../../components/ui'
+import { Card, Badge, Button } from '../../../components/ui'
 import {
   useFlightRiskScores,
   useCalculateFlightRisk,
@@ -135,16 +134,16 @@ function EmployeeRow({ score, onRecalculate, isRecalculating }: EmployeeRowProps
   return (
     <tr className="border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
       <td className="py-3 px-4 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">
-        {score.employee_name ?? score.employee_id.slice(0, 8)}
+        {(score as unknown as Record<string, string>).employee_name ?? score.employee_id.slice(0, 8)}
       </td>
       <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
-        {score.department ?? '—'}
+        {(score as unknown as Record<string, string>).department ?? '—'}
       </td>
       <td className="py-3 px-4">
         <Badge variant={badgeMeta.variant}>{badgeMeta.label}</Badge>
       </td>
       <td className="py-3 px-4">
-        <RiskScoreBar score={score.risk_score} />
+        <RiskScoreBar score={score.score} />
       </td>
       <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-300 capitalize">
         {factor}
@@ -169,7 +168,6 @@ function EmployeeRow({ score, onRecalculate, isRecalculating }: EmployeeRowProps
 // ─── Main Dashboard ────────────────────────────────────────────────────────────
 
 export default function FlightRiskDashboard() {
-  const navigate = useNavigate()
   const [bulkLoading, setBulkLoading] = useState(false)
   const [recalculating, setRecalculating] = useState<string | null>(null)
 
@@ -177,13 +175,13 @@ export default function FlightRiskDashboard() {
   const { data: summary, isLoading: summaryLoading } = useFlightRiskTeamSummary()
   const calcMutation = useCalculateFlightRisk()
 
-  const allScores: FlightRiskScore[] = scores ?? []
+  const allScores: FlightRiskScore[] = scores?.items ?? []
   const totalAnalyzed = allScores.length
   const highRisk = allScores.filter((s) => s.risk_level === 'high').length
   const criticalCount = allScores.filter((s) => s.risk_level === 'critical').length
   const avgScore =
     totalAnalyzed > 0
-      ? Math.round(allScores.reduce((acc, s) => acc + s.risk_score, 0) / totalAnalyzed)
+      ? Math.round(allScores.reduce((acc, s) => acc + s.score, 0) / totalAnalyzed)
       : 0
 
   const distribution: Record<string, number> = summary?.distribution ?? {
@@ -196,7 +194,7 @@ export default function FlightRiskDashboard() {
   async function handleRecalculate(employeeId: string) {
     setRecalculating(employeeId)
     try {
-      await calcMutation.mutateAsync({ employee_id: employeeId })
+      await calcMutation.mutateAsync(employeeId)
     } finally {
       setRecalculating(null)
     }
@@ -205,7 +203,7 @@ export default function FlightRiskDashboard() {
   async function handleBulkAnalysis() {
     setBulkLoading(true)
     try {
-      await calcMutation.mutateAsync({ bulk: true })
+      await calcMutation.mutateAsync('__bulk__')
     } finally {
       setBulkLoading(false)
     }

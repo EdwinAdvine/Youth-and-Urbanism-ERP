@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -86,5 +86,33 @@ export function usePendingApprovals() {
     queryKey: ['agent-approvals-pending'],
     queryFn: fetchPendingApprovals,
     refetchInterval: 30_000,
+  })
+}
+
+// ── Approve / Reject agent steps (REST fallback) ───────────────────────────
+
+export interface ApproveStepsPayload {
+  run_id: string
+  step_ids: string[]
+  decision: 'approve' | 'reject'
+  reason?: string
+}
+
+export async function approveAgentSteps(payload: ApproveStepsPayload): Promise<void> {
+  await apiClient.post(`/agent/runs/${payload.run_id}/approve`, {
+    step_ids: payload.step_ids,
+    decision: payload.decision,
+    reason: payload.reason,
+  })
+}
+
+export function useApproveAgentSteps() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: approveAgentSteps,
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['agent-run', vars.run_id] })
+      qc.invalidateQueries({ queryKey: ['agent-approvals-pending'] })
+    },
   })
 }

@@ -412,7 +412,7 @@ async def update_item(
 
 @router.delete(
     "/items/{item_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Soft-delete an inventory item",
     dependencies=[Depends(require_app_admin("inventory"))],
 )
@@ -427,7 +427,7 @@ async def delete_item(
 
     item.is_active = False
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Warehouse endpoints ──────────────────────────────────────────────────────
@@ -507,7 +507,7 @@ async def update_warehouse(
 
 @router.delete(
     "/warehouses/{warehouse_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Soft-delete a warehouse",
     dependencies=[Depends(require_app_admin("inventory"))],
 )
@@ -522,7 +522,7 @@ async def delete_warehouse(
 
     warehouse.is_active = False
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Stock Level endpoints ────────────────────────────────────────────────────
@@ -1089,7 +1089,7 @@ async def receive_purchase_order(
 
 @router.delete(
     "/purchase-orders/{po_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Cancel a purchase order",
     dependencies=[Depends(require_app_admin("inventory"))],
 )
@@ -1110,7 +1110,7 @@ async def cancel_purchase_order(
 
     po.status = "cancelled"
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Dashboard + Alerts ───────────────────────────────────────────────────────

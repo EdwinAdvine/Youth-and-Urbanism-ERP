@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Badge, Button, Card, Spinner, toast } from '../../components/ui'
 import apiClient from '../../api/client'
@@ -74,14 +75,19 @@ function useCustomer360(customerId: string) {
 // ─── Props ───────────────────────────────────────────────────────────────────
 
 interface Customer360PanelProps {
-  customerId: string
-  open: boolean
-  onClose: () => void
+  customerId?: string
+  open?: boolean
+  onClose?: () => void
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function Customer360Panel({ customerId, open, onClose }: Customer360PanelProps) {
+export function Customer360Panel({ customerId: propCustomerId, open: propOpen, onClose: propOnClose }: Customer360PanelProps) {
+  const { customerId: routeCustomerId } = useParams<{ customerId: string }>()
+  const customerId = propCustomerId ?? routeCustomerId ?? ''
+  const [internalOpen, setInternalOpen] = useState(true)
+  const open = propOpen ?? internalOpen
+  const onClose = propOnClose ?? (() => setInternalOpen(false))
   const { data, isLoading, error } = useCustomer360(customerId)
 
   // Lock body scroll when panel is open

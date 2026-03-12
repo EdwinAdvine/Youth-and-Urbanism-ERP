@@ -1,11 +1,12 @@
 """Support / Customer Center API — tickets, comments, KB, SLA, dashboard."""
 from __future__ import annotations
 
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import selectinload
@@ -14,8 +15,8 @@ from app.core.deps import CurrentUser, DBSession
 from app.core.events import event_bus
 from app.core.export import rows_to_csv
 from app.models.support import (
-    KnowledgeBaseArticle,
-    SLAPolicy,
+    SupportKnowledgeBaseArticle as KnowledgeBaseArticle,
+    SupportSLAPolicy as SLAPolicy,
     Ticket,
     TicketCategory,
     TicketComment,
@@ -129,6 +130,10 @@ class TicketOut(BaseModel):
     sla_response_breached: bool
     sla_resolution_breached: bool
     tags: list[str] | None
+    channel: str = "web"
+    sentiment_score: float | None = None
+    sentiment_label: str | None = None
+    custom_fields: dict | None = None
     created_at: Any
     updated_at: Any
 
@@ -303,7 +308,7 @@ async def update_category(
     return CategoryOut.model_validate(cat).model_dump()
 
 
-@router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete category")
+@router.delete("/categories/{category_id}", status_code=status.HTTP_200_OK, summary="Delete category")
 async def delete_category(
     category_id: uuid.UUID,
     current_user: CurrentUser,
@@ -314,7 +319,7 @@ async def delete_category(
         raise HTTPException(status_code=404, detail="Category not found")
     await db.delete(cat)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Tickets ────────────────────────────────────────────────────────────────────
@@ -379,6 +384,7 @@ async def create_ticket(
     payload: TicketCreate,
     current_user: CurrentUser,
     db: DBSession,
+    request: Request,
 ) -> dict[str, Any]:
     if payload.priority and payload.priority not in VALID_PRIORITIES:
         raise HTTPException(status_code=400, detail=f"Invalid priority: {payload.priority}")
@@ -414,6 +420,14 @@ async def create_ticket(
         select(Ticket).where(Ticket.id == ticket.id)
     )
     ticket = result.scalar_one()
+
+    # Audit log
+    from app.api.v1.support_audit import write_audit_log  # noqa: PLC0415
+    await write_audit_log(
+        db, ticket.id, current_user.id, "created",
+        ip_address=request.client.host if request.client else None,
+    )
+    await db.commit()
 
     # Publish event for cross-module integrations (Support→Mail, notifications)
     await event_bus.publish("support.ticket.created", {
@@ -472,6 +486,7 @@ async def get_ticket(
     ticket_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
+    request: Request,
 ) -> dict[str, Any]:
     result = await db.execute(
         select(Ticket)
@@ -481,7 +496,23 @@ async def get_ticket(
     ticket = result.scalar_one_or_none()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
-    return _ticket_detail_out(ticket)
+
+    out = _ticket_detail_out(ticket)
+
+    # Collision detection: check who else is viewing this ticket via Redis presence
+    viewing_agents: list[str] = []
+    try:
+        import redis.asyncio as aioredis
+        from app.core.config import settings as _settings
+        r = aioredis.from_url(_settings.REDIS_URL, decode_responses=True)
+        members = await r.smembers(f"support:viewing:{ticket_id}")
+        viewing_agents = [m for m in members if m != str(current_user.id)]
+        await r.close()
+    except Exception:
+        pass  # Redis unavailable — skip collision detection
+    out["viewing_agents"] = viewing_agents
+
+    return out
 
 
 @router.put("/tickets/{ticket_id}", summary="Update ticket fields")
@@ -490,14 +521,24 @@ async def update_ticket(
     payload: TicketUpdate,
     current_user: CurrentUser,
     db: DBSession,
+    request: Request,
 ) -> dict[str, Any]:
     ticket = await db.get(Ticket, ticket_id)
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
+    from app.api.v1.support_audit import write_audit_log  # noqa: PLC0415
+
     for field, value in payload.model_dump(exclude_none=True).items():
         if field == "priority" and value not in VALID_PRIORITIES:
             raise HTTPException(status_code=400, detail=f"Invalid priority: {value}")
+        old_value = getattr(ticket, field, None)
+        if old_value != value:
+            await write_audit_log(
+                db, ticket_id, current_user.id, "field_changed",
+                field_name=field, old_value=str(old_value) if old_value is not None else None,
+                new_value=str(value), ip_address=request.client.host if request.client else None,
+            )
         setattr(ticket, field, value)
 
     await db.commit()
@@ -514,18 +555,40 @@ async def assign_ticket(
     payload: AssignPayload,
     current_user: CurrentUser,
     db: DBSession,
+    request: Request,
 ) -> dict[str, Any]:
     ticket = await db.get(Ticket, ticket_id)
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
+    from app.api.v1.support_audit import write_audit_log  # noqa: PLC0415
+
+    old_assigned = str(ticket.assigned_to) if ticket.assigned_to else None
     ticket.assigned_to = payload.assigned_to
     if ticket.status == "open" and payload.assigned_to:
         ticket.status = "in_progress"
 
+    await write_audit_log(
+        db, ticket_id, current_user.id, "assigned",
+        field_name="assigned_to", old_value=old_assigned,
+        new_value=str(payload.assigned_to) if payload.assigned_to else None,
+        ip_address=request.client.host if request.client else None,
+    )
+
     await db.commit()
     result = await db.execute(select(Ticket).where(Ticket.id == ticket.id))
     ticket = result.scalar_one()
+
+    # Publish assignment event
+    if payload.assigned_to:
+        await event_bus.publish("support.ticket.assigned", {
+            "ticket_id": str(ticket.id),
+            "ticket_number": ticket.ticket_number,
+            "subject": ticket.subject,
+            "assigned_to": str(payload.assigned_to),
+            "assigned_by": str(current_user.id),
+        })
+
     return _ticket_out(ticket)
 
 
@@ -534,6 +597,7 @@ async def resolve_ticket(
     ticket_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
+    request: Request,
 ) -> dict[str, Any]:
     ticket = await db.get(Ticket, ticket_id)
     if not ticket:
@@ -541,6 +605,9 @@ async def resolve_ticket(
     if ticket.status == "closed":
         raise HTTPException(status_code=400, detail="Cannot resolve a closed ticket")
 
+    from app.api.v1.support_audit import write_audit_log  # noqa: PLC0415
+
+    old_status = ticket.status
     now = datetime.now(timezone.utc)
     ticket.status = "resolved"
     ticket.resolved_at = now
@@ -549,9 +616,26 @@ async def resolve_ticket(
     if ticket.sla_resolution_due and now > ticket.sla_resolution_due:
         ticket.sla_resolution_breached = True
 
+    await write_audit_log(
+        db, ticket_id, current_user.id, "status_changed",
+        field_name="status", old_value=old_status, new_value="resolved",
+        ip_address=request.client.host if request.client else None,
+    )
+
     await db.commit()
     result = await db.execute(select(Ticket).where(Ticket.id == ticket.id))
     ticket = result.scalar_one()
+
+    # Publish resolved event — triggers CSAT survey after 24h
+    await event_bus.publish("support.ticket.resolved", {
+        "ticket_id": str(ticket.id),
+        "ticket_number": ticket.ticket_number,
+        "subject": ticket.subject,
+        "customer_email": ticket.customer_email or "",
+        "customer_name": ticket.customer_name or "",
+        "resolved_by": str(current_user.id),
+    })
+
     return _ticket_out(ticket)
 
 
@@ -560,13 +644,24 @@ async def close_ticket(
     ticket_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
+    request: Request,
 ) -> dict[str, Any]:
     ticket = await db.get(Ticket, ticket_id)
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
+    from app.api.v1.support_audit import write_audit_log  # noqa: PLC0415
+
+    old_status = ticket.status
     ticket.status = "closed"
     ticket.closed_at = datetime.now(timezone.utc)
+
+    await write_audit_log(
+        db, ticket_id, current_user.id, "status_changed",
+        field_name="status", old_value=old_status, new_value="closed",
+        ip_address=request.client.host if request.client else None,
+    )
+
     await db.commit()
     result = await db.execute(select(Ticket).where(Ticket.id == ticket.id))
     ticket = result.scalar_one()
@@ -578,6 +673,7 @@ async def reopen_ticket(
     ticket_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
+    request: Request,
 ) -> dict[str, Any]:
     ticket = await db.get(Ticket, ticket_id)
     if not ticket:
@@ -585,9 +681,19 @@ async def reopen_ticket(
     if ticket.status not in ("resolved", "closed"):
         raise HTTPException(status_code=400, detail="Only resolved/closed tickets can be reopened")
 
+    from app.api.v1.support_audit import write_audit_log  # noqa: PLC0415
+
+    old_status = ticket.status
     ticket.status = "open"
     ticket.resolved_at = None
     ticket.closed_at = None
+
+    await write_audit_log(
+        db, ticket_id, current_user.id, "status_changed",
+        field_name="status", old_value=old_status, new_value="open",
+        ip_address=request.client.host if request.client else None,
+    )
+
     await db.commit()
     result = await db.execute(select(Ticket).where(Ticket.id == ticket.id))
     ticket = result.scalar_one()
@@ -631,6 +737,7 @@ async def add_comment(
     payload: CommentCreate,
     current_user: CurrentUser,
     db: DBSession,
+    request: Request,
 ) -> dict[str, Any]:
     ticket = await db.get(Ticket, ticket_id)
     if not ticket:
@@ -652,8 +759,46 @@ async def add_comment(
         if ticket.sla_response_due and now > ticket.sla_response_due:
             ticket.sla_response_breached = True
 
+    # Audit log
+    from app.api.v1.support_audit import write_audit_log  # noqa: PLC0415
+    await write_audit_log(
+        db, ticket_id, current_user.id, "comment_added",
+        ip_address=request.client.host if request.client else None,
+    )
+
     await db.commit()
     await db.refresh(comment)
+
+    # Parse @mentions — pattern: @user_email or @full_name
+    mention_pattern = re.compile(r"@([\w.+-]+@[\w-]+\.[\w.]+)")
+    mentioned_emails = mention_pattern.findall(payload.content)
+    if mentioned_emails:
+        from app.models.user import User  # noqa: PLC0415
+        for email_addr in mentioned_emails:
+            user_result = await db.execute(
+                select(User).where(User.email.ilike(email_addr)).limit(1)
+            )
+            mentioned_user = user_result.scalar_one_or_none()
+            if mentioned_user:
+                await event_bus.publish("support.mention", {
+                    "ticket_id": str(ticket.id),
+                    "ticket_number": ticket.ticket_number,
+                    "mentioned_user_id": str(mentioned_user.id),
+                    "comment_preview": payload.content[:200],
+                    "mentioned_by": str(current_user.id),
+                })
+
+    # Publish comment.added event — triggers customer email for external comments
+    await event_bus.publish("support.comment.added", {
+        "ticket_id": str(ticket.id),
+        "ticket_number": ticket.ticket_number,
+        "subject": ticket.subject,
+        "is_internal": payload.is_internal,
+        "customer_email": ticket.customer_email or "",
+        "customer_name": ticket.customer_name or "",
+        "comment_preview": payload.content[:500],
+        "author_name": current_user.full_name if hasattr(current_user, "full_name") else "",
+    })
 
     return {
         **CommentOut.model_validate(comment).model_dump(),
@@ -770,7 +915,7 @@ async def update_kb_article(
     }
 
 
-@router.delete("/kb/{article_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete KB article")
+@router.delete("/kb/{article_id}", status_code=status.HTTP_200_OK, summary="Delete KB article")
 async def delete_kb_article(
     article_id: uuid.UUID,
     current_user: CurrentUser,
@@ -781,7 +926,7 @@ async def delete_kb_article(
         raise HTTPException(status_code=404, detail="Article not found")
     await db.delete(article)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.post("/kb/{article_id}/helpful", summary="Mark KB article as helpful")

@@ -135,8 +135,8 @@ export default function WorkflowCanvasPage() {
   const testWorkflow = useTestWorkflow()
   const { data: executionsData } = useWorkflowExecutions(workflowId ?? '')
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const [nodes, setNodes, onNodesChange] = useNodesState([] as Node[])
+  const [edges, setEdges, onEdgesChange] = useEdgesState([] as Edge[])
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null)
   const [configStr, setConfigStr] = useState('{}')
   const [addNodeOpen, setAddNodeOpen] = useState(false)
@@ -161,7 +161,7 @@ export default function WorkflowCanvasPage() {
 
   const onConnect = useCallback(
     (connection: Connection) => {
-      setEdges((eds) => addEdge({ ...connection, animated: true, style: { stroke: '#51459d' } }, eds))
+      setEdges((eds) => addEdge({ ...connection, animated: true }, eds))
     },
     [setEdges],
   )

@@ -311,7 +311,7 @@ export default function SequenceBuilderPage() {
         <form onSubmit={handleAddStep} className="space-y-4">
           <SequenceStepEditor
             value={stepForm}
-            onChange={setStepForm}
+            onChange={(val) => setStepForm((prev) => ({ ...prev, ...val }))}
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setAddStepOpen(false)}>

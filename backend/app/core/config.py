@@ -94,6 +94,12 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str = "redis://redis:6379/1"
     CELERY_RESULT_BACKEND: str = "redis://redis:6379/2"
 
+    # ── E-Commerce ────────────────────────────────────────────────────────────
+    ECOM_CART_ABANDONMENT_HOURS: int = 1
+    ECOM_PROJECT_TRIGGER_THRESHOLD: float = 50000.0  # KES threshold for auto-project creation
+    ECOM_RECOVERY_DISCOUNT_PCT: float = 10.0
+    ECOM_BASE_CURRENCY: str = "KES"
+
 
 @lru_cache
 def get_settings() -> Settings:

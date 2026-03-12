@@ -5,57 +5,140 @@ import {
   useMailMessages,
   useMailMessage,
   useSendMail,
-  useReplyMail,
-  useForwardMail,
   useMarkAsRead,
   useDeleteMessage,
   useMoveMessage,
+  useUploadMailAttachment,
+  useFocusedInbox,
+  useOtherInbox,
+  useTriageInbox,
+  usePinMessage,
+  useFlagMessage,
+  useSmartFolders,
 } from '../../api/mail'
 import type { MailFolder, MailMessageSummary, MailMessageFull, MailAttachment } from '../../api/mail'
 import SnoozeDialog from './SnoozeDialog'
 import ContactPicker from './ContactPicker'
 import { useMailKeyboardShortcuts, KeyboardShortcutsHelp } from './KeyboardShortcuts'
 import { SaveToDriveDialog, LinkCRMDialog, ConvertToTaskDialog, SaveAsNoteDialog } from './MailCrossModuleActions'
+import RichTextEditor, { AttachmentChip } from './RichTextEditor'
+import type { UploadedAttachment } from './RichTextEditor'
+import AICopilotPanel from './AICopilotPanel'
+import FinancialRibbon from './FinancialRibbon'
+import ContactCard from './ContactCard'
+import AnnotationsPanel from './AnnotationsPanel'
+import QuickStepsBar from './QuickStepsBar'
+import MailAnalytics from './MailAnalytics'
+import TemplatePicker from './TemplatePicker'
+import ScheduleSendDialog from './ScheduleSendDialog'
 
 // ─── Compose Modal ────────────────────────────────────────────────────────────
 
-function ComposeModal({ onClose }: { onClose: () => void }) {
-  const [to, setTo] = useState('')
+interface PendingAttachment {
+  id: string
+  file: File
+  uploading: boolean
+  uploaded?: UploadedAttachment
+  error?: string
+}
+
+function ComposeModal({ onClose, replyTo, forwardFrom }: {
+  onClose: () => void
+  replyTo?: { messageId: string; subject: string; from: string; body: string; replyAll?: boolean }
+  forwardFrom?: { messageId: string; subject: string; body: string }
+}) {
+  const [to, setTo] = useState(replyTo?.from ?? '')
   const [cc, setCc] = useState('')
-  const [subject, setSubject] = useState('')
-  const [body, setBody] = useState('')
+  const [subject, setSubject] = useState(
+    replyTo ? `Re: ${replyTo.subject.replace(/^Re:\s*/i, '')}` :
+    forwardFrom ? `Fwd: ${forwardFrom.subject.replace(/^Fwd:\s*/i, '')}` : ''
+  )
+  const [htmlBody, setHtmlBody] = useState(
+    replyTo ? `<br/><br/><blockquote style="border-left:3px solid #51459d;padding-left:1em;color:#6b7280">${replyTo.body}</blockquote>` :
+    forwardFrom ? `<br/><br/><p>---------- Forwarded message ----------</p>${forwardFrom.body}` : ''
+  )
   const [showCc, setShowCc] = useState(false)
+  const [attachments, setAttachments] = useState<PendingAttachment[]>([])
 
   const send = useSendMail()
+  const uploadAttachment = useUploadMailAttachment()
+
+  const handleAttachFiles = useCallback((files: File[]) => {
+    const newAttachments: PendingAttachment[] = files.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      uploading: true,
+    }))
+    setAttachments((prev) => [...prev, ...newAttachments])
+
+    // Upload each file
+    newAttachments.forEach((att) => {
+      uploadAttachment.mutate(att.file, {
+        onSuccess: (result) => {
+          setAttachments((prev) =>
+            prev.map((a) => a.id === att.id ? { ...a, uploading: false, uploaded: result } : a)
+          )
+        },
+        onError: () => {
+          setAttachments((prev) =>
+            prev.map((a) => a.id === att.id ? { ...a, uploading: false, error: 'Upload failed' } : a)
+          )
+        },
+      })
+    })
+  }, [uploadAttachment])
+
+  const removeAttachment = useCallback((id: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id))
+  }, [])
 
   const handleSend = () => {
+    const uploadedAtts = attachments
+      .filter((a) => a.uploaded)
+      .map((a) => ({
+        storage_key: a.uploaded!.storage_key,
+        filename: a.uploaded!.filename,
+        size: a.uploaded!.size,
+        content_type: a.uploaded!.content_type,
+      }))
+
+    // Extract plain text from HTML for body field
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = htmlBody
+    const plainText = tempDiv.textContent ?? tempDiv.innerText ?? ''
+
     send.mutate(
       {
-        to: to.split(',').map((e) => e.trim()),
-        cc: cc ? cc.split(',').map((e) => e.trim()) : undefined,
+        to: to.split(',').map((e) => e.trim()).filter(Boolean),
+        cc: cc ? cc.split(',').map((e) => e.trim()).filter(Boolean) : undefined,
         subject,
-        body,
+        body: plainText,
+        html_body: htmlBody || undefined,
+        attachments: uploadedAtts.length > 0 ? uploadedAtts : undefined,
+        in_reply_to: replyTo?.messageId,
       },
       { onSuccess: () => onClose() },
     )
   }
 
+  const allUploaded = attachments.every((a) => !a.uploading)
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-2xl flex flex-col" style={{ maxHeight: '80vh' }}>
+      <div className="bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-3xl flex flex-col" style={{ maxHeight: '85vh' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">New Message</h3>
-          <div className="flex items-center gap-2">
-            <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-          </div>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {replyTo ? 'Reply' : forwardFrom ? 'Forward' : 'New Message'}
+          </h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
         </div>
 
         {/* Fields */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-2">
+        <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
+          <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-2 shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-400 w-12 shrink-0">To</span>
               <div className="flex-1"><ContactPicker value={to} onChange={setTo} placeholder="Recipients" /></div>
@@ -63,46 +146,65 @@ function ComposeModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
           {showCc && (
-            <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-2">
+            <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-2 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 w-12 shrink-0">Cc</span>
                 <div className="flex-1"><ContactPicker value={cc} onChange={setCc} placeholder="Cc recipients" /></div>
               </div>
             </div>
           )}
-          <div className="border-b border-gray-100 dark:border-gray-800">
+          <div className="border-b border-gray-100 dark:border-gray-800 shrink-0">
             <div className="flex items-center px-4 py-2 gap-2">
               <span className="text-xs text-gray-400 w-12 shrink-0">Subject</span>
               <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Message subject" className="flex-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none placeholder:text-gray-400 bg-transparent" />
             </div>
           </div>
-          <div className="p-4">
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Compose your message…"
-              rows={10}
-              className="w-full text-sm text-gray-900 dark:text-gray-100 focus:outline-none resize-none placeholder:text-gray-400 bg-transparent"
+
+          {/* Rich Text Editor */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <RichTextEditor
+              content={htmlBody}
+              onChange={setHtmlBody}
+              placeholder="Compose your message..."
+              minHeight="180px"
+              onAttachFiles={handleAttachFiles}
             />
           </div>
+
+          {/* Attachments bar */}
+          {attachments.length > 0 && (
+            <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-800 shrink-0">
+              <div className="flex flex-wrap gap-2">
+                {attachments.map((att) => (
+                  <AttachmentChip
+                    key={att.id}
+                    filename={att.file.name}
+                    size={att.file.size}
+                    uploading={att.uploading}
+                    onRemove={() => removeAttachment(att.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Actions */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-800 shrink-0">
-          <div className="flex items-center gap-2">
-            <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Attach file">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-            </button>
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            {attachments.length > 0 && (
+              <span>{attachments.length} attachment{attachments.length > 1 ? 's' : ''}</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[8px] transition-colors">Discard</button>
             <button
               onClick={handleSend}
-              disabled={!to || !subject || send.isPending}
+              disabled={!to || !subject || send.isPending || !allUploaded}
               className="px-4 py-2 text-sm bg-[#51459d] text-white rounded-[8px] hover:bg-[#3d3480] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {send.isPending ? (
-                <span className="flex items-center gap-1.5"><svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Sending…</span>
+                <span className="flex items-center gap-1.5"><svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Sending...</span>
               ) : (
                 <>
                   <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
@@ -260,6 +362,25 @@ function SwipeableMailItem({ msg, isSelected, onSelect, onArchive, onDelete, onS
               <p className={`text-xs truncate ${msg.read ? 'text-gray-500' : 'text-gray-800 dark:text-gray-200 font-medium'}`}>{msg.subject}</p>
             </div>
             {!msg.read && <div className="w-2 h-2 rounded-full bg-[#51459d] mt-1 shrink-0" />}
+            {(msg as any).priority_score != null && (msg as any).priority_score >= 0.7 && (
+              <span className="text-[9px] font-bold text-[#ff3a6e] uppercase shrink-0">Urgent</span>
+            )}
+            {(msg as any).is_pinned && (
+              <svg className="h-3 w-3 text-[#ffa21d] shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M5 5a2 2 0 012-2h6a2 2 0 012 2v2h2a1 1 0 010 2h-1l-1 8a2 2 0 01-2 2H7a2 2 0 01-2-2L4 9H3a1 1 0 010-2h2V5z" />
+              </svg>
+            )}
+            {(msg as any).ai_category && (
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-full shrink-0 ${
+                (msg as any).ai_category === 'finance-invoice' ? 'bg-green-100 text-green-700' :
+                (msg as any).ai_category === 'support-request' ? 'bg-red-100 text-red-700' :
+                (msg as any).ai_category === 'deal-related' ? 'bg-blue-100 text-blue-700' :
+                (msg as any).ai_category === 'newsletter' ? 'bg-gray-100 text-gray-500' :
+                'bg-purple-100 text-purple-700'
+              }`}>
+                {(msg as any).ai_category.replace('-', ' ')}
+              </span>
+            )}
           </div>
         </button>
       </div>
@@ -281,6 +402,12 @@ export default function MailPage() {
   const [showLinkCRM, setShowLinkCRM] = useState(false)
   const [showConvertToTask, setShowConvertToTask] = useState(false)
   const [showSaveAsNote, setShowSaveAsNote] = useState(false)
+  const [replyContext, setReplyContext] = useState<{ messageId: string; subject: string; from: string; body: string; replyAll?: boolean } | null>(null)
+  const [forwardContext, setForwardContext] = useState<{ messageId: string; subject: string; body: string } | null>(null)
+  const [inboxTab, setInboxTab] = useState<'all' | 'focused' | 'other'>('all')
+  const [showCopilot, setShowCopilot] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showScheduleSend, setShowScheduleSend] = useState(false)
 
   // ─── API hooks ──────────────────────────────────────────────────────────────
 
@@ -289,7 +416,29 @@ export default function MailPage() {
   const serverDown = foldersError
 
   const { data: messagesData, isLoading: messagesLoading } = useMailMessages({ folder: selectedFolder })
-  const allMessages: MailMessageSummary[] = messagesData?.messages ?? []
+  const defaultMessages: MailMessageSummary[] = messagesData?.messages ?? []
+
+  const { data: detailData, isLoading: detailLoading } = useMailMessage(selectedMessage ?? '')
+  const detail: MailMessageFull | null = detailData ?? null
+
+  const markAsRead = useMarkAsRead()
+  const deleteMessage = useDeleteMessage()
+  const moveMessage = useMoveMessage()
+  const triageInbox = useTriageInbox()
+  const pinMessage = usePinMessage()
+  const flagMessage = useFlagMessage()
+  const { data: smartFolders } = useSmartFolders()
+  const { data: focusedData } = useFocusedInbox()
+  const { data: otherData } = useOtherInbox()
+
+  // Determine which message source to use based on inbox tab
+  const allMessages: MailMessageSummary[] =
+    selectedFolder === 'inbox' && inboxTab === 'focused'
+      ? (focusedData?.messages ?? [])
+      : selectedFolder === 'inbox' && inboxTab === 'other'
+        ? (otherData?.messages ?? [])
+        : defaultMessages
+
   const messages = allMessages.filter(
     (m) =>
       !search ||
@@ -297,21 +446,12 @@ export default function MailPage() {
       (m.from.name ?? m.from.email).toLowerCase().includes(search.toLowerCase()),
   )
 
-  const { data: detailData, isLoading: detailLoading } = useMailMessage(selectedMessage ?? '')
-  const detail: MailMessageFull | null = detailData ?? null
-
-  const markAsRead = useMarkAsRead()
-  const replyMail = useReplyMail()
-  const forwardMail = useForwardMail()
-  const deleteMessage = useDeleteMessage()
-  const moveMessage = useMoveMessage()
-
   // Keyboard shortcuts
   useMailKeyboardShortcuts({
     messages: messages.map((m) => ({ id: m.id, read: m.read })),
     selectedMessage,
     onSelectMessage: setSelectedMessage,
-    onReply: () => handleReply(),
+    onReply: () => handleReply(false),
     onCompose: () => setComposeOpen(true),
   })
 
@@ -327,23 +467,24 @@ export default function MailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMessage, detail])
 
-  const handleReply = () => {
-    if (!selectedMessage) return
-    const body = prompt('Enter your reply:')
-    if (body) {
-      replyMail.mutate({ message_id: selectedMessage, body })
-    }
+  const handleReply = (replyAll = false) => {
+    if (!selectedMessage || !detail) return
+    setReplyContext({
+      messageId: selectedMessage,
+      subject: detail.subject,
+      from: detail.from[0]?.email ?? '',
+      body: detail.html_body || detail.text_body,
+      replyAll,
+    })
   }
 
   const handleForward = () => {
-    if (!selectedMessage) return
-    const to = prompt('Forward to (comma-separated emails):')
-    if (to) {
-      forwardMail.mutate({
-        message_id: selectedMessage,
-        to: to.split(',').map((e) => e.trim()),
-      })
-    }
+    if (!selectedMessage || !detail) return
+    setForwardContext({
+      messageId: selectedMessage,
+      subject: detail.subject,
+      body: detail.html_body || detail.text_body,
+    })
   }
 
   const handleDelete = () => {
@@ -430,6 +571,40 @@ export default function MailPage() {
                 </button>
               ))}
             </div>
+
+            <div className="mt-4 px-3">
+              <button
+                onClick={() => setShowAnalytics(true)}
+                className="w-full flex items-center gap-2 px-1 py-1.5 text-xs text-gray-500 hover:text-[#51459d] transition-colors rounded-[6px] hover:bg-[#51459d]/5"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Mail Analytics
+              </button>
+            </div>
+
+            {smartFolders && smartFolders.length > 0 && (
+              <div className="mt-4 px-3">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Smart Folders</p>
+                {smartFolders.map((sf) => (
+                  <button
+                    key={sf.id}
+                    className="w-full flex items-center justify-between px-1 py-1.5 text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors rounded-[6px] hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg className="h-3 w-3 text-[#3ec9d6]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      {sf.name}
+                    </div>
+                    {sf.message_count > 0 && (
+                      <span className="text-[10px] text-gray-400">{sf.message_count}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </nav>
         </aside>
 
@@ -447,6 +622,19 @@ export default function MailPage() {
             </div>
           </div>
 
+          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 shrink-0">
+            <button
+              onClick={() => triageInbox.mutate()}
+              disabled={triageInbox.isPending}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-medium text-[#51459d] bg-[#51459d]/10 rounded-full hover:bg-[#51459d]/20 transition-colors disabled:opacity-50"
+            >
+              <svg className={`h-3 w-3 ${triageInbox.isPending ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              {triageInbox.isPending ? 'Triaging...' : 'AI Triage'}
+            </button>
+          </div>
+
           <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-800 shrink-0">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 capitalize">{selectedFolder}</h2>
             <div className="flex items-center gap-2">
@@ -459,6 +647,26 @@ export default function MailPage() {
               </button>
             </div>
           </div>
+
+          {selectedFolder === 'inbox' && (
+            <div className="flex items-center gap-1 px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 shrink-0">
+              {(['all', 'focused', 'other'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setInboxTab(tab)}
+                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                    inboxTab === tab
+                      ? 'bg-[#51459d] text-white font-medium'
+                      : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {tab === 'all' ? 'All' : tab === 'focused' ? 'Focused' : 'Other'}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <QuickStepsBar selectedMessageId={selectedMessage ?? undefined} />
 
           <div className="flex-1 overflow-y-auto">
             {messagesLoading ? (
@@ -509,7 +717,10 @@ export default function MailPage() {
                 <div className="flex items-start justify-between mb-4">
                   <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 pr-4">{detail.subject}</h2>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={handleReply} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Reply">
+                    <button onClick={() => handleReply(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Reply">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                    </button>
+                    <button onClick={() => handleReply(true)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Reply All">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                     </button>
                     <button onClick={handleForward} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Forward">
@@ -520,6 +731,27 @@ export default function MailPage() {
                     </button>
                     <button onClick={() => setSnoozeMessageId(selectedMessage)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Snooze">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </button>
+                    <button
+                      onClick={() => pinMessage.mutate({ messageId: selectedMessage!, pinned: !(detail as any)?.is_pinned })}
+                      className={`p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] ${(detail as any)?.is_pinned ? 'text-[#ffa21d]' : 'text-gray-500'}`}
+                      title="Pin"
+                    >
+                      <svg className="h-4 w-4" fill={(detail as any)?.is_pinned ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => flagMessage.mutate({
+                        messageId: selectedMessage!,
+                        flag_status: (detail as any)?.flag_status === 'flagged' ? 'none' : 'flagged',
+                      })}
+                      className={`p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] ${(detail as any)?.flag_status === 'flagged' ? 'text-[#ff3a6e]' : 'text-gray-500'}`}
+                      title="Flag"
+                    >
+                      <svg className="h-4 w-4" fill={(detail as any)?.flag_status === 'flagged' ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2z" />
+                      </svg>
                     </button>
                     <span className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
                     {/* Cross-module actions */}
@@ -535,6 +767,17 @@ export default function MailPage() {
                     <button onClick={() => setShowSaveAsNote(true)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Save as Note">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                     </button>
+                    <span className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                    <button
+                      onClick={() => setShowCopilot(!showCopilot)}
+                      className={`p-1.5 rounded-[6px] transition ${showCopilot ? 'bg-[#51459d] text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500'}`}
+                      title="AI Copilot"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    </button>
+                    <button onClick={() => setShowScheduleSend(true)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-[6px] text-gray-500" title="Schedule Send">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </button>
                   </div>
                 </div>
 
@@ -545,7 +788,9 @@ export default function MailPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{detail.from[0]?.name ?? detail.from[0]?.email}</span>
+                        <ContactCard email={detail.from[0]?.email ?? ''} name={detail.from[0]?.name}>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-[#51459d] cursor-pointer transition">{detail.from[0]?.name ?? detail.from[0]?.email}</span>
+                        </ContactCard>
                         <span className="text-xs text-gray-400 ml-2">&lt;{detail.from[0]?.email}&gt;</span>
                       </div>
                       <span className="text-xs text-gray-400 shrink-0">{detail.date}</span>
@@ -557,6 +802,43 @@ export default function MailPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Predictive Action Bar */}
+              {detail && (detail as any).predicted_actions && (
+                <div className="bg-gradient-to-r from-[#51459d]/5 to-[#3ec9d6]/5 border-b border-gray-100 dark:border-gray-800 px-6 py-3">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Suggested Actions</p>
+                  <div className="flex flex-wrap gap-2">
+                    {((detail as any).predicted_actions as Array<{label: string; type: string}>)?.map((action: {label: string; type: string}, i: number) => (
+                      <button
+                        key={i}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-xs font-medium text-[#51459d] hover:bg-[#51459d]/10 transition-colors"
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* AI Summary Banner */}
+              {detail && (detail as any).ai_summary && (
+                <div className="bg-blue-50 dark:bg-blue-950/30 border-b border-blue-100 dark:border-blue-900 px-6 py-3">
+                  <div className="flex items-start gap-2">
+                    <svg className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <div>
+                      <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-wider mb-0.5">AI Summary</p>
+                      <p className="text-xs text-blue-800 dark:text-blue-300">{(detail as any).ai_summary}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Financial Context Ribbon */}
+              {detail?.from[0]?.email && (
+                <FinancialRibbon senderEmail={detail.from[0].email} />
+              )}
 
               {/* Body */}
               <div className="px-6 py-5">
@@ -584,12 +866,45 @@ export default function MailPage() {
                   </div>
                 </div>
               )}
+
+              {/* Annotations (Internal Team Notes) */}
+              {selectedMessage && <AnnotationsPanel messageId={selectedMessage} />}
             </div>
           ) : null}
+
+          {/* AI Copilot Side Panel */}
+          {showCopilot && selectedMessage && detail && (
+            <AICopilotPanel
+              messageId={selectedMessage}
+              senderEmail={detail.from[0]?.email}
+              onInsertDraft={(html) => {
+                setReplyContext({
+                  messageId: selectedMessage,
+                  subject: detail.subject,
+                  from: detail.from[0]?.email ?? '',
+                  body: html,
+                })
+                setShowCopilot(false)
+              }}
+              onClose={() => setShowCopilot(false)}
+            />
+          )}
         </div>
       </div>
 
       {composeOpen && <ComposeModal onClose={() => setComposeOpen(false)} />}
+      {replyContext && (
+        <ComposeModal
+          replyTo={replyContext}
+          onClose={() => setReplyContext(null)}
+        />
+      )}
+      {forwardContext && (
+        <ComposeModal
+          forwardFrom={forwardContext}
+          onClose={() => setForwardContext(null)}
+        />
+      )}
       {snoozeMessageId && <SnoozeDialog messageId={snoozeMessageId} onClose={() => setSnoozeMessageId(null)} />}
       {showSaveToDrive && selectedMessage && (
         <SaveToDriveDialog
@@ -606,6 +921,14 @@ export default function MailPage() {
       )}
       {showSaveAsNote && selectedMessage && (
         <SaveAsNoteDialog messageId={selectedMessage} onClose={() => setShowSaveAsNote(false)} />
+      )}
+      {showAnalytics && <MailAnalytics onClose={() => setShowAnalytics(false)} />}
+      {showScheduleSend && selectedMessage && (
+        <ScheduleSendDialog
+          messageId={selectedMessage}
+          currentScheduledAt={(detail as any)?.scheduled_send_at}
+          onClose={() => setShowScheduleSend(false)}
+        />
       )}
 
       {/* Keyboard shortcuts help toggle */}

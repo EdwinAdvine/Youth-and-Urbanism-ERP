@@ -21,6 +21,7 @@ import {
   type VendorBill,
   type VendorBillStatus,
 } from '../../api/finance'
+import { CustomFieldsSection } from './components/CustomFieldsSection'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -77,6 +78,7 @@ function VendorBillModal({ open, onClose, editing }: VendorBillModalProps) {
   const [notes, setNotes] = useState('')
   const [lines, setLines] = useState<LineRow[]>([{ description: '', quantity: '1', unit_price: '' }])
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, unknown>>({})
 
   React.useEffect(() => {
     if (open && editing) {
@@ -103,6 +105,10 @@ function VendorBillModal({ open, onClose, editing }: VendorBillModalProps) {
       setTaxAmount('')
       setNotes('')
       setLines([{ description: '', quantity: '1', unit_price: '' }])
+      setCustomFieldValues({})
+    }
+    if (open && editing) {
+      setCustomFieldValues((editing as any).custom_fields || {})
     }
     setErrors({})
   }, [open, editing])
@@ -153,7 +159,8 @@ function VendorBillModal({ open, onClose, editing }: VendorBillModalProps) {
           line_items: validLines,
           tax_amount: taxAmount ? Number(taxAmount) : undefined,
           notes: notes || undefined,
-        })
+          custom_fields: Object.keys(customFieldValues).length > 0 ? customFieldValues : undefined,
+        } as any)
         toast('success', 'Vendor bill updated')
       } else {
         await createMut.mutateAsync({
@@ -164,7 +171,8 @@ function VendorBillModal({ open, onClose, editing }: VendorBillModalProps) {
           line_items: validLines,
           tax_amount: taxAmount ? Number(taxAmount) : undefined,
           notes: notes || undefined,
-        })
+          custom_fields: Object.keys(customFieldValues).length > 0 ? customFieldValues : undefined,
+        } as any)
         toast('success', 'Vendor bill created')
       }
       onClose()
@@ -283,6 +291,13 @@ function VendorBillModal({ open, onClose, editing }: VendorBillModalProps) {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Additional notes..."
+        />
+
+        {/* Dynamic custom fields */}
+        <CustomFieldsSection
+          entityType="vendor_bill"
+          values={customFieldValues}
+          onChange={setCustomFieldValues}
         />
 
         <div className="flex items-center justify-end gap-3 pt-2">

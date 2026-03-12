@@ -257,7 +257,7 @@ async def update_campaign(
 
 @router.delete(
     "/campaigns/{campaign_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a campaign",
 )
 async def delete_campaign(
@@ -271,7 +271,7 @@ async def delete_campaign(
 
     await db.delete(campaign)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.get("/campaigns/{campaign_id}/analytics", summary="Campaign analytics")
@@ -596,7 +596,7 @@ async def update_product(
 
 @router.delete(
     "/products/{product_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a product",
 )
 async def delete_product(
@@ -610,7 +610,7 @@ async def delete_product(
 
     await db.delete(product)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Reports ────────────────────────────────────────────────────────────────────

@@ -49,7 +49,7 @@ export default function WorkloadPage() {
             <div className="space-y-4">
               {workload.map((w) => {
                 const assignedPct = (w.assigned_count / maxAssigned) * 100
-                const completedPct = w.assigned_count > 0 ? (w.completed_count / w.assigned_count) * 100 : 0
+                // completedPct available: w.assigned_count > 0 ? (w.completed_count / w.assigned_count) * 100 : 0
                 return (
                   <div key={w.user_id} className="flex items-center gap-4">
                     <div className="w-32 shrink-0 flex items-center gap-2">

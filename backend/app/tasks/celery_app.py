@@ -9,7 +9,7 @@ celery_app = Celery(
     "urban_erp",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["app.tasks.celery_app"],
+    include=["app.tasks.celery_app", "app.tasks.ecommerce_tasks", "app.tasks.support_tasks", "app.tasks.file_processing"],
 )
 
 celery_app.conf.update(
@@ -758,6 +758,70 @@ celery_app.conf.beat_schedule = {
         "task": "tasks.run_fx_revaluation",
         "schedule": crontab(day_of_month=1, hour=2, minute=0),
     },
+    # ── E-Commerce Tasks ──
+    "ecom-abandoned-carts-every-30min": {
+        "task": "tasks.check_abandoned_carts",
+        "schedule": 1800.0,  # 30 minutes
+    },
+    "ecom-cart-recovery-email-1-every-30min": {
+        "task": "tasks.send_cart_recovery_email_1",
+        "schedule": 1800.0,
+    },
+    "ecom-cart-recovery-email-2-every-30min": {
+        "task": "tasks.send_cart_recovery_email_2",
+        "schedule": 1800.0,
+    },
+    "ecom-subscriptions-daily": {
+        "task": "tasks.process_due_subscriptions",
+        "schedule": crontab(hour=6, minute=0),
+    },
+    "ecom-flash-sales-every-5min": {
+        "task": "tasks.activate_scheduled_flash_sales",
+        "schedule": 300.0,  # 5 minutes
+    },
+    "ecom-exchange-rates-daily": {
+        "task": "tasks.refresh_exchange_rates",
+        "schedule": crontab(hour=7, minute=0),
+    },
+    # ── Support Phase 1 ──────────────────────────────────────────────────────
+    "support-sla-escalation-every-5min": {
+        "task": "tasks.support_check_sla_escalations",
+        "schedule": 300.0,  # 5 minutes
+    },
+    "support-inbound-email-every-2min": {
+        "task": "tasks.support_poll_inbound_emails",
+        "schedule": 120.0,  # 2 minutes
+    },
+    "support-auto-close-stale-daily": {
+        "task": "tasks.support_auto_close_stale_tickets",
+        "schedule": crontab(hour=4, minute=0),
+    },
+    # ── Era Mail Advanced ──────────────────────────────────────────────────────
+    "mail-imap-sync-every-5min": {
+        "task": "tasks.mail_sync_all_accounts",
+        "schedule": 300.0,  # 5 minutes
+    },
+    "mail-unsnooze-every-1min": {
+        "task": "tasks.mail_check_snoozed_messages",
+        "schedule": 60.0,  # 1 minute
+    },
+    "mail-flag-reminders-every-1min": {
+        "task": "tasks.mail_check_flag_reminders",
+        "schedule": 60.0,  # 1 minute
+    },
+    "mail-scheduled-send-every-1min": {
+        "task": "tasks.mail_send_scheduled",
+        "schedule": 60.0,  # 1 minute
+    },
+    "mail-retention-cleanup-daily": {
+        "task": "tasks.mail_retention_cleanup",
+        "schedule": crontab(hour=3, minute=30),
+    },
+    # ── Drive Intelligence ──────────────────────────────────────────────────
+    "drive-purge-expired-trash-daily": {
+        "task": "tasks.purge_expired_trash",
+        "schedule": crontab(hour=2, minute=30),
+    },
 }
 
 
@@ -1412,3 +1476,210 @@ def run_fx_revaluation():
     except Exception as exc:
         task_logger.exception("FX revaluation task failed: %s", exc)
         return {"status": "error", "error": str(exc)}
+
+
+# ── Era Mail Advanced Tasks ─────────────────────────────────────────────────
+
+import logging as _mail_logging
+
+_mail_task_logger = _mail_logging.getLogger("mail_tasks")
+
+
+@celery_app.task(name="tasks.mail_sync_all_accounts")
+def mail_sync_all_accounts():
+    """Sync all enabled external mail accounts via IMAP."""
+    import asyncio
+    from sqlalchemy import select as sa_select
+
+    async def _run():
+        from app.core.database import AsyncSessionLocal
+        from app.models.mail_advanced import MailAccount
+        from app.services.imap_sync import sync_account
+
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                sa_select(MailAccount.id).where(MailAccount.sync_enabled.is_(True))
+            )
+            account_ids = [row[0] for row in result.all()]
+            synced = 0
+            for aid in account_ids:
+                try:
+                    await sync_account(db, aid)
+                    synced += 1
+                except Exception:
+                    _mail_task_logger.exception("IMAP sync failed for account %s", aid)
+            return {"synced": synced, "total": len(account_ids)}
+
+    return asyncio.run(_run())
+
+
+@celery_app.task(name="tasks.mail_check_snoozed_messages")
+def mail_check_snoozed_messages():
+    """Unsnooze messages whose snooze time has passed."""
+    import asyncio
+    from datetime import datetime, timezone
+    from sqlalchemy import select as sa_select
+
+    async def _run():
+        from app.core.database import AsyncSessionLocal
+        from app.models.mail_storage import MailboxMessage
+
+        now = datetime.now(timezone.utc)
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                sa_select(MailboxMessage).where(
+                    MailboxMessage.folder == "Snoozed",
+                    MailboxMessage.is_deleted.is_(False),
+                )
+            )
+            messages = result.scalars().all()
+            unsnoozed = 0
+            for msg in messages:
+                snooze_until = (msg.headers or {}).get("snooze_until")
+                if snooze_until:
+                    try:
+                        snooze_dt = datetime.fromisoformat(snooze_until)
+                        if snooze_dt <= now:
+                            msg.folder = "INBOX"
+                            msg.is_read = False
+                            headers = dict(msg.headers or {})
+                            headers.pop("snooze_until", None)
+                            msg.headers = headers
+                            unsnoozed += 1
+                    except (ValueError, TypeError):
+                        pass
+            await db.commit()
+            return {"unsnoozed": unsnoozed}
+
+    return asyncio.run(_run())
+
+
+@celery_app.task(name="tasks.mail_check_flag_reminders")
+def mail_check_flag_reminders():
+    """Send notifications for flagged messages with reminders due."""
+    import asyncio
+    from datetime import datetime, timezone
+    from sqlalchemy import select as sa_select
+
+    async def _run():
+        from app.core.database import AsyncSessionLocal
+        from app.core.events import event_bus
+        from app.models.mail_storage import MailboxMessage
+
+        now = datetime.now(timezone.utc)
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                sa_select(MailboxMessage).where(
+                    MailboxMessage.flag_status == "flagged",
+                    MailboxMessage.flag_reminder_at.isnot(None),
+                    MailboxMessage.flag_reminder_at <= now,
+                    MailboxMessage.is_deleted.is_(False),
+                )
+            )
+            messages = result.scalars().all()
+            notified = 0
+            for msg in messages:
+                await event_bus.publish("mail.flag_reminder", {
+                    "user_id": str(msg.user_id),
+                    "message_id": str(msg.id),
+                    "subject": msg.subject,
+                    "from": msg.from_addr,
+                })
+                msg.flag_reminder_at = None
+                notified += 1
+            await db.commit()
+            return {"notified": notified}
+
+    return asyncio.run(_run())
+
+
+@celery_app.task(name="tasks.mail_send_scheduled")
+def mail_send_scheduled():
+    """Send emails that were scheduled for delivery."""
+    import asyncio
+    from datetime import datetime, timezone
+    from sqlalchemy import select as sa_select
+
+    async def _run():
+        from app.core.database import AsyncSessionLocal
+        from app.models.mail_storage import MailboxMessage
+
+        now = datetime.now(timezone.utc)
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                sa_select(MailboxMessage).where(
+                    MailboxMessage.scheduled_send_at.isnot(None),
+                    MailboxMessage.scheduled_send_at <= now,
+                    MailboxMessage.is_draft.is_(True),
+                    MailboxMessage.is_deleted.is_(False),
+                )
+            )
+            messages = result.scalars().all()
+            sent = 0
+            for msg in messages:
+                try:
+                    from app.integrations.smtp_client import send_email as smtp_send
+                    to_addrs = [a.get("email", "") for a in (msg.to_addrs or []) if a.get("email")]
+                    if not to_addrs:
+                        continue
+                    send_result = await smtp_send(
+                        from_addr=msg.from_addr,
+                        to_addrs=to_addrs,
+                        subject=msg.subject,
+                        body_text=msg.body_text,
+                        body_html=msg.body_html or None,
+                    )
+                    if send_result.get("success"):
+                        msg.is_draft = False
+                        msg.folder = "Sent"
+                        msg.scheduled_send_at = None
+                        msg.sent_at = now
+                        sent += 1
+                except Exception:
+                    _mail_task_logger.exception("Scheduled send failed for %s", msg.id)
+            await db.commit()
+            return {"sent": sent}
+
+    return asyncio.run(_run())
+
+
+@celery_app.task(name="tasks.mail_retention_cleanup")
+def mail_retention_cleanup():
+    """Apply mail retention policies — archive or delete old messages."""
+    import asyncio
+    from datetime import datetime, timedelta, timezone
+    from sqlalchemy import select as sa_select
+
+    async def _run():
+        from app.core.database import AsyncSessionLocal
+        from app.models.mail_advanced import MailRetentionPolicy
+        from app.models.mail_storage import MailboxMessage
+
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                sa_select(MailRetentionPolicy).where(MailRetentionPolicy.is_active.is_(True))
+            )
+            policies = result.scalars().all()
+            affected = 0
+            now = datetime.now(timezone.utc)
+
+            for policy in policies:
+                cutoff = now - timedelta(days=policy.retention_days)
+                msgs_result = await db.execute(
+                    sa_select(MailboxMessage).where(
+                        MailboxMessage.received_at < cutoff,
+                        MailboxMessage.is_deleted.is_(False),
+                    ).limit(500)
+                )
+                msgs = msgs_result.scalars().all()
+                for msg in msgs:
+                    if policy.action == "delete":
+                        msg.is_deleted = True
+                    elif policy.action == "archive":
+                        msg.folder = "Archive"
+                    affected += 1
+
+            await db.commit()
+            return {"affected": affected}
+
+    return asyncio.run(_run())

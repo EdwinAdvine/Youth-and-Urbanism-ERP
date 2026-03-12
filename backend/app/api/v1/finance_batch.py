@@ -512,7 +512,7 @@ async def create_custom_field(
     return {"id": str(field.id), "field_name": field.field_name, "entity_type": field.entity_type}
 
 
-@router.delete("/custom-fields/{field_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/custom-fields/{field_id}", status_code=status.HTTP_200_OK)
 async def delete_custom_field(field_id: uuid.UUID, db: DBSession, current_user: CurrentUser):
     result = await db.execute(select(CustomField).where(CustomField.id == field_id))
     field = result.scalar_one_or_none()
@@ -601,7 +601,7 @@ async def update_dimension(
     return {"id": str(dim.id), "name": dim.name}
 
 
-@router.delete("/dimensions/{dim_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/dimensions/{dim_id}", status_code=status.HTTP_200_OK)
 async def delete_dimension(dim_id: uuid.UUID, db: DBSession, current_user: CurrentUser):
     result = await db.execute(select(Dimension).where(Dimension.id == dim_id))
     dim = result.scalar_one_or_none()

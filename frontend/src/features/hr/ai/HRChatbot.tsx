@@ -120,12 +120,12 @@ export default function HRChatbot() {
 
     try {
       const response = await chatMutation.mutateAsync({
-        message: content,
-        history: messages.map((m) => ({ role: m.role, content: m.content })),
+        query: content,
+        context: { history: messages.map((m) => ({ role: m.role, content: m.content })) },
       })
       const assistantMessage: ChatMessage = {
         role: 'assistant',
-        content: response.answer ?? response.message ?? 'I could not process that request.',
+        content: response.answer ?? 'I could not process that request.',
         sources: response.sources ?? [],
       }
       setMessages((prev) => [...prev, assistantMessage])

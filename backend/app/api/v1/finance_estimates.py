@@ -329,7 +329,7 @@ async def convert_estimate_to_invoice(
     }
 
 
-@router.delete("/estimates/{estimate_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/estimates/{estimate_id}", status_code=status.HTTP_200_OK)
 async def delete_estimate(estimate_id: uuid.UUID, db: DBSession, current_user: CurrentUser):
     result = await db.execute(select(Estimate).where(Estimate.id == estimate_id))
     estimate = result.scalar_one_or_none()

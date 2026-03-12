@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Badge, Card, Table, Input, Modal, Select } from '../../components/ui'
+import { Button, Badge, Card, Input, Modal, Select } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useECOs, useCreateECO, type ECO, type ECOCreate } from '../../api/manufacturing_eco'
 import { useBOMs } from '../../api/manufacturing'
 
-const statusColors: Record<string, string> = {
-  draft: 'gray',
-  submitted: 'blue',
-  under_review: 'yellow',
-  approved: 'green',
-  rejected: 'red',
-  implemented: 'purple',
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const statusColors: Record<string, BadgeVariant> = {
+  draft: 'default',
+  submitted: 'info',
+  under_review: 'warning',
+  approved: 'success',
+  rejected: 'danger',
+  implemented: 'primary',
 }
 
 function formatDate(dateStr: string) {
@@ -29,14 +31,14 @@ export default function ECOListPage() {
   const createECO = useCreateECO()
 
   const handleCreate = async () => {
-    if (!form.title || !form.bom_id) return toast({ title: 'Title and BOM are required', variant: 'destructive' })
+    if (!form.title || !form.bom_id) return toast('error', 'Title and BOM are required')
     try {
       const eco = await createECO.mutateAsync(form)
-      toast({ title: `ECO ${eco.eco_number} created` })
+      toast('success', `ECO ${eco.eco_number} created`)
       setModalOpen(false)
       setForm({ title: '', bom_id: '', change_type: 'revision', priority: 'medium' })
     } catch {
-      toast({ title: 'Failed to create ECO', variant: 'destructive' })
+      toast('error', 'Failed to create ECO')
     }
   }
 
@@ -57,15 +59,15 @@ export default function ECOListPage() {
       </div>
 
       <Card>
-        <Table>
+        <table className="w-full text-sm">
           <thead>
             <tr>
-              <th>ECO #</th>
-              <th>Title</th>
-              <th>Change Type</th>
-              <th>Status</th>
-              <th>Priority</th>
-              <th>Created</th>
+              <th className="text-left py-3 px-4">ECO #</th>
+              <th className="text-left py-3 px-4">Title</th>
+              <th className="text-left py-3 px-4">Change Type</th>
+              <th className="text-left py-3 px-4">Status</th>
+              <th className="text-left py-3 px-4">Priority</th>
+              <th className="text-left py-3 px-4">Created</th>
             </tr>
           </thead>
           <tbody>
@@ -78,13 +80,13 @@ export default function ECOListPage() {
                 <td className="font-mono text-sm">{eco.eco_number}</td>
                 <td>{eco.title}</td>
                 <td className="capitalize">{eco.change_type}</td>
-                <td><Badge variant={statusColors[eco.status] || 'gray'}>{eco.status.replace('_', ' ')}</Badge></td>
+                <td><Badge variant={statusColors[eco.status] || 'default'}>{eco.status.replace('_', ' ')}</Badge></td>
                 <td className="capitalize">{eco.priority}</td>
                 <td>{formatDate(eco.created_at)}</td>
               </tr>
             ))}
           </tbody>
-        </Table>
+        </table>
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Create Engineering Change Order">
@@ -92,7 +94,7 @@ export default function ECOListPage() {
           <Input label="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="ECO title" />
           <Select label="BOM" value={form.bom_id} onChange={e => setForm({ ...form, bom_id: e.target.value })}>
             <option value="">Select BOM</option>
-            {boms?.map((b: any) => <option key={b.id} value={b.id}>{b.bom_number} — {b.name}</option>)}
+            {boms?.boms?.map((b: any) => <option key={b.id} value={b.id}>{b.bom_number} — {b.name}</option>)}
           </Select>
           <Select label="Change Type" value={form.change_type || 'revision'} onChange={e => setForm({ ...form, change_type: e.target.value })}>
             <option value="revision">Revision</option>

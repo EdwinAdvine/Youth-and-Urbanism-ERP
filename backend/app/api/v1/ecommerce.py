@@ -367,7 +367,7 @@ async def update_product(
     return ProductOut.model_validate(product).model_dump()
 
 
-@router.delete("/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete product")
+@router.delete("/products/{product_id}", status_code=status.HTTP_200_OK, summary="Delete product")
 async def delete_product(
     product_id: uuid.UUID,
     current_user: CurrentUser,
@@ -378,7 +378,7 @@ async def delete_product(
         raise HTTPException(status_code=404, detail="Product not found")
     await db.delete(product)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Orders ─────────────────────────────────────────────────────────────────────

@@ -972,3 +972,17 @@ export function useCostScenarioModel() {
     },
   })
 }
+
+// Bulk recalculate all flight risk scores
+export function useRecalculateFlightRisk() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const res = await apiClient.post('/hr/ai/flight-risk/recalculate-all')
+      return res.data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['hr-flight-risk'] })
+    },
+  })
+}

@@ -11,6 +11,9 @@ import {
 import {
   useTicketLinkedContact, useLinkTicketToContact, useEscalateTicketToTask,
 } from '../../api/cross_module_links'
+import TicketAuditLog from './TicketAuditLog'
+import TimeTrackingPanel from './TimeTrackingPanel'
+import AgentStatusBar from './AgentStatusBar'
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -70,6 +73,7 @@ export default function TicketDetail() {
   const [escalateOpen, setEscalateOpen] = useState(false)
   const [projectIdInput, setProjectIdInput] = useState('')
   const [escalatePriority, setEscalatePriority] = useState('medium')
+  const [activeTab, setActiveTab] = useState<'comments' | 'audit'>('comments')
 
   if (isLoading || !ticket) {
     return (
@@ -156,6 +160,19 @@ export default function TicketDetail() {
               {(ticket.sla_response_breached || ticket.sla_resolution_breached) && (
                 <Badge variant="danger">SLA Breached</Badge>
               )}
+              {ticket.channel && ticket.channel !== 'web' && (
+                <Badge variant="default">{ticket.channel}</Badge>
+              )}
+              {ticket.sentiment_label && (
+                <Badge variant={
+                  ticket.sentiment_label === 'satisfied' ? 'success' :
+                  ticket.sentiment_label === 'frustrated' || ticket.sentiment_label === 'angry' ? 'danger' :
+                  ticket.sentiment_label === 'confused' ? 'warning' : 'default'
+                }>
+                  {ticket.sentiment_label}
+                  {ticket.sentiment_score != null ? ` (${ticket.sentiment_score.toFixed(1)})` : ''}
+                </Badge>
+              )}
             </div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{ticket.subject}</h1>
           </div>
@@ -196,8 +213,23 @@ export default function TicketDetail() {
         </div>
       </div>
 
+      {/* Agent Status + Collision Detection */}
+      <div className="mb-4">
+        <AgentStatusBar ticketId={id} />
+      </div>
+
+      {/* Viewing agents collision banner */}
+      {ticket.viewing_agents && ticket.viewing_agents.length > 0 && (
+        <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-[10px] text-sm text-yellow-800 dark:text-yellow-200">
+          {ticket.viewing_agents.length === 1
+            ? '1 other agent is viewing this ticket'
+            : `${ticket.viewing_agents.length} other agents are viewing this ticket`
+          }
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content: description + comments */}
+        {/* Main content: description + comments/audit */}
         <div className="lg:col-span-2 space-y-6">
           {/* Description */}
           {ticket.description && (
@@ -207,7 +239,37 @@ export default function TicketDetail() {
             </Card>
           )}
 
-          {/* Comment Timeline */}
+          {/* Tab Switcher: Comments / Audit Log */}
+          <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-0">
+            <button
+              className={cn(
+                'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+                activeTab === 'comments'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              )}
+              onClick={() => setActiveTab('comments')}
+            >
+              Comments ({ticket.comments?.length ?? 0})
+            </button>
+            <button
+              className={cn(
+                'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+                activeTab === 'audit'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              )}
+              onClick={() => setActiveTab('audit')}
+            >
+              Audit Log
+            </button>
+          </div>
+
+          {activeTab === 'audit' ? (
+            <Card>
+              <TicketAuditLog ticketId={ticket.id} />
+            </Card>
+          ) : (
           <Card>
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
               Comments ({ticket.comments?.length ?? 0})
@@ -339,6 +401,7 @@ export default function TicketDetail() {
               </div>
             </div>
           </Card>
+          )}
         </div>
 
         {/* Sidebar: ticket metadata */}
@@ -471,6 +534,12 @@ export default function TicketDetail() {
                 </dd>
               </div>
             </dl>
+          </Card>
+
+          {/* Time Tracking */}
+          <Card>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Time Tracking</h3>
+            <TimeTrackingPanel ticketId={ticket.id} />
           </Card>
 
           {/* Timestamps card */}

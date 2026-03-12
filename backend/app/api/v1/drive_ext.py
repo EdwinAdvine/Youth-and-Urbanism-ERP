@@ -1,19 +1,26 @@
-"""Drive extensions — copy, bulk ops, versions, trash, storage, search, tags, comments, cross-module links."""
+"""Drive extensions — copy, bulk ops, versions, trash, storage, search, tags, comments, cross-module links,
+AI semantic search, smart folders, saved views, AI metadata, activity logging, file locking."""
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import CurrentUser, DBSession
 from app.core.events import event_bus
 from app.core.sanitize import like_pattern
-from app.models.drive import DriveFile, DriveFolder, FileComment, FileTag, TrashBin
+from app.models.drive import (
+    DriveFile, DriveFolder, DriveSnapshot, FileAccessLog, FileAIMetadata,
+    FileComment, FileMetadata, FileTag, SavedView, SensitivityLabel, SmartFolder, TrashBin,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -460,7 +467,7 @@ async def add_file_tag(
     return TagOut.model_validate(tag).model_dump()
 
 
-@router.delete("/files/{file_id}/tags/{tag_name}", status_code=status.HTTP_204_NO_CONTENT, summary="Remove a tag from a file")
+@router.delete("/files/{file_id}/tags/{tag_name}", status_code=status.HTTP_200_OK, summary="Remove a tag from a file")
 async def remove_file_tag(
     file_id: uuid.UUID,
     tag_name: str,
@@ -478,7 +485,7 @@ async def remove_file_tag(
 
     await db.delete(tag)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Comments ─────────────────────────────────────────────────────────────────
@@ -666,4 +673,787 @@ async def link_file_to_task(
         "file_name": file.name,
         "task_id": str(payload.task_id),
         "project_id": str(payload.project_id),
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  AI-POWERED SEMANTIC SEARCH
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class SemanticSearchParams(BaseModel):
+    query: str
+    content_type: str | None = None
+    folder_id: uuid.UUID | None = None
+    tag: str | None = None
+    date_from: str | None = None  # ISO date
+    date_to: str | None = None  # ISO date
+    sensitivity: str | None = None
+    page: int = 1
+    limit: int = 30
+
+
+@router.post("/files/semantic-search", summary="AI-powered semantic search across file content")
+async def semantic_search(
+    params: SemanticSearchParams,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Search files using combined: PostgreSQL full-text search + pgvector cosine similarity + filename match.
+
+    Returns results ranked by relevance score combining all three signals.
+    """
+    q = params.query.strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="Query cannot be empty")
+
+    results = []
+    offset = (params.page - 1) * params.limit
+
+    # Strategy 1: PostgreSQL tsvector full-text search (fast, keyword-based)
+    fts_sql = """
+        SELECT id, name, content_type, size, folder_path, sensitivity_level,
+               ts_rank(search_vector, plainto_tsquery('english', :query)) AS fts_score,
+               created_at, updated_at
+        FROM drive_files
+        WHERE owner_id = :owner_id
+          AND search_vector @@ plainto_tsquery('english', :query)
+    """
+    sql_params: dict[str, Any] = {"query": q, "owner_id": str(current_user.id)}
+
+    if params.content_type:
+        fts_sql += " AND content_type ILIKE :ct"
+        sql_params["ct"] = f"%{params.content_type}%"
+    if params.folder_id:
+        fts_sql += " AND folder_id = :fid"
+        sql_params["fid"] = str(params.folder_id)
+    if params.sensitivity:
+        fts_sql += " AND sensitivity_level = :sens"
+        sql_params["sens"] = params.sensitivity
+    if params.date_from:
+        fts_sql += " AND created_at >= :date_from"
+        sql_params["date_from"] = params.date_from
+    if params.date_to:
+        fts_sql += " AND created_at <= :date_to"
+        sql_params["date_to"] = params.date_to
+
+    fts_sql += " ORDER BY fts_score DESC LIMIT :lim OFFSET :off"
+    sql_params["lim"] = params.limit
+    sql_params["off"] = offset
+
+    fts_result = await db.execute(text(fts_sql), sql_params)
+    fts_rows = fts_result.fetchall()
+
+    seen_ids = set()
+    for row in fts_rows:
+        file_id = str(row[0])
+        seen_ids.add(file_id)
+        results.append({
+            "id": file_id,
+            "name": row[1],
+            "content_type": row[2],
+            "size": row[3],
+            "folder_path": row[4],
+            "sensitivity_level": row[5],
+            "relevance_score": round(float(row[6]) * 100, 2),
+            "match_type": "content",
+            "created_at": row[7].isoformat() if row[7] else None,
+            "updated_at": row[8].isoformat() if row[8] else None,
+        })
+
+    # Strategy 2: pgvector semantic search (if embeddings exist)
+    if len(results) < params.limit:
+        try:
+            from app.services.embedding import embedding_svc
+
+            query_embedding = await embedding_svc.embed_text(q)
+            remaining = params.limit - len(results)
+
+            # Search via DocumentEmbedding table for chunked matches
+            vec_sql = """
+                SELECT de.source_id, de.chunk_text, de.metadata_json,
+                       (de.embedding <=> :query_vec::vector) AS distance
+                FROM document_embeddings de
+                WHERE de.source_type = 'drive_file'
+                ORDER BY de.embedding <=> :query_vec::vector
+                LIMIT :lim
+            """
+            vec_result = await db.execute(
+                text(vec_sql),
+                {"query_vec": str(query_embedding), "lim": remaining + 10},
+            )
+            vec_rows = vec_result.fetchall()
+
+            for row in vec_rows:
+                file_id = str(row[0])
+                if file_id in seen_ids:
+                    continue
+                seen_ids.add(file_id)
+
+                # Fetch file details
+                file_stmt = select(DriveFile).where(
+                    DriveFile.id == row[0],
+                    DriveFile.owner_id == current_user.id,
+                )
+                file_result = await db.execute(file_stmt)
+                drive_file = file_result.scalar_one_or_none()
+                if not drive_file:
+                    continue
+
+                similarity = max(0, 1.0 - float(row[3]))
+                results.append({
+                    "id": file_id,
+                    "name": drive_file.name,
+                    "content_type": drive_file.content_type,
+                    "size": drive_file.size,
+                    "folder_path": drive_file.folder_path,
+                    "sensitivity_level": drive_file.sensitivity_level,
+                    "relevance_score": round(similarity * 100, 2),
+                    "match_type": "semantic",
+                    "snippet": row[1][:200] if row[1] else None,
+                    "created_at": drive_file.created_at.isoformat() if drive_file.created_at else None,
+                    "updated_at": drive_file.updated_at.isoformat() if drive_file.updated_at else None,
+                })
+
+                if len(results) >= params.limit:
+                    break
+        except Exception as exc:
+            logger.warning("Semantic search fallback — embedding search failed: %s", exc)
+
+    # Strategy 3: Fallback to filename ILIKE if very few results
+    if len(results) < 5:
+        fallback_stmt = (
+            select(DriveFile)
+            .where(
+                DriveFile.owner_id == current_user.id,
+                DriveFile.name.ilike(like_pattern(q)),
+            )
+            .limit(params.limit)
+        )
+        fallback_result = await db.execute(fallback_stmt)
+        for f in fallback_result.scalars().all():
+            fid = str(f.id)
+            if fid not in seen_ids:
+                seen_ids.add(fid)
+                results.append({
+                    "id": fid,
+                    "name": f.name,
+                    "content_type": f.content_type,
+                    "size": f.size,
+                    "folder_path": f.folder_path,
+                    "sensitivity_level": f.sensitivity_level,
+                    "relevance_score": 50.0,
+                    "match_type": "filename",
+                    "created_at": f.created_at.isoformat() if f.created_at else None,
+                    "updated_at": f.updated_at.isoformat() if f.updated_at else None,
+                })
+
+    # Sort by relevance
+    results.sort(key=lambda x: x["relevance_score"], reverse=True)
+
+    return {"total": len(results), "query": q, "results": results[:params.limit]}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  AI FILE METADATA & INSIGHTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/files/{file_id}/ai-metadata", summary="Get AI-generated insights for a file")
+async def get_file_ai_metadata(
+    file_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    file = await _check_file_owner(db, file_id, current_user.id)
+
+    result = await db.execute(
+        select(FileAIMetadata).where(FileAIMetadata.file_id == file_id)
+    )
+    ai_meta = result.scalar_one_or_none()
+
+    if not ai_meta:
+        return {
+            "file_id": str(file_id),
+            "status": "not_processed",
+            "ai_processed": file.ai_processed,
+        }
+
+    return {
+        "file_id": str(file_id),
+        "status": "processed" if ai_meta.summary else "processing",
+        "summary": ai_meta.summary,
+        "entities": ai_meta.entities_json,
+        "suggested_tags": ai_meta.suggested_tags,
+        "sensitivity_level": ai_meta.sensitivity_level,
+        "language": ai_meta.language,
+        "word_count": ai_meta.word_count,
+        "module_suggestions": ai_meta.module_suggestions,
+        "processed_at": ai_meta.processed_at.isoformat() if ai_meta.processed_at else None,
+        "processing_error": ai_meta.processing_error,
+    }
+
+
+@router.post("/files/{file_id}/reprocess-ai", summary="Re-trigger AI analysis for a file")
+async def reprocess_file_ai(
+    file_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    file = await _check_file_owner(db, file_id, current_user.id)
+
+    from app.tasks.file_processing import extract_file_content
+    extract_file_content.delay(str(file_id))
+
+    return {"status": "queued", "file_id": str(file_id)}
+
+
+@router.post("/files/{file_id}/apply-ai-tags", summary="Apply AI-suggested tags to a file")
+async def apply_ai_tags(
+    file_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    file = await _check_file_owner(db, file_id, current_user.id)
+
+    result = await db.execute(
+        select(FileAIMetadata).where(FileAIMetadata.file_id == file_id)
+    )
+    ai_meta = result.scalar_one_or_none()
+    if not ai_meta or not ai_meta.suggested_tags:
+        raise HTTPException(status_code=404, detail="No AI-suggested tags available")
+
+    applied = []
+    for tag_name in ai_meta.suggested_tags:
+        existing = await db.execute(
+            select(FileTag).where(FileTag.file_id == file_id, FileTag.tag_name == tag_name)
+        )
+        if not existing.scalar_one_or_none():
+            tag = FileTag(file_id=file_id, tag_name=tag_name, source="ai")
+            db.add(tag)
+            applied.append(tag_name)
+
+    await db.commit()
+    return {"applied_tags": applied, "file_id": str(file_id)}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SMART FOLDERS
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class SmartFolderCreate(BaseModel):
+    name: str
+    description: str | None = None
+    icon: str | None = None
+    color: str | None = None
+    filter_json: dict
+    sort_field: str = "created_at"
+    sort_direction: str = "desc"
+    is_pinned: bool = False
+
+
+class SmartFolderUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    icon: str | None = None
+    color: str | None = None
+    filter_json: dict | None = None
+    sort_field: str | None = None
+    sort_direction: str | None = None
+    is_pinned: bool | None = None
+
+
+@router.get("/smart-folders", summary="List user's smart folders")
+async def list_smart_folders(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    result = await db.execute(
+        select(SmartFolder)
+        .where(SmartFolder.owner_id == current_user.id)
+        .order_by(SmartFolder.is_pinned.desc(), SmartFolder.name)
+    )
+    folders = result.scalars().all()
+    return {
+        "total": len(folders),
+        "smart_folders": [
+            {
+                "id": str(f.id),
+                "name": f.name,
+                "description": f.description,
+                "icon": f.icon,
+                "color": f.color,
+                "filter_json": f.filter_json,
+                "sort_field": f.sort_field,
+                "sort_direction": f.sort_direction,
+                "is_pinned": f.is_pinned,
+                "created_at": f.created_at.isoformat() if f.created_at else None,
+            }
+            for f in folders
+        ],
+    }
+
+
+@router.post("/smart-folders", status_code=status.HTTP_201_CREATED, summary="Create a smart folder")
+async def create_smart_folder(
+    payload: SmartFolderCreate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    folder = SmartFolder(
+        name=payload.name,
+        description=payload.description,
+        icon=payload.icon,
+        color=payload.color,
+        owner_id=current_user.id,
+        filter_json=payload.filter_json,
+        sort_field=payload.sort_field,
+        sort_direction=payload.sort_direction,
+        is_pinned=payload.is_pinned,
+    )
+    db.add(folder)
+    await db.commit()
+    await db.refresh(folder)
+    return {
+        "id": str(folder.id),
+        "name": folder.name,
+        "filter_json": folder.filter_json,
+    }
+
+
+@router.put("/smart-folders/{folder_id}", summary="Update a smart folder")
+async def update_smart_folder(
+    folder_id: uuid.UUID,
+    payload: SmartFolderUpdate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    folder = await db.get(SmartFolder, folder_id)
+    if not folder or folder.owner_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Smart folder not found")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(folder, field, value)
+
+    await db.commit()
+    await db.refresh(folder)
+    return {"id": str(folder.id), "name": folder.name, "updated": True}
+
+
+@router.delete("/smart-folders/{folder_id}", status_code=status.HTTP_200_OK)
+async def delete_smart_folder(
+    folder_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> Response:
+    folder = await db.get(SmartFolder, folder_id)
+    if not folder or folder.owner_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Smart folder not found")
+    await db.delete(folder)
+    await db.commit()
+    return Response(status_code=status.HTTP_200_OK)
+
+
+@router.get("/smart-folders/{folder_id}/files", summary="Get files matching smart folder filter")
+async def smart_folder_files(
+    folder_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+) -> dict[str, Any]:
+    folder = await db.get(SmartFolder, folder_id)
+    if not folder or folder.owner_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Smart folder not found")
+
+    filters = folder.filter_json or {}
+    query = select(DriveFile).where(DriveFile.owner_id == current_user.id)
+
+    # Apply filters from the smart folder DSL
+    if filters.get("content_types"):
+        query = query.where(DriveFile.content_type.in_(filters["content_types"]))
+    if filters.get("tags"):
+        query = query.join(FileTag, FileTag.file_id == DriveFile.id).where(
+            FileTag.tag_name.in_(filters["tags"])
+        )
+    if filters.get("query"):
+        query = query.where(DriveFile.name.ilike(like_pattern(filters["query"])))
+    if filters.get("date_from"):
+        query = query.where(DriveFile.created_at >= filters["date_from"])
+    if filters.get("date_to"):
+        query = query.where(DriveFile.created_at <= filters["date_to"])
+    if filters.get("sensitivity"):
+        query = query.where(DriveFile.sensitivity_level == filters["sensitivity"])
+    if filters.get("folder_id"):
+        query = query.where(DriveFile.folder_id == filters["folder_id"])
+    if filters.get("size_min"):
+        query = query.where(DriveFile.size >= filters["size_min"])
+    if filters.get("size_max"):
+        query = query.where(DriveFile.size <= filters["size_max"])
+    if filters.get("ai_processed") is not None:
+        query = query.where(DriveFile.ai_processed == filters["ai_processed"])
+
+    # Sort
+    sort_col = getattr(DriveFile, folder.sort_field, DriveFile.created_at)
+    if folder.sort_direction == "asc":
+        query = query.order_by(sort_col.asc())
+    else:
+        query = query.order_by(sort_col.desc())
+
+    query = query.offset((page - 1) * limit).limit(limit)
+    result = await db.execute(query)
+    files = result.scalars().all()
+
+    return {
+        "smart_folder": folder.name,
+        "total": len(files),
+        "files": [
+            {
+                "id": str(f.id),
+                "name": f.name,
+                "content_type": f.content_type,
+                "size": f.size,
+                "folder_path": f.folder_path,
+                "sensitivity_level": f.sensitivity_level,
+                "ai_processed": f.ai_processed,
+                "created_at": f.created_at.isoformat() if f.created_at else None,
+                "updated_at": f.updated_at.isoformat() if f.updated_at else None,
+            }
+            for f in files
+        ],
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SAVED VIEWS
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class SavedViewCreate(BaseModel):
+    name: str
+    folder_id: uuid.UUID | None = None
+    filters_json: dict | None = None
+    sort_json: dict | None = None
+    columns_json: list | None = None
+    view_type: str = "list"
+    is_default: bool = False
+
+
+@router.get("/saved-views", summary="List saved views")
+async def list_saved_views(
+    current_user: CurrentUser,
+    db: DBSession,
+    folder_id: uuid.UUID | None = Query(None),
+) -> dict[str, Any]:
+    query = select(SavedView).where(SavedView.owner_id == current_user.id)
+    if folder_id:
+        query = query.where(
+            or_(SavedView.folder_id == folder_id, SavedView.folder_id.is_(None))
+        )
+    result = await db.execute(query.order_by(SavedView.name))
+    views = result.scalars().all()
+    return {
+        "total": len(views),
+        "views": [
+            {
+                "id": str(v.id),
+                "name": v.name,
+                "folder_id": str(v.folder_id) if v.folder_id else None,
+                "filters_json": v.filters_json,
+                "sort_json": v.sort_json,
+                "columns_json": v.columns_json,
+                "view_type": v.view_type,
+                "is_default": v.is_default,
+            }
+            for v in views
+        ],
+    }
+
+
+@router.post("/saved-views", status_code=status.HTTP_201_CREATED, summary="Create a saved view")
+async def create_saved_view(
+    payload: SavedViewCreate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    view = SavedView(
+        name=payload.name,
+        owner_id=current_user.id,
+        folder_id=payload.folder_id,
+        filters_json=payload.filters_json,
+        sort_json=payload.sort_json,
+        columns_json=payload.columns_json,
+        view_type=payload.view_type,
+        is_default=payload.is_default,
+    )
+    db.add(view)
+    await db.commit()
+    await db.refresh(view)
+    return {"id": str(view.id), "name": view.name}
+
+
+@router.delete("/saved-views/{view_id}", status_code=status.HTTP_200_OK)
+async def delete_saved_view(
+    view_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> Response:
+    view = await db.get(SavedView, view_id)
+    if not view or view.owner_id != current_user.id:
+        raise HTTPException(status_code=404, detail="View not found")
+    await db.delete(view)
+    await db.commit()
+    return Response(status_code=status.HTTP_200_OK)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  FILE METADATA (key-value)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class MetadataCreate(BaseModel):
+    key: str
+    value: str | None = None
+    value_type: str = "string"
+
+
+@router.get("/files/{file_id}/metadata", summary="Get file custom metadata")
+async def get_file_metadata(
+    file_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    await _check_file_owner(db, file_id, current_user.id)
+    result = await db.execute(
+        select(FileMetadata).where(FileMetadata.file_id == file_id).order_by(FileMetadata.key)
+    )
+    items = result.scalars().all()
+    return {
+        "file_id": str(file_id),
+        "metadata": [
+            {"id": str(m.id), "key": m.key, "value": m.value, "value_type": m.value_type}
+            for m in items
+        ],
+    }
+
+
+@router.post("/files/{file_id}/metadata", status_code=status.HTTP_201_CREATED)
+async def set_file_metadata(
+    file_id: uuid.UUID,
+    payload: MetadataCreate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    await _check_file_owner(db, file_id, current_user.id)
+
+    # Upsert: update if key exists
+    existing = await db.execute(
+        select(FileMetadata).where(
+            FileMetadata.file_id == file_id, FileMetadata.key == payload.key,
+        )
+    )
+    meta = existing.scalar_one_or_none()
+    if meta:
+        meta.value = payload.value
+        meta.value_type = payload.value_type
+    else:
+        meta = FileMetadata(
+            file_id=file_id, key=payload.key, value=payload.value, value_type=payload.value_type,
+        )
+        db.add(meta)
+
+    await db.commit()
+    await db.refresh(meta)
+    return {"id": str(meta.id), "key": meta.key, "value": meta.value}
+
+
+@router.delete("/files/{file_id}/metadata/{key}", status_code=status.HTTP_200_OK)
+async def delete_file_metadata(
+    file_id: uuid.UUID,
+    key: str,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> Response:
+    await _check_file_owner(db, file_id, current_user.id)
+    result = await db.execute(
+        select(FileMetadata).where(FileMetadata.file_id == file_id, FileMetadata.key == key)
+    )
+    meta = result.scalar_one_or_none()
+    if not meta:
+        raise HTTPException(status_code=404, detail="Metadata key not found")
+    await db.delete(meta)
+    await db.commit()
+    return Response(status_code=status.HTTP_200_OK)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  FILE LOCKING
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.post("/files/{file_id}/lock", summary="Lock a file for exclusive editing")
+async def lock_file(
+    file_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    file = await _check_file_owner(db, file_id, current_user.id)
+    if file.is_locked and file.locked_by != current_user.id:
+        raise HTTPException(status_code=409, detail="File is locked by another user")
+    file.is_locked = True
+    file.locked_by = current_user.id
+    file.locked_at = datetime.now(timezone.utc)
+    await db.commit()
+    return {"locked": True, "file_id": str(file_id), "locked_by": str(current_user.id)}
+
+
+@router.post("/files/{file_id}/unlock", summary="Unlock a file")
+async def unlock_file(
+    file_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    file = await _check_file_owner(db, file_id, current_user.id)
+    if file.is_locked and file.locked_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot unlock — locked by another user")
+    file.is_locked = False
+    file.locked_by = None
+    file.locked_at = None
+    await db.commit()
+    return {"unlocked": True, "file_id": str(file_id)}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ACTIVITY LOG
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/activity-log", summary="Get file activity log for current user")
+async def get_activity_log(
+    current_user: CurrentUser,
+    db: DBSession,
+    file_id: uuid.UUID | None = Query(None),
+    action: str | None = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+) -> dict[str, Any]:
+    query = select(FileAccessLog).where(FileAccessLog.user_id == current_user.id)
+    if file_id:
+        query = query.where(FileAccessLog.file_id == file_id)
+    if action:
+        query = query.where(FileAccessLog.action == action)
+    query = query.order_by(FileAccessLog.timestamp.desc()).offset((page - 1) * limit).limit(limit)
+
+    result = await db.execute(query)
+    logs = result.scalars().all()
+
+    return {
+        "total": len(logs),
+        "logs": [
+            {
+                "id": str(log.id),
+                "file_id": str(log.file_id) if log.file_id else None,
+                "folder_id": str(log.folder_id) if log.folder_id else None,
+                "action": log.action,
+                "metadata": log.metadata_json,
+                "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+            }
+            for log in logs
+        ],
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SENSITIVITY LABELS
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/sensitivity-labels", summary="List available sensitivity labels")
+async def list_sensitivity_labels(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    result = await db.execute(
+        select(SensitivityLabel).where(SensitivityLabel.is_active.is_(True)).order_by(SensitivityLabel.severity)
+    )
+    labels = result.scalars().all()
+    return {
+        "labels": [
+            {
+                "id": str(lb.id),
+                "name": lb.name,
+                "display_name": lb.display_name,
+                "description": lb.description,
+                "color": lb.color,
+                "severity": lb.severity,
+                "block_external_sharing": lb.block_external_sharing,
+                "block_public_links": lb.block_public_links,
+            }
+            for lb in labels
+        ],
+    }
+
+
+@router.put("/files/{file_id}/sensitivity", summary="Set sensitivity label on a file")
+async def set_file_sensitivity(
+    file_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+    level: str = Query(..., description="Sensitivity level: public, internal, confidential, highly_confidential"),
+) -> dict[str, Any]:
+    file = await _check_file_owner(db, file_id, current_user.id)
+    file.sensitivity_level = level
+    await db.commit()
+    return {"file_id": str(file_id), "sensitivity_level": level}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  DRIVE ANALYTICS
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/analytics/overview", summary="Drive analytics overview")
+async def drive_analytics_overview(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    user_id = current_user.id
+
+    # Total storage
+    total = await db.execute(
+        select(func.sum(DriveFile.size), func.count(DriveFile.id))
+        .where(DriveFile.owner_id == user_id)
+    )
+    total_row = total.one()
+
+    # AI processed count
+    ai_count = await db.execute(
+        select(func.count(DriveFile.id))
+        .where(DriveFile.owner_id == user_id, DriveFile.ai_processed.is_(True))
+    )
+
+    # Files by sensitivity
+    sens_result = await db.execute(
+        select(DriveFile.sensitivity_level, func.count(DriveFile.id))
+        .where(DriveFile.owner_id == user_id)
+        .group_by(DriveFile.sensitivity_level)
+    )
+
+    # Recent activity count (last 7 days)
+    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    activity_count = await db.execute(
+        select(func.count(FileAccessLog.id))
+        .where(FileAccessLog.user_id == user_id, FileAccessLog.timestamp >= week_ago)
+    )
+
+    return {
+        "total_bytes": int(total_row[0] or 0),
+        "total_files": total_row[1] or 0,
+        "ai_processed_files": ai_count.scalar() or 0,
+        "by_sensitivity": {
+            (row[0] or "unlabeled"): row[1]
+            for row in sens_result.all()
+        },
+        "activity_last_7_days": activity_count.scalar() or 0,
     }

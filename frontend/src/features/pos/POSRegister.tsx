@@ -1,11 +1,11 @@
 import { useState, useRef, useCallback } from 'react'
 import { Button, Card, Input, Badge, Spinner, toast } from '../../components/ui'
-import { usePOSProducts, useSearchProducts, useActiveSession, useCreateTransaction, useHoldTransaction, useHeldTransactions, useResumeHeldTransaction, type POSProduct, type TransactionLinePayload, type TransactionPaymentPayload } from '../../api/pos'
+import { usePOSProducts, useSearchProducts, useActiveSession, useCreateTransaction, useHoldTransaction, useHeldTransactions, type POSProduct, type TransactionLinePayload, type TransactionPaymentPayload } from '../../api/pos'
 import { useLoyaltyMemberByCustomer } from '../../api/loyalty'
 import BarcodeScanner from './BarcodeScanner'
 import CustomerLookup, { type SelectedCustomer } from './CustomerLookup'
-import SplitPaymentDialog from './SplitPaymentDialog'
-import TipDialog from './TipDialog'
+import { SplitPaymentDialog } from './SplitPaymentDialog'
+import { TipDialog } from './TipDialog'
 import AICashierAssistant from './AICashierAssistant'
 
 interface CartLine extends TransactionLinePayload {
@@ -16,13 +16,12 @@ interface CartLine extends TransactionLinePayload {
 export default function POSRegister() {
   const { data: session, isLoading: sessionLoading, error: sessionError } = useActiveSession()
   const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('')
+  const [category, _setCategory] = useState('')
   const { data: productsData, isLoading: productsLoading } = usePOSProducts({ category: category || undefined, limit: 50 })
   const { data: searchResults } = useSearchProducts(search)
   const createTransaction = useCreateTransaction()
   const holdTransaction = useHoldTransaction()
   const { data: heldTransactions } = useHeldTransactions()
-  const resumeHeld = useResumeHeldTransaction()
 
   const [cart, setCart] = useState<CartLine[]>([])
   const [paymentMethod, setPaymentMethod] = useState('cash')
@@ -139,27 +138,18 @@ export default function POSRegister() {
     if (cart.length === 0) return toast('error', 'Cart is empty')
     const lines: TransactionLinePayload[] = cart.map(({ name, sku, ...l }) => l)
     try {
-      const txn = await createTransaction.mutateAsync({
+      await createTransaction.mutateAsync({
         customer_name: customerName || undefined,
         customer_id: selectedCustomer?.id,
         tax_amount: taxAmount,
         lines,
         payments: [{ payment_method: 'cash', amount: 0 }],
       })
-      await holdTransaction.mutateAsync(txn.id)
+      await holdTransaction.mutateAsync({ lines: cart.map(({ name: _n, sku: _s, ...l }) => l) })
       toast('success', 'Transaction held')
       resetCart()
     } catch {
       toast('error', 'Failed to hold transaction')
-    }
-  }
-
-  const handleResumeHeld = async (txnId: string) => {
-    try {
-      await resumeHeld.mutateAsync(txnId)
-      toast('success', 'Transaction resumed — redirecting to register')
-    } catch {
-      toast('error', 'Failed to resume transaction')
     }
   }
 
@@ -424,7 +414,7 @@ export default function POSRegister() {
         open={tipDialogOpen}
         onClose={() => setTipDialogOpen(false)}
         subtotal={subtotal + taxAmount}
-        onConfirm={(tip) => {
+        onConfirm={(tip: number) => {
           setTipAmount(tip)
           setTipDialogOpen(false)
         }}
@@ -435,7 +425,7 @@ export default function POSRegister() {
         open={splitPaymentOpen}
         onClose={() => setSplitPaymentOpen(false)}
         total={total}
-        onConfirm={(payments) => {
+        onConfirm={(payments: TransactionPaymentPayload[]) => {
           setSplitPaymentOpen(false)
           handleCheckout(payments)
         }}

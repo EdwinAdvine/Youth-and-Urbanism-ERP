@@ -28,7 +28,7 @@ from app.models.supplychain_ops import (
     SupplyChainKPI,
     WorkflowRun,
     WorkflowStep,
-    WorkflowTemplate,
+    SCWorkflowTemplate as WorkflowTemplate,
 )
 
 router = APIRouter()
@@ -1027,7 +1027,7 @@ async def update_replenishment_rule(
 
 @router.delete(
     "/replenishment-rules/{rule_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     dependencies=[Depends(require_app_admin("supply_chain"))],
     response_model=None,
 )

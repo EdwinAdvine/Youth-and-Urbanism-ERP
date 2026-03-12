@@ -39,7 +39,7 @@ async def execute_workflow(
     Returns:
         execution_id (str) — UUID of the created WorkflowExecution.
     """
-    from app.models.hr_phase3 import Workflow, WorkflowApproval, WorkflowExecution  # noqa: PLC0415
+    from app.models.hr_phase3 import HRWorkflow as Workflow, WorkflowApproval, HRWorkflowExecution as WorkflowExecution  # noqa: PLC0415
 
     # Load the workflow definition
     result = await db.execute(
@@ -229,7 +229,7 @@ async def resume_workflow(
         note: Free-text decision note from the approver.
         db: Async SQLAlchemy session.
     """
-    from app.models.hr_phase3 import Workflow, WorkflowApproval, WorkflowExecution  # noqa: PLC0415
+    from app.models.hr_phase3 import HRWorkflow as Workflow, WorkflowApproval, HRWorkflowExecution as WorkflowExecution  # noqa: PLC0415
 
     # Load the execution
     exec_result = await db.execute(

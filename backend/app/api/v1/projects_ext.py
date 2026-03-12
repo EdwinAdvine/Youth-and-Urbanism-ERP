@@ -225,7 +225,7 @@ async def create_dependency(
 
 @router.delete(
     "/tasks/{task_id}/dependencies/{dep_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Remove a task dependency",
 )
 async def delete_dependency(
@@ -246,7 +246,7 @@ async def delete_dependency(
 
     await db.delete(dep)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.get("/tasks/{task_id}/dependencies", summary="List dependencies for a task")
@@ -364,7 +364,7 @@ async def update_milestone_v2(
 
 @router.delete(
     "/milestones-v2/{milestone_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete an enhanced milestone",
 )
 async def delete_milestone_v2(
@@ -382,7 +382,7 @@ async def delete_milestone_v2(
 
     await db.delete(milestone)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Timeline (Gantt) ─────────────────────────────────────────────────────────

@@ -304,7 +304,7 @@ async def update_skill_ontology(
     return SkillOntologyOut.model_validate(skill)
 
 
-@router.delete("/ai/skills-ontology/{skill_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+@router.delete("/ai/skills-ontology/{skill_id}", status_code=status.HTTP_200_OK, response_model=None)
 async def delete_skill_ontology(
     skill_id: uuid.UUID,
     current_user: CurrentUser,

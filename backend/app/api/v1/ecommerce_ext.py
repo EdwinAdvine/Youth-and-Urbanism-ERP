@@ -365,7 +365,7 @@ async def update_cart_item(
     return _cart_out(cart)
 
 
-@router.delete("/cart/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remove cart item")
+@router.delete("/cart/items/{item_id}", status_code=status.HTTP_200_OK, summary="Remove cart item")
 async def remove_cart_item(
     item_id: uuid.UUID,
     current_user: CurrentUser,
@@ -381,7 +381,7 @@ async def remove_cart_item(
 
     await db.delete(item)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Checkout ───────────────────────────────────────────────────────────────────
@@ -656,7 +656,7 @@ async def update_coupon(
     return CouponOut.model_validate(coupon).model_dump()
 
 
-@router.delete("/coupons/{coupon_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete coupon")
+@router.delete("/coupons/{coupon_id}", status_code=status.HTTP_200_OK, summary="Delete coupon")
 async def delete_coupon(
     coupon_id: uuid.UUID,
     current_user: CurrentUser,
@@ -667,7 +667,7 @@ async def delete_coupon(
         raise HTTPException(status_code=404, detail="Coupon not found")
     await db.delete(coupon)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Shipping Methods ───────────────────────────────────────────────────────────
@@ -716,7 +716,7 @@ async def update_shipping_method(
     return ShippingMethodOut.model_validate(method).model_dump()
 
 
-@router.delete("/shipping-methods/{method_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete shipping method")
+@router.delete("/shipping-methods/{method_id}", status_code=status.HTTP_200_OK, summary="Delete shipping method")
 async def delete_shipping_method(
     method_id: uuid.UUID,
     current_user: CurrentUser,
@@ -727,7 +727,7 @@ async def delete_shipping_method(
         raise HTTPException(status_code=404, detail="Shipping method not found")
     await db.delete(method)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Order Operations ──────────────────────────────────────────────────────────
@@ -984,7 +984,7 @@ async def add_to_wishlist(
     }
 
 
-@router.delete("/wishlist/{wishlist_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remove from wishlist")
+@router.delete("/wishlist/{wishlist_id}", status_code=status.HTTP_200_OK, summary="Remove from wishlist")
 async def remove_from_wishlist(
     wishlist_id: uuid.UUID,
     current_user: CurrentUser,
@@ -997,7 +997,7 @@ async def remove_from_wishlist(
         raise HTTPException(status_code=403, detail="Not your wishlist item")
     await db.delete(wishlist)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Reports ────────────────────────────────────────────────────────────────────
@@ -1155,6 +1155,741 @@ async def conversion_funnel(
         "cart_to_checkout_rate": round(cart_to_checkout, 2),
         "checkout_to_delivered_rate": round(checkout_to_delivered, 2),
     }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  E-COMMERCE → POS: Unified Product Catalog
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ABANDONED CARTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+class AbandonedCartConfigUpdate(BaseModel):
+    abandonment_hours: int | None = None
+    enable_discount: bool | None = None
+    discount_pct: float | None = None
+
+
+@router.get("/abandoned-carts", summary="List abandoned cart recovery logs (admin)")
+async def list_abandoned_carts(
+    current_user: CurrentUser,
+    db: DBSession,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+) -> dict[str, Any]:
+    from app.models.ecommerce import CartAbandonmentLog
+    count_q = select(func.count()).select_from(CartAbandonmentLog)
+    total = (await db.execute(count_q)).scalar() or 0
+
+    q = select(CartAbandonmentLog).order_by(CartAbandonmentLog.abandoned_at.desc()).offset(skip).limit(limit)
+    result = await db.execute(q)
+    logs = result.scalars().all()
+
+    recovered = sum(1 for l in logs if l.recovered_order_id)
+    return {
+        "total": total,
+        "recovered": recovered,
+        "recovery_rate": round(recovered / total * 100, 2) if total else 0,
+        "logs": [
+            {
+                "id": str(l.id),
+                "cart_id": str(l.cart_id),
+                "customer_email": l.customer_email,
+                "items_snapshot": l.items_snapshot,
+                "abandoned_at": str(l.abandoned_at),
+                "recovery_email_1_sent_at": str(l.recovery_email_1_sent_at) if l.recovery_email_1_sent_at else None,
+                "recovery_email_2_sent_at": str(l.recovery_email_2_sent_at) if l.recovery_email_2_sent_at else None,
+                "recovered_order_id": str(l.recovered_order_id) if l.recovered_order_id else None,
+                "discount_code_used": l.discount_code_used,
+            }
+            for l in logs
+        ],
+    }
+
+
+@router.get("/abandoned-carts/config", summary="Get abandoned cart recovery config")
+async def get_abandoned_cart_config(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    from app.models.settings import SystemSettings
+    keys = ["ecom.abandonment_hours", "ecom.recovery_discount_enabled", "ecom.recovery_discount_pct"]
+    result = await db.execute(select(SystemSettings).where(SystemSettings.key.in_(keys)))
+    settings = {s.key: s.value for s in result.scalars().all()}
+    return {
+        "abandonment_hours": int(settings.get("ecom.abandonment_hours", "1")),
+        "enable_discount": settings.get("ecom.recovery_discount_enabled", "true") == "true",
+        "discount_pct": float(settings.get("ecom.recovery_discount_pct", "10")),
+    }
+
+
+@router.put("/abandoned-carts/config", summary="Update abandoned cart recovery config")
+async def update_abandoned_cart_config(
+    payload: AbandonedCartConfigUpdate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    from app.models.settings import SystemSettings
+    mapping = {}
+    if payload.abandonment_hours is not None:
+        mapping["ecom.abandonment_hours"] = str(payload.abandonment_hours)
+    if payload.enable_discount is not None:
+        mapping["ecom.recovery_discount_enabled"] = "true" if payload.enable_discount else "false"
+    if payload.discount_pct is not None:
+        mapping["ecom.recovery_discount_pct"] = str(payload.discount_pct)
+
+    for key, value in mapping.items():
+        result = await db.execute(select(SystemSettings).where(SystemSettings.key == key))
+        setting = result.scalar_one_or_none()
+        if setting:
+            setting.value = value
+        else:
+            db.add(SystemSettings(key=key, value=value))
+
+    await db.commit()
+    return {"updated": list(mapping.keys())}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PRODUCT BUNDLES
+# ══════════════════════════════════════════════════════════════════════════════
+
+class BundleCreate(BaseModel):
+    store_id: uuid.UUID
+    name: str
+    slug: str
+    description: str | None = None
+    image: str | None = None
+    discount_type: str = "pct"  # pct | fixed
+    discount_value: Decimal = Decimal("0")
+    is_active: bool = True
+    items: list[dict] = []  # [{product_id, quantity}]
+
+
+class BundleUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    image: str | None = None
+    discount_type: str | None = None
+    discount_value: Decimal | None = None
+    is_active: bool | None = None
+
+
+@router.get("/bundles", summary="List product bundles")
+async def list_bundles(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> list[dict[str, Any]]:
+    from app.models.ecommerce import ProductBundle, BundleItem
+    result = await db.execute(
+        select(ProductBundle).order_by(ProductBundle.name)
+    )
+    bundles = result.scalars().all()
+    out = []
+    for b in bundles:
+        items_result = await db.execute(
+            select(BundleItem).where(BundleItem.bundle_id == b.id)
+        )
+        items = items_result.scalars().all()
+        out.append({
+            "id": str(b.id),
+            "store_id": str(b.store_id),
+            "name": b.name,
+            "slug": b.slug,
+            "description": b.description,
+            "image": b.image,
+            "discount_type": b.discount_type,
+            "discount_value": float(b.discount_value),
+            "is_active": b.is_active,
+            "items": [{"product_id": str(i.product_id), "quantity": i.quantity} for i in items],
+            "created_at": str(b.created_at),
+        })
+    return out
+
+
+@router.get("/bundles/{bundle_id}", summary="Get bundle detail")
+async def get_bundle(
+    bundle_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    from app.models.ecommerce import ProductBundle, BundleItem
+    bundle = await db.get(ProductBundle, bundle_id)
+    if not bundle:
+        raise HTTPException(status_code=404, detail="Bundle not found")
+    items_result = await db.execute(
+        select(BundleItem).where(BundleItem.bundle_id == bundle_id)
+    )
+    items = items_result.scalars().all()
+    total_price = Decimal("0")
+    for item in items:
+        product = await db.get(EcomProduct, item.product_id)
+        if product:
+            total_price += product.price * item.quantity
+
+    discount = (total_price * bundle.discount_value / 100) if bundle.discount_type == "pct" else bundle.discount_value
+    return {
+        "id": str(bundle.id),
+        "store_id": str(bundle.store_id),
+        "name": bundle.name,
+        "slug": bundle.slug,
+        "description": bundle.description,
+        "image": bundle.image,
+        "discount_type": bundle.discount_type,
+        "discount_value": float(bundle.discount_value),
+        "is_active": bundle.is_active,
+        "items": [{"product_id": str(i.product_id), "quantity": i.quantity} for i in items],
+        "total_price": float(total_price),
+        "discounted_price": float(total_price - discount),
+        "created_at": str(bundle.created_at),
+    }
+
+
+@router.post("/bundles", status_code=status.HTTP_201_CREATED, summary="Create bundle")
+async def create_bundle(
+    payload: BundleCreate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    from app.models.ecommerce import ProductBundle, BundleItem
+    bundle = ProductBundle(
+        store_id=payload.store_id,
+        name=payload.name,
+        slug=payload.slug,
+        description=payload.description,
+        image=payload.image,
+        discount_type=payload.discount_type,
+        discount_value=payload.discount_value,
+        is_active=payload.is_active,
+    )
+    db.add(bundle)
+    await db.commit()
+    await db.refresh(bundle)
+
+    for item_data in payload.items:
+        db.add(BundleItem(
+            bundle_id=bundle.id,
+            product_id=uuid.UUID(item_data["product_id"]),
+            quantity=item_data.get("quantity", 1),
+        ))
+    await db.commit()
+
+    return {"id": str(bundle.id), "name": bundle.name, "slug": bundle.slug, "is_active": bundle.is_active}
+
+
+@router.put("/bundles/{bundle_id}", summary="Update bundle")
+async def update_bundle(
+    bundle_id: uuid.UUID,
+    payload: BundleUpdate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    from app.models.ecommerce import ProductBundle
+    bundle = await db.get(ProductBundle, bundle_id)
+    if not bundle:
+        raise HTTPException(status_code=404, detail="Bundle not found")
+    for field, value in payload.model_dump(exclude_none=True).items():
+        setattr(bundle, field, value)
+    await db.commit()
+    await db.refresh(bundle)
+    return {"id": str(bundle.id), "name": bundle.name, "is_active": bundle.is_active}
+
+
+@router.delete("/bundles/{bundle_id}", status_code=status.HTTP_200_OK, summary="Delete bundle")
+async def delete_bundle(
+    bundle_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> Response:
+    from app.models.ecommerce import ProductBundle, BundleItem
+    bundle = await db.get(ProductBundle, bundle_id)
+    if not bundle:
+        raise HTTPException(status_code=404, detail="Bundle not found")
+    items_result = await db.execute(select(BundleItem).where(BundleItem.bundle_id == bundle_id))
+    for item in items_result.scalars().all():
+        await db.delete(item)
+    await db.delete(bundle)
+    await db.commit()
+    return Response(status_code=status.HTTP_200_OK)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  FLASH SALES
+# ══════════════════════════════════════════════════════════════════════════════
+
+class FlashSaleCreate(BaseModel):
+    store_id: uuid.UUID
+    product_id: uuid.UUID
+    sale_price: Decimal
+    start_at: datetime
+    end_at: datetime
+    inventory_limit: int | None = None
+    countdown_visible: bool = True
+
+
+class FlashSaleUpdate(BaseModel):
+    sale_price: Decimal | None = None
+    start_at: datetime | None = None
+    end_at: datetime | None = None
+    inventory_limit: int | None = None
+    is_active: bool | None = None
+    countdown_visible: bool | None = None
+
+
+@router.get("/flash-sales", summary="List flash sales (active + upcoming)")
+async def list_flash_sales(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> list[dict[str, Any]]:
+    from app.models.ecommerce import FlashSale
+    result = await db.execute(select(FlashSale).order_by(FlashSale.start_at.desc()))
+    sales = result.scalars().all()
+    return [
+        {
+            "id": str(s.id),
+            "store_id": str(s.store_id),
+            "product_id": str(s.product_id),
+            "sale_price": float(s.sale_price),
+            "start_at": str(s.start_at),
+            "end_at": str(s.end_at),
+            "inventory_limit": s.inventory_limit,
+            "sold_count": s.sold_count,
+            "is_active": s.is_active,
+            "countdown_visible": s.countdown_visible,
+        }
+        for s in sales
+    ]
+
+
+@router.post("/flash-sales", status_code=status.HTTP_201_CREATED, summary="Create flash sale")
+async def create_flash_sale(
+    payload: FlashSaleCreate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    from app.models.ecommerce import FlashSale
+    now = datetime.now(timezone.utc)
+    sale = FlashSale(
+        store_id=payload.store_id,
+        product_id=payload.product_id,
+        sale_price=payload.sale_price,
+        start_at=payload.start_at,
+        end_at=payload.end_at,
+        inventory_limit=payload.inventory_limit,
+        countdown_visible=payload.countdown_visible,
+        is_active=(payload.start_at <= now <= payload.end_at),
+        sold_count=0,
+    )
+    db.add(sale)
+    await db.commit()
+    await db.refresh(sale)
+    return {"id": str(sale.id), "product_id": str(sale.product_id), "sale_price": float(sale.sale_price), "is_active": sale.is_active}
+
+
+@router.put("/flash-sales/{sale_id}", summary="Update / end flash sale")
+async def update_flash_sale(
+    sale_id: uuid.UUID,
+    payload: FlashSaleUpdate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    from app.models.ecommerce import FlashSale
+    sale = await db.get(FlashSale, sale_id)
+    if not sale:
+        raise HTTPException(status_code=404, detail="Flash sale not found")
+    for field, value in payload.model_dump(exclude_none=True).items():
+        setattr(sale, field, value)
+    await db.commit()
+    await db.refresh(sale)
+    return {"id": str(sale.id), "sale_price": float(sale.sale_price), "is_active": sale.is_active}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  CURRENCIES
+# ══════════════════════════════════════════════════════════════════════════════
+
+class CurrencyCreate(BaseModel):
+    code: str  # ISO 4217 e.g. "USD"
+    name: str
+    symbol: str
+    exchange_rate_to_base: float
+
+
+class CurrencyUpdate(BaseModel):
+    exchange_rate_to_base: float | None = None
+    is_active: bool | None = None
+
+
+@router.get("/currencies", summary="List supported currencies")
+async def list_currencies(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> list[dict[str, Any]]:
+    from app.models.ecommerce_currency import EcomCurrency
+    result = await db.execute(select(EcomCurrency).order_by(EcomCurrency.code))
+    currencies = result.scalars().all()
+    return [
+        {
+            "code": c.code,
+            "name": c.name,
+            "symbol": c.symbol,
+            "exchange_rate_to_base": float(c.exchange_rate_to_base),
+            "is_active": c.is_active,
+            "last_updated": str(c.last_updated) if c.last_updated else None,
+        }
+        for c in currencies
+    ]
+
+
+@router.post("/currencies", status_code=status.HTTP_201_CREATED, summary="Add currency")
+async def create_currency(
+    payload: CurrencyCreate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    from app.models.ecommerce_currency import EcomCurrency
+    existing = await db.execute(select(EcomCurrency).where(EcomCurrency.code == payload.code.upper()))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Currency already exists")
+    currency = EcomCurrency(
+        code=payload.code.upper(),
+        name=payload.name,
+        symbol=payload.symbol,
+        exchange_rate_to_base=payload.exchange_rate_to_base,
+        is_active=True,
+        last_updated=datetime.now(timezone.utc),
+    )
+    db.add(currency)
+    await db.commit()
+    await db.refresh(currency)
+    return {"code": currency.code, "name": currency.name, "symbol": currency.symbol}
+
+
+@router.put("/currencies/{code}", summary="Update currency exchange rate / status")
+async def update_currency(
+    code: str,
+    payload: CurrencyUpdate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    from app.models.ecommerce_currency import EcomCurrency
+    result = await db.execute(select(EcomCurrency).where(EcomCurrency.code == code.upper()))
+    currency = result.scalar_one_or_none()
+    if not currency:
+        raise HTTPException(status_code=404, detail="Currency not found")
+    if payload.exchange_rate_to_base is not None:
+        currency.exchange_rate_to_base = payload.exchange_rate_to_base
+        currency.last_updated = datetime.now(timezone.utc)
+    if payload.is_active is not None:
+        currency.is_active = payload.is_active
+    await db.commit()
+    await db.refresh(currency)
+    return {"code": currency.code, "exchange_rate_to_base": float(currency.exchange_rate_to_base), "is_active": currency.is_active}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  AI PERSONALIZATION
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/recommendations", summary="Personalized product recommendations for current user")
+async def get_recommendations(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> list[dict[str, Any]]:
+    from app.services.ecommerce_ai import get_recommendations as ai_recommend
+    recs = await ai_recommend(db, str(current_user.id), limit=10)
+    return recs
+
+
+@router.post("/products/{product_id}/generate-description", summary="AI-generate product description")
+async def generate_product_description(
+    product_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+    attributes: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    product = await db.get(EcomProduct, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    from app.services.ecommerce_ai import generate_product_description as ai_gen
+    description = await ai_gen(product.display_name, attributes or {})
+    # Optionally save to product
+    product.description = description
+    await db.commit()
+    return {"product_id": str(product_id), "description": description}
+
+
+@router.get("/products/{product_id}/price-suggestion", summary="AI dynamic price suggestion")
+async def get_price_suggestion(
+    product_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    product = await db.get(EcomProduct, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    from app.services.ecommerce_ai import compute_dynamic_price_suggestion
+    suggestion = await compute_dynamic_price_suggestion(db, str(product_id))
+    return {"product_id": str(product_id), "current_price": float(product.price), **suggestion}
+
+
+@router.get("/health-score", summary="E-commerce store health score (0-100)")
+async def get_health_score(
+    current_user: CurrentUser,
+    db: DBSession,
+    store_id: uuid.UUID | None = Query(None),
+) -> dict[str, Any]:
+    from app.services.ecommerce_ai import get_ecom_health_score
+    result = await get_ecom_health_score(db, str(store_id) if store_id else None)
+    return result
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ADVANCED ANALYTICS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/analytics/health-score", summary="Health score + component breakdown")
+async def analytics_health_score(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    from app.services.ecommerce_ai import get_ecom_health_score
+    return await get_ecom_health_score(db, None)
+
+
+@router.get("/analytics/rfm-segments", summary="Customer RFM segmentation")
+async def rfm_segments(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Recency / Frequency / Monetary segmentation across all customers."""
+    from app.models.ecommerce import CustomerAccount
+    now = datetime.now(timezone.utc)
+
+    q = (
+        select(
+            EcomOrder.customer_id,
+            func.max(EcomOrder.created_at).label("last_order"),
+            func.count(EcomOrder.id).label("order_count"),
+            func.sum(EcomOrder.total).label("total_spent"),
+        )
+        .where(EcomOrder.status != "cancelled")
+        .group_by(EcomOrder.customer_id)
+    )
+    result = await db.execute(q)
+    rows = result.all()
+
+    segments: dict[str, list] = {"champions": [], "loyal": [], "at_risk": [], "hibernating": [], "new": []}
+    for row in rows:
+        days_since = (now - row.last_order.replace(tzinfo=timezone.utc)).days if row.last_order else 9999
+        if days_since <= 30 and row.order_count >= 5 and float(row.total_spent or 0) >= 10000:
+            segments["champions"].append(str(row.customer_id))
+        elif days_since <= 60 and row.order_count >= 3:
+            segments["loyal"].append(str(row.customer_id))
+        elif 60 < days_since <= 120:
+            segments["at_risk"].append(str(row.customer_id))
+        elif days_since > 120:
+            segments["hibernating"].append(str(row.customer_id))
+        else:
+            segments["new"].append(str(row.customer_id))
+
+    return {
+        "segments": {k: {"count": len(v), "customer_ids": v[:20]} for k, v in segments.items()},
+        "total_customers": len(rows),
+    }
+
+
+@router.get("/analytics/demand-forecast", summary="30-day revenue forecast")
+async def demand_forecast(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Simple linear trend forecast from last 90 days of daily revenue."""
+    from datetime import timedelta
+    from app.models.ecommerce import EcomOrder as _EcomOrder
+
+    ninety_days_ago = datetime.now(timezone.utc) - timedelta(days=90)
+    q = (
+        select(
+            func.date_trunc("day", EcomOrder.created_at).label("day"),
+            func.sum(EcomOrder.total).label("revenue"),
+        )
+        .where(
+            and_(
+                EcomOrder.created_at >= ninety_days_ago,
+                EcomOrder.status != "cancelled",
+            )
+        )
+        .group_by(func.date_trunc("day", EcomOrder.created_at))
+        .order_by(func.date_trunc("day", EcomOrder.created_at))
+    )
+    result = await db.execute(q)
+    rows = result.all()
+
+    if not rows:
+        return {"forecast_30d": 0, "avg_daily": 0, "trend": "neutral", "data_points": 0}
+
+    revenues = [float(r.revenue or 0) for r in rows]
+    avg = sum(revenues) / len(revenues)
+    # Simple linear trend: compare last 30 vs first 30 days
+    mid = len(revenues) // 2
+    first_half_avg = sum(revenues[:mid]) / mid if mid else avg
+    second_half_avg = sum(revenues[mid:]) / (len(revenues) - mid) if len(revenues) > mid else avg
+    trend = "up" if second_half_avg > first_half_avg * 1.05 else ("down" if second_half_avg < first_half_avg * 0.95 else "neutral")
+
+    forecast_30d = second_half_avg * 30
+
+    return {
+        "forecast_30d": round(forecast_30d, 2),
+        "avg_daily": round(avg, 2),
+        "trend": trend,
+        "data_points": len(rows),
+        "recent_daily": [{"day": str(r.day.date()), "revenue": float(r.revenue or 0)} for r in rows[-14:]],
+    }
+
+
+@router.get("/analytics/cohorts", summary="Monthly cohort retention table")
+async def cohort_retention(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Monthly signup cohorts and their repeat purchase rates."""
+    from datetime import timedelta
+
+    # First orders per customer grouped by month
+    first_order_q = (
+        select(
+            EcomOrder.customer_id,
+            func.min(EcomOrder.created_at).label("first_order_at"),
+        )
+        .where(EcomOrder.status != "cancelled")
+        .group_by(EcomOrder.customer_id)
+    )
+    result = await db.execute(first_order_q)
+    first_orders = {r.customer_id: r.first_order_at for r in result.all()}
+
+    # All orders
+    all_orders_q = select(EcomOrder.customer_id, EcomOrder.created_at).where(EcomOrder.status != "cancelled")
+    result2 = await db.execute(all_orders_q)
+    all_orders = result2.all()
+
+    # Build cohort map: month_key → {month_offset → set of customers}
+    cohorts: dict[str, dict[int, set]] = {}
+    for cid, order_at in all_orders:
+        if cid not in first_orders:
+            continue
+        first_at = first_orders[cid]
+        cohort_key = first_at.strftime("%Y-%m")
+        months_since = (order_at.year - first_at.year) * 12 + (order_at.month - first_at.month)
+        if cohort_key not in cohorts:
+            cohorts[cohort_key] = {}
+        if months_since not in cohorts[cohort_key]:
+            cohorts[cohort_key][months_since] = set()
+        cohorts[cohort_key][months_since].add(cid)
+
+    table = []
+    for cohort_key in sorted(cohorts.keys())[-12:]:
+        base_count = len(cohorts[cohort_key].get(0, set()))
+        row = {"cohort": cohort_key, "customers": base_count, "retention": {}}
+        for m in range(1, 7):
+            m_count = len(cohorts[cohort_key].get(m, set()))
+            row["retention"][f"month_{m}"] = round(m_count / base_count * 100, 1) if base_count else 0
+        table.append(row)
+
+    return {"cohorts": table}
+
+
+@router.get("/analytics/ai-insights", summary="Top AI-generated actionable insights")
+async def ai_insights(
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Generate 3 actionable insights using Ollama over store metrics."""
+    from app.services.ecommerce_ai import get_ecom_health_score
+
+    health = await get_ecom_health_score(db, None)
+
+    # Build a compact metrics summary for the LLM
+    metrics_summary = (
+        f"E-commerce health score: {health.get('score', 'N/A')}/100. "
+        f"Conversion rate: {health.get('components', {}).get('conversion_rate', 'N/A')}. "
+        f"Cart abandonment rate: {health.get('components', {}).get('abandonment_rate', 'N/A')}. "
+        f"Revenue growth: {health.get('components', {}).get('revenue_growth', 'N/A')}. "
+        f"Repeat purchase rate: {health.get('components', {}).get('repeat_purchase_rate', 'N/A')}."
+    )
+
+    prompt = (
+        f"You are an e-commerce analyst. Based on these metrics: {metrics_summary}\n"
+        "Provide exactly 3 concise, actionable business insights to improve performance. "
+        "Format as a JSON array of objects with 'title' and 'insight' keys."
+    )
+
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                "http://ollama:11434/api/generate",
+                json={"model": "llama3", "prompt": prompt, "stream": False},
+            )
+        raw = resp.json().get("response", "[]")
+        import json as _json
+        # Try to extract JSON array from response
+        start = raw.find("[")
+        end = raw.rfind("]") + 1
+        insights = _json.loads(raw[start:end]) if start >= 0 else []
+    except Exception:
+        insights = [
+            {"title": "Reduce Cart Abandonment", "insight": "Set up automated recovery emails for carts abandoned over 1 hour."},
+            {"title": "Loyalty Program", "insight": "Activate loyalty rewards to increase repeat purchase rate."},
+            {"title": "Flash Sales", "insight": "Run weekly flash sales to boost conversion rate during off-peak hours."},
+        ]
+
+    return {"insights": insights[:3], "metrics": health}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  MANUFACTURING WORK ORDER LINKS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/orders/{order_id}/work-orders", summary="Get manufacturing work orders linked to an e-commerce order")
+async def get_order_work_orders(
+    order_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> list[dict[str, Any]]:
+    from app.models.ecommerce import EcomOrderWorkOrderLink
+    order = await db.get(EcomOrder, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    result = await db.execute(
+        select(EcomOrderWorkOrderLink).where(EcomOrderWorkOrderLink.order_id == order_id)
+    )
+    links = result.scalars().all()
+
+    work_orders = []
+    for link in links:
+        wo_data = {
+            "link_id": str(link.id),
+            "order_id": str(link.order_id),
+            "order_line_id": str(link.order_line_id) if link.order_line_id else None,
+            "work_order_id": str(link.work_order_id) if link.work_order_id else None,
+        }
+        if link.work_order_id:
+            from app.models.manufacturing import WorkOrder
+            wo = await db.get(WorkOrder, link.work_order_id)
+            if wo:
+                wo_data["work_order"] = {
+                    "id": str(wo.id),
+                    "reference": getattr(wo, "reference", None) or getattr(wo, "work_order_number", None),
+                    "status": wo.status,
+                    "planned_start": str(wo.planned_start) if hasattr(wo, "planned_start") and wo.planned_start else None,
+                    "planned_end": str(wo.planned_end) if hasattr(wo, "planned_end") and wo.planned_end else None,
+                }
+        work_orders.append(wo_data)
+
+    return work_orders
 
 
 # ══════════════════════════════════════════════════════════════════════════════

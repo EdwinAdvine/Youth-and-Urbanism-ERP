@@ -11,8 +11,8 @@ from sqlalchemy.orm import selectinload
 
 from app.core.deps import CurrentUser, DBSession
 from app.models.crm_automations import (
-    Workflow,
-    WorkflowExecution,
+    CRMWorkflow as Workflow,
+    CRMWorkflowExecution as WorkflowExecution,
     WorkflowNode,
     WorkflowTemplate,
 )
@@ -222,7 +222,7 @@ async def update_workflow(
     return wf
 
 
-@router.delete("/workflows/{workflow_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/workflows/{workflow_id}", status_code=status.HTTP_200_OK)
 async def delete_workflow(
     workflow_id: uuid.UUID,
     current_user: CurrentUser,
@@ -234,7 +234,7 @@ async def delete_workflow(
     await db.execute(delete(WorkflowExecution).where(WorkflowExecution.workflow_id == wf.id))
     await db.delete(wf)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Node Management ──────────────────────────────────────────────────────────
@@ -296,7 +296,7 @@ async def update_node(
 
 @router.delete(
     "/workflows/{workflow_id}/nodes/{node_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
 )
 async def delete_node(
     workflow_id: uuid.UUID,
@@ -316,7 +316,7 @@ async def delete_node(
         raise HTTPException(status_code=404, detail="Node not found")
     await db.delete(node)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Workflow Lifecycle ────────────────────────────────────────────────────────

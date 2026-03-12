@@ -32,7 +32,7 @@ export default function CashierReportPage() {
   // Summary totals
   const totalTransactions = rows.reduce((sum, c) => sum + c.transaction_count, 0)
   const totalSales = rows.reduce((sum, c) => sum + c.total_sales, 0)
-  const totalRefunds = rows.reduce((sum, c) => sum + c.refund_count, 0)
+  // totalRefunds available: rows.reduce((sum, c) => sum + c.refund_count, 0)
   const totalItemsSold = rows.reduce((sum, c) => sum + c.items_sold, 0)
   const overallAvg = totalTransactions > 0 ? totalSales / totalTransactions : 0
 

@@ -64,8 +64,7 @@ export default function LeaderboardPage() {
         </Card>
       ) : myScore ? (
         <Card
-          className="border-2"
-          style={{ borderColor: '#51459d' } as React.CSSProperties}
+          className="border-2 border-[#51459d]"
         >
           <div className="flex items-center gap-3 mb-3">
             <div

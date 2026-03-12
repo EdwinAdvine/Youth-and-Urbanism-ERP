@@ -17,7 +17,7 @@ import uuid
 from datetime import date, datetime, timedelta
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import func, select, text
 

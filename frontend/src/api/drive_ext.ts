@@ -247,3 +247,371 @@ export function useCreateFileComment() {
     },
   })
 }
+
+// ─── Semantic Search ──────────────────────────────────────────────────────
+
+export interface SemanticSearchResult {
+  id: string
+  name: string
+  content_type: string
+  size: number
+  folder_path: string
+  sensitivity_level: string | null
+  relevance_score: number
+  match_type: 'content' | 'semantic' | 'filename'
+  snippet?: string
+  created_at: string | null
+  updated_at: string | null
+}
+
+export interface SemanticSearchParams {
+  query: string
+  content_type?: string
+  folder_id?: string
+  tag?: string
+  date_from?: string
+  date_to?: string
+  sensitivity?: string
+  page?: number
+  limit?: number
+}
+
+export function useSemanticSearch() {
+  return useMutation({
+    mutationFn: async (params: SemanticSearchParams) => {
+      const { data } = await apiClient.post<{ total: number; query: string; results: SemanticSearchResult[] }>(
+        '/drive/files/semantic-search',
+        params
+      )
+      return data
+    },
+  })
+}
+
+// ─── AI File Metadata ─────────────────────────────────────────────────────
+
+export interface FileAIMetadata {
+  file_id: string
+  status: 'processed' | 'processing' | 'not_processed'
+  summary?: string
+  entities?: {
+    people?: string[]
+    organizations?: string[]
+    dates?: string[]
+    amounts?: string[]
+    locations?: string[]
+  }
+  suggested_tags?: string[]
+  sensitivity_level?: string
+  language?: string
+  word_count?: number
+  module_suggestions?: { module: string; action: string }[]
+  processed_at?: string
+  processing_error?: string
+}
+
+export function useFileAIMetadata(fileId: string) {
+  return useQuery({
+    queryKey: ['drive', 'ai-metadata', fileId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<FileAIMetadata>(`/drive/files/${fileId}/ai-metadata`)
+      return data
+    },
+    enabled: !!fileId,
+  })
+}
+
+export function useReprocessAI() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (fileId: string) => {
+      const { data } = await apiClient.post(`/drive/files/${fileId}/reprocess-ai`)
+      return data
+    },
+    onSuccess: (_data, fileId) => {
+      qc.invalidateQueries({ queryKey: ['drive', 'ai-metadata', fileId] })
+    },
+  })
+}
+
+export function useApplyAITags() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (fileId: string) => {
+      const { data } = await apiClient.post<{ applied_tags: string[] }>(
+        `/drive/files/${fileId}/apply-ai-tags`
+      )
+      return data
+    },
+    onSuccess: (_data, fileId) => {
+      qc.invalidateQueries({ queryKey: ['drive', 'tags', fileId] })
+      qc.invalidateQueries({ queryKey: ['drive', 'ai-metadata', fileId] })
+    },
+  })
+}
+
+// ─── Smart Folders ────────────────────────────────────────────────────────
+
+export interface SmartFolder {
+  id: string
+  name: string
+  description?: string
+  icon?: string
+  color?: string
+  filter_json: Record<string, unknown>
+  sort_field: string
+  sort_direction: string
+  is_pinned: boolean
+  created_at: string
+}
+
+export function useSmartFolders() {
+  return useQuery({
+    queryKey: ['drive', 'smart-folders'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ total: number; smart_folders: SmartFolder[] }>(
+        '/drive/smart-folders'
+      )
+      return data.smart_folders
+    },
+  })
+}
+
+export function useCreateSmartFolder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Omit<SmartFolder, 'id' | 'created_at'>) => {
+      const { data } = await apiClient.post('/drive/smart-folders', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['drive', 'smart-folders'] }),
+  })
+}
+
+export function useUpdateSmartFolder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: { id: string } & Partial<SmartFolder>) => {
+      const { data } = await apiClient.put(`/drive/smart-folders/${id}`, payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['drive', 'smart-folders'] }),
+  })
+}
+
+export function useDeleteSmartFolder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/drive/smart-folders/${id}`)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['drive', 'smart-folders'] }),
+  })
+}
+
+export function useSmartFolderFiles(folderId: string, page = 1) {
+  return useQuery({
+    queryKey: ['drive', 'smart-folder-files', folderId, page],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ smart_folder: string; total: number; files: DriveFile[] }>(
+        `/drive/smart-folders/${folderId}/files`,
+        { params: { page } }
+      )
+      return data
+    },
+    enabled: !!folderId,
+  })
+}
+
+// ─── Saved Views ──────────────────────────────────────────────────────────
+
+export interface SavedView {
+  id: string
+  name: string
+  folder_id?: string
+  filters_json?: Record<string, unknown>
+  sort_json?: Record<string, unknown>
+  columns_json?: string[]
+  view_type: string
+  is_default: boolean
+}
+
+export function useSavedViews(folderId?: string) {
+  return useQuery({
+    queryKey: ['drive', 'saved-views', folderId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ views: SavedView[] }>('/drive/saved-views', {
+        params: folderId ? { folder_id: folderId } : {},
+      })
+      return data.views
+    },
+  })
+}
+
+export function useCreateSavedView() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Omit<SavedView, 'id'>) => {
+      const { data } = await apiClient.post('/drive/saved-views', payload)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['drive', 'saved-views'] }),
+  })
+}
+
+// ─── File Metadata (key-value) ────────────────────────────────────────────
+
+export interface FileMetadataItem {
+  id: string
+  key: string
+  value: string | null
+  value_type: string
+}
+
+export function useFileCustomMetadata(fileId: string) {
+  return useQuery({
+    queryKey: ['drive', 'metadata', fileId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ metadata: FileMetadataItem[] }>(
+        `/drive/files/${fileId}/metadata`
+      )
+      return data.metadata
+    },
+    enabled: !!fileId,
+  })
+}
+
+export function useSetFileMetadata() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ fileId, key, value }: { fileId: string; key: string; value: string }) => {
+      const { data } = await apiClient.post(`/drive/files/${fileId}/metadata`, { key, value })
+      return data
+    },
+    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['drive', 'metadata', vars.fileId] }),
+  })
+}
+
+// ─── File Locking ─────────────────────────────────────────────────────────
+
+export function useLockFile() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (fileId: string) => {
+      const { data } = await apiClient.post(`/drive/files/${fileId}/lock`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['drive'] }),
+  })
+}
+
+export function useUnlockFile() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (fileId: string) => {
+      const { data } = await apiClient.post(`/drive/files/${fileId}/unlock`)
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['drive'] }),
+  })
+}
+
+// ─── Activity Log ─────────────────────────────────────────────────────────
+
+export interface ActivityLogEntry {
+  id: string
+  file_id?: string
+  folder_id?: string
+  action: string
+  metadata?: Record<string, unknown>
+  timestamp: string
+}
+
+export function useActivityLog(fileId?: string, action?: string) {
+  return useQuery({
+    queryKey: ['drive', 'activity-log', fileId, action],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ total: number; logs: ActivityLogEntry[] }>(
+        '/drive/activity-log',
+        { params: { file_id: fileId, action } }
+      )
+      return data
+    },
+  })
+}
+
+// ─── Sensitivity Labels ───────────────────────────────────────────────────
+
+export interface SensitivityLabel {
+  id: string
+  name: string
+  display_name: string
+  description?: string
+  color: string
+  severity: number
+  block_external_sharing: boolean
+  block_public_links: boolean
+}
+
+export function useSensitivityLabels() {
+  return useQuery({
+    queryKey: ['drive', 'sensitivity-labels'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ labels: SensitivityLabel[] }>('/drive/sensitivity-labels')
+      return data.labels
+    },
+  })
+}
+
+export function useSetFileSensitivity() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ fileId, level }: { fileId: string; level: string }) => {
+      const { data } = await apiClient.put(`/drive/files/${fileId}/sensitivity`, null, {
+        params: { level },
+      })
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['drive'] }),
+  })
+}
+
+// ─── Drive Analytics ──────────────────────────────────────────────────────
+
+export interface DriveAnalyticsOverview {
+  total_bytes: number
+  total_files: number
+  ai_processed_files: number
+  by_sensitivity: Record<string, number>
+  activity_last_7_days: number
+}
+
+export function useDriveAnalytics() {
+  return useQuery({
+    queryKey: ['drive', 'analytics'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<DriveAnalyticsOverview>('/drive/analytics/overview')
+      return data
+    },
+  })
+}
+
+// ─── Utility ──────────────────────────────────────────────────────────────
+
+export function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`
+}
+
+export function getFileTypeCategory(contentType: string): string {
+  if (contentType.startsWith('image/')) return 'image'
+  if (contentType.startsWith('video/')) return 'video'
+  if (contentType.includes('pdf')) return 'pdf'
+  if (contentType.includes('word') || contentType.includes('document')) return 'docx'
+  if (contentType.includes('sheet') || contentType.includes('excel')) return 'xlsx'
+  if (contentType.includes('presentation') || contentType.includes('powerpoint')) return 'pptx'
+  if (contentType.includes('zip') || contentType.includes('compressed')) return 'zip'
+  return 'other'
+}

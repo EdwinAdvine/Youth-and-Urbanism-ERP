@@ -234,7 +234,7 @@ async def update_shift_template(
 
 @router.delete(
     "/shifts/templates/{template_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     dependencies=[Depends(require_app_admin("hr"))],
 )
 async def delete_shift_template(
@@ -600,7 +600,7 @@ async def update_holiday(
 
 @router.delete(
     "/holidays/{holiday_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     dependencies=[Depends(require_app_admin("hr"))],
 )
 async def delete_holiday(

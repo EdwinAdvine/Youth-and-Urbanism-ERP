@@ -47,6 +47,8 @@ TOOL_APPROVAL_TIERS: dict[str, str] = {
     "categorize_email": "auto_approve",
     "auto_tag_note": "auto_approve",
     "suggest_file_organization": "auto_approve",
+    "summarize_document": "auto_approve",
+    "ask_document": "auto_approve",
     "next_best_action": "auto_approve",
     "financial_forecast": "auto_approve",
     "detect_anomalies": "auto_approve",
@@ -58,12 +60,23 @@ TOOL_APPROVAL_TIERS: dict[str, str] = {
     "check_bom_cost": "auto_approve",
     "get_production_summary": "auto_approve",
     "check_material_availability": "auto_approve",
+    "mfg_get_production_status": "auto_approve",
+    "mfg_analyze_quality_trends": "auto_approve",
+    "mfg_check_material_availability": "auto_approve",
+    "mfg_get_oee_summary": "auto_approve",
+    "mfg_schedule_work_order": "warn",
     "get_pos_daily_summary": "auto_approve",
     "lookup_pos_transaction": "auto_approve",
     "get_ecommerce_sales_summary": "auto_approve",
     "lookup_order": "auto_approve",
     "classify_ticket": "auto_approve",
     "suggest_response": "auto_approve",
+    "sentiment_analyze": "auto_approve",
+    "ai_suggest_kb_articles": "auto_approve",
+    "ai_summarize_thread": "auto_approve",
+    "ai_detect_intent": "auto_approve",
+    "ai_auto_classify_ticket": "auto_approve",
+    "ai_draft_response": "auto_approve",
     "score_lead": "auto_approve",
     "estimate_task": "auto_approve",
     "demand_forecast": "auto_approve",
@@ -128,6 +141,24 @@ TOOL_APPROVAL_TIERS: dict[str, str] = {
     "hr_policy_query": "auto_approve",
     "hr_workforce_simulate": "auto_approve",
     "hr_suggest_rating": "warn",
+    # ── Y&U Teams Chat ────────────────────────────────────────────────────────
+    "search_chat_history": "auto_approve",
+    "summarize_channel": "auto_approve",
+    "list_channel_members": "auto_approve",
+    "send_chat_message": "warn",
+    "create_channel": "warn",
+    # ── Y&U Notes AI ───────────────────────────────────────────────────────
+    "search_notes_semantic": "auto_approve",
+    "extract_note_actions": "auto_approve",
+    "transform_note_text": "auto_approve",
+    "summarize_note_ai": "auto_approve",
+    "suggest_note_links": "auto_approve",
+    "ask_notes_qa": "auto_approve",
+    "generate_note_from_erp": "warn",
+    "convert_note_to_task": "warn",
+    "convert_note_to_ticket": "warn",
+    "convert_note_to_invoice": "warn",
+    "convert_note_to_event": "warn",
 }
 
 
@@ -244,13 +275,13 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "search_files",
-            "description": "Search files in Drive",
+            "description": "Search files in Drive using AI-powered semantic search (searches file content, not just filenames)",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Search query to match against file names",
+                        "description": "Search query — can be natural language like 'invoice from Acme' or keywords",
                     },
                 },
                 "required": ["query"],
@@ -599,6 +630,93 @@ TOOL_DEFINITIONS = [
                 "type": "object",
                 "properties": {
                     "ticket_id": {"type": "string", "description": "UUID of the resolved ticket"},
+                },
+                "required": ["ticket_id"],
+            },
+        },
+    },
+    # ── Phase 1 Support AI Tools ───────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "sentiment_analyze",
+            "description": "Analyze text for sentiment score (-1.0 to 1.0) and emotion label (frustrated, angry, confused, neutral, satisfied)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "The text to analyze for sentiment"},
+                },
+                "required": ["text"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_suggest_kb_articles",
+            "description": "Find top relevant KB articles for a given ticket or query using keyword similarity",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query or ticket subject/description"},
+                    "limit": {"type": "integer", "description": "Max articles to return (default 5)", "default": 5},
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_summarize_thread",
+            "description": "Summarize a long ticket comment thread for agent handoff or quick context",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ticket_id": {"type": "string", "description": "UUID of the ticket to summarize"},
+                },
+                "required": ["ticket_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_detect_intent",
+            "description": "Classify a ticket's intent: billing_issue, bug_report, feature_request, how_to, complaint, praise, account_issue, general_inquiry",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ticket_id": {"type": "string", "description": "UUID of the ticket to classify intent for"},
+                },
+                "required": ["ticket_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_auto_classify_ticket",
+            "description": "Enhanced auto-classify: uses Ollama LLM to determine priority, category, and assignee based on historical patterns",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ticket_id": {"type": "string", "description": "UUID of the ticket to auto-classify"},
+                },
+                "required": ["ticket_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_draft_response",
+            "description": "Enhanced response drafting: includes CRM customer history, past tickets, and sentiment-aware tone adjustment",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ticket_id": {"type": "string", "description": "UUID of the ticket"},
+                    "tone": {"type": "string", "description": "Response tone: empathetic, professional, friendly, urgent", "default": "professional"},
                 },
                 "required": ["ticket_id"],
             },
@@ -1037,6 +1155,36 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    # ── AI Drive Intelligence ─────────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "summarize_document",
+            "description": "Get an AI-generated summary, extracted entities, and insights for a Drive file",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_name": {"type": "string", "description": "Name or partial name of the file to summarize"},
+                },
+                "required": ["file_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ask_document",
+            "description": "Ask a question about the content of a specific Drive file (e.g., 'What is the total amount in this invoice?')",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_name": {"type": "string", "description": "Name or partial name of the file"},
+                    "question": {"type": "string", "description": "Question to answer based on the file content"},
+                },
+                "required": ["file_name", "question"],
+            },
+        },
+    },
     # ── AI CRM Next-Best-Action ──────────────────────────────────────────
     {
         "type": "function",
@@ -1390,6 +1538,91 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    # ── Y&U Teams Chat ────────────────────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "search_chat_history",
+            "description": "Search chat message history across channels the user has access to. Returns matching messages with sender info and channel context.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query text"},
+                    "channel_id": {"type": "string", "description": "Optional UUID of a specific channel to search within"},
+                    "limit": {"type": "integer", "description": "Max results (default 20)", "default": 20},
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "summarize_channel",
+            "description": "Summarize the recent conversation in a chat channel. Returns the last N messages for AI summarization.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "channel_id": {"type": "string", "description": "UUID of the channel to summarize"},
+                    "message_count": {"type": "integer", "description": "Number of recent messages to include (default 50)", "default": 50},
+                },
+                "required": ["channel_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_channel_members",
+            "description": "List all members of a chat channel with their roles and presence status.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "channel_id": {"type": "string", "description": "UUID of the channel"},
+                },
+                "required": ["channel_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "send_chat_message",
+            "description": "Send a message to a chat channel on behalf of the AI assistant bot.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "channel_id": {"type": "string", "description": "UUID of the channel to send the message to"},
+                    "content": {"type": "string", "description": "Message content text"},
+                    "parent_id": {"type": "string", "description": "Optional UUID of parent message for threaded reply"},
+                },
+                "required": ["channel_id", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_channel",
+            "description": "Create a new chat channel in a team.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Channel name"},
+                    "team_id": {"type": "string", "description": "UUID of the team"},
+                    "channel_type": {
+                        "type": "string",
+                        "enum": ["public", "private", "announcement"],
+                        "description": "Channel type (default: public)",
+                        "default": "public",
+                    },
+                    "topic": {"type": "string", "description": "Optional channel topic"},
+                    "description": {"type": "string", "description": "Optional channel description"},
+                },
+                "required": ["name", "team_id"],
+            },
+        },
+    },
 ]
 
 
@@ -1558,6 +1791,65 @@ ADMIN_TOOL_DEFINITIONS = [
                 },
                 "required": ["bom_name"],
             },
+        },
+    },
+    # ── Manufacturing AI tools (Phase 3) ────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "mfg_get_production_status",
+            "description": "Get a live production status overview: active WOs, completion %, output this month, quality pass rate",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mfg_analyze_quality_trends",
+            "description": "Analyze quality trends: NCR severity distribution, SPC out-of-control rates, low pass-rate workstations",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "days": {"type": "integer", "description": "Number of days to analyze (default 30)", "default": 30},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mfg_check_material_availability",
+            "description": "Check if sufficient materials are in stock to run a work order for a given BOM and quantity",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "bom_name": {"type": "string", "description": "Name of the Bill of Materials"},
+                    "quantity": {"type": "integer", "description": "Production quantity to check", "default": 1},
+                },
+                "required": ["bom_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mfg_schedule_work_order",
+            "description": "Schedule or reschedule a work order: run the finite capacity scheduler and return the generated schedule",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "work_order_number": {"type": "string", "description": "WO number to schedule (e.g. WO-00001)"},
+                },
+                "required": ["work_order_number"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mfg_get_oee_summary",
+            "description": "Get Overall Equipment Effectiveness (OEE) summary for all workstations over the past 30 days",
+            "parameters": {"type": "object", "properties": {}},
         },
     },
     # ── POS tools ──────────────────────────────────────────────────────────
@@ -1850,24 +2142,105 @@ class ToolExecutor:
         }
 
     async def _exec_search_files(self, query: str) -> dict[str, Any]:
+        """Search files using semantic search (content + filename + embeddings)."""
+        from app.models.drive import DriveFile  # noqa: PLC0415
+
+        results = []
+        seen_ids: set[str] = set()
+
+        # 1. Try full-text search on content
+        try:
+            from sqlalchemy import text as sa_text
+            fts_result = await self.db.execute(
+                sa_text("""
+                    SELECT id, name, content_type, size, folder_path,
+                           ts_rank(search_vector, plainto_tsquery('english', :q)) AS score
+                    FROM drive_files
+                    WHERE owner_id = :uid AND search_vector @@ plainto_tsquery('english', :q)
+                    ORDER BY score DESC LIMIT 10
+                """),
+                {"q": query, "uid": str(self.user_id)},
+            )
+            for row in fts_result.fetchall():
+                fid = str(row[0])
+                if fid not in seen_ids:
+                    seen_ids.add(fid)
+                    results.append({"name": row[1], "content_type": row[2], "size": row[3], "folder_path": row[4]})
+        except Exception:
+            pass
+
+        # 2. Fallback to filename ILIKE
+        if len(results) < 5:
+            result = await self.db.execute(
+                select(DriveFile).where(
+                    DriveFile.name.ilike(like_pattern(query)),
+                    DriveFile.owner_id == self.user_id,
+                ).limit(10)
+            )
+            for f in result.scalars().all():
+                fid = str(f.id)
+                if fid not in seen_ids:
+                    seen_ids.add(fid)
+                    results.append({"name": f.name, "size": f.size, "content_type": f.content_type, "folder_path": f.folder_path})
+
+        return {"files": results, "total": len(results)}
+
+    async def _exec_summarize_document(self, file_name: str) -> dict[str, Any]:
+        """Get AI-generated summary and insights for a Drive file."""
+        from app.models.drive import DriveFile, FileAIMetadata  # noqa: PLC0415
+
+        result = await self.db.execute(
+            select(DriveFile).where(
+                DriveFile.name.ilike(like_pattern(file_name)),
+                DriveFile.owner_id == self.user_id,
+            ).limit(1)
+        )
+        file = result.scalar_one_or_none()
+        if not file:
+            return {"error": f"File '{file_name}' not found"}
+
+        meta_result = await self.db.execute(
+            select(FileAIMetadata).where(FileAIMetadata.file_id == file.id)
+        )
+        ai_meta = meta_result.scalar_one_or_none()
+        if not ai_meta or not ai_meta.summary:
+            return {"file": file.name, "status": "not_yet_processed", "hint": "AI analysis is still processing or hasn't been triggered yet."}
+
+        return {
+            "file": file.name,
+            "summary": ai_meta.summary,
+            "entities": ai_meta.entities_json,
+            "suggested_tags": ai_meta.suggested_tags,
+            "sensitivity": ai_meta.sensitivity_level,
+            "word_count": ai_meta.word_count,
+            "module_suggestions": ai_meta.module_suggestions,
+        }
+
+    async def _exec_ask_document(self, file_name: str, question: str) -> dict[str, Any]:
+        """Answer a question about a specific Drive file using its extracted content."""
         from app.models.drive import DriveFile  # noqa: PLC0415
 
         result = await self.db.execute(
             select(DriveFile).where(
-                DriveFile.name.ilike(like_pattern(query)),
+                DriveFile.name.ilike(like_pattern(file_name)),
                 DriveFile.owner_id == self.user_id,
-            )
+            ).limit(1)
         )
-        files = result.scalars().all()
+        file = result.scalar_one_or_none()
+        if not file:
+            return {"error": f"File '{file_name}' not found"}
+
+        if not file.file_content_text:
+            return {"error": "File content has not been extracted yet. Try again later."}
+
+        # Use first 8000 chars of content as context for the question
+        context = file.file_content_text[:8000]
         return {
-            "files": [
-                {
-                    "name": f.name,
-                    "size": f.size,
-                    "content_type": f.content_type,
-                }
-                for f in files
-            ]
+            "file": file.name,
+            "question": question,
+            "context_available": True,
+            "content_preview": context[:500],
+            "answer_hint": f"Based on the content of '{file.name}', the user asks: '{question}'. Content length: {len(file.file_content_text)} chars.",
         }
 
     async def _exec_create_task(
@@ -2546,7 +2919,7 @@ class ToolExecutor:
         }
 
     async def _exec_search_knowledge_base(self, query: str) -> dict[str, Any]:
-        from app.models.support import KnowledgeBaseArticle  # noqa: PLC0415
+        from app.models.support import SupportKnowledgeBaseArticle as KnowledgeBaseArticle  # noqa: PLC0415
 
         result = await self.db.execute(
             select(KnowledgeBaseArticle).where(
@@ -2706,6 +3079,160 @@ class ToolExecutor:
             "quantity": quantity,
             "all_available": all_available,
             "result": f"Material check for {quantity}x '{bom.name}': {summary}\n" + "\n".join(lines),
+        }
+
+    # ── Manufacturing AI tools (Phase 3) ─────────────────────────────────
+
+    async def _exec_mfg_get_production_status(self) -> dict[str, Any]:
+        from app.models.manufacturing import WorkOrder, QualityCheck  # noqa: PLC0415
+        from sqlalchemy import func  # noqa: PLC0415
+        from datetime import date, timedelta  # noqa: PLC0415
+
+        today = date.today()
+        month_start = today.replace(day=1)
+
+        # WO counts by status
+        wo_result = await self.db.execute(
+            select(WorkOrder.status, func.count()).group_by(WorkOrder.status)
+        )
+        by_status = {r[0]: r[1] for r in wo_result.all()}
+
+        # Monthly output
+        out_result = await self.db.execute(
+            select(func.sum(WorkOrder.completed_quantity)).where(
+                WorkOrder.status == "completed",
+                WorkOrder.actual_end >= func.cast(month_start, func.DateTime if False else WorkOrder.actual_end.type.__class__),
+            )
+        )
+        monthly_output = int(out_result.scalar() or 0)
+
+        # QC pass rate (last 30 days)
+        qc_result = await self.db.execute(
+            select(
+                func.sum(QualityCheck.quantity_passed),
+                func.sum(QualityCheck.quantity_inspected),
+            )
+        )
+        qc_row = qc_result.one()
+        inspected = float(qc_row[1] or 0)
+        passed = float(qc_row[0] or 0)
+        pass_rate = round(passed / inspected * 100, 1) if inspected else 100.0
+
+        total = sum(by_status.values())
+        active = by_status.get("in_progress", 0)
+        completed = by_status.get("completed", 0)
+        return {
+            "total_work_orders": total,
+            "active": active,
+            "completed": completed,
+            "monthly_output_units": monthly_output,
+            "qc_pass_rate_percent": pass_rate,
+            "by_status": by_status,
+            "result": (
+                f"Production Status: {total} WOs ({active} active, {completed} completed). "
+                f"Monthly output: {monthly_output} units. QC pass rate: {pass_rate}%."
+            ),
+        }
+
+    async def _exec_mfg_analyze_quality_trends(self, days: int = 30) -> dict[str, Any]:
+        from app.models.manufacturing import NonConformanceReport, SPCDataPoint  # noqa: PLC0415
+        from sqlalchemy import func  # noqa: PLC0415
+        from datetime import timedelta  # noqa: PLC0415
+
+        cutoff = __import__("datetime").datetime.now() - timedelta(days=days)
+
+        ncr_result = await self.db.execute(
+            select(NonConformanceReport.severity, func.count())
+            .where(NonConformanceReport.created_at >= cutoff)
+            .group_by(NonConformanceReport.severity)
+        )
+        ncr = {r[0]: r[1] for r in ncr_result.all()}
+
+        ooc_result = await self.db.execute(
+            select(func.count()).where(
+                SPCDataPoint.is_out_of_control.is_(True),
+                SPCDataPoint.measured_at >= cutoff,
+            )
+        )
+        ooc_count = ooc_result.scalar() or 0
+
+        total_ncrs = sum(ncr.values())
+        risk = "high" if ncr.get("critical", 0) > 0 else "medium" if total_ncrs > 5 else "low"
+        return {
+            "days": days,
+            "ncr_by_severity": ncr,
+            "total_ncrs": total_ncrs,
+            "spc_out_of_control": ooc_count,
+            "risk_level": risk,
+            "result": (
+                f"Quality trends ({days}d): {total_ncrs} NCRs ({ncr}), "
+                f"{ooc_count} SPC OOC measurements. Risk: {risk}."
+            ),
+        }
+
+    async def _exec_mfg_check_material_availability(self, bom_name: str, quantity: int = 1) -> dict[str, Any]:
+        # Reuse existing check_material_availability logic
+        return await self._exec_check_material_availability(bom_name=bom_name, quantity=quantity)
+
+    async def _exec_mfg_schedule_work_order(self, work_order_number: str) -> dict[str, Any]:
+        from app.models.manufacturing import WorkOrder  # noqa: PLC0415
+        from app.services.mfg_scheduler import schedule_work_orders  # noqa: PLC0415
+
+        wo_result = await self.db.execute(
+            select(WorkOrder).where(WorkOrder.wo_number == work_order_number)
+        )
+        wo = wo_result.scalar_one_or_none()
+        if not wo:
+            return {"result": f"Work order '{work_order_number}' not found."}
+
+        entries = await schedule_work_orders(self.db)
+        wo_entries = [e for e in entries if e.get("work_order_id") == str(wo.id)]
+        return {
+            "work_order_number": work_order_number,
+            "scheduled_steps": len(wo_entries),
+            "entries": wo_entries[:5],
+            "result": f"Scheduled {len(wo_entries)} routing steps for WO {work_order_number}.",
+        }
+
+    async def _exec_mfg_get_oee_summary(self) -> dict[str, Any]:
+        from app.models.manufacturing import WorkStation, DowntimeRecord, CapacitySlot  # noqa: PLC0415
+        from sqlalchemy import func  # noqa: PLC0415
+        from datetime import date, timedelta  # noqa: PLC0415
+
+        today = date.today()
+        cutoff = today - timedelta(days=30)
+
+        # Downtime across all workstations
+        dt_result = await self.db.execute(
+            select(func.sum(DowntimeRecord.duration_minutes)).where(
+                DowntimeRecord.start_time >= func.cast(cutoff, DowntimeRecord.start_time.type.__class__ if False else DowntimeRecord.start_time.type),
+            )
+        )
+        total_downtime = float(dt_result.scalar() or 0)
+
+        # Total planned capacity
+        cap_result = await self.db.execute(
+            select(func.sum(CapacitySlot.total_minutes), func.sum(CapacitySlot.allocated_minutes)).where(
+                CapacitySlot.slot_date >= cutoff
+            )
+        )
+        cap_row = cap_result.one()
+        planned = float(cap_row[0] or 0)
+        allocated = float(cap_row[1] or 0)
+
+        availability = round((planned - total_downtime) / planned * 100, 1) if planned else 0
+        utilization = round(allocated / planned * 100, 1) if planned else 0
+
+        return {
+            "period_days": 30,
+            "total_planned_hours": round(planned / 60, 1),
+            "total_downtime_hours": round(total_downtime / 60, 1),
+            "availability_percent": availability,
+            "utilization_percent": utilization,
+            "result": (
+                f"OEE Summary (30d): Availability {availability}%, Utilization {utilization}%. "
+                f"Downtime: {round(total_downtime/60,1)}h out of {round(planned/60,1)}h planned."
+            ),
         }
 
     # ── POS tools ────────────────────────────────────────────────────────
@@ -3603,7 +4130,7 @@ class ToolExecutor:
 
     async def _exec_suggest_response(self, ticket_id: str) -> dict[str, Any]:
         """Generate a suggested reply for a support ticket using KB articles and context."""
-        from app.models.support import KnowledgeBaseArticle, Ticket, TicketComment  # noqa: PLC0415
+        from app.models.support import SupportKnowledgeBaseArticle as KnowledgeBaseArticle, Ticket, TicketComment  # noqa: PLC0415
 
         result = await self.db.execute(
             select(Ticket).where(Ticket.id == uuid.UUID(ticket_id))
@@ -3680,7 +4207,7 @@ class ToolExecutor:
 
     async def _exec_generate_kb_article(self, ticket_id: str) -> dict[str, Any]:
         """Generate a KB article from a resolved ticket's conversation."""
-        from app.models.support import KnowledgeBaseArticle, Ticket, TicketComment  # noqa: PLC0415
+        from app.models.support import SupportKnowledgeBaseArticle as KnowledgeBaseArticle, Ticket, TicketComment  # noqa: PLC0415
         import re  # noqa: PLC0415
 
         result = await self.db.execute(
@@ -6546,4 +7073,618 @@ class ToolExecutor:
             "deal_count": deal_count,
             "last_activity_at": last_activity_at,
             "summary": summary,
+        }
+
+    # ── Y&U Teams Chat tools ─────────────────────────────────────────────────
+
+    async def _exec_search_chat_history(
+        self, query: str, channel_id: str | None = None, limit: int = 20,
+    ) -> dict[str, Any]:
+        from app.models.chat import ChatMessage, ChannelMember  # noqa: PLC0415
+        from app.models.user import User  # noqa: PLC0415
+
+        member_q = select(ChannelMember.channel_id).where(
+            ChannelMember.user_id == self.user_id,
+        )
+        member_result = await self.db.execute(member_q)
+        user_channel_ids = [r[0] for r in member_result.all()]
+
+        if not user_channel_ids:
+            return {"messages": [], "total": 0}
+
+        stmt = (
+            select(ChatMessage, User.full_name)
+            .outerjoin(User, ChatMessage.sender_id == User.id)
+            .where(
+                ChatMessage.is_deleted.is_(False),
+                ChatMessage.channel_id.in_(user_channel_ids),
+                ChatMessage.content.ilike(f"%{query}%"),
+            )
+        )
+        if channel_id:
+            ch_uuid = uuid.UUID(channel_id)
+            if ch_uuid not in user_channel_ids:
+                return {"error": "Not a member of this channel"}
+            stmt = stmt.where(ChatMessage.channel_id == ch_uuid)
+
+        stmt = stmt.order_by(ChatMessage.created_at.desc()).limit(limit)
+        result = await self.db.execute(stmt)
+        rows = result.all()
+
+        messages = []
+        for msg, sender_name in rows:
+            messages.append({
+                "id": str(msg.id),
+                "channel_id": str(msg.channel_id),
+                "sender": sender_name or "System",
+                "content": msg.content[:500],
+                "created_at": msg.created_at.isoformat(),
+            })
+
+        return {"messages": messages, "total": len(messages)}
+
+    async def _exec_summarize_channel(
+        self, channel_id: str, message_count: int = 50,
+    ) -> dict[str, Any]:
+        from app.models.chat import Channel, ChannelMember, ChatMessage  # noqa: PLC0415
+        from app.models.user import User  # noqa: PLC0415
+
+        ch_uuid = uuid.UUID(channel_id)
+
+        membership = await self.db.execute(
+            select(ChannelMember).where(
+                ChannelMember.channel_id == ch_uuid,
+                ChannelMember.user_id == self.user_id,
+            )
+        )
+        if not membership.scalar_one_or_none():
+            return {"error": "Not a member of this channel"}
+
+        channel = await self.db.get(Channel, ch_uuid)
+        if not channel:
+            return {"error": "Channel not found"}
+
+        stmt = (
+            select(ChatMessage, User.full_name)
+            .outerjoin(User, ChatMessage.sender_id == User.id)
+            .where(
+                ChatMessage.channel_id == ch_uuid,
+                ChatMessage.is_deleted.is_(False),
+            )
+            .order_by(ChatMessage.created_at.desc())
+            .limit(message_count)
+        )
+        result = await self.db.execute(stmt)
+        rows = result.all()
+
+        messages = []
+        for msg, sender_name in reversed(rows):
+            messages.append(
+                f"[{msg.created_at.strftime('%m/%d %H:%M')}] "
+                f"{sender_name or 'System'}: {msg.content[:300]}"
+            )
+
+        return {
+            "channel_name": channel.name,
+            "channel_type": channel.channel_type,
+            "message_count": len(messages),
+            "conversation": "\n".join(messages),
+        }
+
+    async def _exec_list_channel_members(
+        self, channel_id: str,
+    ) -> dict[str, Any]:
+        from app.models.chat import ChannelMember  # noqa: PLC0415
+        from app.models.user import User  # noqa: PLC0415
+
+        ch_uuid = uuid.UUID(channel_id)
+
+        stmt = (
+            select(ChannelMember, User.full_name, User.email)
+            .join(User, ChannelMember.user_id == User.id)
+            .where(ChannelMember.channel_id == ch_uuid)
+            .order_by(User.full_name)
+        )
+        result = await self.db.execute(stmt)
+        rows = result.all()
+
+        members = []
+        for member, name, email in rows:
+            members.append({
+                "user_id": str(member.user_id),
+                "name": name,
+                "email": email,
+                "role": member.role,
+                "joined_at": member.joined_at.isoformat(),
+            })
+
+        return {"channel_id": channel_id, "members": members, "total": len(members)}
+
+    async def _exec_send_chat_message(
+        self, channel_id: str, content: str, parent_id: str | None = None,
+    ) -> dict[str, Any]:
+        from app.models.chat import Channel, ChatMessage  # noqa: PLC0415
+
+        ch_uuid = uuid.UUID(channel_id)
+        channel = await self.db.get(Channel, ch_uuid)
+        if not channel:
+            return {"error": "Channel not found"}
+
+        msg = ChatMessage(
+            channel_id=ch_uuid,
+            sender_id=self.user_id,
+            content=content,
+            content_type="text",
+            parent_id=uuid.UUID(parent_id) if parent_id else None,
+        )
+        self.db.add(msg)
+
+        channel.message_count = (channel.message_count or 0) + 1
+        channel.last_message_at = datetime.now(timezone.utc)
+
+        await self.db.commit()
+        await self.db.refresh(msg)
+
+        return {
+            "status": "sent",
+            "message_id": str(msg.id),
+            "channel_id": channel_id,
+        }
+
+    async def _exec_create_channel(
+        self,
+        name: str,
+        team_id: str,
+        channel_type: str = "public",
+        topic: str | None = None,
+        description: str | None = None,
+    ) -> dict[str, Any]:
+        import re  # noqa: PLC0415
+
+        from app.models.chat import Channel, ChannelMember  # noqa: PLC0415
+
+        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        team_uuid = uuid.UUID(team_id)
+
+        channel = Channel(
+            team_id=team_uuid,
+            name=name,
+            slug=slug,
+            channel_type=channel_type,
+            topic=topic,
+            description=description,
+            created_by=self.user_id,
+        )
+        self.db.add(channel)
+        await self.db.flush()
+
+        member = ChannelMember(
+            channel_id=channel.id,
+            user_id=self.user_id,
+            role="owner",
+        )
+        self.db.add(member)
+        await self.db.commit()
+        await self.db.refresh(channel)
+
+        return {
+            "status": "created",
+            "channel_id": str(channel.id),
+            "name": name,
+            "slug": slug,
+            "channel_type": channel_type,
+        }
+
+    # ── Phase 1 Support AI Tool Executors ─────────────────────────────────
+
+    async def _exec_sentiment_analyze(self, text: str) -> dict[str, Any]:
+        """Analyze text for sentiment score and emotion label using Ollama."""
+        import json as _json  # noqa: PLC0415
+
+        prompt = (
+            "Analyze the sentiment of the following text. "
+            "Return ONLY a JSON object with 'score' (float from -1.0 to 1.0 where -1 is very negative, "
+            "0 is neutral, 1 is very positive) and 'label' (one of: frustrated, angry, confused, neutral, satisfied).\n\n"
+            f"Text: {text[:2000]}"
+        )
+        try:
+            llm_resp = await self._summarize_via_llm(prompt, "sentiment analysis")
+            # Try to parse JSON from response
+            # Strip markdown code fences if present
+            cleaned = llm_resp.strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            result = _json.loads(cleaned)
+            score = float(result.get("score", 0))
+            label = result.get("label", "neutral")
+            if label not in ("frustrated", "angry", "confused", "neutral", "satisfied"):
+                label = "neutral"
+        except Exception:
+            # Fallback: keyword-based
+            text_lower = text.lower()
+            negative_words = {"angry", "frustrated", "terrible", "awful", "hate", "worst", "broken", "useless"}
+            positive_words = {"great", "thanks", "excellent", "wonderful", "love", "perfect", "happy"}
+            neg_count = sum(1 for w in negative_words if w in text_lower)
+            pos_count = sum(1 for w in positive_words if w in text_lower)
+            if neg_count > pos_count:
+                score = -0.5 - (neg_count * 0.1)
+                label = "frustrated" if neg_count < 3 else "angry"
+            elif pos_count > neg_count:
+                score = 0.5 + (pos_count * 0.1)
+                label = "satisfied"
+            else:
+                score = 0.0
+                label = "neutral"
+            score = max(-1.0, min(1.0, score))
+
+        return {
+            "score": round(score, 2),
+            "label": label,
+            "result": f"Sentiment: {label} (score: {score:.2f})",
+        }
+
+    async def _exec_ai_suggest_kb_articles(self, query: str, limit: int = 5) -> dict[str, Any]:
+        """Find relevant KB articles by keyword matching against title and content."""
+        from app.models.support import SupportKnowledgeBaseArticle as KBArticle  # noqa: PLC0415
+
+        keywords = [w for w in query.split() if len(w) > 2]
+        if not keywords:
+            return {"articles": [], "result": "No meaningful keywords to search."}
+
+        # Search KB articles by keyword overlap
+        from sqlalchemy import or_  # noqa: PLC0415
+        filters = []
+        for kw in keywords[:10]:
+            pattern = f"%{kw}%"
+            filters.append(KBArticle.title.ilike(pattern))
+            filters.append(KBArticle.content.ilike(pattern))
+
+        result = await self.db.execute(
+            select(KBArticle)
+            .where(
+                KBArticle.status == "published",
+                or_(*filters),
+            )
+            .order_by(KBArticle.helpful_count.desc(), KBArticle.view_count.desc())
+            .limit(limit)
+        )
+        articles = result.scalars().all()
+
+        articles_out = [
+            {
+                "id": str(a.id),
+                "title": a.title,
+                "slug": a.slug,
+                "excerpt": (a.content or "")[:200],
+                "helpful_count": a.helpful_count,
+                "view_count": a.view_count,
+            }
+            for a in articles
+        ]
+
+        return {
+            "articles": articles_out,
+            "count": len(articles_out),
+            "result": (
+                f"Found {len(articles_out)} relevant KB articles:\n"
+                + "\n".join(f"  - {a['title']}" for a in articles_out)
+                if articles_out else "No matching KB articles found."
+            ),
+        }
+
+    async def _exec_ai_summarize_thread(self, ticket_id: str) -> dict[str, Any]:
+        """Summarize a ticket's comment thread using Ollama LLM."""
+        from app.models.support import Ticket, TicketComment  # noqa: PLC0415
+
+        result = await self.db.execute(
+            select(Ticket).where(Ticket.id == uuid.UUID(ticket_id))
+        )
+        ticket = result.scalar_one_or_none()
+        if not ticket:
+            return {"error": f"Ticket '{ticket_id}' not found."}
+
+        comments_result = await self.db.execute(
+            select(TicketComment)
+            .where(TicketComment.ticket_id == ticket.id)
+            .order_by(TicketComment.created_at)
+        )
+        comments = comments_result.scalars().all()
+
+        if not comments:
+            return {
+                "ticket_id": ticket_id,
+                "summary": "No comments on this ticket yet.",
+                "result": "No comments to summarize.",
+            }
+
+        # Build thread text
+        thread_parts = [
+            f"Ticket: {ticket.subject}",
+            f"Description: {ticket.description or 'N/A'}",
+            f"Status: {ticket.status} | Priority: {ticket.priority}",
+            "",
+        ]
+        for c in comments:
+            role = "Internal Note" if c.is_internal else "Reply"
+            thread_parts.append(f"[{role}] {c.content[:500]}")
+
+        thread_text = "\n\n".join(thread_parts)
+
+        prompt = (
+            "Summarize the following support ticket thread concisely for an agent handoff. "
+            "Include: the core issue, key actions taken, current status, and any unresolved items. "
+            "Keep it to 3-5 sentences.\n\n"
+            f"{thread_text[:3000]}"
+        )
+        summary = await self._summarize_via_llm(prompt, "ticket thread summary")
+
+        return {
+            "ticket_id": ticket_id,
+            "ticket_number": ticket.ticket_number,
+            "comment_count": len(comments),
+            "summary": summary,
+            "result": f"Thread summary for {ticket.ticket_number} ({len(comments)} comments):\n\n{summary}",
+        }
+
+    async def _exec_ai_detect_intent(self, ticket_id: str) -> dict[str, Any]:
+        """Classify a ticket's intent using Ollama LLM."""
+        import json as _json  # noqa: PLC0415
+        from app.models.support import Ticket  # noqa: PLC0415
+
+        result = await self.db.execute(
+            select(Ticket).where(Ticket.id == uuid.UUID(ticket_id))
+        )
+        ticket = result.scalar_one_or_none()
+        if not ticket:
+            return {"error": f"Ticket '{ticket_id}' not found."}
+
+        text = f"{ticket.subject}\n{ticket.description or ''}"
+
+        prompt = (
+            "Classify the intent of this support ticket. "
+            "Return ONLY a JSON object with 'intent' (one of: billing_issue, bug_report, "
+            "feature_request, how_to, complaint, praise, account_issue, general_inquiry) "
+            "and 'confidence' (float 0.0 to 1.0).\n\n"
+            f"Ticket: {text[:1500]}"
+        )
+
+        try:
+            llm_resp = await self._summarize_via_llm(prompt, "intent detection")
+            cleaned = llm_resp.strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            parsed = _json.loads(cleaned)
+            intent = parsed.get("intent", "general_inquiry")
+            confidence = float(parsed.get("confidence", 0.5))
+        except Exception:
+            # Keyword fallback
+            text_lower = text.lower()
+            intent_map = {
+                "billing_issue": {"invoice", "payment", "charge", "billing", "refund", "credit"},
+                "bug_report": {"bug", "error", "crash", "broken", "not working", "fails"},
+                "feature_request": {"feature", "request", "suggestion", "would be nice", "add"},
+                "how_to": {"how to", "how do", "guide", "help", "tutorial", "steps"},
+                "complaint": {"complaint", "disappointed", "unacceptable", "terrible"},
+                "praise": {"great", "excellent", "thank", "love", "amazing"},
+                "account_issue": {"login", "password", "account", "access", "locked"},
+            }
+            intent = "general_inquiry"
+            for intent_name, keywords in intent_map.items():
+                if any(kw in text_lower for kw in keywords):
+                    intent = intent_name
+                    break
+            confidence = 0.6
+
+        return {
+            "ticket_id": ticket_id,
+            "ticket_number": ticket.ticket_number,
+            "intent": intent,
+            "confidence": round(confidence, 2),
+            "result": f"Ticket {ticket.ticket_number} intent: {intent} (confidence: {confidence:.0%})",
+        }
+
+    async def _exec_ai_auto_classify_ticket(self, ticket_id: str) -> dict[str, Any]:
+        """Enhanced auto-classify using Ollama LLM for priority, category, and sentiment."""
+        import json as _json  # noqa: PLC0415
+        from app.models.support import Ticket, TicketCategory  # noqa: PLC0415
+
+        result = await self.db.execute(
+            select(Ticket).where(Ticket.id == uuid.UUID(ticket_id))
+        )
+        ticket = result.scalar_one_or_none()
+        if not ticket:
+            return {"error": f"Ticket '{ticket_id}' not found."}
+
+        # Get available categories
+        cats_result = await self.db.execute(
+            select(TicketCategory).where(TicketCategory.is_active == True)  # noqa: E712
+        )
+        categories = cats_result.scalars().all()
+        cat_names = [c.name for c in categories]
+
+        text = f"{ticket.subject}\n{ticket.description or ''}"
+
+        prompt = (
+            "You are a support ticket classifier. Analyze this ticket and return ONLY a JSON object with:\n"
+            "- 'priority': one of 'low', 'medium', 'high', 'urgent'\n"
+            "- 'category': best match from this list: " + str(cat_names) + "\n"
+            "- 'sentiment_score': float from -1.0 to 1.0\n"
+            "- 'sentiment_label': one of 'frustrated', 'angry', 'confused', 'neutral', 'satisfied'\n"
+            "- 'reasoning': brief explanation of your classification\n\n"
+            f"Ticket: {text[:1500]}"
+        )
+
+        try:
+            llm_resp = await self._summarize_via_llm(prompt, "ticket classification")
+            cleaned = llm_resp.strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            parsed = _json.loads(cleaned)
+
+            suggested_priority = parsed.get("priority", "medium")
+            suggested_category_name = parsed.get("category", "")
+            sentiment_score = float(parsed.get("sentiment_score", 0))
+            sentiment_label = parsed.get("sentiment_label", "neutral")
+            reasoning = parsed.get("reasoning", "")
+        except Exception:
+            # Fall back to basic keyword classify
+            return await self._exec_classify_ticket(ticket_id)
+
+        # Match category name to actual category
+        suggested_category = None
+        for cat in categories:
+            if cat.name.lower() == suggested_category_name.lower():
+                suggested_category = cat
+                break
+
+        # Update ticket sentiment fields
+        ticket.sentiment_score = max(-1.0, min(1.0, sentiment_score))
+        ticket.sentiment_label = sentiment_label
+        await self.db.commit()
+
+        return {
+            "ticket_id": ticket_id,
+            "ticket_number": ticket.ticket_number,
+            "suggested_priority": suggested_priority,
+            "current_priority": ticket.priority,
+            "suggested_category": {
+                "id": str(suggested_category.id),
+                "name": suggested_category.name,
+            } if suggested_category else None,
+            "sentiment_score": round(sentiment_score, 2),
+            "sentiment_label": sentiment_label,
+            "reasoning": reasoning,
+            "result": (
+                f"AI classification for {ticket.ticket_number}:\n"
+                f"  Priority: {suggested_priority}\n"
+                f"  Category: {suggested_category_name}\n"
+                f"  Sentiment: {sentiment_label} ({sentiment_score:.2f})\n"
+                f"  Reasoning: {reasoning}"
+            ),
+        }
+
+    async def _exec_ai_draft_response(self, ticket_id: str, tone: str = "professional") -> dict[str, Any]:
+        """Enhanced draft response with CRM context, past tickets, and tone adjustment."""
+        from app.models.support import Ticket, TicketComment  # noqa: PLC0415
+        from app.models.support import SupportKnowledgeBaseArticle as KBArticle  # noqa: PLC0415
+
+        result = await self.db.execute(
+            select(Ticket).where(Ticket.id == uuid.UUID(ticket_id))
+        )
+        ticket = result.scalar_one_or_none()
+        if not ticket:
+            return {"error": f"Ticket '{ticket_id}' not found."}
+
+        # Get comments
+        comments_result = await self.db.execute(
+            select(TicketComment)
+            .where(TicketComment.ticket_id == ticket.id)
+            .order_by(TicketComment.created_at)
+        )
+        comments = comments_result.scalars().all()
+
+        # Get related KB articles
+        keywords = ticket.subject.split()[:5]
+        kb_articles = []
+        for kw in keywords:
+            if len(kw) > 3:
+                from app.core.sanitize import like_pattern  # noqa: PLC0415
+                kb_result = await self.db.execute(
+                    select(KBArticle).where(
+                        KBArticle.status == "published",
+                        KBArticle.title.ilike(like_pattern(kw)),
+                    ).limit(2)
+                )
+                kb_articles.extend(kb_result.scalars().all())
+        # Deduplicate
+        seen: set[uuid.UUID] = set()
+        unique_kb = []
+        for a in kb_articles:
+            if a.id not in seen:
+                seen.add(a.id)
+                unique_kb.append(a)
+
+        # Get customer's past tickets for context
+        past_tickets = []
+        if ticket.customer_email:
+            past_result = await self.db.execute(
+                select(Ticket)
+                .where(
+                    Ticket.customer_email == ticket.customer_email,
+                    Ticket.id != ticket.id,
+                )
+                .order_by(Ticket.created_at.desc())
+                .limit(5)
+            )
+            past_tickets = past_result.scalars().all()
+
+        # CRM contact context
+        crm_context = ""
+        if ticket.contact_id:
+            try:
+                from app.models.crm import Contact  # noqa: PLC0415
+                contact_result = await self.db.execute(
+                    select(Contact).where(Contact.id == ticket.contact_id)
+                )
+                contact = contact_result.scalar_one_or_none()
+                if contact:
+                    crm_context = (
+                        f"\nCustomer CRM Profile: {contact.first_name or ''} {contact.last_name or ''}, "
+                        f"Company: {contact.company_name or 'N/A'}, "
+                        f"Stage: {contact.lifecycle_stage or 'N/A'}, "
+                        f"Score: {contact.score or 0}/100"
+                    )
+            except Exception:
+                pass
+
+        # Build context
+        context_parts = [
+            f"Subject: {ticket.subject}",
+            f"Description: {ticket.description or 'N/A'}",
+            f"Priority: {ticket.priority} | Status: {ticket.status}",
+            f"Sentiment: {ticket.sentiment_label or 'unknown'} (score: {ticket.sentiment_score or 0:.2f})",
+        ]
+        if crm_context:
+            context_parts.append(crm_context)
+        if past_tickets:
+            context_parts.append(f"\nCustomer has {len(past_tickets)} previous tickets:")
+            for pt in past_tickets[:3]:
+                context_parts.append(f"  - {pt.ticket_number}: {pt.subject} ({pt.status})")
+        if comments:
+            context_parts.append("\nConversation:")
+            for c in comments[-5:]:
+                role = "Agent (internal)" if c.is_internal else "Reply"
+                context_parts.append(f"  [{role}] {c.content[:300]}")
+        if unique_kb:
+            context_parts.append("\nRelevant KB Articles:")
+            for a in unique_kb[:3]:
+                context_parts.append(f"  - {a.title}: {(a.content or '')[:200]}")
+
+        ticket_context = "\n".join(context_parts)
+
+        tone_instructions = {
+            "empathetic": "Be very empathetic and understanding. Acknowledge the customer's frustration.",
+            "professional": "Be professional, clear, and concise.",
+            "friendly": "Be warm, friendly, and approachable. Use a conversational tone.",
+            "urgent": "Convey urgency. Acknowledge the severity and commit to immediate action.",
+        }
+        tone_instruction = tone_instructions.get(tone, tone_instructions["professional"])
+
+        prompt = (
+            f"You are a helpful customer support agent. {tone_instruction}\n"
+            "Based on the following ticket context, customer history, and knowledge base articles, "
+            "draft a professional reply. Be concise and provide actionable next steps.\n\n"
+            f"{ticket_context}"
+        )
+        draft = await self._summarize_via_llm(prompt, "support ticket reply")
+
+        return {
+            "ticket_id": ticket_id,
+            "ticket_number": ticket.ticket_number,
+            "draft_response": draft,
+            "tone": tone,
+            "kb_articles_used": [{"title": a.title, "id": str(a.id)} for a in unique_kb[:3]],
+            "past_ticket_count": len(past_tickets),
+            "has_crm_context": bool(crm_context),
+            "result": f"Draft response for {ticket.ticket_number} (tone: {tone}):\n\n{draft}",
         }

@@ -666,6 +666,69 @@ def _register_event_handlers() -> None:
 
         await _log_activity("sent", f"Email sent: {data.get('subject')}", "mail", data.get("user_id", ""), data)
 
+    @event_bus.on("mail.received")
+    async def on_mail_received(data: dict) -> None:
+        """Mail received: run rules, AI triage, compute sender score."""
+        logger.info("Event: mail.received — from %s, subject: %s", data.get("from"), data.get("subject"))
+        message_id = data.get("message_id")
+        user_id = data.get("user_id")
+        if not message_id or not user_id:
+            return
+        try:
+            import uuid as _uuid
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+
+            async with AsyncSessionLocal() as db:
+                # 1) Execute mail rules
+                try:
+                    from app.services.mail_rule_engine import process_message  # noqa: PLC0415
+                    await process_message(db, _uuid.UUID(message_id), _uuid.UUID(user_id))
+                except Exception:
+                    logger.exception("Rule engine error for message %s", message_id)
+
+                # 2) AI classification & priority scoring
+                try:
+                    from app.services.mail_triage import classify_message  # noqa: PLC0415
+                    await classify_message(db, _uuid.UUID(message_id), _uuid.UUID(user_id))
+                except Exception:
+                    logger.exception("AI triage error for message %s", message_id)
+
+                # 3) Compute sender score for focused inbox
+                sender_email = data.get("from", "")
+                if sender_email:
+                    try:
+                        from app.services.mail_triage import compute_sender_score  # noqa: PLC0415
+                        await compute_sender_score(db, _uuid.UUID(user_id), sender_email)
+                    except Exception:
+                        logger.exception("Sender score error for %s", sender_email)
+        except Exception:
+            logger.exception("mail.received handler failed for %s", message_id)
+
+        await _log_activity("received", f"Email received: {data.get('subject')}", "mail", user_id or "", data)
+
+    @event_bus.on("mail.classified")
+    async def on_mail_classified(data: dict) -> None:
+        """Mail classified: auto-route based on AI category (support→ticket, finance→invoice)."""
+        logger.info("Event: mail.classified — category: %s", data.get("ai_category"))
+        category = data.get("ai_category", "")
+        message_id = data.get("message_id")
+        user_id = data.get("user_id")
+        if not message_id or not category:
+            return
+        try:
+            # Auto-create support ticket for support-request emails
+            if category == "support-request":
+                await event_bus.publish("mail.create_ticket", {
+                    "message_id": message_id,
+                    "user_id": user_id,
+                    "subject": data.get("subject", ""),
+                    "from": data.get("from", ""),
+                    "body": data.get("body_preview", ""),
+                })
+                logger.info("Auto-routing support-request email %s to ticket creation", message_id)
+        except Exception:
+            logger.exception("mail.classified handler failed for %s", message_id)
+
     # NOTE: ecommerce.order.created handler is in integration_handlers.py
     # (creates invoice with customer details + order lines from DB relationships)
 
@@ -1174,6 +1237,310 @@ def _register_event_handlers() -> None:
             data.get("employee_id"),
             data.get("risk_level"),
         )
+
+    # ── Support Phase 1 Events ────────────────────────────────────────────────
+
+    @event_bus.on("support.ticket.created")
+    async def on_support_ticket_created(data: dict) -> None:
+        """Trigger AI classification and notify assignee on new ticket."""
+        logger.info("Event: support.ticket.created — %s", data.get("ticket_number"))
+        # AI auto-classify
+        try:
+            from app.tasks.support_tasks import support_ai_classify_ticket  # noqa: PLC0415
+            support_ai_classify_ticket.delay(data.get("ticket_id", ""))
+        except Exception:
+            logger.warning("Could not queue AI classification for ticket %s", data.get("ticket_id"))
+
+        # Notify assignee
+        assigned_to = data.get("assigned_to")
+        if assigned_to:
+            await _create_notification(
+                user_id=assigned_to,
+                title="New Ticket Assigned",
+                message=f"Ticket {data.get('ticket_number', '')}: {data.get('subject', '')}",
+                notif_type="info",
+                module="support",
+                link_url=f"/support/tickets/{data.get('ticket_id', '')}",
+            )
+
+    @event_bus.on("support.ticket.resolved")
+    async def on_support_ticket_resolved(data: dict) -> None:
+        """Queue CSAT survey 24h after ticket resolution."""
+        logger.info("Event: support.ticket.resolved — %s", data.get("ticket_number"))
+        try:
+            from app.tasks.support_tasks import support_send_csat_survey  # noqa: PLC0415
+            support_send_csat_survey.apply_async(
+                args=[data.get("ticket_id", "")],
+                countdown=86400,  # 24 hours
+            )
+        except Exception:
+            logger.warning("Could not queue CSAT survey for ticket %s", data.get("ticket_id"))
+
+    @event_bus.on("support.ticket.assigned")
+    async def on_support_ticket_assigned(data: dict) -> None:
+        """Notify new assignee when a ticket is assigned/reassigned."""
+        logger.info("Event: support.ticket.assigned — %s to %s", data.get("ticket_number"), data.get("assigned_to"))
+        assigned_to = data.get("assigned_to")
+        if assigned_to:
+            await _create_notification(
+                user_id=assigned_to,
+                title="Ticket Assigned to You",
+                message=f"Ticket {data.get('ticket_number', '')}: {data.get('subject', '')}",
+                notif_type="info",
+                module="support",
+                link_url=f"/support/tickets/{data.get('ticket_id', '')}",
+            )
+
+    @event_bus.on("support.ticket.escalated")
+    async def on_support_ticket_escalated(data: dict) -> None:
+        """Notify support admins when a ticket is escalated."""
+        logger.info("Event: support.ticket.escalated — %s", data.get("ticket_number"))
+        admin_ids = await _get_app_admin_ids("support")
+        for uid in admin_ids:
+            await _create_notification(
+                user_id=uid,
+                title="Ticket Escalated",
+                message=f"Ticket {data.get('ticket_number', '')} has been escalated. Priority: {data.get('priority', 'N/A')}",
+                notif_type="warning",
+                module="support",
+                link_url=f"/support/tickets/{data.get('ticket_id', '')}",
+            )
+
+    @event_bus.on("support.sla.warning")
+    async def on_support_sla_warning(data: dict) -> None:
+        """Notify agent and admins when SLA is approaching breach."""
+        logger.info("Event: support.sla.warning — ticket %s, sla_type=%s", data.get("ticket_number"), data.get("sla_type"))
+        admin_ids = await _get_app_admin_ids("support")
+        for uid in admin_ids:
+            await _create_notification(
+                user_id=uid,
+                title="SLA Warning",
+                message=f"Ticket {data.get('ticket_number', '')} {data.get('sla_type', '')} SLA due at {data.get('due_at', '')}",
+                notif_type="warning",
+                module="support",
+                link_url=f"/support/tickets/{data.get('ticket_id', '')}",
+            )
+
+    @event_bus.on("support.sla.breached")
+    async def on_support_sla_breached(data: dict) -> None:
+        """Escalation notification when SLA is breached."""
+        logger.info("Event: support.sla.breached — ticket %s, sla_type=%s", data.get("ticket_number"), data.get("sla_type"))
+        admin_ids = await _get_app_admin_ids("support")
+        for uid in admin_ids:
+            await _create_notification(
+                user_id=uid,
+                title="SLA Breached!",
+                message=f"Ticket {data.get('ticket_number', '')} has breached {data.get('sla_type', '')} SLA.",
+                notif_type="danger",
+                module="support",
+                link_url=f"/support/tickets/{data.get('ticket_id', '')}",
+            )
+        # Also notify the assigned agent
+        assigned_to = data.get("assigned_to")
+        if assigned_to:
+            await _create_notification(
+                user_id=assigned_to,
+                title="SLA Breached",
+                message=f"Ticket {data.get('ticket_number', '')} has breached {data.get('sla_type', '')} SLA. Immediate action required.",
+                notif_type="danger",
+                module="support",
+                link_url=f"/support/tickets/{data.get('ticket_id', '')}",
+            )
+
+    @event_bus.on("support.mention")
+    async def on_support_mention(data: dict) -> None:
+        """Notify mentioned user in a ticket comment."""
+        logger.info("Event: support.mention — user %s in ticket %s", data.get("mentioned_user_id"), data.get("ticket_number"))
+        mentioned_user_id = data.get("mentioned_user_id")
+        if mentioned_user_id:
+            await _create_notification(
+                user_id=mentioned_user_id,
+                title="You were mentioned",
+                message=f"You were mentioned in ticket {data.get('ticket_number', '')}: {data.get('comment_preview', '')}",
+                notif_type="info",
+                module="support",
+                link_url=f"/support/tickets/{data.get('ticket_id', '')}",
+            )
+
+    @event_bus.on("support.livechat.queued")
+    async def on_support_livechat_queued(data: dict) -> None:
+        """Alert available agents when a live chat session is queued."""
+        logger.info("Event: support.livechat.queued — session %s", data.get("session_id"))
+        admin_ids = await _get_app_admin_ids("support")
+        for uid in admin_ids:
+            await _create_notification(
+                user_id=uid,
+                title="New Live Chat",
+                message=f"A customer is waiting in live chat queue. Visitor: {data.get('visitor_name', 'Anonymous')}",
+                notif_type="info",
+                module="support",
+                link_url="/support/live-chat",
+            )
+
+    @event_bus.on("support.comment.added")
+    async def on_support_comment_added(data: dict) -> None:
+        """Email customer when an external (non-internal) comment is added."""
+        logger.info("Event: support.comment.added — ticket %s", data.get("ticket_number"))
+        if data.get("is_internal"):
+            return  # Don't email for internal notes
+        customer_email = data.get("customer_email")
+        if customer_email:
+            try:
+                from app.tasks.celery_app import send_email  # noqa: PLC0415
+                send_email.delay(
+                    to=customer_email,
+                    subject=f"Re: {data.get('subject', '')} [{data.get('ticket_number', '')}]",
+                    body=(
+                        f"Hi {data.get('customer_name', 'there')},\n\n"
+                        f"A new reply has been added to your ticket {data.get('ticket_number', '')}:\n\n"
+                        f"{data.get('comment_preview', '')}\n\n"
+                        f"— Support Team"
+                    ),
+                )
+            except Exception:
+                logger.warning("Could not send comment notification email for ticket %s", data.get("ticket_number"))
+
+
+    # ── Y&U Notes — Auto-create notes from ERP events ─────────────────────
+
+    @event_bus.on("meeting.created")
+    async def on_meeting_created_note(data: dict) -> None:
+        """Auto-create a meeting notes page when a meeting is scheduled."""
+        logger.info("Event: meeting.created → auto-create meeting note for %s", data.get("title"))
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.models.notes import Note  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                attendees = data.get("attendees", [])
+                attendee_list = "\n".join(f"  - {a}" for a in attendees) if attendees else "  - (none listed)"
+                content = (
+                    f"<h1>Meeting Notes: {data.get('title', 'Untitled Meeting')}</h1>\n"
+                    f"<p><strong>Date:</strong> {data.get('start_time', 'TBD')}</p>\n"
+                    f"<h2>Attendees</h2>\n<p>{attendee_list}</p>\n"
+                    f"<h2>Agenda</h2>\n<p>(Add agenda items here)</p>\n"
+                    f"<h2>Discussion</h2>\n<p></p>\n"
+                    f"<h2>Action Items</h2>\n<ul><li></li></ul>\n"
+                    f"<h2>Decisions</h2>\n<ul><li></li></ul>\n"
+                )
+                note = Note(
+                    title=f"Meeting Notes: {data.get('title', 'Untitled Meeting')}",
+                    content=content,
+                    owner_id=data.get("organizer_id"),
+                    tags=["meeting-notes", "auto-created"],
+                    source_type="meeting",
+                    linked_items=[{
+                        "type": "meeting",
+                        "id": str(data.get("meeting_id", "")),
+                        "title": data.get("title", ""),
+                    }],
+                )
+                db.add(note)
+                await db.commit()
+                logger.info("Auto-created meeting notes page for: %s", data.get("title"))
+        except Exception:
+            logger.exception("Failed to auto-create meeting notes page")
+
+    @event_bus.on("project.created")
+    async def on_project_created_note(data: dict) -> None:
+        """Auto-create a project notebook when a new project is created."""
+        logger.info("Event: project.created → auto-create notebook for %s", data.get("name"))
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.models.notes import Note, Notebook, NotebookSection  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                # Create project notebook
+                nb = Notebook(
+                    title=f"Project: {data.get('name', 'Untitled')}",
+                    description=data.get("description", ""),
+                    owner_id=data.get("owner_id"),
+                    icon="📁",
+                    color="#51459d",
+                )
+                db.add(nb)
+                await db.flush()
+
+                # Create default sections
+                for idx, sec_title in enumerate(["Overview", "Meeting Notes", "Research", "Decisions"]):
+                    sec = NotebookSection(
+                        notebook_id=nb.id,
+                        title=sec_title,
+                        sort_order=idx,
+                    )
+                    db.add(sec)
+                await db.flush()
+
+                # Get the Overview section for the welcome page
+                from sqlalchemy import select  # noqa: PLC0415
+                overview_sec = (await db.execute(
+                    select(NotebookSection).where(
+                        NotebookSection.notebook_id == nb.id,
+                        NotebookSection.title == "Overview",
+                    )
+                )).scalar_one()
+
+                # Create project overview page
+                content = (
+                    f"<h1>{data.get('name', 'Project Overview')}</h1>\n"
+                    f"<p>{data.get('description', '')}</p>\n"
+                    f"<h2>Objectives</h2>\n<ul><li></li></ul>\n"
+                    f"<h2>Team</h2>\n<p>(Add team members here)</p>\n"
+                    f"<h2>Timeline</h2>\n<p>(Add key milestones)</p>\n"
+                )
+                page = Note(
+                    title=f"Project Overview: {data.get('name', '')}",
+                    content=content,
+                    owner_id=data.get("owner_id"),
+                    notebook_id=nb.id,
+                    section_id=overview_sec.id,
+                    tags=["project", "auto-created"],
+                    source_type="auto_created",
+                    linked_items=[{
+                        "type": "project",
+                        "id": str(data.get("project_id", "")),
+                        "title": data.get("name", ""),
+                    }],
+                )
+                db.add(page)
+                await db.commit()
+                logger.info("Auto-created project notebook for: %s", data.get("name"))
+        except Exception:
+            logger.exception("Failed to auto-create project notebook")
+
+    @event_bus.on("support.ticket.escalated")
+    async def on_ticket_escalated_note(data: dict) -> None:
+        """Auto-create an investigation note when a ticket is escalated."""
+        logger.info("Event: support.ticket.escalated → auto-create investigation note for %s", data.get("ticket_number"))
+        try:
+            from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+            from app.models.notes import Note  # noqa: PLC0415
+            async with AsyncSessionLocal() as db:
+                content = (
+                    f"<h1>Investigation: {data.get('subject', data.get('ticket_number', 'Escalated Ticket'))}</h1>\n"
+                    f"<p><strong>Ticket:</strong> {data.get('ticket_number', 'N/A')}</p>\n"
+                    f"<p><strong>Priority:</strong> {data.get('priority', 'N/A')}</p>\n"
+                    f"<p><strong>Customer:</strong> {data.get('customer_name', 'N/A')}</p>\n"
+                    f"<h2>Issue Description</h2>\n<p>{data.get('description', '(See ticket for details)')}</p>\n"
+                    f"<h2>Root Cause Analysis</h2>\n<p></p>\n"
+                    f"<h2>Steps Taken</h2>\n<ol><li></li></ol>\n"
+                    f"<h2>Resolution</h2>\n<p></p>\n"
+                )
+                note = Note(
+                    title=f"Investigation: {data.get('subject', data.get('ticket_number', 'Escalated Ticket'))}",
+                    content=content,
+                    owner_id=data.get("assigned_to_id") or data.get("created_by_id"),
+                    tags=["investigation", "escalation", "auto-created"],
+                    source_type="auto_created",
+                    linked_items=[{
+                        "type": "ticket",
+                        "id": str(data.get("ticket_id", "")),
+                        "title": data.get("ticket_number", ""),
+                    }],
+                )
+                db.add(note)
+                await db.commit()
+                logger.info("Auto-created investigation note for ticket: %s", data.get("ticket_number"))
+        except Exception:
+            logger.exception("Failed to auto-create investigation note")
 
 
 async def _seed_superadmin() -> None:

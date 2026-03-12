@@ -4,7 +4,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -95,6 +95,18 @@ class Ticket(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         ARRAY(String(100)), nullable=True, default=list,
     )
 
+    # Phase 1 — omnichannel, AI sentiment, custom fields
+    channel: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="web", index=True,
+    )  # web, email, live_chat, whatsapp, api
+    sentiment_score: Mapped[float | None] = mapped_column(Float, nullable=True)  # -1.0 to 1.0
+    sentiment_label: Mapped[str | None] = mapped_column(
+        String(30), nullable=True,
+    )  # frustrated, confused, neutral, satisfied, angry
+    custom_fields: Mapped[dict | None] = mapped_column(
+        JSON, nullable=True, default=dict,
+    )  # template-driven custom data
+
     # Relationships
     category = relationship("TicketCategory", back_populates="tickets", lazy="joined")
     assignee = relationship("User", foreign_keys=[assigned_to], lazy="joined")
@@ -138,7 +150,7 @@ class TicketComment(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         return f"<TicketComment id={self.id} ticket={self.ticket_id}>"
 
 
-class KnowledgeBaseArticle(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+class SupportKnowledgeBaseArticle(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     """A knowledge-base / help article."""
 
     __tablename__ = "kb_articles"
@@ -173,7 +185,7 @@ class KnowledgeBaseArticle(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         return f"<KBArticle id={self.id} title={self.title!r}>"
 
 
-class SLAPolicy(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+class SupportSLAPolicy(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     """SLA policy per priority level."""
 
     __tablename__ = "sla_policies"
@@ -185,7 +197,7 @@ class SLAPolicy(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     def __repr__(self) -> str:
-        return f"<SLAPolicy id={self.id} priority={self.priority}>"
+        return f"<SupportSLAPolicy id={self.id} priority={self.priority}>"
 
 
 class CannedResponse(Base, UUIDPrimaryKeyMixin, TimestampMixin):

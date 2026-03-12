@@ -13,7 +13,7 @@ from app.core.deps import CurrentUser, DBSession
 from app.models.support import (
     CannedResponse,
     CustomerSatisfaction,
-    SLAPolicy,
+    SupportSLAPolicy as SLAPolicy,
     Ticket,
     TicketComment,
     TicketRoutingRule,
@@ -267,7 +267,7 @@ async def update_canned_response(
 
 @router.delete(
     "/canned-responses/{cr_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a canned response",
 )
 async def delete_canned_response(
@@ -281,7 +281,7 @@ async def delete_canned_response(
 
     await db.delete(cr)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -764,7 +764,7 @@ async def update_routing_rule(
 
 @router.delete(
     "/routing-rules/{rule_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a ticket routing rule",
 )
 async def delete_routing_rule(
@@ -778,4 +778,4 @@ async def delete_routing_rule(
 
     await db.delete(rule)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)

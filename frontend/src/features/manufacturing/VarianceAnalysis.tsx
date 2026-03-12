@@ -36,7 +36,7 @@ export default function VarianceAnalysis({ workOrderId }: Props) {
           <div key={v.id} className="border rounded-lg p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-medium capitalize">{v.variance_type}</span>
-              <Badge variant={v.variance_amount > 0 ? 'red' : v.variance_amount < 0 ? 'green' : 'gray'}>
+              <Badge variant={v.variance_amount > 0 ? 'danger' : v.variance_amount < 0 ? 'success' : 'default'}>
                 {v.variance_percent > 0 ? '+' : ''}{v.variance_percent}%
               </Badge>
             </div>

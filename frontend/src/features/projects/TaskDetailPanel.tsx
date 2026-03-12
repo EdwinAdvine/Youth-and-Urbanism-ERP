@@ -146,7 +146,7 @@ export default function TaskDetailPanel({ task, projectId, open, onClose }: Task
                   <label className="text-xs font-medium text-gray-500 mb-1 block">Status</label>
                   <select
                     value={taskStatus}
-                    onChange={(e) => setTaskStatus(e.target.value)}
+                    onChange={(e) => setTaskStatus(e.target.value as typeof taskStatus)}
                     className="w-full text-sm border border-gray-300 rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#51459d]/30"
                   >
                     {statusOptions.map((o) => (
@@ -159,7 +159,7 @@ export default function TaskDetailPanel({ task, projectId, open, onClose }: Task
                   <label className="text-xs font-medium text-gray-500 mb-1 block">Priority</label>
                   <select
                     value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
+                    onChange={(e) => setPriority(e.target.value as typeof priority)}
                     className="w-full text-sm border border-gray-300 rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#51459d]/30"
                   >
                     {priorityOptions.map((o) => (

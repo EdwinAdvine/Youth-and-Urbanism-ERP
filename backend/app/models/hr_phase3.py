@@ -112,7 +112,7 @@ class BurnoutIndicator(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 # ---------------------------------------------------------------------------
 
 
-class Workflow(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class HRWorkflow(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Configurable HR automation workflow definition."""
 
     __tablename__ = "hr_workflows"
@@ -139,10 +139,10 @@ class Workflow(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     run_count: Mapped[int] = mapped_column(Integer, default=0)
 
-    executions = relationship("WorkflowExecution", back_populates="workflow", lazy="noload")
+    executions = relationship("HRWorkflowExecution", back_populates="workflow", lazy="noload")
 
 
-class WorkflowExecution(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class HRWorkflowExecution(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """A single execution run of a workflow."""
 
     __tablename__ = "hr_workflow_executions"
@@ -169,7 +169,7 @@ class WorkflowExecution(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    workflow = relationship("Workflow", back_populates="executions")
+    workflow = relationship("HRWorkflow", back_populates="executions")
     approvals = relationship("WorkflowApproval", back_populates="execution", lazy="selectin")
 
 
@@ -196,7 +196,7 @@ class WorkflowApproval(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         DateTime(timezone=True), nullable=True
     )
 
-    execution = relationship("WorkflowExecution", back_populates="approvals")
+    execution = relationship("HRWorkflowExecution", back_populates="approvals")
 
 
 # ---------------------------------------------------------------------------

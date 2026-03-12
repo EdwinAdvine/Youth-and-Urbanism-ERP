@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 
 from app.core.deps import CurrentUser, DBSession
-from app.models.finance import WorkflowRule, WorkflowExecution
+from app.models.finance import WorkflowRule, FinanceWorkflowExecution as WorkflowExecution
 
 router = APIRouter(tags=["Finance Workflow Rules"])
 
@@ -394,7 +394,7 @@ async def update_workflow_rule(
     return {"id": str(rule.id), "is_active": rule.is_active}
 
 
-@router.delete("/workflow-rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/workflow-rules/{rule_id}", status_code=status.HTTP_200_OK)
 async def delete_workflow_rule(rule_id: uuid.UUID, db: DBSession, current_user: CurrentUser):
     result = await db.execute(select(WorkflowRule).where(WorkflowRule.id == rule_id))
     rule = result.scalar_one_or_none()

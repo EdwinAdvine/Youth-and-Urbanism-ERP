@@ -268,7 +268,7 @@ async def update_project(
 
 @router.delete(
     "/{project_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a project",
 )
 async def delete_project(
@@ -281,7 +281,7 @@ async def delete_project(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     await db.delete(project)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Task endpoints ────────────────────────────────────────────────────────────
@@ -467,7 +467,7 @@ async def update_task(
 
 @router.delete(
     "/{project_id}/tasks/{task_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a task",
 )
 async def delete_task(
@@ -486,7 +486,7 @@ async def delete_task(
 
     await db.delete(task)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.get("/{project_id}/board", summary="Kanban board data grouped by status")

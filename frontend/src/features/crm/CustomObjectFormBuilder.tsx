@@ -82,7 +82,7 @@ export default function CustomObjectFormBuilder() {
     // Validate all fields have name and label
     for (const f of fields) {
       if (!f.name.trim() || !f.label.trim()) {
-        toast.error('All fields must have a name and label')
+        toast('error', 'All fields must have a name and label')
         return
       }
     }
@@ -90,16 +90,16 @@ export default function CustomObjectFormBuilder() {
     // Check for duplicate names
     const names = fields.map((f) => f.name)
     if (new Set(names).size !== names.length) {
-      toast.error('Field names must be unique')
+      toast('error', 'Field names must be unique')
       return
     }
 
     try {
       await updateObject.mutateAsync({ id: definitionId, fields })
-      toast.success('Fields saved successfully')
+      toast('success', 'Fields saved successfully')
       setHasChanges(false)
     } catch {
-      toast.error('Failed to save fields')
+      toast('error', 'Failed to save fields')
     }
   }
 
@@ -189,7 +189,7 @@ export default function CustomObjectFormBuilder() {
                   <Select
                     label="Type"
                     value={field.type}
-                    onChange={(val) => updateField(idx, { type: val })}
+                    onChange={(e) => updateField(idx, { type: e.target.value })}
                     options={FIELD_TYPES}
                   />
                 </div>

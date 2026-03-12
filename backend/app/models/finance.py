@@ -419,7 +419,7 @@ class WorkflowRule(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
 
-class WorkflowExecution(UUIDPrimaryKeyMixin, Base):
+class FinanceWorkflowExecution(UUIDPrimaryKeyMixin, Base):
     """Audit log of every workflow rule execution."""
     __tablename__ = "finance_workflow_executions"
 

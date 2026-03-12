@@ -365,7 +365,7 @@ async def update_checklist_item(
 
 @router.delete(
     "/{project_id}/tasks/{task_id}/checklists/{item_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a checklist item",
 )
 async def delete_checklist_item(
@@ -383,7 +383,7 @@ async def delete_checklist_item(
 
     await db.delete(item)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Task relationship endpoints ──────────────────────────────────────────────
@@ -469,7 +469,7 @@ async def list_relationships(
 
 @router.delete(
     "/{project_id}/tasks/{task_id}/relationships/{rel_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Remove a task relationship",
 )
 async def delete_relationship(
@@ -487,7 +487,7 @@ async def delete_relationship(
 
     await db.delete(rel)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Audit log endpoint ───────────────────────────────────────────────────────

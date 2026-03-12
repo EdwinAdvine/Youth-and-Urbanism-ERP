@@ -362,7 +362,7 @@ export default function WorkOrderDetail() {
                       <td className="py-2 px-4 text-right font-medium">{m.available}</td>
                       <td className="py-2 px-4 text-center">
                         {m.sufficient ? (
-                          <Badge variant="success">OK</Badge>
+                          <Badge variant="primary">OK</Badge>
                         ) : (
                           <Badge variant="danger">-{m.shortfall}</Badge>
                         )}

@@ -147,11 +147,10 @@ function OpenTextResponses({ responses }: { responses: string[] }) {
 // ─── Question Breakdown Card ──────────────────────────────────────────────────
 
 function QuestionBreakdownCard({
-  qKey,
   result,
   responseCount,
 }: {
-  qKey: string
+  qKey?: string
   result: QuestionResult
   responseCount: number
 }) {
@@ -188,7 +187,7 @@ function QuestionBreakdownCard({
 
 // ─── eNPS Trend Sparkline ─────────────────────────────────────────────────────
 
-function ENPSSparkline({ surveyId }: { surveyId: string }) {
+function ENPSSparkline({ surveyId: _surveyId }: { surveyId: string }) {
   const { data: trend } = useENPSTrend()
   if (!trend || trend.length === 0) return null
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Card, Table, Input, Modal } from '../../components/ui'
+import { Button, Card, Input, Modal } from '../../components/ui'
 import { toast } from '../../components/ui'
 import {
   useBOMSubstitutions,
@@ -8,7 +8,6 @@ import {
   type MaterialSubstitution,
   type SubstitutionCreate,
 } from '../../api/manufacturing_eco'
-import { useInventoryItems } from '../../api/inventory'
 
 interface Props {
   bomId: string
@@ -24,7 +23,6 @@ export default function MaterialSubstitutionsPanel({ bomId }: Props) {
   })
 
   const { data: substitutions, isLoading } = useBOMSubstitutions(bomId)
-  const { data: items } = useInventoryItems({ limit: 200 })
   const addSub = useAddSubstitution()
   const deleteSub = useDeleteSubstitution()
 
@@ -32,19 +30,19 @@ export default function MaterialSubstitutionsPanel({ bomId }: Props) {
     if (!form.bomItemId || !form.substitute_item_id) return
     try {
       await addSub.mutateAsync(form)
-      toast({ title: 'Substitution added' })
+      toast('success', 'Substitution added')
       setModalOpen(false)
     } catch {
-      toast({ title: 'Failed to add substitution', variant: 'destructive' })
+      toast('error', 'Failed to add substitution')
     }
   }
 
   const handleDelete = async (subId: string) => {
     try {
       await deleteSub.mutateAsync(subId)
-      toast({ title: 'Substitution removed' })
+      toast('success', 'Substitution removed')
     } catch {
-      toast({ title: 'Failed to remove', variant: 'destructive' })
+      toast('error', 'Failed to remove')
     }
   }
 
@@ -55,14 +53,14 @@ export default function MaterialSubstitutionsPanel({ bomId }: Props) {
         <Button size="sm" onClick={() => setModalOpen(true)}>+ Add</Button>
       </div>
 
-      <Table>
+      <table className="w-full text-sm">
         <thead>
           <tr>
-            <th>BOM Item</th>
-            <th>Substitute</th>
-            <th>Priority</th>
-            <th>Conversion</th>
-            <th>Valid</th>
+            <th className="text-left py-3 px-4">BOM Item</th>
+            <th className="text-left py-3 px-4">Substitute</th>
+            <th className="text-left py-3 px-4">Priority</th>
+            <th className="text-left py-3 px-4">Conversion</th>
+            <th className="text-left py-3 px-4">Valid</th>
             <th></th>
           </tr>
         </thead>
@@ -84,7 +82,7 @@ export default function MaterialSubstitutionsPanel({ bomId }: Props) {
             </tr>
           ))}
         </tbody>
-      </Table>
+      </table>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Material Substitution">
         <div className="space-y-4">

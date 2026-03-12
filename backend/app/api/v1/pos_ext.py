@@ -235,7 +235,7 @@ async def update_terminal(
     return TerminalOut.model_validate(terminal).model_dump()
 
 
-@router.delete("/terminals/{terminal_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, summary="Delete a POS terminal")
+@router.delete("/terminals/{terminal_id}", status_code=status.HTTP_200_OK, response_model=None, summary="Delete a POS terminal")
 async def delete_terminal(
     terminal_id: uuid.UUID,
     current_user: CurrentUser,
@@ -535,7 +535,7 @@ async def update_discount(
     return DiscountOut.model_validate(discount).model_dump()
 
 
-@router.delete("/discounts/{discount_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, summary="Delete a POS discount")
+@router.delete("/discounts/{discount_id}", status_code=status.HTTP_200_OK, response_model=None, summary="Delete a POS discount")
 async def delete_discount(
     discount_id: uuid.UUID,
     current_user: CurrentUser,
@@ -1323,7 +1323,7 @@ async def update_bundle(
     return await _bundle_to_dict(db, bundle)
 
 
-@router.delete("/bundles/{bundle_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a bundle")
+@router.delete("/bundles/{bundle_id}", status_code=status.HTTP_200_OK, summary="Delete a bundle")
 async def delete_bundle(
     bundle_id: uuid.UUID,
     current_user: CurrentUser,
@@ -1466,7 +1466,7 @@ async def update_modifier_group(
     return await _modifier_group_to_dict(db, group)
 
 
-@router.delete("/modifier-groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a modifier group")
+@router.delete("/modifier-groups/{group_id}", status_code=status.HTTP_200_OK, summary="Delete a modifier group")
 async def delete_modifier_group(
     group_id: uuid.UUID,
     current_user: CurrentUser,
@@ -1502,7 +1502,7 @@ async def link_modifier_group_to_product(
     return {"message": "Modifier group linked to product", "item_id": str(item_id), "group_id": str(group_id)}
 
 
-@router.delete("/products/{item_id}/modifier-groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT,
+@router.delete("/products/{item_id}/modifier-groups/{group_id}", status_code=status.HTTP_200_OK,
                summary="Unlink a modifier group from a product")
 async def unlink_modifier_group_from_product(
     item_id: uuid.UUID,

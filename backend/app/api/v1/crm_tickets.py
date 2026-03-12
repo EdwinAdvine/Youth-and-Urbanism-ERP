@@ -161,7 +161,7 @@ async def update_ticket(
     return TicketOut.model_validate(ticket).model_dump()
 
 
-@router.delete("/tickets/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a CRM ticket")
+@router.delete("/tickets/{ticket_id}", status_code=status.HTTP_200_OK, summary="Delete a CRM ticket")
 async def delete_ticket(
     ticket_id: uuid.UUID,
     current_user: CurrentUser,
@@ -172,7 +172,7 @@ async def delete_ticket(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     await db.delete(ticket)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.put("/tickets/{ticket_id}/assign", summary="Assign a CRM ticket")

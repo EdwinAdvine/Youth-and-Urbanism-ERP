@@ -7,6 +7,7 @@ import {
   useTickets, useCreateTicket, useTicketCategories,
   type Ticket, type CreateTicketPayload,
 } from '../../api/support'
+import { useSavedViews, useTicketTemplates } from '../../api/support_phase1'
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -76,6 +77,8 @@ export default function TicketsPage() {
   })
   const { data: categories } = useTicketCategories()
   const createMutation = useCreateTicket()
+  const { data: savedViews } = useSavedViews()
+  const { data: templates } = useTicketTemplates()
 
   const totalPages = Math.ceil((data?.total ?? 0) / limit)
 
@@ -188,6 +191,45 @@ export default function TicketsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Saved Views & Templates */}
+      {((savedViews && savedViews.length > 0) || (templates && templates.length > 0)) && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {savedViews && savedViews.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 uppercase tracking-wide">Views:</span>
+              {savedViews.map((v: { id: string; name: string }) => (
+                <Button
+                  key={v.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/support/tickets?view=${v.id}`)}
+                >
+                  {v.name}
+                </Button>
+              ))}
+            </div>
+          )}
+          {templates && templates.length > 0 && (
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="text-xs text-gray-500 uppercase tracking-wide">Quick Create:</span>
+              {templates.filter((t: { is_active: boolean }) => t.is_active).slice(0, 3).map((t: { id: string; name: string }) => (
+                <Button
+                  key={t.id}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowCreate(true)
+                    // Template pre-fill will be handled by the create modal
+                  }}
+                >
+                  {t.name}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       <Card className="mb-5 sm:mb-6">

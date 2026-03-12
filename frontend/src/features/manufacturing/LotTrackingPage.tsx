@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Badge, Card, Table, Input, Modal, Select } from '../../components/ui'
+import { Button, Badge, Card, Input, Modal, Select } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useLots, useCreateLot, type LotSerial, type LotSerialCreate } from '../../api/manufacturing_trace'
 
-const statusColors: Record<string, string> = { active: 'green', consumed: 'blue', shipped: 'purple', recalled: 'red' }
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const statusColors: Record<string, BadgeVariant> = { active: 'success', consumed: 'info', shipped: 'primary', recalled: 'danger' }
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return '—'
@@ -25,14 +27,14 @@ export default function LotTrackingPage() {
   const createLot = useCreateLot()
 
   const handleCreate = async () => {
-    if (!form.tracking_number || !form.item_id) return toast({ title: 'Tracking number and item are required', variant: 'destructive' })
+    if (!form.tracking_number || !form.item_id) return toast('error', 'Tracking number and item are required')
     try {
       const lot = await createLot.mutateAsync(form)
-      toast({ title: `${form.tracking_type === 'lot' ? 'Lot' : 'Serial'} ${lot.tracking_number} created` })
+      toast('success', `${form.tracking_type === 'lot' ? 'Lot' : 'Serial'} ${lot.tracking_number} created`)
       setModalOpen(false)
       setForm({ tracking_number: '', item_id: '', tracking_type: 'lot' })
     } catch {
-      toast({ title: 'Failed to create', variant: 'destructive' })
+      toast('error', 'Failed to create')
     }
   }
 
@@ -56,16 +58,16 @@ export default function LotTrackingPage() {
       </div>
 
       <Card>
-        <Table>
+        <table className="w-full text-sm">
           <thead>
             <tr>
-              <th>Tracking #</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Quantity</th>
-              <th>Manufactured</th>
-              <th>Expiry</th>
-              <th>Created</th>
+              <th className="text-left py-3 px-4">Tracking #</th>
+              <th className="text-left py-3 px-4">Type</th>
+              <th className="text-left py-3 px-4">Status</th>
+              <th className="text-left py-3 px-4">Quantity</th>
+              <th className="text-left py-3 px-4">Manufactured</th>
+              <th className="text-left py-3 px-4">Expiry</th>
+              <th className="text-left py-3 px-4">Created</th>
             </tr>
           </thead>
           <tbody>
@@ -77,7 +79,7 @@ export default function LotTrackingPage() {
               <tr key={lot.id} className="cursor-pointer hover:bg-gray-50" onClick={() => navigate(`/manufacturing/lots/${lot.id}`)}>
                 <td className="font-mono text-sm font-medium">{lot.tracking_number}</td>
                 <td className="capitalize">{lot.tracking_type}</td>
-                <td><Badge variant={statusColors[lot.status] || 'gray'}>{lot.status}</Badge></td>
+                <td><Badge variant={statusColors[lot.status] || 'default'}>{lot.status}</Badge></td>
                 <td>{lot.quantity}</td>
                 <td>{formatDate(lot.manufactured_date)}</td>
                 <td>{formatDate(lot.expiry_date)}</td>
@@ -85,7 +87,7 @@ export default function LotTrackingPage() {
               </tr>
             ))}
           </tbody>
-        </Table>
+        </table>
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Create Lot / Serial Number">

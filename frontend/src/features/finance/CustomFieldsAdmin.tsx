@@ -225,7 +225,7 @@ export default function CustomFieldsAdmin() {
                 <Label>Entity Type</Label>
                 <Select
                   value={form.entity_type}
-                  onValueChange={(v) => setForm((f) => ({ ...f, entity_type: v }))}
+                  onValueChange={(v: string) => setForm((f) => ({ ...f, entity_type: v }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -243,7 +243,7 @@ export default function CustomFieldsAdmin() {
                 <Label>Field Type</Label>
                 <Select
                   value={form.field_type}
-                  onValueChange={(v) => setForm((f) => ({ ...f, field_type: v }))}
+                  onValueChange={(v: string) => setForm((f) => ({ ...f, field_type: v }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -262,7 +262,7 @@ export default function CustomFieldsAdmin() {
               <Label>Field Name (API key) *</Label>
               <Input
                 value={form.field_name}
-                onChange={(e) =>
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setForm((f) => ({
                     ...f,
                     field_name: e.target.value.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""),
@@ -276,7 +276,7 @@ export default function CustomFieldsAdmin() {
               <Label>Field Label (display) *</Label>
               <Input
                 value={form.field_label}
-                onChange={(e) => setForm((f) => ({ ...f, field_label: e.target.value }))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, field_label: e.target.value }))}
                 placeholder="e.g. Purchase Order #"
               />
             </div>
@@ -285,7 +285,7 @@ export default function CustomFieldsAdmin() {
                 <Label>Options (comma-separated)</Label>
                 <Input
                   value={form.options}
-                  onChange={(e) => setForm((f) => ({ ...f, options: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, options: e.target.value }))}
                   placeholder="Option A, Option B, Option C"
                 />
               </div>
@@ -294,14 +294,14 @@ export default function CustomFieldsAdmin() {
               <Label>Default Value</Label>
               <Input
                 value={form.default_value}
-                onChange={(e) => setForm((f) => ({ ...f, default_value: e.target.value }))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, default_value: e.target.value }))}
                 placeholder="Optional default"
               />
             </div>
             <div className="flex items-center gap-3">
               <Switch
                 checked={form.is_required}
-                onCheckedChange={(v) => setForm((f) => ({ ...f, is_required: v }))}
+                onCheckedChange={(v: boolean) => setForm((f) => ({ ...f, is_required: v }))}
               />
               <Label>Required field</Label>
             </div>
@@ -310,7 +310,7 @@ export default function CustomFieldsAdmin() {
               <Input
                 type="number"
                 value={form.sort_order}
-                onChange={(e) => setForm((f) => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))}
                 className="w-24"
               />
             </div>

@@ -443,7 +443,7 @@ async def add_substitution(item_id: uuid.UUID, body: SubstitutionCreate, db: DBS
     return sub
 
 
-@router.delete("/substitutions/{sub_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/substitutions/{sub_id}", status_code=status.HTTP_200_OK)
 async def delete_substitution(sub_id: uuid.UUID, db: DBSession, user: CurrentUser):
     sub = await db.get(MaterialSubstitution, sub_id)
     if not sub:

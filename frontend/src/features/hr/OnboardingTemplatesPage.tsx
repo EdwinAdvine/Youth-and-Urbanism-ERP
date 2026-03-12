@@ -31,13 +31,7 @@ const CATEGORY_OPTIONS: { value: TaskCategory; label: string }[] = [
   { value: 'equipment',  label: 'Equipment' },
 ]
 
-const CATEGORY_COLORS: Record<TaskCategory, string> = {
-  it_setup:  'bg-blue-100 text-blue-700',
-  paperwork: 'bg-amber-100 text-amber-700',
-  training:  'bg-purple-100 text-purple-700',
-  access:    'bg-cyan-100 text-cyan-700',
-  equipment: 'bg-green-100 text-green-700',
-}
+// Category colors: it_setup=blue, paperwork=amber, training=purple, access=cyan, equipment=green
 
 // ─── Task Builder Row ─────────────────────────────────────────────────────────
 

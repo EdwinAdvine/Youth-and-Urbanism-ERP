@@ -654,3 +654,512 @@ async def dashboard_kpis(
         "active_work_orders": active_work_orders,
         "total_routing_steps": total_routing_steps,
     }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PHASE 3A — Digital Work Instructions & MES
+# ══════════════════════════════════════════════════════════════════════════════
+
+import uuid as _uuid
+from pydantic import BaseModel as _BaseModel
+
+
+class WorkInstructionsUpdate(_BaseModel):
+    work_instructions: str | None = None
+    instruction_media: dict | None = None
+    barcode_scan_required: bool | None = None
+
+
+class IoTDataPointIn(_BaseModel):
+    workstation_id: str | None = None
+    asset_id: str | None = None
+    work_order_id: str | None = None
+    metric_name: str
+    metric_value: float
+    unit: str | None = None
+    source: str | None = None
+    timestamp: str | None = None
+
+
+class BarcodeScanIn(_BaseModel):
+    barcode: str
+    scan_type: str = "work_order"  # work_order, lot, item
+
+
+@router.get("/routing-steps/{step_id}/instructions")
+async def get_work_instructions(
+    step_id: _uuid.UUID,
+    db: DBSession,
+    user: CurrentUser,
+):
+    result = await db.execute(select(RoutingStep).where(RoutingStep.id == step_id))
+    step = result.scalar_one_or_none()
+    if not step:
+        raise HTTPException(status_code=404, detail="Routing step not found")
+    return {
+        "step_id": str(step.id),
+        "operation": step.operation,
+        "duration_minutes": step.duration_minutes,
+        "work_instructions": step.work_instructions,
+        "instruction_media": step.instruction_media,
+        "barcode_scan_required": step.barcode_scan_required,
+    }
+
+
+@router.put("/routing-steps/{step_id}/instructions")
+async def update_work_instructions(
+    step_id: _uuid.UUID,
+    body: WorkInstructionsUpdate,
+    db: DBSession,
+    user: CurrentUser,
+):
+    result = await db.execute(select(RoutingStep).where(RoutingStep.id == step_id))
+    step = result.scalar_one_or_none()
+    if not step:
+        raise HTTPException(status_code=404, detail="Routing step not found")
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(step, field, value)
+    await db.commit()
+    await db.refresh(step)
+    return step
+
+
+@router.post("/barcode-scan")
+async def barcode_scan(
+    body: BarcodeScanIn,
+    db: DBSession,
+    user: CurrentUser,
+):
+    """Resolve a scanned barcode to the relevant entity."""
+    from app.models.manufacturing import WorkOrder, LotSerialTrack
+    from app.models.inventory import InventoryItem
+
+    result: dict = {"barcode": body.barcode, "scan_type": body.scan_type, "resolved": False}
+
+    if body.scan_type == "work_order":
+        wo_result = await db.execute(select(WorkOrder).where(WorkOrder.wo_number == body.barcode))
+        wo = wo_result.scalar_one_or_none()
+        if wo:
+            result.update({
+                "resolved": True,
+                "entity": "work_order",
+                "id": str(wo.id),
+                "wo_number": wo.wo_number,
+                "status": wo.status,
+                "priority": wo.priority,
+            })
+    elif body.scan_type == "lot":
+        lot_result = await db.execute(
+            select(LotSerialTrack).where(LotSerialTrack.tracking_number == body.barcode)
+        )
+        lot = lot_result.scalar_one_or_none()
+        if lot:
+            result.update({
+                "resolved": True,
+                "entity": "lot",
+                "id": str(lot.id),
+                "tracking_number": lot.tracking_number,
+                "tracking_type": lot.tracking_type,
+                "status": lot.status,
+            })
+    elif body.scan_type == "item":
+        item_result = await db.execute(
+            select(InventoryItem).where(InventoryItem.sku == body.barcode)
+        )
+        item = item_result.scalar_one_or_none()
+        if item:
+            result.update({
+                "resolved": True,
+                "entity": "item",
+                "id": str(item.id),
+                "name": item.name,
+                "sku": item.sku,
+            })
+
+    return result
+
+
+@router.post("/iot/ingest", status_code=201)
+async def ingest_iot_data(
+    body: list[IoTDataPointIn],
+    db: DBSession,
+    user: CurrentUser,
+):
+    """Bulk-ingest IoT sensor data points."""
+    from app.models.manufacturing import IoTDataPoint
+    from decimal import Decimal
+    from datetime import datetime
+
+    points = []
+    for dp in body:
+        point = IoTDataPoint(
+            workstation_id=_uuid.UUID(dp.workstation_id) if dp.workstation_id else None,
+            asset_id=_uuid.UUID(dp.asset_id) if dp.asset_id else None,
+            work_order_id=_uuid.UUID(dp.work_order_id) if dp.work_order_id else None,
+            metric_name=dp.metric_name,
+            metric_value=Decimal(str(dp.metric_value)),
+            unit=dp.unit,
+            source=dp.source,
+            timestamp=datetime.fromisoformat(dp.timestamp) if dp.timestamp else datetime.now(),
+        )
+        db.add(point)
+        points.append(point)
+
+    await db.commit()
+    return {"ingested": len(points)}
+
+
+@router.get("/iot/data")
+async def get_iot_data(
+    db: DBSession,
+    user: CurrentUser,
+    workstation_id: _uuid.UUID | None = None,
+    metric_name: str | None = None,
+    hours: int = 1,
+):
+    """Query recent IoT data points."""
+    from app.models.manufacturing import IoTDataPoint
+    from datetime import timedelta
+
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    q = select(IoTDataPoint).where(IoTDataPoint.timestamp >= cutoff)
+    if workstation_id:
+        q = q.where(IoTDataPoint.workstation_id == workstation_id)
+    if metric_name:
+        q = q.where(IoTDataPoint.metric_name == metric_name)
+    result = await db.execute(q.order_by(IoTDataPoint.timestamp.desc()).limit(500))
+    return result.scalars().all()
+
+
+@router.get("/production-board")
+async def production_board(
+    db: DBSession,
+    user: CurrentUser,
+):
+    """Live production board — all active work orders with workstation and schedule status."""
+    from app.models.manufacturing import ScheduleEntry
+
+    wo_result = await db.execute(
+        select(WorkOrder)
+        .where(WorkOrder.status.in_(["planned", "in_progress"]))
+        .order_by(WorkOrder.priority.desc(), WorkOrder.planned_start.asc().nulls_last())
+    )
+    work_orders = wo_result.scalars().all()
+
+    board = []
+    for wo in work_orders:
+        # Get current schedule entries
+        se_result = await db.execute(
+            select(ScheduleEntry)
+            .where(
+                ScheduleEntry.work_order_id == wo.id,
+                ScheduleEntry.scenario_id.is_(None),
+            )
+            .order_by(ScheduleEntry.sequence)
+        )
+        entries = se_result.scalars().all()
+
+        board.append({
+            "id": str(wo.id),
+            "wo_number": wo.wo_number,
+            "status": wo.status,
+            "priority": wo.priority,
+            "planned_quantity": wo.planned_quantity,
+            "completed_quantity": wo.completed_quantity,
+            "progress_percent": round(wo.completed_quantity / wo.planned_quantity * 100, 1) if wo.planned_quantity else 0,
+            "planned_start": wo.planned_start.isoformat() if wo.planned_start else None,
+            "planned_end": wo.planned_end.isoformat() if wo.planned_end else None,
+            "actual_start": wo.actual_start.isoformat() if wo.actual_start else None,
+            "workstation_id": str(wo.workstation_id) if wo.workstation_id else None,
+            "schedule_entries": len(entries),
+            "current_step": next(({"id": str(e.id), "status": e.status, "sequence": e.sequence} for e in entries if e.status == "in_progress"), None),
+        })
+    return board
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PHASE 3C — CPQ Product Configurator
+# ══════════════════════════════════════════════════════════════════════════════
+
+class ConfiguratorRuleCreate(_BaseModel):
+    name: str
+    bom_id: str
+    rule_type: str
+    condition: dict
+    action: dict
+    priority: int = 0
+
+
+class ConfiguratorSelectionIn(_BaseModel):
+    feature: str
+    value: str
+
+
+@router.post("/configurator/rules", status_code=201)
+async def create_configurator_rule(
+    body: ConfiguratorRuleCreate,
+    db: DBSession,
+    user: CurrentUser,
+):
+    from app.models.manufacturing import ConfiguratorRule
+    rule = ConfiguratorRule(
+        name=body.name,
+        bom_id=_uuid.UUID(body.bom_id),
+        rule_type=body.rule_type,
+        condition=body.condition,
+        action=body.action,
+        priority=body.priority,
+        is_active=True,
+        created_by=user.id,
+    )
+    db.add(rule)
+    await db.commit()
+    await db.refresh(rule)
+    return rule
+
+
+@router.get("/configurator/rules")
+async def list_configurator_rules(
+    db: DBSession,
+    user: CurrentUser,
+    bom_id: _uuid.UUID | None = None,
+):
+    from app.models.manufacturing import ConfiguratorRule
+    q = select(ConfiguratorRule).where(ConfiguratorRule.is_active.is_(True))
+    if bom_id:
+        q = q.where(ConfiguratorRule.bom_id == bom_id)
+    result = await db.execute(q.order_by(ConfiguratorRule.priority.desc()))
+    return result.scalars().all()
+
+
+@router.put("/configurator/rules/{rule_id}")
+async def update_configurator_rule(
+    rule_id: _uuid.UUID,
+    body: dict,
+    db: DBSession,
+    user: CurrentUser,
+):
+    from app.models.manufacturing import ConfiguratorRule
+    result = await db.execute(select(ConfiguratorRule).where(ConfiguratorRule.id == rule_id))
+    rule = result.scalar_one_or_none()
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    for field, value in body.items():
+        if hasattr(rule, field):
+            setattr(rule, field, value)
+    await db.commit()
+    await db.refresh(rule)
+    return rule
+
+
+@router.delete("/configurator/rules/{rule_id}", status_code=204)
+async def delete_configurator_rule(
+    rule_id: _uuid.UUID,
+    db: DBSession,
+    user: CurrentUser,
+):
+    from app.models.manufacturing import ConfiguratorRule
+    result = await db.execute(select(ConfiguratorRule).where(ConfiguratorRule.id == rule_id))
+    rule = result.scalar_one_or_none()
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    rule.is_active = False
+    await db.commit()
+
+
+@router.post("/configurator/sessions")
+async def start_configurator_session(
+    bom_id: _uuid.UUID,
+    db: DBSession,
+    user: CurrentUser,
+):
+    """Start a new CPQ configuration session for a BOM."""
+    import random, string
+    from app.models.manufacturing import ConfiguratorSession, BOMItem
+    from app.models.inventory import InventoryItem
+    from decimal import Decimal
+
+    code = "CPQ-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+
+    # Load base BOM items with costs
+    items_result = await db.execute(
+        select(BOMItem, InventoryItem)
+        .join(InventoryItem, BOMItem.item_id == InventoryItem.id)
+        .where(BOMItem.bom_id == bom_id, BOMItem.is_phantom.is_(False))
+    )
+    rows = items_result.all()
+    base_items = [
+        {
+            "bom_item_id": str(r.BOMItem.id),
+            "item_id": str(r.InventoryItem.id),
+            "name": r.InventoryItem.name,
+            "quantity": float(r.BOMItem.quantity_required),
+            "unit_cost": float(getattr(r.InventoryItem, "cost_price", 0) or 0),
+        }
+        for r in rows
+    ]
+    base_cost = sum(i["quantity"] * i["unit_cost"] for i in base_items)
+
+    session = ConfiguratorSession(
+        session_code=code,
+        base_bom_id=bom_id,
+        selections={},
+        computed_bom_items=base_items,
+        computed_cost=Decimal(str(base_cost)),
+        status="active",
+        created_by=user.id,
+    )
+    db.add(session)
+    await db.commit()
+    await db.refresh(session)
+    return session
+
+
+@router.get("/configurator/sessions/{session_id}")
+async def get_configurator_session(
+    session_id: _uuid.UUID,
+    db: DBSession,
+    user: CurrentUser,
+):
+    from app.models.manufacturing import ConfiguratorSession
+    result = await db.execute(select(ConfiguratorSession).where(ConfiguratorSession.id == session_id))
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return session
+
+
+@router.post("/configurator/sessions/{session_id}/select")
+async def apply_selection(
+    session_id: _uuid.UUID,
+    body: ConfiguratorSelectionIn,
+    db: DBSession,
+    user: CurrentUser,
+):
+    """Apply a feature selection to a CPQ session and recompute the BOM."""
+    from app.models.manufacturing import ConfiguratorSession, ConfiguratorRule
+    from decimal import Decimal
+
+    result = await db.execute(select(ConfiguratorSession).where(ConfiguratorSession.id == session_id))
+    session = result.scalar_one_or_none()
+    if not session or session.status != "active":
+        raise HTTPException(status_code=404, detail="Active session not found")
+
+    # Update selections
+    selections = dict(session.selections or {})
+    selections[body.feature] = body.value
+    session.selections = selections
+
+    # Reload base items and apply rules
+    from app.models.manufacturing import BOMItem, ConfiguratorRule
+    from app.models.inventory import InventoryItem
+
+    items_result = await db.execute(
+        select(BOMItem, InventoryItem)
+        .join(InventoryItem, BOMItem.item_id == InventoryItem.id)
+        .where(BOMItem.bom_id == session.base_bom_id, BOMItem.is_phantom.is_(False))
+    )
+    rows = items_result.all()
+    computed = {
+        str(r.BOMItem.id): {
+            "bom_item_id": str(r.BOMItem.id),
+            "item_id": str(r.InventoryItem.id),
+            "name": r.InventoryItem.name,
+            "quantity": float(r.BOMItem.quantity_required),
+            "unit_cost": float(getattr(r.InventoryItem, "cost_price", 0) or 0),
+            "included": True,
+        }
+        for r in rows
+    }
+
+    # Apply active rules
+    rules_result = await db.execute(
+        select(ConfiguratorRule)
+        .where(
+            ConfiguratorRule.bom_id == session.base_bom_id,
+            ConfiguratorRule.is_active.is_(True),
+        )
+        .order_by(ConfiguratorRule.priority.desc())
+    )
+    rules = rules_result.scalars().all()
+
+    for rule in rules:
+        cond = rule.condition or {}
+        cond_feature = cond.get("feature")
+        cond_value = cond.get("value")
+        if cond_feature and selections.get(cond_feature) != cond_value:
+            continue  # Condition not met
+
+        action = rule.action or {}
+        target_item_id = action.get("bom_item_id")
+
+        if rule.rule_type == "exclude" and target_item_id in computed:
+            computed[target_item_id]["included"] = False
+        elif rule.rule_type == "include" and target_item_id in computed:
+            computed[target_item_id]["included"] = True
+        elif rule.rule_type == "quantity_adjust" and target_item_id in computed:
+            computed[target_item_id]["quantity"] = float(action.get("quantity", computed[target_item_id]["quantity"]))
+
+    final_items = [v for v in computed.values() if v.get("included", True)]
+    total_cost = sum(i["quantity"] * i["unit_cost"] for i in final_items)
+
+    session.computed_bom_items = final_items
+    session.computed_cost = Decimal(str(total_cost))
+    await db.commit()
+    await db.refresh(session)
+    return session
+
+
+@router.post("/configurator/sessions/{session_id}/finalize")
+async def finalize_configurator_session(
+    session_id: _uuid.UUID,
+    db: DBSession,
+    user: CurrentUser,
+):
+    """Finalize CPQ session → create a new BOM from the configured items."""
+    from app.models.manufacturing import ConfiguratorSession, BillOfMaterials, BOMItem
+    import random, string
+
+    result = await db.execute(select(ConfiguratorSession).where(ConfiguratorSession.id == session_id))
+    session = result.scalar_one_or_none()
+    if not session or session.status != "active":
+        raise HTTPException(status_code=404, detail="Active session not found")
+
+    # Load base BOM for metadata
+    bom_result = await db.execute(select(BillOfMaterials).where(BillOfMaterials.id == session.base_bom_id))
+    base_bom = bom_result.scalar_one_or_none()
+    if not base_bom:
+        raise HTTPException(status_code=400, detail="Base BOM not found")
+
+    suffix = "".join(random.choices(string.digits, k=4))
+    new_bom = BillOfMaterials(
+        bom_number=f"{base_bom.bom_number}-CPQ-{suffix}",
+        name=f"{base_bom.name} (Configured {session.session_code})",
+        finished_item_id=base_bom.finished_item_id,
+        quantity_produced=base_bom.quantity_produced,
+        version=1,
+        is_active=True,
+        is_default=False,
+        owner_id=user.id,
+    )
+    db.add(new_bom)
+    await db.flush()
+
+    # Create BOM items from computed items
+    for item_data in (session.computed_bom_items or []):
+        import uuid as _u
+        bom_item = BOMItem(
+            bom_id=new_bom.id,
+            item_id=_u.UUID(item_data["item_id"]),
+            quantity_required=item_data["quantity"],
+            unit_of_measure="unit",
+            sort_order=0,
+            is_phantom=False,
+        )
+        db.add(bom_item)
+
+    session.status = "finalized"
+    session.finalized_bom_id = new_bom.id
+    await db.commit()
+    await db.refresh(session)
+    return {"session": session, "finalized_bom_id": str(new_bom.id), "bom_number": new_bom.bom_number}

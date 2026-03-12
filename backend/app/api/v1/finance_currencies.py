@@ -130,7 +130,7 @@ async def update_currency(
     return CurrencyOut.model_validate(currency).model_dump()
 
 
-@router.delete("/currencies/{currency_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a currency")
+@router.delete("/currencies/{currency_id}", status_code=status.HTTP_200_OK, summary="Delete a currency")
 async def delete_currency(
     currency_id: uuid.UUID,
     current_user: CurrentUser,
@@ -147,4 +147,4 @@ async def delete_currency(
         )
     await db.delete(currency)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)

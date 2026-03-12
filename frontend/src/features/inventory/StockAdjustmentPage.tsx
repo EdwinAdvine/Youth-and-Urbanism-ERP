@@ -42,7 +42,7 @@ const defaultForm: CreateStockAdjustmentPayload = {
 
 export default function StockAdjustmentPage() {
   const [reasonFilter, setReasonFilter] = useState<AdjustmentReason | ''>('')
-  const { data: adjustments, isLoading } = useStockAdjustments({ reason: reasonFilter || undefined })
+  const { data: adjustments, isLoading } = useStockAdjustments(reasonFilter ? { item_id: undefined, warehouse_id: undefined } : {})
   const { data: itemsData } = useInventoryItems({ limit: 500 })
   const { data: warehouses } = useWarehouses()
   const createAdjustment = useCreateStockAdjustment()

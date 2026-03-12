@@ -28,7 +28,7 @@ function formatCurrency(val: number): string {
 export default function ExecutiveDashboardPage() {
   const { data: executive, isLoading: execLoading } = useExecutiveSummary()
   const { data: moduleKPIs, isLoading: kpisLoading } = useModuleKPIs()
-  const { data: trends, isLoading: trendsLoading } = useModuleTrends({ period: 'monthly' })
+  const { data: trends } = useModuleTrends({ module: '', period: 'monthly' })
 
   const isLoading = execLoading || kpisLoading
 
@@ -60,24 +60,24 @@ export default function ExecutiveDashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard
             label="Total Revenue (MTD)"
-            value={formatCurrency(executive.total_revenue)}
+            value={formatCurrency(executive.revenue_mtd)}
             change={executive.revenue_change}
             color="#51459d"
           />
           <KPICard
             label="Total Expenses (MTD)"
-            value={formatCurrency(executive.total_expenses)}
-            change={executive.expense_change}
+            value={formatCurrency(executive.expenses_mtd)}
+            change={executive.expenses_change}
             color="#ff3a6e"
           />
           <KPICard
             label="Net Profit"
-            value={formatCurrency(executive.total_revenue - executive.total_expenses)}
+            value={formatCurrency(executive.revenue_mtd - executive.expenses_mtd)}
             color="#6fd943"
           />
           <KPICard
-            label="Active Users"
-            value={executive.active_users?.toString() || '0'}
+            label="Active Customers"
+            value={executive.active_customers?.toString() || '0'}
             color="#3ec9d6"
           />
         </div>
@@ -128,12 +128,19 @@ export default function ExecutiveDashboardPage() {
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 capitalize">{mk.module}</h3>
               </div>
               <div className="space-y-3">
-                {Object.entries(mk.kpis).map(([key, val]) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">{key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</span>
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {typeof val === 'number' ? val.toLocaleString() : String(val)}
-                    </span>
+                {mk.kpis.map((kpi) => (
+                  <div key={kpi.name} className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">{kpi.name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {kpi.value.toLocaleString()}
+                      </span>
+                      {kpi.change !== 0 && (
+                        <span className={`text-xs ${kpi.trend === 'up' ? 'text-green-600' : kpi.trend === 'down' ? 'text-red-500' : 'text-gray-400'}`}>
+                          {kpi.change >= 0 ? '+' : ''}{kpi.change.toFixed(1)}%
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -142,45 +149,55 @@ export default function ExecutiveDashboardPage() {
         </div>
       )}
 
-      {/* Bottom Row: Pending Actions + Quick Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {executive && executive.pending_actions && (
+      {/* Bottom Row: Quick Stats */}
+      {executive && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Pending Actions</h4>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Key Metrics</h4>
             <div className="space-y-2">
-              {Object.entries(executive.pending_actions).map(([label, count]) => (
-                <div key={label} className="flex items-center justify-between py-1.5">
-                  <span className="text-xs text-gray-600 dark:text-gray-400">
-                    {label.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                  </span>
-                  <Badge variant={Number(count) > 5 ? 'danger' : Number(count) > 0 ? 'warning' : 'success'}>
-                    {String(count)}
+              {[
+                { label: 'Open Tickets', value: executive.open_tickets },
+                { label: 'Deals Pipeline', value: executive.deals_pipeline_value },
+                { label: 'Inventory Value', value: executive.inventory_value },
+                { label: 'Cash Balance', value: executive.cash_balance },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between py-1.5">
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{item.label}</span>
+                  <Badge variant={item.value > 0 ? 'primary' : 'default'}>
+                    {item.value.toLocaleString()}
                   </Badge>
                 </div>
               ))}
             </div>
           </Card>
-        )}
-
-        {executive && executive.system_health && (
           <Card>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">System Health</h4>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Workforce</h4>
             <div className="space-y-3">
-              {Object.entries(executive.system_health).map(([label, value]) => (
-                <div key={label} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-xs text-gray-600 dark:text-gray-400">
-                      {label.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                    </span>
-                  </div>
-                  <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{String(value)}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Employee Count</span>
                 </div>
-              ))}
+                <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{executive.employee_count}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Active Customers</span>
+                </div>
+                <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{executive.active_customers}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-purple-500" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Profit Margin</span>
+                </div>
+                <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{executive.profit_margin.toFixed(1)}%</span>
+              </div>
             </div>
           </Card>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Fallback if no data from API yet */}
       {!executive && !moduleKPIs && (

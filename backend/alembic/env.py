@@ -14,20 +14,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.core.config import settings  # noqa: E402
 
 # Import all models so Alembic can detect them
-from app.models import Base  # noqa: E402 — registers all mappers
-from app.models import (  # noqa: E402, F401
-    AIAuditLog,
-    AIConfig,
-    AIChatHistory,
-    AppAdmin,
-    Permission,
-    Role,
-    RolePermission,
-    Team,
-    TeamMember,
-    User,
-    UserRole,
-)
+# Importing Base from app.models triggers __init__.py which registers ALL model mappers
+from app.models import Base  # noqa: E402, F401 — registers all mappers
+from app.models import *  # noqa: E402, F401, F403 — ensure every model is loaded
 
 # ── Alembic Config ────────────────────────────────────────────────────────────
 config = context.config

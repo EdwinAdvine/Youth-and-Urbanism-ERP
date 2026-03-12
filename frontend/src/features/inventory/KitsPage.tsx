@@ -9,8 +9,8 @@ export default function KitsPage() {
   const [checkModal, setCheckModal] = useState<{ open: boolean; kit: Kit | null; data: Record<string, unknown> | null }>({ open: false, kit: null, data: null })
   const [form, setForm] = useState({ kit_item_id: '', description: '' })
   const [components, setComponents] = useState<{ component_item_id: string; quantity: string; is_optional: boolean }[]>([])
-  const [checkWarehouse, setCheckWarehouse] = useState('')
-  const [checkQty, setCheckQty] = useState('1')
+  const [checkWarehouse] = useState('')
+  const [checkQty] = useState('1')
 
   const { data: kits, isLoading } = useKits()
   const { data: items } = useInventoryItems()

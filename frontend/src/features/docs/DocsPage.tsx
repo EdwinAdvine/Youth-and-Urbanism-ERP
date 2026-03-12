@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
-import { useDocuments, useCreateDocument, useEditorConfig, useDocComments, useCreateDocComment, useUpdateDocComment, useDeleteDocComment, useDocVersions, useDownloadVersion, useRestoreVersion, useDocLinks, useCreateDocLink, useDeleteDocLink, Document } from '../../api/docs'
+import { useDocuments, useCreateDocument, useEditorConfig, useDocComments, useCreateDocComment, useUpdateDocComment, useDeleteDocComment, useDocVersions, useDownloadVersion, useRestoreVersion, useDocLinks, useCreateDocLink, useDeleteDocLink, useBookmarks, Document } from '../../api/docs'
 import { formatFileSize } from '../../api/drive'
 import FilePickerDialog from './FilePickerDialog'
 import PermissionSharingDialog from './PermissionSharingDialog'
 import AIGenerationPanel from './AIGenerationPanel'
 import PrintPreview from './PrintPreview'
 import RibbonToolbar from './RibbonToolbar'
+import ERPTemplateDialog from './ERPTemplateDialog'
+import DocCopilot from './DocCopilot'
 
 // ─── File type config ─────────────────────────────────────────────────────────
 
@@ -102,7 +104,7 @@ function OnlyOfficeEditor({ file, onClose }: { file: Document; onClose: () => vo
   const containerRef = useRef<HTMLDivElement>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [sidePanel, setSidePanel] = useState<'comments' | 'versions' | 'ai' | null>(null)
+  const [sidePanel, setSidePanel] = useState<'comments' | 'versions' | 'ai' | 'copilot' | null>(null)
   const [showShare, setShowShare] = useState(false)
   const [showPrint, setShowPrint] = useState(false)
   const { data: editorData, isError: configError } = useEditorConfig(file.id)
@@ -165,9 +167,11 @@ function OnlyOfficeEditor({ file, onClose }: { file: Document; onClose: () => vo
         onToggleComments={() => setSidePanel(sidePanel === 'comments' ? null : 'comments')}
         onToggleVersions={() => setSidePanel(sidePanel === 'versions' ? null : 'versions')}
         onToggleAI={() => setSidePanel(sidePanel === 'ai' ? null : 'ai')}
+        onToggleCopilot={() => setSidePanel(sidePanel === 'copilot' ? null : 'copilot')}
         commentsActive={sidePanel === 'comments'}
         versionsActive={sidePanel === 'versions'}
         aiActive={sidePanel === 'ai'}
+        copilotActive={sidePanel === 'copilot'}
       />
 
       {/* Linked Tasks */}
@@ -178,6 +182,7 @@ function OnlyOfficeEditor({ file, onClose }: { file: Document; onClose: () => vo
         {sidePanel === 'comments' && <CommentsPanel fileId={file.id} onClose={() => setSidePanel(null)} />}
         {sidePanel === 'versions' && <VersionPanel fileId={file.id} onClose={() => setSidePanel(null)} />}
         {sidePanel === 'ai' && <AIGenerationPanel fileId={file.id} onClose={() => setSidePanel(null)} />}
+        {sidePanel === 'copilot' && <DocCopilot fileId={file.id} onClose={() => setSidePanel(null)} />}
         {loading && !error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 z-10">
             <svg className="animate-spin h-6 w-6 text-[#51459d] mb-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -403,12 +408,19 @@ export default function DocsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showCreate, setShowCreate] = useState(false)
   const [showFilePicker, setShowFilePicker] = useState(false)
+  const [showERPTemplates, setShowERPTemplates] = useState(false)
   const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState<'all' | 'bookmarked'>('all')
 
   const { data, isError } = useDocuments()
-  const documents = (data?.documents ?? []).filter((f) =>
-    !search || f.name.toLowerCase().includes(search.toLowerCase())
-  )
+  const { data: bookmarksData } = useBookmarks()
+  const bookmarkedIds = new Set((bookmarksData?.bookmarks ?? []).map((b) => b.file_id))
+
+  const documents = (data?.documents ?? []).filter((f) => {
+    if (search && !f.name.toLowerCase().includes(search.toLowerCase())) return false
+    if (filter === 'bookmarked' && !bookmarkedIds.has(f.id)) return false
+    return true
+  })
 
   const createDoc = useCreateDocument()
 
@@ -438,6 +450,21 @@ export default function DocsPage() {
       {/* Toolbar */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800 px-3 sm:px-5 py-3 flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
         <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">Documents</h1>
+        <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-[8px] overflow-hidden ml-3">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-3 py-1.5 text-xs font-medium transition-colors ${filter === 'all' ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setFilter('bookmarked')}
+            className={`px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1 ${filter === 'bookmarked' ? 'bg-[#ffa21d]/10 text-[#ffa21d]' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+          >
+            <svg className="h-3 w-3" fill={filter === 'bookmarked' ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+            Bookmarked
+          </button>
+        </div>
         <div className="flex-1" />
         <div className="relative w-full sm:w-auto order-last sm:order-none mt-2 sm:mt-0">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -451,6 +478,10 @@ export default function DocsPage() {
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
           </button>
         </div>
+        <button onClick={() => setShowERPTemplates(true)} className="flex items-center justify-center gap-1.5 border border-[#51459d]/30 text-[#51459d] text-xs font-medium rounded-[8px] px-3 py-2 hover:bg-[#51459d]/5 transition-colors min-h-[44px] min-w-[44px]">
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          <span className="hidden sm:inline">Generate from ERP</span>
+        </button>
         <button onClick={() => setShowCreate(true)} className="flex items-center justify-center gap-1.5 bg-[#51459d] text-white text-xs font-medium rounded-[8px] px-3 py-2 hover:bg-[#3d3480] transition-colors min-h-[44px] min-w-[44px]">
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
           <span className="hidden sm:inline">New Document</span>
@@ -545,6 +576,28 @@ export default function DocsPage() {
         onClose={() => setShowFilePicker(false)}
         onOpenFile={(doc) => setOpenFile(doc)}
         onCreateFile={handleCreate}
+      />
+
+      <ERPTemplateDialog
+        open={showERPTemplates}
+        onClose={() => setShowERPTemplates(false)}
+        onGenerated={(result) => {
+          // After generation, open the new document
+          setOpenFile({
+            id: result.file_id,
+            name: result.filename,
+            extension: result.filename.split('.').pop() ?? 'docx',
+            content_type: result.filename.endsWith('.xlsx')
+              ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+              : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            size: 0,
+            minio_key: '',
+            folder_path: '/documents/erp-generated',
+            is_public: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+        }}
       />
     </div>
   )

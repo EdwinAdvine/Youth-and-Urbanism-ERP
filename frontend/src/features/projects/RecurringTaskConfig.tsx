@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams } from 'react-router-dom'
 import {
   useRecurringConfigs,
   useCreateRecurringConfig,
@@ -16,10 +17,12 @@ const recurrenceLabels: Record<string, string> = {
 }
 
 interface RecurringTaskConfigProps {
-  projectId: string
+  projectId?: string
 }
 
-export default function RecurringTaskConfig({ projectId }: RecurringTaskConfigProps) {
+export default function RecurringTaskConfig({ projectId: propProjectId }: RecurringTaskConfigProps) {
+  const { id: routeId } = useParams<{ id: string }>()
+  const projectId = propProjectId ?? routeId ?? ''
   const { data: configs, isLoading } = useRecurringConfigs(projectId)
   const createConfig = useCreateRecurringConfig()
   const deleteConfig = useDeleteRecurringConfig()

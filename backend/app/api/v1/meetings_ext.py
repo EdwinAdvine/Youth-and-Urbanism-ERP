@@ -760,7 +760,7 @@ async def get_linked_tasks(
 
 @router.delete(
     "/{meeting_id}/unlink-task/{task_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Unlink a task from a meeting",
 )
 async def unlink_task(
@@ -786,7 +786,7 @@ async def unlink_task(
 
     await db.delete(link)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Meetings → Notes: Auto-Create Meeting Notes ─────────────────────────────
@@ -1043,7 +1043,7 @@ async def get_linked_crm(
 
 @router.delete(
     "/{meeting_id}/unlink-crm/{link_type}/{entity_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Unlink a CRM contact or deal from a meeting",
 )
 async def unlink_crm(
@@ -1076,4 +1076,4 @@ async def unlink_crm(
 
     await db.delete(link)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)

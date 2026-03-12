@@ -272,6 +272,37 @@ export function useUpdateSafetyStock() {
 
 // ─── Additional Payload types ────────────────────────────────────────────────
 
+export interface CreateAlertPayload {
+  alert_type: string
+  severity: string
+  title: string
+  description?: string
+  reference_type?: string
+  reference_id?: string
+  assigned_to?: string
+}
+
+export interface UpdateAlertPayload {
+  id: string
+  severity?: string
+  title?: string
+  description?: string
+  status?: string
+  reference_type?: string
+  reference_id?: string
+  assigned_to?: string
+}
+
+export interface CreateRFxResponsePayload {
+  rfx_id: string
+  supplier_id: string
+  quoted_items: Record<string, unknown>
+  total_value: number
+  lead_time_days?: number
+  notes?: string
+  score?: number
+}
+
 export interface UpdateSafetyStockPayload {
   id: string
   safety_stock_qty?: number

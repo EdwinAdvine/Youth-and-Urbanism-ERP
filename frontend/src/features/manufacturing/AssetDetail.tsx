@@ -1,14 +1,16 @@
 import { useParams } from 'react-router-dom'
 import { useState } from 'react'
-import { Button, Badge, Card, Table, Modal, Input } from '../../components/ui'
+import { Button, Badge, Card, Modal, Input } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useAsset, useAssetHistory, useUpdateAsset } from '../../api/manufacturing_equipment'
 
-const statusColors: Record<string, string> = {
-  active: 'green',
-  inactive: 'gray',
-  disposed: 'red',
-  under_maintenance: 'yellow',
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const statusColors: Record<string, BadgeVariant> = {
+  active: 'success',
+  inactive: 'default',
+  disposed: 'danger',
+  under_maintenance: 'warning',
 }
 
 function formatDate(d: string | null) {
@@ -28,10 +30,10 @@ export default function AssetDetail() {
   const handleSave = async () => {
     try {
       await updateAsset.mutateAsync({ id: assetId!, data: editForm })
-      toast({ title: 'Asset updated' })
+      toast('success', 'Asset updated')
       setEditOpen(false)
     } catch {
-      toast({ title: 'Failed to update', variant: 'destructive' })
+      toast('error', 'Failed to update')
     }
   }
 
@@ -46,7 +48,7 @@ export default function AssetDetail() {
           <div className="text-gray-500 font-mono text-sm">{asset.asset_code}</div>
         </div>
         <div className="flex gap-2">
-          <Badge variant={statusColors[asset.status] || 'gray'} className="text-sm">
+          <Badge variant={statusColors[asset.status] || 'default'} className="text-sm">
             {asset.status.replace('_', ' ')}
           </Badge>
           <Button onClick={() => { setEditForm({ status: asset.status, location: asset.location || '', notes: asset.notes || '' }); setEditOpen(true) }}>
@@ -96,7 +98,7 @@ export default function AssetDetail() {
                 <div key={mwo.id} className="flex justify-between text-sm border-b pb-1">
                   <span className="font-mono">{mwo.mwo_number}</span>
                   <span className="text-gray-500">{mwo.maintenance_type}</span>
-                  <Badge variant={mwo.status === 'completed' ? 'green' : 'yellow'} className="text-xs">{mwo.status}</Badge>
+                  <Badge variant={mwo.status === 'completed' ? 'success' : 'warning'} className="text-xs">{mwo.status}</Badge>
                 </div>
               ))}
             </div>
@@ -107,28 +109,28 @@ export default function AssetDetail() {
       {history?.downtime_records && history.downtime_records.length > 0 && (
         <Card>
           <div className="px-4 py-3 border-b font-semibold">Recent Downtime</div>
-          <Table>
+          <table className="w-full text-sm">
             <thead>
               <tr>
-                <th>Type</th>
-                <th>Category</th>
-                <th>Start</th>
-                <th>Duration</th>
-                <th>Root Cause</th>
+                <th className="text-left py-3 px-4">Type</th>
+                <th className="text-left py-3 px-4">Category</th>
+                <th className="text-left py-3 px-4">Start</th>
+                <th className="text-left py-3 px-4">Duration</th>
+                <th className="text-left py-3 px-4">Root Cause</th>
               </tr>
             </thead>
             <tbody>
               {history.downtime_records.slice(0, 10).map(dt => (
                 <tr key={dt.id}>
-                  <td><Badge variant={dt.downtime_type === 'unplanned' ? 'red' : 'yellow'}>{dt.downtime_type}</Badge></td>
-                  <td className="text-sm">{dt.category}</td>
-                  <td className="text-sm">{formatDate(dt.start_time)}</td>
-                  <td className="text-sm">{dt.duration_minutes ? `${dt.duration_minutes}min` : '—'}</td>
-                  <td className="text-sm text-gray-500 max-w-xs truncate">{dt.root_cause || '—'}</td>
+                  <td className="py-3 px-4"><Badge variant={dt.downtime_type === 'unplanned' ? 'danger' : 'warning'}>{dt.downtime_type}</Badge></td>
+                  <td className="py-3 px-4 text-sm">{dt.category}</td>
+                  <td className="py-3 px-4 text-sm">{formatDate(dt.start_time)}</td>
+                  <td className="py-3 px-4 text-sm">{dt.duration_minutes ? `${dt.duration_minutes}min` : '—'}</td>
+                  <td className="py-3 px-4 text-sm text-gray-500 max-w-xs truncate">{dt.root_cause || '—'}</td>
                 </tr>
               ))}
             </tbody>
-          </Table>
+          </table>
         </Card>
       )}
 
@@ -139,15 +141,15 @@ export default function AssetDetail() {
             <select
               className="mt-1 block w-full border rounded px-3 py-2 text-sm"
               value={editForm.status || ''}
-              onChange={e => setEditForm({ ...editForm, status: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEditForm({ ...editForm, status: e.target.value })}
             >
               {['active', 'inactive', 'under_maintenance', 'disposed'].map(s => (
                 <option key={s} value={s}>{s.replace('_', ' ')}</option>
               ))}
             </select>
           </div>
-          <Input label="Location" value={editForm.location || ''} onChange={e => setEditForm({ ...editForm, location: e.target.value })} />
-          <Input label="Notes" value={editForm.notes || ''} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} />
+          <Input label="Location" value={editForm.location || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditForm({ ...editForm, location: e.target.value })} />
+          <Input label="Notes" value={editForm.notes || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditForm({ ...editForm, notes: e.target.value })} />
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="ghost" onClick={() => setEditOpen(false)}>Cancel</Button>
             <Button onClick={handleSave} loading={updateAsset.isPending}>Save</Button>

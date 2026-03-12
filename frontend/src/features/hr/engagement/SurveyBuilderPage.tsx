@@ -241,7 +241,7 @@ export default function SurveyBuilderPage() {
       survey_type:     surveyType,
       description:     description.trim() || null,
       is_anonymous:    isAnonymous,
-      questions:       questions.map((q, i) => ({
+      questions:       questions.map((q) => ({
         id:       q.localId,
         type:     q.type,
         text:     q.text,

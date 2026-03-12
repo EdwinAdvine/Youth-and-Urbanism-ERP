@@ -24,6 +24,8 @@ import {
   type ExpenseStatus,
   type ExpenseCategory,
 } from '../../api/finance'
+import { CustomFieldsSection } from './components/CustomFieldsSection'
+import apiClient from '../../api/client'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -132,6 +134,8 @@ function ExpenseModal({ open, onClose, editing }: ExpenseModalProps) {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null)
   const [hasExistingReceipt, setHasExistingReceipt] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isOcrLoading, setIsOcrLoading] = useState(false)
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, unknown>>({})
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
@@ -151,6 +155,10 @@ function ExpenseModal({ open, onClose, editing }: ExpenseModalProps) {
       setReceiptFile(null)
       setReceiptPreview(null)
       setHasExistingReceipt(false)
+      setCustomFieldValues({})
+    }
+    if (open && editing) {
+      setCustomFieldValues((editing as any).custom_fields || {})
     }
     setErrors({})
   }, [open, editing])
@@ -184,6 +192,36 @@ function ExpenseModal({ open, onClose, editing }: ExpenseModalProps) {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  async function handleOcrAutoFill() {
+    if (!receiptFile || !receiptFile.type.startsWith('image/')) return
+    setIsOcrLoading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', receiptFile)
+      const { data } = await apiClient.post('/finance/ai/ocr-receipt', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      const filled = data.pre_filled || {}
+      if (filled.vendor_name) setDescription(filled.vendor_name)
+      if (filled.amount) setAmount(String(filled.amount))
+      if (filled.expense_date) setDate(filled.expense_date)
+      if (filled.category) {
+        const catMap: Record<string, ExpenseCategory> = {
+          meals: 'meals', travel: 'travel', accommodation: 'travel',
+          office_supplies: 'supplies', software: 'software', hardware: 'equipment',
+          utilities: 'utilities', marketing: 'marketing', training: 'other', other: 'other',
+        }
+        const mapped = catMap[filled.category] || 'other'
+        setCategory(mapped as ExpenseCategory)
+      }
+      toast('success', `Auto-filled from receipt (${data.ocr_result?.confidence || 'medium'} confidence)`)
+    } catch {
+      toast('error', 'OCR failed — fill in manually')
+    } finally {
+      setIsOcrLoading(false)
+    }
+  }
+
   function validate() {
     const e: Record<string, string> = {}
     if (!description.trim()) e.description = 'Description is required'
@@ -206,7 +244,8 @@ function ExpenseModal({ open, onClose, editing }: ExpenseModalProps) {
           amount: Number(amount),
           category,
           expense_date: date,
-        })
+          custom_fields: Object.keys(customFieldValues).length > 0 ? customFieldValues : undefined,
+        } as any)
         expenseId = (result as any).id || editing.id
         toast('success', 'Expense updated')
       } else {
@@ -215,7 +254,8 @@ function ExpenseModal({ open, onClose, editing }: ExpenseModalProps) {
           amount: Number(amount),
           category,
           expense_date: date,
-        })
+          custom_fields: Object.keys(customFieldValues).length > 0 ? customFieldValues : undefined,
+        } as any)
         expenseId = (result as any).id
         toast('success', 'Expense created')
       }
@@ -283,9 +323,21 @@ function ExpenseModal({ open, onClose, editing }: ExpenseModalProps) {
               <div className="space-y-2">
                 <img src={receiptPreview} alt="Receipt preview" className="max-h-32 mx-auto rounded-lg object-contain" />
                 <p className="text-xs text-gray-500">{receiptFile?.name}</p>
-                <Button type="button" size="sm" variant="outline" onClick={clearReceipt}>
-                  Remove
-                </Button>
+                <div className="flex items-center justify-center gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={clearReceipt}>
+                    Remove
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleOcrAutoFill}
+                    loading={isOcrLoading}
+                    className="border-[#51459d] text-[#51459d] hover:bg-[#51459d]/5"
+                  >
+                    ✨ Auto-fill from Receipt
+                  </Button>
+                </div>
               </div>
             ) : receiptFile ? (
               <div className="space-y-2">
@@ -351,6 +403,13 @@ function ExpenseModal({ open, onClose, editing }: ExpenseModalProps) {
             />
           </div>
         </div>
+
+        {/* Dynamic custom fields */}
+        <CustomFieldsSection
+          entityType="expense"
+          values={customFieldValues}
+          onChange={setCustomFieldValues}
+        />
 
         <div className="flex items-center justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>

@@ -2,8 +2,19 @@ from app.models.base import Base
 from app.models.user import User, Role, Permission, RolePermission, UserRole, AppAdmin, Team, TeamMember
 from app.models.ai import AIConfig, AIChatHistory, AIAuditLog, AIPromptTemplate, AIKnowledgeBase
 from app.models.drive import DriveFile, DriveFolder, FileTag, FileComment, TrashBin
-from app.models.notes import Note, NoteTag, NoteShareRecord, NoteTemplate
-from app.models.calendar import CalendarEvent, CalendarSubscription, CalendarCategory
+from app.models.notes import (
+    Note, NoteTag, NoteShareRecord, NoteTemplate,
+    Notebook, NotebookSection, NoteEntityLink, NoteVersion,
+    NoteComment, NoteCollabSnapshot, NoteCollabUpdate,
+    NoteAuditLog, NoteSensitivityLabel,
+)
+from app.models.calendar import (
+    CalendarEvent, CalendarSubscription, CalendarCategory,
+    UserCalendar, CalendarPermission, EventAttachment,
+    FocusTimeBlock, CalendarRule, CalendarAuditLog,
+)
+from app.models.booking import BookingPage, BookingSlot
+from app.models.resource import Resource, ResourceBooking
 from app.models.forms import Form, FormField, FormResponse, FormTemplate, FormCollaborator
 from app.models.projects import Project, Task, Milestone, TimeLog, TaskDependency, ProjectMilestone, TaskAttachment, ProjectTemplate
 from app.models.finance import (
@@ -38,8 +49,19 @@ from app.models.file_share import FileShare
 from app.models.activity import ActivityFeedEntry
 from app.models.embedding import DocumentEmbedding
 from app.models.support import (
-    TicketCategory, Ticket, TicketComment, KnowledgeBaseArticle, SLAPolicy,
+    TicketCategory, Ticket, TicketComment,
+    SupportKnowledgeBaseArticle as KnowledgeBaseArticle,
+    SupportSLAPolicy as SLAPolicy,
     CannedResponse, TicketTag, CustomerSatisfaction,
+)
+from app.models.support_phase1 import (
+    LiveChatSession, LiveChatMessage, TicketAuditLog, TicketTimeEntry,
+    SavedTicketView, TicketTemplate, InboundEmailRule,
+)
+from app.models.support_phase2 import (
+    SupportAutomation, SupportAutomationLog, CustomerPortalAccount,
+    ForumCategory, ForumPost, ForumReply,
+    SLAEscalationChain, OmnichannelConfig, TicketFollower,
 )
 from app.models.supplychain import (
     Supplier, ProcurementRequisition, RequisitionLine,
@@ -54,7 +76,7 @@ from app.models.supplychain_ops import (
     ControlTowerAlert, SupplyChainKPI, SupplyChainEvent,
     RFx, RFxResponse, SupplierRisk, ReplenishmentRule,
     SafetyStockConfig, StockHealthScore,
-    WorkflowTemplate, WorkflowRun, WorkflowStep,
+    SCWorkflowTemplate, WorkflowRun, WorkflowStep,
     ComplianceRecord, ESGMetric,
 )
 from app.models.pos import (
@@ -84,9 +106,9 @@ from app.models.finance_ext import Currency, ExchangeRate, BankStatement, BankSt
 from app.models.payroll_ext import TaxBracket, StatutoryDeduction, PayRun
 from app.models.doc_link import DocLink
 from app.models.mail import MailRule, MailSignature, ReadReceipt, MailThread, MailLabel, MailFilter
-from app.models.meetings import MeetingRecording, MeetingChat, MeetingTemplate, MeetingNote
+from app.models.meetings import MeetingRecording, MeetingChat, MeetingTemplate, MeetingNote, MeetingLink
 from app.models.docs import DocumentComment, DocumentTemplate, RecentDocument
-from app.models.analytics import Dashboard, DashboardWidget, SavedQuery, Report, DataAlert
+from app.models.analytics import Dashboard, AnalyticsDashboardWidget, SavedQuery, Report, DataAlert
 from app.models.project_links import ProjectDealLink, ProjectExpenseLink, ProjectDriveFolder, ProjectDocument
 from app.models.projects_enhanced import (
     TaskChecklist, TaskRelationship, ProjectCustomField, TaskCustomFieldValue, Sprint,
@@ -94,6 +116,44 @@ from app.models.projects_enhanced import (
 )
 from app.models.agent import AgentRun, AgentRunStep, AgentApproval
 from app.models.handbook import HandbookCategory, HandbookArticle, HandbookFeedback, HandbookProgress, HandbookViewLog
+from app.models.mail_storage import MailboxMessage
+from app.models.crm_marketing import EmailCampaignConfig, Segment, SegmentContact, ContentCalendarItem, Unsubscribe
+from app.models.crm_service import Conversation, ConversationMessage, CRMKnowledgeBaseArticle, CRMSLAPolicy, SLATracker
+from app.models.crm_custom_objects import CustomObjectDefinition, CustomObjectRecord, CustomObjectRelationship
+from app.models.crm_collaboration import CRMComment, RecordFollower
+from app.models.crm_audit import CRMAuditLog
+from app.models.crm_automations import CRMWorkflow, WorkflowNode, CRMWorkflowExecution, WorkflowTemplate as CRMWorkflowTemplate
+from app.models.crm_ai_agents import CRMAIAgentConfig, CRMAIAgentRun
+from app.models.crm_reports import SavedReport, DashboardWidget as CRMDashboardWidget, GamificationScore
+from app.models.hr_phase1 import (
+    EmployeeSkill, EmployeeSuccessionPlan, EmployeeActivityLog, DocumentVersion,
+    CompensationBand, MeritBudgetPool, MeritIncrease, Bonus, EquityGrant,
+    ShiftTemplate, ShiftAssignment, HolidayCalendar,
+    Goal, GoalUpdate, ContinuousFeedback, ReviewCycle, ReviewAssignment, AuditFieldChange,
+)
+from app.models.hr_phase2 import (
+    JobRequisition, Candidate, CandidateApplication, Interview,
+    OnboardingTemplate, OnboardingTask, BuddyAssignment,
+    Course, CourseModule, CourseEnrollment, Certification,
+    Survey, SurveyResponse, Recognition,
+)
+from app.models.hr_phase3 import (
+    SkillOntology, FlightRiskScore, BurnoutIndicator,
+    HRWorkflow, HRWorkflowExecution, WorkflowApproval,
+    AnalyticsDashboard as HRAnalyticsDashboard, WorkforcePlanningScenario,
+)
+from app.models.doc_comment import DocComment, DocVersion
+from app.models.chat import (
+    Channel, ChannelMember, ChatMessage, MessageReadReceipt,
+    ChannelTab, PinnedMessage, UserBookmark,
+)
+from app.models.chat_extended import (
+    SlashCommand, IncomingWebhook, OutgoingWebhook, CallSession,
+    ChannelTemplate, SharedChannelLink, MeetingTranscript, MeetingAISummary,
+    Whiteboard, RetentionPolicy, DLPRule, DLPViolation, ChatAuditLog,
+    LiveEvent, LiveEventRegistration, LiveEventQA, Decision,
+    NotificationPreference, TeamsAnalyticsSnapshot,
+)
 
 __all__ = [
     "Base",
@@ -105,8 +165,17 @@ __all__ = [
     "DriveFile", "DriveFolder", "FileTag", "FileComment", "TrashBin",
     # Notes
     "Note", "NoteTag", "NoteShareRecord", "NoteTemplate",
+    "Notebook", "NotebookSection", "NoteEntityLink", "NoteVersion",
+    "NoteComment", "NoteCollabSnapshot", "NoteCollabUpdate",
+    "NoteAuditLog", "NoteSensitivityLabel",
     # Calendar
     "CalendarEvent", "CalendarSubscription", "CalendarCategory",
+    "UserCalendar", "CalendarPermission", "EventAttachment",
+    "FocusTimeBlock", "CalendarRule", "CalendarAuditLog",
+    # Booking
+    "BookingPage", "BookingSlot",
+    # Resources
+    "Resource", "ResourceBooking",
     # Forms
     "Form", "FormField", "FormResponse", "FormTemplate", "FormCollaborator",
     # Projects
@@ -135,6 +204,13 @@ __all__ = [
     # Support
     "TicketCategory", "Ticket", "TicketComment", "KnowledgeBaseArticle", "SLAPolicy",
     "CannedResponse", "TicketTag", "CustomerSatisfaction",
+    # Support Phase 1
+    "LiveChatSession", "LiveChatMessage", "TicketAuditLog", "TicketTimeEntry",
+    "SavedTicketView", "TicketTemplate", "InboundEmailRule",
+    # Support Phase 2
+    "SupportAutomation", "SupportAutomationLog", "CustomerPortalAccount",
+    "ForumCategory", "ForumPost", "ForumReply",
+    "SLAEscalationChain", "OmnichannelConfig", "TicketFollower",
     # Supply Chain
     "Supplier", "ProcurementRequisition", "RequisitionLine",
     "GoodsReceivedNote", "GRNLine", "SupplierReturn", "SupplierReturnLine",
@@ -146,7 +222,7 @@ __all__ = [
     "ControlTowerAlert", "SupplyChainKPI", "SupplyChainEvent",
     "RFx", "RFxResponse", "SupplierRisk", "ReplenishmentRule",
     "SafetyStockConfig", "StockHealthScore",
-    "WorkflowTemplate", "WorkflowRun", "WorkflowStep",
+    "SCWorkflowTemplate", "WorkflowRun", "WorkflowStep",
     "ComplianceRecord", "ESGMetric",
     # POS
     "POSSession", "POSTransaction", "POSTransactionLine", "POSPayment",
@@ -175,11 +251,11 @@ __all__ = [
     # Mail
     "MailRule", "MailSignature", "ReadReceipt", "MailThread", "MailLabel", "MailFilter",
     # Meetings
-    "MeetingRecording", "MeetingChat", "MeetingTemplate", "MeetingNote",
+    "MeetingRecording", "MeetingChat", "MeetingTemplate", "MeetingNote", "MeetingLink",
     # Docs
     "DocumentComment", "DocumentTemplate", "RecentDocument",
     # Analytics
-    "Dashboard", "DashboardWidget", "SavedQuery", "Report", "DataAlert",
+    "Dashboard", "AnalyticsDashboardWidget", "SavedQuery", "Report", "DataAlert",
     # Project Cross-Module Links
     "ProjectDealLink", "ProjectExpenseLink", "ProjectDriveFolder", "ProjectDocument",
     # Projects Enhanced
@@ -189,4 +265,47 @@ __all__ = [
     "AgentRun", "AgentRunStep", "AgentApproval",
     # Handbook
     "HandbookCategory", "HandbookArticle", "HandbookFeedback", "HandbookProgress", "HandbookViewLog",
+    # Mail Storage
+    "MailboxMessage",
+    # CRM Marketing
+    "EmailCampaignConfig", "Segment", "SegmentContact", "ContentCalendarItem", "Unsubscribe",
+    # CRM Service
+    "Conversation", "ConversationMessage", "CRMKnowledgeBaseArticle", "CRMSLAPolicy", "SLATracker",
+    # CRM Custom Objects
+    "CustomObjectDefinition", "CustomObjectRecord", "CustomObjectRelationship",
+    # CRM Collaboration
+    "CRMComment", "RecordFollower",
+    # CRM Audit
+    "CRMAuditLog",
+    # CRM Automations
+    "CRMWorkflow", "WorkflowNode", "CRMWorkflowExecution", "CRMWorkflowTemplate",
+    # CRM AI Agents
+    "CRMAIAgentConfig", "CRMAIAgentRun",
+    # CRM Reports
+    "SavedReport", "CRMDashboardWidget", "GamificationScore",
+    # HR Phase 1
+    "EmployeeSkill", "EmployeeSuccessionPlan", "EmployeeActivityLog", "DocumentVersion",
+    "CompensationBand", "MeritBudgetPool", "MeritIncrease", "Bonus", "EquityGrant",
+    "ShiftTemplate", "ShiftAssignment", "HolidayCalendar",
+    "Goal", "GoalUpdate", "ContinuousFeedback", "ReviewCycle", "ReviewAssignment", "AuditFieldChange",
+    # HR Phase 2
+    "JobRequisition", "Candidate", "CandidateApplication", "Interview",
+    "OnboardingTemplate", "OnboardingTask", "BuddyAssignment",
+    "Course", "CourseModule", "CourseEnrollment", "Certification",
+    "Survey", "SurveyResponse", "Recognition",
+    # HR Phase 3
+    "SkillOntology", "FlightRiskScore", "BurnoutIndicator",
+    "HRWorkflow", "HRWorkflowExecution", "WorkflowApproval",
+    "HRAnalyticsDashboard", "WorkforcePlanningScenario",
+    # Doc Comments
+    "DocComment", "DocVersion",
+    # Chat & Channels (Y&U Teams)
+    "Channel", "ChannelMember", "ChatMessage", "MessageReadReceipt",
+    "ChannelTab", "PinnedMessage", "UserBookmark",
+    # Chat Extended (Phase 2-3)
+    "SlashCommand", "IncomingWebhook", "OutgoingWebhook", "CallSession",
+    "ChannelTemplate", "SharedChannelLink", "MeetingTranscript", "MeetingAISummary",
+    "Whiteboard", "RetentionPolicy", "DLPRule", "DLPViolation", "ChatAuditLog",
+    "LiveEvent", "LiveEventRegistration", "LiveEventQA", "Decision",
+    "NotificationPreference", "TeamsAnalyticsSnapshot",
 ]

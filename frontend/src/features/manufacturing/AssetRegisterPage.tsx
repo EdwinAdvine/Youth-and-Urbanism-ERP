@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Badge, Card, Table, Modal, Input, Select } from '../../components/ui'
+import { Button, Badge, Card, Modal, Input, Select } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useAssets, useCreateAsset, type AssetCreate } from '../../api/manufacturing_equipment'
 
-const statusColors: Record<string, string> = {
-  active: 'green',
-  inactive: 'gray',
-  disposed: 'red',
-  under_maintenance: 'yellow',
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const statusColors: Record<string, BadgeVariant> = {
+  active: 'success',
+  inactive: 'default',
+  disposed: 'danger',
+  under_maintenance: 'warning',
 }
 
 export default function AssetRegisterPage() {
@@ -26,15 +28,15 @@ export default function AssetRegisterPage() {
 
   const handleCreate = async () => {
     if (!form.asset_code || !form.name || !form.asset_type) {
-      return toast({ title: 'Asset code, name, and type are required', variant: 'destructive' })
+      return toast('error', 'Asset code, name, and type are required')
     }
     try {
       await createAsset.mutateAsync(form)
-      toast({ title: 'Asset registered' })
+      toast('success', 'Asset registered')
       setModalOpen(false)
       setForm({ asset_code: '', name: '', asset_type: '' })
     } catch {
-      toast({ title: 'Failed to create asset', variant: 'destructive' })
+      toast('error', 'Failed to create asset')
     }
   }
 
@@ -53,16 +55,16 @@ export default function AssetRegisterPage() {
       </Select>
 
       <Card>
-        <Table>
+        <table className="w-full text-sm">
           <thead>
-            <tr>
-              <th>Asset Code</th>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Operating Hours</th>
-              <th>Location</th>
-              <th></th>
+            <tr className="border-b">
+              <th className="text-left py-3 px-4">Asset Code</th>
+              <th className="text-left py-3 px-4">Name</th>
+              <th className="text-left py-3 px-4">Type</th>
+              <th className="text-left py-3 px-4">Status</th>
+              <th className="text-left py-3 px-4">Operating Hours</th>
+              <th className="text-left py-3 px-4">Location</th>
+              <th className="py-3 px-4"></th>
             </tr>
           </thead>
           <tbody>
@@ -71,22 +73,22 @@ export default function AssetRegisterPage() {
             ) : assets?.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-8 text-gray-500">No assets registered</td></tr>
             ) : assets?.map(asset => (
-              <tr key={asset.id} className="cursor-pointer hover:bg-gray-50" onClick={() => navigate(`/manufacturing/assets/${asset.id}`)}>
-                <td className="font-mono text-sm font-medium">{asset.asset_code}</td>
-                <td className="font-medium">{asset.name}</td>
-                <td className="text-sm">{asset.asset_type}</td>
-                <td><Badge variant={statusColors[asset.status] || 'gray'}>{asset.status.replace('_', ' ')}</Badge></td>
-                <td className="text-sm">{Number(asset.total_operating_hours).toFixed(1)}h</td>
-                <td className="text-sm text-gray-500">{asset.location || '—'}</td>
-                <td>
-                  <Button size="sm" variant="ghost" onClick={e => { e.stopPropagation(); navigate(`/manufacturing/assets/${asset.id}`) }}>
+              <tr key={asset.id} className="cursor-pointer hover:bg-gray-50 border-b" onClick={() => navigate(`/manufacturing/assets/${asset.id}`)}>
+                <td className="py-3 px-4 font-mono text-sm font-medium">{asset.asset_code}</td>
+                <td className="py-3 px-4 font-medium">{asset.name}</td>
+                <td className="py-3 px-4 text-sm">{asset.asset_type}</td>
+                <td className="py-3 px-4"><Badge variant={statusColors[asset.status] || 'default'}>{asset.status.replace('_', ' ')}</Badge></td>
+                <td className="py-3 px-4 text-sm">{Number(asset.total_operating_hours).toFixed(1)}h</td>
+                <td className="py-3 px-4 text-sm text-gray-500">{asset.location || '—'}</td>
+                <td className="py-3 px-4">
+                  <Button size="sm" variant="ghost" onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate(`/manufacturing/assets/${asset.id}`) }}>
                     View
                   </Button>
                 </td>
               </tr>
             ))}
           </tbody>
-        </Table>
+        </table>
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Register Asset">

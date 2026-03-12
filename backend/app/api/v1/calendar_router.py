@@ -18,6 +18,11 @@ router = APIRouter()
 
 # ── Pydantic schemas ───────────────────────────────────────────────────────────
 
+class ReminderConfig(BaseModel):
+    minutes_before: int = 15
+    channel: str = "push"  # push | email | in_app
+
+
 class EventCreate(BaseModel):
     title: str
     description: str | None = None
@@ -31,6 +36,17 @@ class EventCreate(BaseModel):
     jitsi_room: str | None = None
     recurrence_rule: str | None = None
     recurrence_end: datetime | None = None
+    # New fields
+    sensitivity: str = "normal"
+    priority: str = "normal"
+    buffer_before: int = 0
+    buffer_after: int = 0
+    timezone: str | None = None
+    reminders: list[ReminderConfig] | None = None
+    erp_context: dict | None = None
+    category_id: uuid.UUID | None = None
+    calendar_id: uuid.UUID | None = None
+    status: str = "confirmed"
 
 
 class EventUpdate(BaseModel):
@@ -46,6 +62,17 @@ class EventUpdate(BaseModel):
     jitsi_room: str | None = None
     recurrence_rule: str | None = None
     recurrence_end: datetime | None = None
+    # New fields
+    sensitivity: str | None = None
+    priority: str | None = None
+    buffer_before: int | None = None
+    buffer_after: int | None = None
+    timezone: str | None = None
+    reminders: list[ReminderConfig] | None = None
+    erp_context: dict | None = None
+    category_id: uuid.UUID | None = None
+    calendar_id: uuid.UUID | None = None
+    status: str | None = None
 
 
 class EventOut(BaseModel):
@@ -64,6 +91,17 @@ class EventOut(BaseModel):
     recurrence_end: datetime | None
     parent_event_id: uuid.UUID | None
     organizer_id: uuid.UUID
+    # New fields
+    sensitivity: str
+    priority: str
+    buffer_before: int
+    buffer_after: int
+    timezone: str | None
+    reminders: list | None
+    erp_context: dict | None
+    category_id: uuid.UUID | None
+    calendar_id: uuid.UUID | None
+    status: str
     created_at: Any
     updated_at: Any
 
@@ -130,6 +168,17 @@ async def create_event(
         jitsi_room=payload.jitsi_room,
         recurrence_rule=payload.recurrence_rule,
         recurrence_end=payload.recurrence_end,
+        # New fields
+        sensitivity=payload.sensitivity,
+        priority=payload.priority,
+        buffer_before=payload.buffer_before,
+        buffer_after=payload.buffer_after,
+        timezone=payload.timezone,
+        reminders=[r.model_dump() for r in payload.reminders] if payload.reminders else [],
+        erp_context=payload.erp_context,
+        category_id=payload.category_id,
+        calendar_id=payload.calendar_id,
+        status=payload.status,
     )
     db.add(event)
     await db.commit()
@@ -194,7 +243,7 @@ async def update_event(
 
 @router.delete(
     "/events/{event_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a calendar event",
 )
 async def delete_event(
@@ -207,7 +256,7 @@ async def delete_event(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
     await db.delete(event)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.post("/sync", summary="CalDAV sync (retired)")

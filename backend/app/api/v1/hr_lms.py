@@ -394,7 +394,7 @@ async def update_course(
     return CourseOut.model_validate(course)
 
 
-@router.delete("/courses/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/courses/{course_id}", status_code=status.HTTP_200_OK)
 async def delete_course(
     course_id: uuid.UUID,
     current_user: CurrentUser,
@@ -566,7 +566,7 @@ async def update_course_module(
     return CourseModuleOut.model_validate(module)
 
 
-@router.delete("/courses/{course_id}/modules/{mod_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/courses/{course_id}/modules/{mod_id}", status_code=status.HTTP_200_OK)
 async def delete_course_module(
     course_id: uuid.UUID,
     mod_id: uuid.UUID,
@@ -1123,7 +1123,7 @@ async def update_certification(
     return CertificationOut.model_validate(cert)
 
 
-@router.delete("/certifications/{cert_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/certifications/{cert_id}", status_code=status.HTTP_200_OK)
 async def delete_certification(
     cert_id: uuid.UUID,
     current_user: CurrentUser,

@@ -10,12 +10,7 @@ const STATUS_COLORS: Record<string, string> = {
   done: '#6fd943',
 }
 
-const PRIORITY_ICONS: Record<string, string> = {
-  low: '',
-  medium: '',
-  high: '',
-  urgent: '',
-}
+// Priority icons: low, medium, high, urgent
 
 function daysBetween(a: string, b: string): number {
   return Math.max(1, Math.ceil((new Date(b).getTime() - new Date(a).getTime()) / 86400000))

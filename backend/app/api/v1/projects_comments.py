@@ -227,7 +227,7 @@ async def update_comment(
 
 @router.delete(
     "/{project_id}/tasks/{task_id}/comments/{comment_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a comment",
 )
 async def delete_comment(
@@ -249,7 +249,7 @@ async def delete_comment(
 
     await db.delete(comment)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Activity feed (merged audit log + comments) ─────────────────────────────

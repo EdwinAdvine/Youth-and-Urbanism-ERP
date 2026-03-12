@@ -143,9 +143,9 @@ export default function CommentsThread({ entityType, entityId }: CommentsThreadP
       })
       setNewContent('')
       setReplyToId(null)
-      toast.success('Comment posted')
+      toast('success', 'Comment posted')
     } catch {
-      toast.error('Failed to post comment')
+      toast('error', 'Failed to post comment')
     }
   }
 
@@ -160,9 +160,9 @@ export default function CommentsThread({ entityType, entityId }: CommentsThreadP
       await updateComment.mutateAsync({ id: editingComment.id, content: editContent })
       setEditingComment(null)
       setEditContent('')
-      toast.success('Comment updated')
+      toast('success', 'Comment updated')
     } catch {
-      toast.error('Failed to update comment')
+      toast('error', 'Failed to update comment')
     }
   }
 
@@ -170,9 +170,9 @@ export default function CommentsThread({ entityType, entityId }: CommentsThreadP
     if (!confirm('Delete this comment?')) return
     try {
       await deleteComment.mutateAsync(id)
-      toast.success('Comment deleted')
+      toast('success', 'Comment deleted')
     } catch {
-      toast.error('Failed to delete comment')
+      toast('error', 'Failed to delete comment')
     }
   }
 

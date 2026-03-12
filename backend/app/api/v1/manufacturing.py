@@ -472,7 +472,7 @@ async def update_bom(
 
 @router.delete(
     "/bom/{bom_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Soft-delete a BOM",
     dependencies=[Depends(require_app_admin("manufacturing"))],
 )
@@ -487,7 +487,7 @@ async def delete_bom(
 
     bom.is_active = False
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.get("/bom/{bom_id}/cost", summary="Calculate recursive material cost for a BOM")

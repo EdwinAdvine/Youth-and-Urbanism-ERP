@@ -292,7 +292,7 @@ async def update_custom_object_definition(
 
 @router.delete(
     "/custom-objects/{definition_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete custom object definition (cascades records & relationships)",
 )
 async def delete_custom_object_definition(
@@ -336,7 +336,7 @@ async def delete_custom_object_definition(
 
     await db.delete(obj)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Record Endpoints ─────────────────────────────────────────────────────────
@@ -496,7 +496,7 @@ async def update_custom_object_record(
 
 @router.delete(
     "/custom-object-records/{record_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete record",
 )
 async def delete_custom_object_record(
@@ -528,7 +528,7 @@ async def delete_custom_object_record(
 
     await db.delete(record)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Relationship Endpoints ───────────────────────────────────────────────────
@@ -570,7 +570,7 @@ async def add_record_relationship(
 
 @router.delete(
     "/custom-object-records/{record_id}/relationships/{rel_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Remove relationship from a record",
 )
 async def remove_record_relationship(
@@ -595,4 +595,4 @@ async def remove_record_relationship(
 
     await db.delete(rel)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)

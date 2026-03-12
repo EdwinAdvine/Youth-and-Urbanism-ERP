@@ -87,13 +87,13 @@ export default function AIAgentConfigPage() {
     try {
       parsedConfig = JSON.parse(form.config)
     } catch {
-      toast.error('Invalid config JSON')
+      toast('error', 'Invalid config JSON')
       return
     }
     try {
       parsedSchedule = form.schedule.trim() || null
     } catch {
-      toast.error('Invalid schedule JSON')
+      toast('error', 'Invalid schedule JSON')
       return
     }
 
@@ -110,14 +110,14 @@ export default function AIAgentConfigPage() {
     try {
       if (editingId) {
         await updateAgent.mutateAsync({ id: editingId, ...payload })
-        toast.success('Agent updated')
+        toast('success', 'Agent updated')
       } else {
         await createAgent.mutateAsync(payload)
-        toast.success('Agent created')
+        toast('success', 'Agent created')
       }
       setModalOpen(false)
     } catch {
-      toast.error('Failed to save agent')
+      toast('error', 'Failed to save agent')
     }
   }
 
@@ -125,9 +125,9 @@ export default function AIAgentConfigPage() {
     if (!confirm('Delete this agent configuration?')) return
     try {
       await deleteAgent.mutateAsync(id)
-      toast.success('Agent deleted')
+      toast('success', 'Agent deleted')
     } catch {
-      toast.error('Failed to delete agent')
+      toast('error', 'Failed to delete agent')
     }
   }
 
@@ -141,19 +141,19 @@ export default function AIAgentConfigPage() {
     if (!runAgentId) return
     try {
       await runAgent.mutateAsync(runAgentId)
-      toast.success('Agent run started')
+      toast('success', 'Agent run started')
       setRunModalOpen(false)
     } catch {
-      toast.error('Failed to run agent')
+      toast('error', 'Failed to run agent')
     }
   }
 
   async function handleToggleActive(agent: AIAgentConfig) {
     try {
       await updateAgent.mutateAsync({ id: agent.id, is_active: !agent.is_active })
-      toast.success(agent.is_active ? 'Agent deactivated' : 'Agent activated')
+      toast('success', agent.is_active ? 'Agent deactivated' : 'Agent activated')
     } catch {
-      toast.error('Failed to toggle agent status')
+      toast('error', 'Failed to toggle agent status')
     }
   }
 
@@ -169,7 +169,7 @@ export default function AIAgentConfigPage() {
       key: 'agent_type',
       label: 'Type',
       render: (row: AIAgentConfig) => (
-        <Badge variant={AGENT_TYPE_COLORS[row.agent_type] ?? 'default'}>
+        <Badge variant={(AGENT_TYPE_COLORS[row.agent_type] ?? 'default') as 'primary' | 'danger' | 'default' | 'success' | 'warning' | 'info'}>
           {row.agent_type.replace(/_/g, ' ')}
         </Badge>
       ),
@@ -290,7 +290,7 @@ export default function AIAgentConfigPage() {
           <Select
             label="Agent Type"
             value={form.agent_type}
-            onChange={(val) => setForm((f) => ({ ...f, agent_type: val }))}
+            onChange={(e) => setForm((f) => ({ ...f, agent_type: e.target.value }))}
             options={AGENT_TYPES}
           />
           <Input

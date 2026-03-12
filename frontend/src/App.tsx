@@ -99,7 +99,9 @@ const RevenueStreamsPage    = lazy(() => import('./features/finance/RevenueStrea
 const JobCostingPage       = lazy(() => import('./features/finance/JobCostingPage'))
 const ComplianceCalendarPage = lazy(() => import('./features/finance/ComplianceCalendarPage'))
 const CustomFieldsAdmin    = lazy(() => import('./features/finance/CustomFieldsAdmin'))
-const DimensionsAdmin      = lazy(() => import('./features/finance/DimensionsAdmin'))
+const DimensionsAdmin          = lazy(() => import('./features/finance/DimensionsAdmin'))
+const FinanceDashboardBuilder  = lazy(() => import('./features/finance/FinanceDashboardBuilder'))
+const ReportBuilderPage        = lazy(() => import('./features/finance/ReportBuilderPage'))
 
 // HR sub-pages
 const DepartmentsPage  = lazy(() => import('./features/hr/DepartmentsPage'))
@@ -151,7 +153,7 @@ const SkillsOntologyPage      = lazy(() => import('./features/hr/ai/SkillsOntolo
 const HRChatbot               = lazy(() => import('./features/hr/ai/HRChatbot'))
 const WorkforcePlanningPage   = lazy(() => import('./features/hr/ai/WorkforcePlanningPage'))
 // HR Phase 3 pages — Workflows
-const WorkflowListPage        = lazy(() => import('./features/hr/workflows/WorkflowListPage'))
+const HRWorkflowListPage      = lazy(() => import('./features/hr/workflows/WorkflowListPage'))
 const WorkflowBuilderPage     = lazy(() => import('./features/hr/workflows/WorkflowBuilderPage'))
 const WorkflowExecutionPage   = lazy(() => import('./features/hr/workflows/WorkflowExecutionPage'))
 const WorkflowApprovals       = lazy(() => import('./features/hr/workflows/WorkflowApprovals'))
@@ -162,7 +164,7 @@ const PredictiveReports       = lazy(() => import('./features/hr/analytics/Predi
 const CostModelingPage        = lazy(() => import('./features/hr/analytics/CostModelingPage'))
 
 // HR Phase 1 pages
-const SkillsMatrixPage = lazy(() => import('./features/hr/SkillsMatrixPage'))
+const HRSkillsMatrixPage = lazy(() => import('./features/hr/SkillsMatrixPage'))
 const SuccessionPlanningPage = lazy(() => import('./features/hr/SuccessionPlanningPage'))
 const CompensationBandsPage = lazy(() => import('./features/hr/CompensationBandsPage'))
 const MeritPlanningPage = lazy(() => import('./features/hr/MeritPlanningPage'))
@@ -207,12 +209,12 @@ const SegmentBuilder        = lazy(() => import('./features/crm/SegmentBuilder')
 const ContentCalendarPage   = lazy(() => import('./features/crm/ContentCalendarPage'))
 // CRM Phase 2 pages — Service Hub
 const ConversationInbox     = lazy(() => import('./features/crm/ConversationInbox'))
-const KnowledgeBasePage     = lazy(() => import('./features/crm/KnowledgeBasePage'))
+const CRMKnowledgeBasePage  = lazy(() => import('./features/crm/KnowledgeBasePage'))
 const SLAPoliciesPage       = lazy(() => import('./features/crm/SLAPoliciesPage'))
 // CRM Phase 2 pages — Automations & Reports
-const WorkflowListPage      = lazy(() => import('./features/crm/WorkflowListPage'))
+const CRMWorkflowListPage   = lazy(() => import('./features/crm/WorkflowListPage'))
 const WorkflowCanvasPage    = lazy(() => import('./features/crm/WorkflowCanvasPage'))
-const DashboardBuilderPage  = lazy(() => import('./features/crm/DashboardBuilderPage'))
+const CRMDashboardBuilderPage = lazy(() => import('./features/crm/DashboardBuilderPage'))
 const FunnelReportPage      = lazy(() => import('./features/crm/FunnelReportPage'))
 const CohortReportPage      = lazy(() => import('./features/crm/CohortReportPage'))
 const LeaderboardPage       = lazy(() => import('./features/crm/LeaderboardPage'))
@@ -278,9 +280,19 @@ const DowntimeTrackerPage   = lazy(() => import('./features/manufacturing/Downti
 const DowntimeAnalysisPage  = lazy(() => import('./features/manufacturing/DowntimeAnalysis'))
 const MaintenanceMWOPage    = lazy(() => import('./features/manufacturing/MaintenanceWorkOrdersPage'))
 const OEEReportPage         = lazy(() => import('./features/manufacturing/OEEDetailedReport'))
-const SkillsMatrixPage      = lazy(() => import('./features/manufacturing/SkillsMatrixPage'))
+const MfgSkillsMatrixPage   = lazy(() => import('./features/manufacturing/SkillsMatrixPage'))
 const CertTrackerPage       = lazy(() => import('./features/manufacturing/CertificationTracker'))
 const CrewSchedulingPage    = lazy(() => import('./features/manufacturing/CrewSchedulingPage'))
+// Phase 3 — MES + AI + CPQ
+const ProductionBoardPage        = lazy(() => import('./features/manufacturing/ProductionBoard'))
+const IoTDashboardPage           = lazy(() => import('./features/manufacturing/IoTDashboard'))
+const DigitalWorkInstructionsPage = lazy(() => import('./features/manufacturing/DigitalWorkInstructions'))
+const BottleneckAnalysisPage     = lazy(() => import('./features/manufacturing/BottleneckAnalysis'))
+const QualityRiskDashboardPage   = lazy(() => import('./features/manufacturing/QualityRiskDashboard'))
+const ScheduleSuggestionsPage    = lazy(() => import('./features/manufacturing/ScheduleSuggestions'))
+const ExecutiveSummaryPage       = lazy(() => import('./features/manufacturing/ExecutiveSummary'))
+const ProductConfiguratorPage    = lazy(() => import('./features/manufacturing/ProductConfigurator'))
+const ConfiguratorRulesAdminPage = lazy(() => import('./features/manufacturing/ConfiguratorRulesAdmin'))
 
 // Supply Chain sub-pages
 const SuppliersPage        = lazy(() => import('./features/supplychain/SuppliersPage'))
@@ -372,6 +384,21 @@ const EcomCartPage        = lazy(() => import('./features/ecommerce/CartPage'))
 const EcomCheckoutPage    = lazy(() => import('./features/ecommerce/CheckoutPage'))
 const EcomCatalogPage     = lazy(() => import('./features/ecommerce/CatalogPage'))
 const EcomSalesReportPage = lazy(() => import('./features/ecommerce/SalesReportPage'))
+// E-Commerce Phase 2 — B2B, Loyalty, Abandoned Carts, Subscriptions
+const EcomB2BPortal            = lazy(() => import('./features/ecommerce/B2BPortal'))
+const EcomB2BDashboard         = lazy(() => import('./features/ecommerce/B2BDashboard'))
+const EcomQuoteDetail          = lazy(() => import('./features/ecommerce/QuoteDetail'))
+const EcomLoyaltyDashboard     = lazy(() => import('./features/ecommerce/LoyaltyDashboard'))
+const EcomLoyaltyAccount       = lazy(() => import('./features/ecommerce/LoyaltyAccount'))
+const EcomAbandonedCartsPage   = lazy(() => import('./features/ecommerce/AbandonedCartsPage'))
+const EcomSubscriptionManagement = lazy(() => import('./features/ecommerce/SubscriptionManagement'))
+const EcomSubscriptionsAdmin   = lazy(() => import('./features/ecommerce/SubscriptionsAdmin'))
+// E-Commerce Phase 3 — Bundles, Import, Analytics, Blog
+const EcomBundlesPage          = lazy(() => import('./features/ecommerce/BundlesPage'))
+const EcomImportPage           = lazy(() => import('./features/ecommerce/ImportPage'))
+const EcomAdvancedAnalyticsPage = lazy(() => import('./features/ecommerce/AdvancedAnalyticsPage'))
+const EcomBlogAdminPage        = lazy(() => import('./features/ecommerce/BlogAdminPage'))
+const EcomBlogPostEditor       = lazy(() => import('./features/ecommerce/BlogPostEditor'))
 
 // Support sub-pages
 const TicketsPage         = lazy(() => import('./features/support/TicketsPage'))
@@ -398,6 +425,13 @@ const KBPublicPage        = lazy(() => import('./features/support/KBPublicPage')
 const SupportKPIsPage     = lazy(() => import('./features/support/SupportKPIsPage'))
 const RoutingRulesPage    = lazy(() => import('./features/support/RoutingRulesPage'))
 
+// Support Phase 1 — Live Chat, Templates, Views, Time Tracking, Audit, Inbound Email
+const LiveChatDashboard   = lazy(() => import('./features/support/LiveChatDashboard'))
+const LiveChatWindow      = lazy(() => import('./features/support/LiveChatWindow'))
+const SavedViewsPage      = lazy(() => import('./features/support/SavedViewsPage'))
+const TicketTemplatesPage = lazy(() => import('./features/support/TicketTemplatesPage'))
+const InboundEmailConfig  = lazy(() => import('./features/support/InboundEmailConfig'))
+
 // Settings, Profile, Notifications
 const ProfilePage         = lazy(() => import('./features/profile/ProfilePage'))
 const NotificationsPage   = lazy(() => import('./features/notifications/NotificationsPage'))
@@ -419,7 +453,7 @@ const CustomFieldsManager  = lazy(() => import('./features/projects/CustomFields
 
 // Analytics enhancements
 const DashboardListPage       = lazy(() => import('./features/analytics/DashboardListPage'))
-const DashboardBuilderPage    = lazy(() => import('./features/analytics/DashboardBuilderPage'))
+const AnalyticsDashboardBuilderPage = lazy(() => import('./features/analytics/DashboardBuilderPage'))
 const QueryBuilderPage        = lazy(() => import('./features/analytics/QueryBuilderPage'))
 const ReportSchedulerPage     = lazy(() => import('./features/analytics/ReportSchedulerPage'))
 const AlertConfigPage         = lazy(() => import('./features/analytics/AlertConfigPage'))
@@ -437,7 +471,7 @@ const PrebuiltManufacturingDash = lazy(() => import('./features/analytics/prebui
 // AI enhancements
 const ConversationHistoryPage = lazy(() => import('./features/ai/ConversationHistoryPage'))
 const PromptTemplatesPage     = lazy(() => import('./features/ai/PromptTemplatesPage'))
-const KnowledgeBasePage       = lazy(() => import('./features/ai/KnowledgeBasePage'))
+const AIKnowledgeBasePage     = lazy(() => import('./features/ai/KnowledgeBasePage'))
 const AIUsageDashboardPage    = lazy(() => import('./features/ai/UsageDashboardPage'))
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
@@ -580,6 +614,8 @@ export default function App() {
             <Route path="finance/compliance-calendar" element={<S><ComplianceCalendarPage /></S>} />
             <Route path="finance/custom-fields" element={<S><CustomFieldsAdmin /></S>} />
             <Route path="finance/dimensions" element={<S><DimensionsAdmin /></S>} />
+            <Route path="finance/dashboard-builder" element={<S><FinanceDashboardBuilder /></S>} />
+            <Route path="finance/report-builder" element={<S><ReportBuilderPage /></S>} />
             <Route path="hr" element={<S><HRDashboard /></S>} />
             <Route path="hr/departments" element={<S><DepartmentsPage /></S>} />
             <Route path="hr/employees" element={<S><EmployeesPage /></S>} />
@@ -598,7 +634,7 @@ export default function App() {
             <Route path="hr/payroll-reports" element={<S><PayrollReportsPage /></S>} />
             <Route path="hr/onboarding" element={<S><OnboardingPage /></S>} />
             <Route path="hr/offboarding" element={<S><OffboardingPage /></S>} />
-            <Route path="hr/skills-matrix" element={<S><SkillsMatrixPage /></S>} />
+            <Route path="hr/skills-matrix" element={<S><HRSkillsMatrixPage /></S>} />
             <Route path="hr/succession-planning" element={<S><SuccessionPlanningPage /></S>} />
             <Route path="hr/compensation-bands" element={<S><CompensationBandsPage /></S>} />
             <Route path="hr/merit-planning" element={<S><MeritPlanningPage /></S>} />
@@ -644,7 +680,7 @@ export default function App() {
             <Route path="hr/ai/chatbot" element={<S><HRChatbot /></S>} />
             <Route path="hr/ai/workforce-planning" element={<S><WorkforcePlanningPage /></S>} />
             {/* HR Phase 3 — Workflows */}
-            <Route path="hr/workflows" element={<S><WorkflowListPage /></S>} />
+            <Route path="hr/workflows" element={<S><HRWorkflowListPage /></S>} />
             <Route path="hr/workflows/builder" element={<S><WorkflowBuilderPage /></S>} />
             <Route path="hr/workflows/:id/edit" element={<S><WorkflowBuilderPage /></S>} />
             <Route path="hr/workflows/executions" element={<S><WorkflowExecutionPage /></S>} />
@@ -685,12 +721,12 @@ export default function App() {
             <Route path="crm/content-calendar" element={<S><ContentCalendarPage /></S>} />
             {/* CRM Phase 2 — Service Hub */}
             <Route path="crm/conversations" element={<S><ConversationInbox /></S>} />
-            <Route path="crm/knowledge-base" element={<S><KnowledgeBasePage /></S>} />
+            <Route path="crm/knowledge-base" element={<S><CRMKnowledgeBasePage /></S>} />
             <Route path="crm/sla-policies" element={<S><SLAPoliciesPage /></S>} />
             {/* CRM Phase 2 — Automations & Reports */}
-            <Route path="crm/workflows" element={<S><WorkflowListPage /></S>} />
+            <Route path="crm/workflows" element={<S><CRMWorkflowListPage /></S>} />
             <Route path="crm/workflows/:id/canvas" element={<S><WorkflowCanvasPage /></S>} />
-            <Route path="crm/dashboard-builder" element={<S><DashboardBuilderPage /></S>} />
+            <Route path="crm/dashboard-builder" element={<S><CRMDashboardBuilderPage /></S>} />
             <Route path="crm/reports/funnel" element={<S><FunnelReportPage /></S>} />
             <Route path="crm/reports/cohort" element={<S><CohortReportPage /></S>} />
             <Route path="crm/leaderboard" element={<S><LeaderboardPage /></S>} />
@@ -807,9 +843,18 @@ export default function App() {
             <Route path="manufacturing/downtime/analysis" element={<S><DowntimeAnalysisPage /></S>} />
             <Route path="manufacturing/maintenance-work-orders" element={<S><MaintenanceMWOPage /></S>} />
             <Route path="manufacturing/oee" element={<S><OEEReportPage /></S>} />
-            <Route path="manufacturing/skills" element={<S><SkillsMatrixPage /></S>} />
+            <Route path="manufacturing/skills" element={<S><MfgSkillsMatrixPage /></S>} />
             <Route path="manufacturing/certifications" element={<S><CertTrackerPage /></S>} />
             <Route path="manufacturing/crew" element={<S><CrewSchedulingPage /></S>} />
+            <Route path="manufacturing/production-board" element={<S><ProductionBoardPage /></S>} />
+            <Route path="manufacturing/iot" element={<S><IoTDashboardPage /></S>} />
+            <Route path="manufacturing/work-instructions/:routingId" element={<S><DigitalWorkInstructionsPage /></S>} />
+            <Route path="manufacturing/ai/bottlenecks" element={<S><BottleneckAnalysisPage /></S>} />
+            <Route path="manufacturing/ai/quality-risk" element={<S><QualityRiskDashboardPage /></S>} />
+            <Route path="manufacturing/ai/suggestions" element={<S><ScheduleSuggestionsPage /></S>} />
+            <Route path="manufacturing/ai/executive" element={<S><ExecutiveSummaryPage /></S>} />
+            <Route path="manufacturing/configurator" element={<S><ProductConfiguratorPage /></S>} />
+            <Route path="manufacturing/configurator/rules" element={<S><ConfiguratorRulesAdminPage /></S>} />
             {/* POS */}
             <Route path="pos" element={<S><POSDashboard /></S>} />
             <Route path="pos/terminal" element={<S><POSTerminal /></S>} />
@@ -861,6 +906,22 @@ export default function App() {
             <Route path="ecommerce/sales-report" element={<S><EcomSalesReportPage /></S>} />
             <Route path="ecommerce/categories" element={<S><EcomCategoryManagerPage /></S>} />
             <Route path="ecommerce/theme-editor" element={<S><EcomStorefrontThemeEditor /></S>} />
+            {/* E-Commerce Phase 2 — B2B, Loyalty, Abandoned Carts, Subscriptions */}
+            <Route path="ecommerce/b2b" element={<S><EcomB2BPortal /></S>} />
+            <Route path="ecommerce/b2b/dashboard" element={<S><EcomB2BDashboard /></S>} />
+            <Route path="ecommerce/b2b/quotes/:id" element={<S><EcomQuoteDetail /></S>} />
+            <Route path="ecommerce/loyalty-program" element={<S><EcomLoyaltyDashboard /></S>} />
+            <Route path="ecommerce/loyalty-account" element={<S><EcomLoyaltyAccount /></S>} />
+            <Route path="ecommerce/abandoned-carts" element={<S><EcomAbandonedCartsPage /></S>} />
+            <Route path="ecommerce/subscriptions" element={<S><EcomSubscriptionManagement /></S>} />
+            <Route path="ecommerce/subscriptions/admin" element={<S><EcomSubscriptionsAdmin /></S>} />
+            {/* E-Commerce Phase 3 — Bundles, Import, Analytics, Blog */}
+            <Route path="ecommerce/bundles" element={<S><EcomBundlesPage /></S>} />
+            <Route path="ecommerce/import" element={<S><EcomImportPage /></S>} />
+            <Route path="ecommerce/analytics" element={<S><EcomAdvancedAnalyticsPage /></S>} />
+            <Route path="ecommerce/blog" element={<S><EcomBlogAdminPage /></S>} />
+            <Route path="ecommerce/blog/new" element={<S><EcomBlogPostEditor /></S>} />
+            <Route path="ecommerce/blog/:id/edit" element={<S><EcomBlogPostEditor /></S>} />
             {/* Support / Customer Center */}
             <Route path="support" element={<S><SupportDashboard /></S>} />
             <Route path="support/tickets" element={<S><TicketsPage /></S>} />
@@ -873,6 +934,11 @@ export default function App() {
             <Route path="support/kb" element={<S><KBPublicPage /></S>} />
             <Route path="support/kpis" element={<S><SupportKPIsPage /></S>} />
             <Route path="support/routing-rules" element={<S><RoutingRulesPage /></S>} />
+            <Route path="support/live-chat" element={<S><LiveChatDashboard /></S>} />
+            <Route path="support/live-chat/:id" element={<S><LiveChatWindow /></S>} />
+            <Route path="support/views" element={<S><SavedViewsPage /></S>} />
+            <Route path="support/templates" element={<S><TicketTemplatesPage /></S>} />
+            <Route path="support/inbound-email" element={<S><InboundEmailConfig /></S>} />
             <Route path="settings/*" element={<S><SettingsPage /></S>} />
             <Route path="profile" element={<S><ProfilePage /></S>} />
             <Route path="notifications" element={<S><NotificationsPage /></S>} />
@@ -884,7 +950,7 @@ export default function App() {
             <Route path="notes/*" element={<S><NotesPage /></S>} />
             <Route path="drive/*" element={<S><DrivePage /></S>} />
             <Route path="analytics/dashboards" element={<S><DashboardListPage /></S>} />
-            <Route path="analytics/dashboards/:id/builder" element={<S><DashboardBuilderPage /></S>} />
+            <Route path="analytics/dashboards/:id/builder" element={<S><AnalyticsDashboardBuilderPage /></S>} />
             <Route path="analytics/query-builder" element={<S><QueryBuilderPage /></S>} />
             <Route path="analytics/sql-editor" element={<S><SQLEditorPage /></S>} />
             <Route path="analytics/reports" element={<S><ReportSchedulerPage /></S>} />
@@ -1052,7 +1118,7 @@ export default function App() {
             {/* AI Management */}
             <Route path="ai/history" element={<S><ConversationHistoryPage /></S>} />
             <Route path="ai/templates" element={<S><PromptTemplatesPage /></S>} />
-            <Route path="ai/knowledge-base" element={<S><KnowledgeBasePage /></S>} />
+            <Route path="ai/knowledge-base" element={<S><AIKnowledgeBasePage /></S>} />
             <Route path="ai/usage" element={<S><AIUsageDashboardPage /></S>} />
 
             {/* 404 within app */}

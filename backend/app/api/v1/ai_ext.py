@@ -210,7 +210,7 @@ async def update_template(
     return _template_to_dict(template)
 
 
-@router.delete("/templates/{template_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, summary="Delete an AI prompt template")
+@router.delete("/templates/{template_id}", status_code=status.HTTP_200_OK, response_model=None, summary="Delete an AI prompt template")
 async def delete_template(
     template_id: uuid.UUID,
     current_user: CurrentUser,
@@ -295,7 +295,7 @@ async def update_knowledge_base(
     return _kb_to_dict(kb)
 
 
-@router.delete("/knowledge-bases/{kb_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, summary="Delete an AI knowledge base")
+@router.delete("/knowledge-bases/{kb_id}", status_code=status.HTTP_200_OK, response_model=None, summary="Delete an AI knowledge base")
 async def delete_knowledge_base(
     kb_id: uuid.UUID,
     current_user: CurrentUser,

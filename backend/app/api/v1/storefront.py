@@ -450,7 +450,7 @@ async def update_cart_item(
     return _cart_out(cart)
 
 
-@router.delete("/cart/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remove cart item")
+@router.delete("/cart/items/{item_id}", status_code=status.HTTP_200_OK, summary="Remove cart item")
 async def remove_cart_item(
     item_id: uuid.UUID,
     db: DBSession,
@@ -461,7 +461,7 @@ async def remove_cart_item(
     await db.delete(item)
     await db.commit()
     from fastapi.responses import Response
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ── Checkout ───────────────────────────────────────────────────────────────────

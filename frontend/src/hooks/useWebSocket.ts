@@ -6,6 +6,7 @@ export type WSStatus = 'connecting' | 'open' | 'closed' | 'error'
 export interface WSMessage {
   type: string
   content?: string
+  message?: string
   delta?: string
   done?: boolean
   error?: string

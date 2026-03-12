@@ -316,7 +316,7 @@ async def update_tier(
     return TierOut.model_validate(tier).model_dump()
 
 
-@router.delete("/tiers/{tier_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a tier")
+@router.delete("/tiers/{tier_id}", status_code=status.HTTP_200_OK, summary="Delete a tier")
 async def delete_tier(
     tier_id: uuid.UUID,
     current_user: CurrentUser,
@@ -620,7 +620,7 @@ async def update_reward(
     return RewardOut.model_validate(reward).model_dump()
 
 
-@router.delete("/rewards/{reward_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a reward")
+@router.delete("/rewards/{reward_id}", status_code=status.HTTP_200_OK, summary="Delete a reward")
 async def delete_reward(
     reward_id: uuid.UUID,
     current_user: CurrentUser,

@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Badge, Select, Spinner } from '@/components/ui'
+import { Card, Button, Badge } from '@/components/ui'
 import {
   useAttritionRisk,
   useHiringDemand,
@@ -12,15 +12,7 @@ import {
 
 type RiskLevel = 'low' | 'medium' | 'high' | 'critical'
 
-function riskColor(level: RiskLevel): string {
-  const map: Record<RiskLevel, string> = {
-    low: '#6fd943',
-    medium: '#ffa21d',
-    high: '#ff7043',
-    critical: '#ff3a6e',
-  }
-  return map[level] ?? '#aaa'
-}
+// Risk colors available: low=#6fd943, medium=#ffa21d, high=#ff7043, critical=#ff3a6e
 
 function riskBadgeVariant(level: RiskLevel): 'success' | 'warning' | 'danger' | 'default' {
   const map: Record<RiskLevel, 'success' | 'warning' | 'danger' | 'default'> = {

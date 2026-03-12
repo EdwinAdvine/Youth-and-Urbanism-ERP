@@ -160,7 +160,7 @@ async def update_automation_rule(
 
 @router.delete(
     "/{project_id}/automations/{rule_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete an automation rule",
 )
 async def delete_automation_rule(
@@ -179,7 +179,7 @@ async def delete_automation_rule(
 
     await db.delete(rule)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.get(

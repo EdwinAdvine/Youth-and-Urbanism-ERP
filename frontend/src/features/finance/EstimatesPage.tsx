@@ -13,7 +13,7 @@ const api = axios.create({ baseURL: "/api/v1" });
 interface Estimate {
   id: string;
   estimate_number: string;
-  status: string;
+  status: 'draft' | 'sent' | 'accepted' | 'declined' | 'converted';
   customer_name: string;
   customer_email: string;
   issue_date: string;
@@ -169,7 +169,7 @@ export default function EstimatesPage() {
                           Send
                         </Button>
                       )}
-                      {(e.status === "accepted" || e.status === "sent" || e.status === "draft") && e.status !== "converted" && (
+                      {(e.status === "accepted" || e.status === "sent" || e.status === "draft") && (
                         <Button
                           size="sm"
                           className="bg-[#6fd943] text-white hover:bg-[#5bc938]"
@@ -197,19 +197,19 @@ export default function EstimatesPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label>Customer Name</Label>
-                <Input value={form.customer_name} onChange={(e) => setForm((f) => ({ ...f, customer_name: e.target.value }))} />
+                <Input value={form.customer_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, customer_name: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <Label>Customer Email</Label>
-                <Input type="email" value={form.customer_email} onChange={(e) => setForm((f) => ({ ...f, customer_email: e.target.value }))} />
+                <Input type="email" value={form.customer_email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, customer_email: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <Label>Issue Date</Label>
-                <Input type="date" value={form.issue_date} onChange={(e) => setForm((f) => ({ ...f, issue_date: e.target.value }))} />
+                <Input type="date" value={form.issue_date} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, issue_date: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <Label>Expiry Date</Label>
-                <Input type="date" value={form.expiry_date} onChange={(e) => setForm((f) => ({ ...f, expiry_date: e.target.value }))} />
+                <Input type="date" value={form.expiry_date} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, expiry_date: e.target.value }))} />
               </div>
             </div>
 
@@ -238,7 +238,7 @@ export default function EstimatesPage() {
                           <Input
                             className="border-0 shadow-none p-0 h-7"
                             value={item.description}
-                            onChange={(e) => updateItem(idx, "description", e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(idx, "description", e.target.value)}
                             placeholder="Item description"
                           />
                         </td>
@@ -247,7 +247,7 @@ export default function EstimatesPage() {
                             className="border-0 shadow-none p-0 h-7 text-right"
                             type="number"
                             value={item.quantity}
-                            onChange={(e) => updateItem(idx, "quantity", parseFloat(e.target.value) || 0)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(idx, "quantity", parseFloat(e.target.value) || 0)}
                           />
                         </td>
                         <td className="px-3 py-2">
@@ -255,7 +255,7 @@ export default function EstimatesPage() {
                             className="border-0 shadow-none p-0 h-7 text-right"
                             type="number"
                             value={item.unit_price}
-                            onChange={(e) => updateItem(idx, "unit_price", parseFloat(e.target.value) || 0)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(idx, "unit_price", parseFloat(e.target.value) || 0)}
                           />
                         </td>
                         <td className="px-3 py-2">
@@ -263,7 +263,7 @@ export default function EstimatesPage() {
                             className="border-0 shadow-none p-0 h-7 text-right"
                             type="number"
                             value={item.tax_rate}
-                            onChange={(e) => updateItem(idx, "tax_rate", parseFloat(e.target.value) || 0)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(idx, "tax_rate", parseFloat(e.target.value) || 0)}
                           />
                         </td>
                         <td className="px-3 py-2 text-right text-gray-600">
@@ -302,11 +302,11 @@ export default function EstimatesPage() {
 
             <div className="space-y-1">
               <Label>Notes</Label>
-              <Textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={2} />
+              <Textarea value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={2} />
             </div>
             <div className="space-y-1">
               <Label>Terms & Conditions</Label>
-              <Textarea value={form.terms} onChange={(e) => setForm((f) => ({ ...f, terms: e.target.value }))} rows={2} />
+              <Textarea value={form.terms} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((f) => ({ ...f, terms: e.target.value }))} rows={2} />
             </div>
           </div>
           <DialogFooter>
@@ -335,7 +335,7 @@ export default function EstimatesPage() {
               <Input
                 type="number"
                 value={dueDays}
-                onChange={(e) => setDueDays(parseInt(e.target.value) || 30)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDueDays(parseInt(e.target.value) || 30)}
                 min={1}
               />
             </div>

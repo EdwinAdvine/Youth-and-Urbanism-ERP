@@ -1,4 +1,12 @@
 import { useState } from 'react'
+import {
+  useAIGenerate,
+  useAISummarize,
+  useAITranslate,
+  useAIImprove,
+  useAIExpand,
+  useAISimplify,
+} from '../../api/docs'
 
 type AIAction = 'generate' | 'summarize' | 'translate' | 'improve' | 'expand' | 'simplify'
 
@@ -22,46 +30,72 @@ const LANGUAGES = [
   'Korean', 'Portuguese', 'Arabic', 'Hindi', 'Swahili',
 ]
 
-export default function AIGenerationPanel({ onClose, onInsert }: AIGenerationPanelProps) {
+export default function AIGenerationPanel({ fileId, onClose, onInsert }: AIGenerationPanelProps) {
   const [action, setAction] = useState<AIAction>('generate')
   const [prompt, setPrompt] = useState('')
   const [inputText, setInputText] = useState('')
   const [targetLang, setTargetLang] = useState('Spanish')
   const [result, setResult] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const generateMut = useAIGenerate(fileId)
+  const summarizeMut = useAISummarize(fileId)
+  const translateMut = useAITranslate(fileId)
+  const improveMut = useAIImprove(fileId)
+  const expandMut = useAIExpand(fileId)
+  const simplifyMut = useAISimplify(fileId)
+
+  const loading = generateMut.isPending || summarizeMut.isPending || translateMut.isPending
+    || improveMut.isPending || expandMut.isPending || simplifyMut.isPending
 
   const handleGenerate = async () => {
-    setLoading(true)
     setResult('')
+    setError('')
 
-    // Simulate AI response (in production, this calls the backend AI endpoint)
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    let fakeResult = ''
-    switch (action) {
-      case 'generate':
-        fakeResult = `Here is generated content based on your prompt: "${prompt}"\n\nThis is a placeholder response. In production, this calls the Urban ERP AI service (Ollama/OpenAI/Anthropic) to generate content based on your instructions.`
-        break
-      case 'summarize':
-        fakeResult = `Summary:\n${inputText.slice(0, 100)}... (summarized version would appear here via AI)`
-        break
-      case 'translate':
-        fakeResult = `[${targetLang} translation]:\n${inputText.slice(0, 100)}... (translated via AI)`
-        break
-      case 'improve':
-        fakeResult = `Improved version:\n${inputText.slice(0, 100)}... (grammar/tone improvements via AI)`
-        break
-      case 'expand':
-        fakeResult = `Expanded version:\n${inputText}... (expanded content would appear here via AI)`
-        break
-      case 'simplify':
-        fakeResult = `Simplified version:\n${inputText.slice(0, 100)}... (simplified via AI)`
-        break
+    try {
+      switch (action) {
+        case 'generate': {
+          const res = await generateMut.mutateAsync({ prompt, doc_type: 'doc' })
+          setResult(res.generated_content)
+          break
+        }
+        case 'summarize': {
+          const res = await summarizeMut.mutateAsync({ max_length: 500 })
+          setResult(res.summary)
+          break
+        }
+        case 'translate': {
+          const res = await translateMut.mutateAsync({ target_language: targetLang })
+          setResult(res.translated_content)
+          break
+        }
+        case 'improve': {
+          const res = await improveMut.mutateAsync({ text: inputText })
+          setResult(res.improved_content)
+          break
+        }
+        case 'expand': {
+          const res = await expandMut.mutateAsync({ text: inputText })
+          setResult(res.expanded_content)
+          break
+        }
+        case 'simplify': {
+          const res = await simplifyMut.mutateAsync({ text: inputText })
+          setResult(res.simplified_content)
+          break
+        }
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'AI service unavailable. Please try again.'
+      setError(message)
     }
-
-    setResult(fakeResult)
-    setLoading(false)
   }
+
+  const canSubmit = action === 'generate'
+    ? prompt.trim().length > 0
+    : action === 'summarize'
+      ? true
+      : inputText.trim().length > 0
 
   return (
     <div className="absolute right-0 top-0 bottom-0 w-96 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg z-20 flex flex-col">
@@ -88,7 +122,7 @@ export default function AIGenerationPanel({ onClose, onInsert }: AIGenerationPan
           {AI_ACTIONS.map((a) => (
             <button
               key={a.value}
-              onClick={() => { setAction(a.value); setResult('') }}
+              onClick={() => { setAction(a.value); setResult(''); setError('') }}
               className={`flex flex-col items-center p-2 rounded-[8px] transition-colors text-center ${ action === a.value ? 'bg-[#51459d]/10 text-[#51459d]' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800' }`}
             >
               <span className="text-[10px] font-bold mb-0.5">{a.icon}</span>
@@ -113,6 +147,12 @@ export default function AIGenerationPanel({ onClose, onInsert }: AIGenerationPan
               className="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 resize-none"
               rows={4}
             />
+          </div>
+        ) : action === 'summarize' ? (
+          <div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              The AI will read and summarize the current document content.
+            </p>
           </div>
         ) : (
           <div>
@@ -146,7 +186,7 @@ export default function AIGenerationPanel({ onClose, onInsert }: AIGenerationPan
 
         <button
           onClick={handleGenerate}
-          disabled={loading || (action === 'generate' ? !prompt.trim() : !inputText.trim())}
+          disabled={loading || !canSubmit}
           className="w-full flex items-center justify-center gap-2 py-2 text-xs bg-[#51459d] text-white rounded-[8px] hover:bg-[#3d3480] transition-colors disabled:opacity-50"
         >
           {loading ? (
@@ -166,6 +206,13 @@ export default function AIGenerationPanel({ onClose, onInsert }: AIGenerationPan
             </>
           )}
         </button>
+
+        {/* Error */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-[8px] p-3">
+            <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        )}
 
         {/* Result */}
         {result && (

@@ -78,7 +78,7 @@ export default function AlertConfigPage() {
     const payload = {
       name: form.name,
       metric: form.metric,
-      condition: form.condition,
+      condition: form.condition as 'above' | 'below' | 'equals' | 'change_by',
       threshold: form.threshold,
       notification_channels: form.notification_channels.split(',').map((c) => c.trim()).filter(Boolean),
       is_active: form.is_active,

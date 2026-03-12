@@ -164,7 +164,7 @@ async def update_sprint(
 
 @router.delete(
     "/{project_id}/sprints/{sprint_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete a sprint (moves tasks to backlog)",
 )
 async def delete_sprint(
@@ -190,7 +190,7 @@ async def delete_sprint(
 
     await db.delete(sprint)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.put(

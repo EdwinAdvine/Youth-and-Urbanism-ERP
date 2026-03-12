@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { Button, Badge, Card, Table, Modal, Input, Select } from '../../components/ui'
+import { Button, Badge, Card, Modal, Input, Select } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useDowntimeRecords, useLogDowntime, useCloseDowntime } from '../../api/manufacturing_equipment'
 
-const typeColors: Record<string, string> = { planned: 'blue', unplanned: 'red', changeover: 'yellow' }
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const typeColors: Record<string, BadgeVariant> = { planned: 'info', unplanned: 'danger', changeover: 'warning' }
 
 function formatDateTime(dt: string) {
   return new Date(dt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -30,13 +32,13 @@ export default function DowntimeTracker() {
   const filteredRecords = filterType ? records?.filter(r => r.downtime_type === filterType) : records
 
   const handleLog = async () => {
-    if (!form.workstation_id) return toast({ title: 'Workstation ID required', variant: 'destructive' })
+    if (!form.workstation_id) return toast('error', 'Workstation ID required')
     try {
       await logDowntime.mutateAsync({ ...form, start_time: new Date(form.start_time).toISOString() })
-      toast({ title: 'Downtime logged' })
+      toast('success', 'Downtime logged')
       setLogOpen(false)
     } catch {
-      toast({ title: 'Failed to log downtime', variant: 'destructive' })
+      toast('error', 'Failed to log downtime')
     }
   }
 
@@ -48,10 +50,10 @@ export default function DowntimeTracker() {
         end_time: new Date(closeTime).toISOString(),
         resolution: closeResolution || undefined,
       })
-      toast({ title: 'Downtime closed' })
+      toast('success', 'Downtime closed')
       setCloseId(null)
     } catch {
-      toast({ title: 'Failed to close downtime', variant: 'destructive' })
+      toast('error', 'Failed to close downtime')
     }
   }
 
@@ -70,14 +72,14 @@ export default function DowntimeTracker() {
       </Select>
 
       <Card>
-        <Table>
+        <table className="w-full text-sm">
           <thead>
             <tr>
-              <th>Type</th>
-              <th>Category</th>
-              <th>Started</th>
-              <th>Duration</th>
-              <th>Root Cause</th>
+              <th className="text-left py-3 px-4">Type</th>
+              <th className="text-left py-3 px-4">Category</th>
+              <th className="text-left py-3 px-4">Started</th>
+              <th className="text-left py-3 px-4">Duration</th>
+              <th className="text-left py-3 px-4">Root Cause</th>
               <th></th>
             </tr>
           </thead>
@@ -88,7 +90,7 @@ export default function DowntimeTracker() {
               <tr><td colSpan={6} className="text-center py-8 text-gray-500">No downtime records</td></tr>
             ) : filteredRecords?.map(r => (
               <tr key={r.id}>
-                <td><Badge variant={typeColors[r.downtime_type] || 'gray'}>{r.downtime_type}</Badge></td>
+                <td><Badge variant={typeColors[r.downtime_type] || 'default'}>{r.downtime_type}</Badge></td>
                 <td className="text-sm">{r.category}</td>
                 <td className="text-sm">{formatDateTime(r.start_time)}</td>
                 <td className="text-sm">
@@ -105,7 +107,7 @@ export default function DowntimeTracker() {
               </tr>
             ))}
           </tbody>
-        </Table>
+        </table>
       </Card>
 
       <Modal open={logOpen} onClose={() => setLogOpen(false)} title="Log Downtime Event">

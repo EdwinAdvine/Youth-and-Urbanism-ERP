@@ -15,23 +15,19 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Only split pure utility libs that never touch React at module scope
           if (id.includes('node_modules')) {
-            if (id.includes('react-dom') || id.includes('react/') || id.includes('react-router') || id.includes('scheduler')) {
-              return 'vendor-react'
+            if (id.includes('axios') || id.includes('date-fns') || id.includes('lodash') || id.includes('zod')) {
+              return 'vendor-utils'
             }
-            if (id.includes('@tanstack/react-query')) {
-              return 'vendor-query'
-            }
-            if (id.includes('@radix-ui')) {
-              return 'vendor-radix'
-            }
-            return 'vendor-misc'
+            // All other node_modules: let Vite/Rollup handle chunking naturally
+            // (no catch-all — avoids splitting React-dependent libs away from React)
+            return
           }
-          // Match both features/ and apps/ paths for code splitting
+          // Feature code-splitting by module
           const m = id.match(/(?:features|apps\/yu-)(finance|hr|crm|inventory|projects|forms|admin|mail|calendar|docs|notes|drive|analytics|teams|pos|ecommerce|manufacturing|support|supplychain|supply-chain)\//)
           if (m) {
-            const mod = m[1].replace('-', '')
-            return `mod-${mod}`
+            return `mod-${m[1].replace('-', '')}`
           }
         },
       },

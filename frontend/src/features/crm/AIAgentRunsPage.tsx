@@ -58,18 +58,18 @@ export default function AIAgentRunsPage() {
   async function handleApprove(run: AIAgentRun) {
     try {
       await approveRun.mutateAsync({ agentId: run.agent_config_id, runId: run.id })
-      toast.success('Run approved')
+      toast('success', 'Run approved')
     } catch {
-      toast.error('Failed to approve run')
+      toast('error', 'Failed to approve run')
     }
   }
 
   async function handleReject(run: AIAgentRun) {
     try {
       await rejectRun.mutateAsync({ agentId: run.agent_config_id, runId: run.id })
-      toast.success('Run rejected')
+      toast('success', 'Run rejected')
     } catch {
-      toast.error('Failed to reject run')
+      toast('error', 'Failed to reject run')
     }
   }
 
@@ -78,16 +78,19 @@ export default function AIAgentRunsPage() {
       key: 'agent',
       label: 'Agent',
       render: (row: AIAgentRun) => (
-        <span className="font-medium text-gray-900 dark:text-gray-100">
+        <button
+          className="font-medium text-gray-900 dark:text-gray-100 hover:text-[#51459d] cursor-pointer"
+          onClick={() => setExpandedRunId(expandedRunId === row.id ? null : row.id)}
+        >
           {agentNames[row.agent_config_id] ?? row.agent_config_id.slice(0, 8)}
-        </span>
+        </button>
       ),
     },
     {
       key: 'status',
       label: 'Status',
       render: (row: AIAgentRun) => (
-        <Badge variant={STATUS_VARIANTS[row.status] ?? 'default'}>
+        <Badge variant={(STATUS_VARIANTS[row.status] ?? 'default') as 'primary' | 'danger' | 'default' | 'success' | 'warning' | 'info'}>
           {row.status.replace(/_/g, ' ')}
         </Badge>
       ),
@@ -160,7 +163,7 @@ export default function AIAgentRunsPage() {
         <div className="w-48">
           <Select
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
             options={STATUS_OPTIONS}
           />
         </div>
@@ -179,9 +182,6 @@ export default function AIAgentRunsPage() {
               loading={isLoading}
               emptyText="No agent runs found"
               keyExtractor={(row) => row.id}
-              onRowClick={(row) =>
-                setExpandedRunId(expandedRunId === row.id ? null : row.id)
-              }
             />
 
             {/* Expanded detail panel */}

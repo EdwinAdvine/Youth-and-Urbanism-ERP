@@ -4,8 +4,10 @@ import { Button, Badge, Card, Input, Select } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useNCR, useUpdateNCR, useCreateCAPA } from '../../api/manufacturing_quality'
 
-const severityColors: Record<string, string> = { minor: 'yellow', major: 'orange', critical: 'red' }
-const statusColors: Record<string, string> = { open: 'red', investigating: 'blue', resolved: 'green', closed: 'gray' }
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const severityColors: Record<string, BadgeVariant> = { minor: 'warning', major: 'warning', critical: 'danger' }
+const statusColors: Record<string, BadgeVariant> = { open: 'danger', investigating: 'info', resolved: 'success', closed: 'default' }
 
 export default function NCRDetail() {
   const { ncrId } = useParams<{ ncrId: string }>()
@@ -23,19 +25,19 @@ export default function NCRDetail() {
   const handleResolve = async () => {
     try {
       await updateNCR.mutateAsync({ id: ncr.id, status: 'resolved', root_cause: rootCause, disposition, resolution_notes: resolution })
-      toast({ title: 'NCR resolved' })
+      toast('success', 'NCR resolved')
     } catch {
-      toast({ title: 'Failed to resolve', variant: 'destructive' })
+      toast('error', 'Failed to resolve')
     }
   }
 
   const handleCreateCAPA = async () => {
     try {
       const capa = await createCAPA.mutateAsync({ ncr_id: ncr.id, description: `CAPA for ${ncr.ncr_number}: ${ncr.description}` })
-      toast({ title: `CAPA ${capa.capa_number} created` })
+      toast('success', `CAPA ${capa.capa_number} created`)
       navigate(`/manufacturing/capa/${capa.id}`)
     } catch {
-      toast({ title: 'Failed to create CAPA', variant: 'destructive' })
+      toast('error', 'Failed to create CAPA')
     }
   }
 

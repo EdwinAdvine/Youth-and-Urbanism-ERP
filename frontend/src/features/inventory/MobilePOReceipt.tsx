@@ -59,7 +59,7 @@ export default function MobilePOReceipt({ poId }: MobilePOReceiptProps) {
 
   function setAllToOrdered() {
     const newQtys: Record<string, number> = {}
-    po.lines.forEach((line) => {
+    po?.lines.forEach((line) => {
       newQtys[line.id] = line.quantity - line.received_quantity
     })
     setReceivedQtys(newQtys)

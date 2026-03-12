@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Badge, Card, Table, Input, Modal, Select } from '../../components/ui'
+import { Button, Badge, Card, Input, Modal, Select } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useCAPAs, useCreateCAPA, type CAPA, type CAPACreate } from '../../api/manufacturing_quality'
 
-const statusColors: Record<string, string> = { open: 'red', in_progress: 'blue', verification: 'yellow', closed: 'green' }
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const statusColors: Record<string, BadgeVariant> = { open: 'danger', in_progress: 'info', verification: 'warning', closed: 'success' }
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return '—'
@@ -21,14 +23,14 @@ export default function CAPAListPage() {
   const createCAPA = useCreateCAPA()
 
   const handleCreate = async () => {
-    if (!form.description) return toast({ title: 'Description is required', variant: 'destructive' })
+    if (!form.description) return toast('error', 'Description is required')
     try {
       const capa = await createCAPA.mutateAsync(form)
-      toast({ title: `CAPA ${capa.capa_number} created` })
+      toast('success', `CAPA ${capa.capa_number} created`)
       setModalOpen(false)
       setForm({ description: '', capa_type: 'corrective', priority: 'medium' })
     } catch {
-      toast({ title: 'Failed to create CAPA', variant: 'destructive' })
+      toast('error', 'Failed to create CAPA')
     }
   }
 
@@ -45,16 +47,16 @@ export default function CAPAListPage() {
       </Select>
 
       <Card>
-        <Table>
+        <table className="w-full text-sm">
           <thead>
             <tr>
-              <th>CAPA #</th>
-              <th>Type</th>
-              <th>Description</th>
-              <th>Status</th>
-              <th>Priority</th>
-              <th>Due Date</th>
-              <th>Verified</th>
+              <th className="text-left py-3 px-4">CAPA #</th>
+              <th className="text-left py-3 px-4">Type</th>
+              <th className="text-left py-3 px-4">Description</th>
+              <th className="text-left py-3 px-4">Status</th>
+              <th className="text-left py-3 px-4">Priority</th>
+              <th className="text-left py-3 px-4">Due Date</th>
+              <th className="text-left py-3 px-4">Verified</th>
             </tr>
           </thead>
           <tbody>
@@ -67,14 +69,14 @@ export default function CAPAListPage() {
                 <td className="font-mono text-sm">{capa.capa_number}</td>
                 <td className="capitalize">{capa.capa_type}</td>
                 <td className="max-w-xs truncate">{capa.description}</td>
-                <td><Badge variant={statusColors[capa.status] || 'gray'}>{capa.status.replace('_', ' ')}</Badge></td>
+                <td><Badge variant={statusColors[capa.status] || 'default'}>{capa.status.replace('_', ' ')}</Badge></td>
                 <td className="capitalize">{capa.priority}</td>
                 <td>{formatDate(capa.due_date)}</td>
-                <td>{capa.effectiveness_verified ? <Badge variant="green">Yes</Badge> : '—'}</td>
+                <td>{capa.effectiveness_verified ? <Badge variant="success">Yes</Badge> : '—'}</td>
               </tr>
             ))}
           </tbody>
-        </Table>
+        </table>
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Create CAPA">

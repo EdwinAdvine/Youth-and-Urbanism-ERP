@@ -129,7 +129,7 @@ export default function BOMListPage() {
     {
       key: 'is_default',
       label: 'Default',
-      render: (row: BOM) => row.is_default ? <Badge variant="success">Yes</Badge> : <span className="text-gray-400">No</span>,
+      render: (row: BOM) => row.is_default ? <Badge variant="primary">Yes</Badge> : <span className="text-gray-400">No</span>,
     },
     {
       key: 'is_active',

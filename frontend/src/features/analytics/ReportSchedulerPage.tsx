@@ -52,7 +52,7 @@ export default function ReportSchedulerPage() {
     setForm({
       name: r.name,
       description: r.description || '',
-      query: r.query || '',
+      query: r.query_id || '',
       schedule: r.schedule || 'weekly',
       format: r.format || 'pdf',
       recipients: r.recipients?.join(', ') || '',
@@ -69,9 +69,10 @@ export default function ReportSchedulerPage() {
     const payload = {
       name: form.name,
       description: form.description || undefined,
-      query: form.query || undefined,
+      report_type: 'scheduled' as const,
+      query_id: form.query || undefined,
       schedule: form.schedule,
-      format: form.format,
+      format: form.format as 'pdf' | 'csv' | 'xlsx',
       recipients: form.recipients.split(',').map((r) => r.trim()).filter(Boolean),
       is_active: form.is_active,
     }
@@ -154,7 +155,7 @@ export default function ReportSchedulerPage() {
       label: 'Last Run',
       render: (row: Report) => (
         <span className="text-gray-400 text-xs">
-          {row.last_run_at ? new Date(row.last_run_at).toLocaleDateString() : 'Never'}
+          {row.last_generated_at ? new Date(row.last_generated_at).toLocaleDateString() : 'Never'}
         </span>
       ),
     },

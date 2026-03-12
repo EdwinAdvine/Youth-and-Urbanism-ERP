@@ -248,7 +248,7 @@ async def update_label(
     return LabelOut.model_validate(label).model_dump()
 
 
-@router.delete("/labels/{label_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, summary="Delete a mail label")
+@router.delete("/labels/{label_id}", status_code=status.HTTP_200_OK, response_model=None, summary="Delete a mail label")
 async def delete_label(
     label_id: uuid.UUID,
     current_user: CurrentUser,

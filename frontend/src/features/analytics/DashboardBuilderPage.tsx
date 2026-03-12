@@ -148,9 +148,9 @@ export default function DashboardBuilderPage() {
     const payload = {
       dashboard_id: id!,
       title: form.title,
-      widget_type: form.widget_type,
+      widget_type: form.widget_type as 'chart' | 'kpi' | 'table' | 'gauge' | 'map' | 'text',
       chart_type: form.widget_type === 'chart' ? form.chart_type : undefined,
-      data_source: form.data_source || undefined,
+      data_source: form.data_source || '',
       position_x: form.position_x,
       position_y: form.position_y,
       width: form.width,

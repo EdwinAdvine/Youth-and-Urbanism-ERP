@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Badge, Card, Table, Input, Modal } from '../../components/ui'
+import { Button, Badge, Card, Input, Modal } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useInspectionPlans, useCreateInspectionPlan, type InspectionPlan, type InspectionPlanCreate } from '../../api/manufacturing_quality'
 
@@ -17,15 +17,15 @@ export default function InspectionPlansPage() {
   const createPlan = useCreateInspectionPlan()
 
   const handleCreate = async () => {
-    if (!form.name) return toast({ title: 'Name is required', variant: 'destructive' })
+    if (!form.name) return toast('error', 'Name is required')
     try {
       const plan = await createPlan.mutateAsync(form)
-      toast({ title: `Inspection plan ${plan.plan_number} created` })
+      toast('success', `Inspection plan ${plan.plan_number} created`)
       setModalOpen(false)
       setForm({ name: '' })
       navigate(`/manufacturing/inspection-plans/${plan.id}`)
     } catch {
-      toast({ title: 'Failed to create plan', variant: 'destructive' })
+      toast('error', 'Failed to create plan')
     }
   }
 
@@ -37,14 +37,14 @@ export default function InspectionPlansPage() {
       </div>
 
       <Card>
-        <Table>
+        <table className="w-full text-sm">
           <thead>
             <tr>
-              <th>Plan #</th>
-              <th>Name</th>
-              <th>Status</th>
-              <th>Version</th>
-              <th>Created</th>
+              <th className="text-left py-3 px-4">Plan #</th>
+              <th className="text-left py-3 px-4">Name</th>
+              <th className="text-left py-3 px-4">Status</th>
+              <th className="text-left py-3 px-4">Version</th>
+              <th className="text-left py-3 px-4">Created</th>
             </tr>
           </thead>
           <tbody>
@@ -56,13 +56,13 @@ export default function InspectionPlansPage() {
               <tr key={plan.id} className="cursor-pointer hover:bg-gray-50" onClick={() => navigate(`/manufacturing/inspection-plans/${plan.id}`)}>
                 <td className="font-mono text-sm">{plan.plan_number}</td>
                 <td>{plan.name}</td>
-                <td><Badge variant={plan.is_active ? 'green' : 'gray'}>{plan.is_active ? 'Active' : 'Inactive'}</Badge></td>
+                <td><Badge variant={plan.is_active ? 'success' : 'default'}>{plan.is_active ? 'Active' : 'Inactive'}</Badge></td>
                 <td>v{plan.version}</td>
                 <td>{formatDate(plan.created_at)}</td>
               </tr>
             ))}
           </tbody>
-        </Table>
+        </table>
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Create Inspection Plan">

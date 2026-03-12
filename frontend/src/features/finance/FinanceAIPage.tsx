@@ -34,7 +34,7 @@ function CashFlowForecast() {
   return (
     <div className="space-y-6">
       <div className="flex gap-3 items-center">
-        <Select value={String(horizon)} onValueChange={(v) => setHorizon(Number(v))}>
+        <Select value={String(horizon)} onValueChange={(v: string) => setHorizon(Number(v))}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="30">30 days</SelectItem>
@@ -131,7 +131,7 @@ function AnomalyDetection() {
   return (
     <div className="space-y-6">
       <div className="flex gap-3 items-center">
-        <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
+        <Select value={String(days)} onValueChange={(v: string) => setDays(Number(v))}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="7">Last 7 days</SelectItem>
@@ -204,7 +204,7 @@ function AnomalyDetection() {
 
 function NLQueryTab() {
   const [query, setQuery] = useState("");
-  const { data, isLoading, mutate } = useMutation({
+  const { data, isPending: isLoading, mutate } = useMutation({
     mutationFn: (q: string) => api.post("/finance/ai/nl-query", { query: q }).then((r) => r.data),
   });
 
@@ -223,8 +223,8 @@ function NLQueryTab() {
           className="flex-1"
           placeholder="Ask anything about your finances…"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && query && mutate(query)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+          onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && query && mutate(query)}
         />
         <Button
           onClick={() => mutate(query)}
@@ -294,7 +294,7 @@ function TaxOptimizerTab() {
   return (
     <div className="space-y-6">
       <div className="flex gap-3 items-center">
-        <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+        <Select value={String(year)} onValueChange={(v: string) => setYear(Number(v))}>
           <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
           <SelectContent>
             {[currentYear, currentYear - 1, currentYear - 2].map((y) => (

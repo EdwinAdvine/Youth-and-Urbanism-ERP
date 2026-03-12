@@ -2,7 +2,9 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Badge, Card } from '../../components/ui'
 import { useGenealogy, type GenealogyNode } from '../../api/manufacturing_trace'
 
-const statusColors: Record<string, string> = { active: 'green', consumed: 'blue', shipped: 'purple', recalled: 'red' }
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const statusColors: Record<string, BadgeVariant> = { active: 'success', consumed: 'info', shipped: 'primary', recalled: 'danger' }
 
 function TreeNode({ node, depth = 0, queriedId, onNavigate }: { node: GenealogyNode; depth?: number; queriedId: string; onNavigate: (id: string) => void }) {
   const isQueried = node.id === queriedId
@@ -14,7 +16,7 @@ function TreeNode({ node, depth = 0, queriedId, onNavigate }: { node: GenealogyN
       >
         <span className="text-xs text-gray-400">{'└'.repeat(depth > 0 ? 1 : 0)}</span>
         <span className="font-mono text-sm font-medium">{node.tracking_number}</span>
-        <Badge variant={statusColors[node.status] || 'gray'} className="text-xs">{node.status}</Badge>
+        <Badge variant={statusColors[node.status] || 'default'} className="text-xs">{node.status}</Badge>
         <span className="text-xs text-gray-500 capitalize">{node.tracking_type}</span>
         <span className="text-xs text-gray-400">qty: {node.quantity}</span>
         {isQueried && <span className="text-xs text-purple-600 font-semibold">← queried</span>}

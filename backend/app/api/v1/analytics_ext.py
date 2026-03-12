@@ -18,7 +18,7 @@ from sqlalchemy import select, text
 from app.core.deps import CurrentUser, DBSession
 from app.models.analytics import (
     Dashboard,
-    DashboardWidget,
+    AnalyticsDashboardWidget as DashboardWidget,
     DataAlert,
     Report,
     SavedQuery,
@@ -292,7 +292,7 @@ async def update_dashboard(
     return DashboardOut.from_orm(dashboard)
 
 
-@router.delete("/dashboards/{dashboard_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, summary="Delete dashboard")
+@router.delete("/dashboards/{dashboard_id}", status_code=status.HTTP_200_OK, response_model=None, summary="Delete dashboard")
 async def delete_dashboard(
     dashboard_id: uuid.UUID,
     current_user: CurrentUser,
@@ -395,7 +395,7 @@ async def update_widget(
     return WidgetOut.from_orm(widget)
 
 
-@router.delete("/widgets/{widget_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, summary="Delete a widget")
+@router.delete("/widgets/{widget_id}", status_code=status.HTTP_200_OK, response_model=None, summary="Delete a widget")
 async def delete_widget(
     widget_id: uuid.UUID,
     current_user: CurrentUser,
@@ -539,7 +539,7 @@ async def update_saved_query(
     return SavedQueryOut.from_orm(query)
 
 
-@router.delete("/saved-queries/{query_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, summary="Delete saved query")
+@router.delete("/saved-queries/{query_id}", status_code=status.HTTP_200_OK, response_model=None, summary="Delete saved query")
 async def delete_saved_query(
     query_id: uuid.UUID,
     current_user: CurrentUser,
@@ -768,7 +768,7 @@ async def update_alert(
     return AlertOut.from_orm(alert)
 
 
-@router.delete("/alerts/{alert_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, summary="Delete data alert")
+@router.delete("/alerts/{alert_id}", status_code=status.HTTP_200_OK, response_model=None, summary="Delete data alert")
 async def delete_alert(
     alert_id: uuid.UUID,
     current_user: CurrentUser,

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Button, Badge, Card, Table, Select, Modal } from '../../components/ui'
+import { Button, Badge, Card, Table, Select } from '../../components/ui'
 import { toast } from '../../components/ui'
-import { usePickLists, useCreatePickList, useUpdatePickListStatus, useWarehouses, type PickList } from '../../api/inventory'
+import { usePickLists, useUpdatePickListStatus, useWarehouses, type PickList } from '../../api/inventory'
 
 const STATUS_COLORS: Record<string, 'default' | 'info' | 'warning' | 'success' | 'danger'> = {
   pending: 'default', in_progress: 'info', picked: 'warning', packed: 'warning', shipped: 'success',

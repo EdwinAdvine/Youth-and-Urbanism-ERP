@@ -1,59 +1,24 @@
-"""Notes API — personal notes for each user."""
+"""Notes API — personal notes for each user (extended with hierarchy support)."""
 from __future__ import annotations
 
 import uuid
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
-from pydantic import BaseModel
 from sqlalchemy import select
 
-
 from app.core.deps import CurrentUser, DBSession
-from app.models.notes import Note
+from app.core.events import event_bus
+from app.models.notes import Note, NoteEntityLink
+from app.schemas.notes import (
+    NoteCreate,
+    NoteLink,
+    NoteOut,
+    NoteShare,
+    NoteUpdate,
+)
 
 router = APIRouter()
-
-
-# ── Pydantic schemas ───────────────────────────────────────────────────────────
-
-class NoteCreate(BaseModel):
-    title: str = "Untitled"
-    content: str | None = None
-    tags: list[str] | None = None
-    is_pinned: bool = False
-
-
-class NoteUpdate(BaseModel):
-    title: str | None = None
-    content: str | None = None
-    tags: list[str] | None = None
-    is_pinned: bool | None = None
-
-
-class NoteShare(BaseModel):
-    user_ids: list[str]
-
-
-class NoteLink(BaseModel):
-    type: str  # "doc", "file", "folder", "calendar", "project", "task"
-    id: str
-    title: str | None = None
-
-
-class NoteOut(BaseModel):
-    id: uuid.UUID
-    title: str
-    content: str | None
-    tags: list[str] | None
-    is_pinned: bool
-    shared_with: list | None
-    is_shared: bool
-    linked_items: list | None
-    created_at: Any
-    updated_at: Any
-
-    model_config = {"from_attributes": True}
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -64,13 +29,21 @@ async def list_notes(
     db: DBSession,
     tag: str | None = Query(None, description="Filter notes that contain this tag"),
     pinned: bool | None = Query(None, description="Filter by pinned status"),
+    notebook_id: uuid.UUID | None = Query(None, description="Filter by notebook"),
+    section_id: uuid.UUID | None = Query(None, description="Filter by section"),
+    archived: bool = Query(False, description="Include archived notes"),
 ) -> dict[str, Any]:
     query = select(Note).where(Note.owner_id == current_user.id)
     if pinned is not None:
         query = query.where(Note.is_pinned == pinned)
     if tag:
-        # PostgreSQL ARRAY contains operator
         query = query.where(Note.tags.contains([tag]))
+    if notebook_id:
+        query = query.where(Note.notebook_id == notebook_id)
+    if section_id:
+        query = query.where(Note.section_id == section_id)
+    if not archived:
+        query = query.where(Note.is_archived.is_(False))
     # Pinned first, then most recently updated
     query = query.order_by(Note.is_pinned.desc(), Note.updated_at.desc())
     result = await db.execute(query)
@@ -93,10 +66,49 @@ async def create_note(
         owner_id=current_user.id,
         tags=payload.tags or [],
         is_pinned=payload.is_pinned,
+        # Hierarchy
+        notebook_id=payload.notebook_id,
+        section_id=payload.section_id,
+        parent_page_id=payload.parent_page_id,
+        # Editor
+        content_format=payload.content_format,
+        # Appearance
+        icon=payload.icon,
+        cover_image_url=payload.cover_image_url,
+        full_width=payload.full_width,
+        # Properties
+        properties=payload.properties or {},
+        # Source
+        source_type=payload.source_type,
     )
     db.add(note)
     await db.commit()
     await db.refresh(note)
+
+    # Auto-link source entity if provided
+    if payload.source_entity_type and payload.source_entity_id:
+        try:
+            entity_uuid = uuid.UUID(payload.source_entity_id)
+            link = NoteEntityLink(
+                note_id=note.id,
+                entity_type=payload.source_entity_type,
+                entity_id=entity_uuid,
+                link_type="created_from",
+                created_by_id=current_user.id,
+            )
+            db.add(link)
+            await db.commit()
+        except ValueError:
+            pass  # Invalid UUID, skip linking
+
+    # Publish event for embedding pipeline & cross-module reactions
+    await event_bus.publish("note.created", {
+        "note_id": str(note.id),
+        "owner_id": str(current_user.id),
+        "title": note.title,
+        "source_type": note.source_type,
+    })
+
     return NoteOut.model_validate(note).model_dump()
 
 
@@ -123,32 +135,44 @@ async def update_note(
     if not note or note.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
 
-    if payload.title is not None:
-        note.title = payload.title
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(note, field, value)
+
+    # Update word count if content changed
     if payload.content is not None:
-        note.content = payload.content
-    if payload.tags is not None:
-        note.tags = payload.tags
-    if payload.is_pinned is not None:
-        note.is_pinned = payload.is_pinned
+        note.word_count = len((payload.content or "").split())
 
     await db.commit()
     await db.refresh(note)
+
+    # Publish event for embedding pipeline
+    await event_bus.publish("note.updated", {
+        "note_id": str(note.id),
+        "owner_id": str(current_user.id),
+        "title": note.title,
+    })
+
     return NoteOut.model_validate(note).model_dump()
 
 
-@router.delete("/{note_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a note")
+@router.delete("/{note_id}", status_code=status.HTTP_200_OK, summary="Delete a note")
 async def delete_note(
     note_id: uuid.UUID,
     current_user: CurrentUser,
     db: DBSession,
+    permanent: bool = Query(False),
 ) -> Response:
     note = await db.get(Note, note_id)
     if not note or note.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-    await db.delete(note)
+
+    if permanent:
+        await db.delete(note)
+    else:
+        note.is_archived = True
+
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.post("/{note_id}/share", summary="Share a note with other users")
@@ -174,7 +198,6 @@ async def shared_with_me(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
-    # Query notes where shared_with JSON array contains our user id
     user_id_str = str(current_user.id)
     query = (
         select(Note)
@@ -183,7 +206,6 @@ async def shared_with_me(
     )
     result = await db.execute(query)
     all_shared = result.scalars().all()
-    # Filter in Python since JSON array containment varies by driver
     notes = [n for n in all_shared if user_id_str in (n.shared_with or [])]
     return {
         "total": len(notes),
@@ -191,7 +213,7 @@ async def shared_with_me(
     }
 
 
-# ── Deep Linking ─────────────────────────────────────────────────────────────
+# ── Deep Linking (legacy JSON-based — kept for backward compat) ──────────
 
 @router.post("/{note_id}/links", summary="Add a cross-module link to a note")
 async def add_note_link(
@@ -205,7 +227,6 @@ async def add_note_link(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
 
     links = list(note.linked_items or [])
-    # Prevent duplicates
     if not any(l.get("type") == payload.type and l.get("id") == payload.id for l in links):
         links.append({"type": payload.type, "id": payload.id, "title": payload.title})
     note.linked_items = links

@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { Button, Card, Modal, Input, Select, Badge } from '../../components/ui'
+import { Button, Card, Modal, Input, Badge } from '../../components/ui'
 import { toast } from '../../components/ui'
-import { useSkillsMatrix, useCreateSkill, useDeleteSkill } from '../../api/manufacturing_labor'
+import { useSkillsMatrix, useCreateSkill } from '../../api/manufacturing_labor'
 
-const proficiencyColors: Record<string, string> = {
-  trainee: 'gray',
-  operator: 'blue',
-  senior: 'green',
-  expert: 'purple',
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const proficiencyColors: Record<string, BadgeVariant> = {
+  trainee: 'default',
+  operator: 'info',
+  senior: 'success',
+  expert: 'primary',
 }
 
 export default function SkillsMatrixPage() {
@@ -16,10 +18,9 @@ export default function SkillsMatrixPage() {
 
   const { data: matrix, isLoading } = useSkillsMatrix()
   const createSkill = useCreateSkill()
-  const deleteSkill = useDeleteSkill()
-
+  
   const handleAdd = async () => {
-    if (!form.employee_id || !form.skill_name) return toast({ title: 'Employee ID and skill required', variant: 'destructive' })
+    if (!form.employee_id || !form.skill_name) return toast('error', 'Employee ID and skill required')
     try {
       await createSkill.mutateAsync({
         employee_id: form.employee_id,
@@ -27,11 +28,11 @@ export default function SkillsMatrixPage() {
         proficiency_level: form.proficiency_level,
         expiry_date: form.expiry_date || undefined,
       })
-      toast({ title: 'Skill added' })
+      toast('success', 'Skill added')
       setAddOpen(false)
       setForm({ employee_id: '', skill_name: '', proficiency_level: 'operator', expiry_date: '' })
     } catch {
-      toast({ title: 'Failed to add skill', variant: 'destructive' })
+      toast('error', 'Failed to add skill')
     }
   }
 
@@ -74,7 +75,7 @@ export default function SkillsMatrixPage() {
                       <td key={skill} className="px-3 py-3 text-center">
                         {cellData ? (
                           <div className="flex flex-col items-center gap-1">
-                            <Badge variant={proficiencyColors[cellData.proficiency_level] || 'gray'} className="text-xs">
+                            <Badge variant={proficiencyColors[cellData.proficiency_level] || 'default'} className="text-xs">
                               {cellData.proficiency_level.slice(0, 3).toUpperCase()}
                             </Badge>
                             {cellData.expiry_date && (

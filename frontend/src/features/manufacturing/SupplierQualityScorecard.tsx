@@ -11,7 +11,7 @@ export default function SupplierQualityScorecard({ supplierId }: Props) {
   if (isLoading) return <Card className="p-4">Loading scorecard...</Card>
   if (!scorecard) return <Card className="p-4 text-gray-500">No quality data for this supplier</Card>
 
-  const scoreColor = scorecard.quality_score >= 80 ? 'green' : scorecard.quality_score >= 60 ? 'yellow' : 'red'
+  const scoreColor = (scorecard.quality_score >= 80 ? 'success' : scorecard.quality_score >= 60 ? 'warning' : 'danger') as 'success' | 'warning' | 'danger'
 
   return (
     <Card className="p-4 space-y-4">

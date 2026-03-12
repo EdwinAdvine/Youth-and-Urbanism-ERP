@@ -473,7 +473,7 @@ async def mark_article_read(
 
 @router.delete(
     "/articles/{article_id}/mark-read",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Unmark article as read",
 )
 async def unmark_article_read(
@@ -491,7 +491,7 @@ async def unmark_article_read(
     if progress:
         await db.delete(progress)
         await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.get("/progress", summary="Get current user's reading progress")
@@ -583,7 +583,7 @@ async def admin_update_category(
 
 @router.delete(
     "/admin/categories/{cat_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete category",
 )
 async def admin_delete_category(
@@ -602,7 +602,7 @@ async def admin_delete_category(
 
     await db.delete(category)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.put("/admin/categories/reorder", summary="Bulk reorder categories")
@@ -685,7 +685,7 @@ async def admin_update_article(
 
 @router.delete(
     "/admin/articles/{article_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete article",
 )
 async def admin_delete_article(
@@ -704,7 +704,7 @@ async def admin_delete_article(
 
     await db.delete(article)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @router.put("/admin/articles/reorder", summary="Bulk reorder articles")

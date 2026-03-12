@@ -68,6 +68,11 @@ class EcomProduct(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     is_published: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     seo_title: Mapped[str | None] = mapped_column(String(500), nullable=True)
     seo_description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_made_to_order: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    lead_time_days: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    weight: Mapped[Decimal | None] = mapped_column(Numeric(10, 3), nullable=True)
+    tags_json: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
+    category: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
     # Relationships
     store = relationship("Store", back_populates="products", lazy="joined")
@@ -235,6 +240,15 @@ class EcomOrder(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=0)
     tracking_number: Mapped[str | None] = mapped_column(String(200), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    po_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    fulfillment_type: Mapped[str] = mapped_column(String(20), nullable=False, default="shipping")  # shipping/pickup
+    pickup_location_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_pickup_locations.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    currency_code: Mapped[str] = mapped_column(String(10), nullable=False, default="KES")
+    exchange_rate_snapshot: Mapped[Decimal] = mapped_column(Numeric(14, 6), nullable=False, default=1)
 
     # Relationships
     store = relationship("Store", back_populates="orders", lazy="joined")
@@ -386,3 +400,239 @@ class PaymentGateway(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<PaymentGateway id={self.id} name={self.name!r}>"
+
+
+# -- CartAbandonmentLog -------------------------------------------------------
+class CartAbandonmentLog(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Tracks abandoned carts for recovery email campaigns."""
+
+    __tablename__ = "ecom_cart_abandonment_logs"
+
+    cart_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_carts.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    store_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_stores.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    customer_email: Mapped[str] = mapped_column(String(320), nullable=False, index=True)
+    customer_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_customers.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    items_snapshot: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    abandoned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    recovery_email_1_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    recovery_email_2_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    recovery_email_3_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    recovered_order_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_orders.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    discount_code_used: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_recovered: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    def __repr__(self) -> str:
+        return f"<CartAbandonmentLog email={self.customer_email!r} recovered={self.is_recovered}>"
+
+
+# -- ProductBundle ------------------------------------------------------------
+class ProductBundle(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """A bundle of products sold together at a discount."""
+
+    __tablename__ = "ecom_product_bundles"
+
+    store_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_stores.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(300), nullable=False)
+    slug: Mapped[str] = mapped_column(String(300), unique=True, nullable=False, index=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    discount_type: Mapped[str] = mapped_column(String(20), nullable=False, default="pct")  # pct/fixed
+    discount_value: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    store = relationship("Store", lazy="joined")
+    items = relationship("BundleItem", back_populates="bundle", cascade="all, delete-orphan", lazy="selectin")
+
+    def __repr__(self) -> str:
+        return f"<ProductBundle id={self.id} name={self.name!r}>"
+
+
+# -- BundleItem ---------------------------------------------------------------
+class BundleItem(Base, UUIDPrimaryKeyMixin):
+    """A product inside a bundle."""
+
+    __tablename__ = "ecom_bundle_items"
+
+    bundle_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_product_bundles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_products.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    bundle = relationship("ProductBundle", back_populates="items")
+    product = relationship("EcomProduct", lazy="joined")
+
+    def __repr__(self) -> str:
+        return f"<BundleItem bundle={self.bundle_id} product={self.product_id}>"
+
+
+# -- FlashSale ----------------------------------------------------------------
+class FlashSale(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Time-limited flash sale for a product."""
+
+    __tablename__ = "ecom_flash_sales"
+
+    store_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_stores.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sale_price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    inventory_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sold_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    countdown_visible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    store = relationship("Store", lazy="joined")
+    product = relationship("EcomProduct", lazy="joined")
+
+    def __repr__(self) -> str:
+        return f"<FlashSale product={self.product_id} active={self.is_active}>"
+
+
+# -- PickupLocation -----------------------------------------------------------
+class PickupLocation(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """BOPIS pickup location linked to a store."""
+
+    __tablename__ = "ecom_pickup_locations"
+
+    store_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_stores.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    address: Mapped[str] = mapped_column(String(500), nullable=False)
+    city: Mapped[str] = mapped_column(String(150), nullable=False)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    operating_hours_json: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    store = relationship("Store", lazy="joined")
+
+    def __repr__(self) -> str:
+        return f"<PickupLocation id={self.id} name={self.name!r}>"
+
+
+# -- EcomOrderWorkOrderLink ---------------------------------------------------
+class EcomOrderWorkOrderLink(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Links an e-commerce order line to a manufacturing work order."""
+
+    __tablename__ = "ecom_order_work_order_links"
+
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_orders.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    order_line_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_order_lines.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    work_order_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        nullable=False,
+    )  # FK to mfg_work_orders — cross-module, no DB constraint
+    work_order_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<EcomOrderWorkOrderLink order={self.order_id} wo={self.work_order_id}>"
+
+
+# -- EcomOrderProjectLink -----------------------------------------------------
+class EcomOrderProjectLink(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Links a large e-commerce order to an auto-created project."""
+
+    __tablename__ = "ecom_order_project_links"
+
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_orders.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        nullable=False,
+    )  # FK to projects — cross-module, no DB constraint
+    project_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<EcomOrderProjectLink order={self.order_id} project={self.project_id}>"
+
+
+# -- ImportJob ----------------------------------------------------------------
+class ImportJob(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Tracks a bulk product/customer/order import job."""
+
+    __tablename__ = "ecom_import_jobs"
+
+    store_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ecom_stores.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    source_platform: Mapped[str] = mapped_column(String(50), nullable=False)  # shopify/woocommerce/bigcommerce/csv
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)  # pending/running/done/failed
+    file_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    mappings_json: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
+    progress_pct: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error_log: Mapped[str | None] = mapped_column(Text, nullable=True)
+    imported_products: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    imported_customers: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    imported_orders: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    started_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    def __repr__(self) -> str:
+        return f"<ImportJob id={self.id} platform={self.source_platform} status={self.status}>"

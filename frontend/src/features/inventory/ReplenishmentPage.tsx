@@ -49,7 +49,7 @@ export default function ReplenishmentPage() {
 
   async function handleCalculateABC() {
     try {
-      const result = await calculateABC.mutateAsync()
+      const result = await calculateABC.mutateAsync(undefined)
       toast('success', `Classified ${result.classified} items`)
     } catch {
       toast('error', 'Failed to calculate ABC')

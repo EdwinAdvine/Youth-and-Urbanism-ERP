@@ -64,7 +64,7 @@ export default function JobCostingPage() {
           <Input
             placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
             value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProjectId(e.target.value)}
           />
         </div>
         <Button

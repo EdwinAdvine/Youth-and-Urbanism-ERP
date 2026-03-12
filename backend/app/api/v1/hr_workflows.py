@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import CurrentUser, DBSession, require_app_admin
 from app.core.events import event_bus
-from app.models.hr_phase3 import Workflow, WorkflowApproval, WorkflowExecution
+from app.models.hr_phase3 import HRWorkflow as Workflow, WorkflowApproval, HRWorkflowExecution as WorkflowExecution
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -253,7 +253,7 @@ async def update_workflow(
     return _workflow_to_dict(wf)
 
 
-@router.delete("/workflows/{workflow_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/workflows/{workflow_id}", status_code=status.HTTP_200_OK)
 async def delete_workflow(
     workflow_id: str,
     db: DBSession,

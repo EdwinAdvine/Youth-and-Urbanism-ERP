@@ -42,7 +42,6 @@ export default function ContactDetail() {
   const [infoExpanded, setInfoExpanded] = useState(true)
   const [leadsExpanded, setLeadsExpanded] = useState(true)
   const [oppsExpanded, setOppsExpanded] = useState(true)
-  const [purchaseExpanded, setPurchaseExpanded] = useState(true)
   const [form, setForm] = useState<CreateContactPayload>({
     name: '',
     email: '',

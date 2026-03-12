@@ -368,7 +368,7 @@ async def pay_vendor_bill(
 
 @router.delete(
     "/vendor-bills/{bill_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Cancel a vendor bill (soft-delete)",
 )
 async def delete_vendor_bill(
@@ -392,4 +392,4 @@ async def delete_vendor_bill(
 
     bill.status = "cancelled"
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)

@@ -120,7 +120,7 @@ async def update_filter(
     return FilterOut.model_validate(mail_filter).model_dump()
 
 
-@router.delete("/filters/{filter_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, summary="Delete a mail filter")
+@router.delete("/filters/{filter_id}", status_code=status.HTTP_200_OK, response_model=None, summary="Delete a mail filter")
 async def delete_filter(
     filter_id: uuid.UUID,
     current_user: CurrentUser,

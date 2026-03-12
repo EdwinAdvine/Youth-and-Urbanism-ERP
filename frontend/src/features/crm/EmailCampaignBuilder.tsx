@@ -194,7 +194,7 @@ export default function EmailCampaignBuilder() {
 
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                A/B Split Ratio: {form.ab_test_ratio}% / {100 - form.ab_test_ratio}%
+                A/B Split Ratio: {form.ab_test_ratio ?? 50}% / {100 - (form.ab_test_ratio ?? 50)}%
               </label>
               <input
                 type="range"
@@ -209,8 +209,8 @@ export default function EmailCampaignBuilder() {
                 style={{ accentColor: '#51459d' }}
               />
               <div className="flex justify-between text-xs text-gray-400">
-                <span>Variant A: {form.ab_test_ratio}%</span>
-                <span>Variant B: {100 - form.ab_test_ratio}%</span>
+                <span>Variant A: {form.ab_test_ratio ?? 50}%</span>
+                <span>Variant B: {100 - (form.ab_test_ratio ?? 50)}%</span>
               </div>
             </div>
 

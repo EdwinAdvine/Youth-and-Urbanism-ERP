@@ -449,7 +449,7 @@ async def list_linked_deals(
 
 @router.delete(
     "/{project_id}/unlink-deal/{deal_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Unlink a CRM deal from this project",
 )
 async def unlink_deal(
@@ -475,7 +475,7 @@ async def unlink_deal(
 
     await db.delete(link)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -614,7 +614,7 @@ async def link_expense(
 
 @router.delete(
     "/{project_id}/unlink-expense/{expense_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Unlink a finance expense from this project",
 )
 async def unlink_expense(
@@ -640,4 +640,4 @@ async def unlink_expense(
 
     await db.delete(link)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)

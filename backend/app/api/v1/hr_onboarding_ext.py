@@ -276,7 +276,7 @@ async def update_template(
 
 @router.delete(
     "/onboarding/templates/{tmpl_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Delete template and cascade to template tasks (HR admin)",
 )
 async def delete_template(

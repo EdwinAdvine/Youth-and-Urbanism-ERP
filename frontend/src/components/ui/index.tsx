@@ -138,13 +138,15 @@ Select.displayName = 'Select'
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
 
-interface BadgeProps {
+export interface BadgeProps {
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
   children: React.ReactNode
   className?: string
+  style?: React.CSSProperties
+  onClick?: () => void
 }
 
-export function Badge({ variant = 'default', children, className }: BadgeProps) {
+export function Badge({ variant = 'default', children, className, style, onClick }: BadgeProps) {
   const variants = {
     default: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
     success: 'bg-green-100 text-green-700',
@@ -154,7 +156,7 @@ export function Badge({ variant = 'default', children, className }: BadgeProps) 
     primary: 'bg-primary/10 text-primary',
   }
   return (
-    <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium', variants[variant], className)}>
+    <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium', variants[variant], className)} style={style} onClick={onClick}>
       {children}
     </span>
   )
@@ -162,18 +164,22 @@ export function Badge({ variant = 'default', children, className }: BadgeProps) 
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
-interface CardProps {
+export interface CardProps {
   children: React.ReactNode
   className?: string
   padding?: boolean
   onClick?: () => void
+  style?: React.CSSProperties
+  id?: string
 }
 
-export function Card({ children, className, padding = true, onClick }: CardProps) {
+export function Card({ children, className, padding = true, onClick, style, id }: CardProps) {
   return (
     <div
       className={cn('bg-white dark:bg-gray-800 rounded-[10px] shadow-sm border border-gray-100 dark:border-gray-700', padding && 'p-6', className)}
       onClick={onClick}
+      style={style}
+      id={id}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick() } : undefined}

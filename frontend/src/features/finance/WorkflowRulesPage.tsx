@@ -37,14 +37,15 @@ const TRIGGER_EVENTS = [
   "asset.depreciated",
 ];
 
-const ACTION_TYPES = [
+const _ACTION_TYPES = [
   { value: "notify", label: "Send notification" },
   { value: "send_email", label: "Send email" },
   { value: "require_approval", label: "Require approval" },
   { value: "auto_approve", label: "Auto-approve" },
   { value: "create_task", label: "Create task" },
   { value: "escalate", label: "Escalate" },
-];
+] as const;
+void _ACTION_TYPES;
 
 export default function WorkflowRulesPage() {
   const queryClient = useQueryClient();
@@ -55,7 +56,7 @@ export default function WorkflowRulesPage() {
     description: "",
     trigger_event: "expense.submitted",
     conditions: [] as Array<{ field: string; operator: string; value: string }>,
-    actions: [{ type: "notify", params: { title: "", message: "" } }],
+    actions: [{ type: "notify", params: { title: "", message: "" } as Record<string, unknown> }],
     priority: 10,
     is_active: true,
   });
@@ -189,7 +190,7 @@ export default function WorkflowRulesPage() {
                 <div className="flex items-center gap-3 ml-4">
                   <Switch
                     checked={rule.is_active}
-                    onCheckedChange={(v) => toggleMutation.mutate({ id: rule.id, is_active: v })}
+                    onCheckedChange={(v: boolean) => toggleMutation.mutate({ id: rule.id, is_active: v })}
                   />
                   <Button
                     variant="ghost"
@@ -240,14 +241,14 @@ export default function WorkflowRulesPage() {
           <div className="space-y-4">
             <div className="space-y-1">
               <Label>Rule Name</Label>
-              <Input value={newRule.name} onChange={(e) => setNewRule((r) => ({ ...r, name: e.target.value }))} placeholder="e.g. High-value expense approval" />
+              <Input value={newRule.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewRule((r) => ({ ...r, name: e.target.value }))} placeholder="e.g. High-value expense approval" />
             </div>
             <div className="space-y-1">
               <Label>Trigger Event</Label>
-              <Select value={newRule.trigger_event} onValueChange={(v) => setNewRule((r) => ({ ...r, trigger_event: v }))}>
+              <Select value={newRule.trigger_event} onValueChange={(v: string) => setNewRule((r) => ({ ...r, trigger_event: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {TRIGGER_EVENTS.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                  {TRIGGER_EVENTS.map((evt) => <SelectItem key={evt} value={evt}>{evt}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -261,10 +262,10 @@ export default function WorkflowRulesPage() {
                   <Input
                     placeholder="field (e.g. amount)"
                     value={c.field}
-                    onChange={(e) => setNewRule((r) => ({ ...r, conditions: r.conditions.map((cc, j) => j === i ? { ...cc, field: e.target.value } : cc) }))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewRule((r) => ({ ...r, conditions: r.conditions.map((cc, j) => j === i ? { ...cc, field: e.target.value } : cc) }))}
                     className="flex-1"
                   />
-                  <Select value={c.operator} onValueChange={(v) => setNewRule((r) => ({ ...r, conditions: r.conditions.map((cc, j) => j === i ? { ...cc, operator: v } : cc) }))}>
+                  <Select value={c.operator} onValueChange={(v: string) => setNewRule((r) => ({ ...r, conditions: r.conditions.map((cc, j) => j === i ? { ...cc, operator: v } : cc) }))}>
                     <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {["eq", "ne", "gt", "gte", "lt", "lte", "contains"].map((op) => <SelectItem key={op} value={op}>{op}</SelectItem>)}
@@ -273,7 +274,7 @@ export default function WorkflowRulesPage() {
                   <Input
                     placeholder="value"
                     value={c.value}
-                    onChange={(e) => setNewRule((r) => ({ ...r, conditions: r.conditions.map((cc, j) => j === i ? { ...cc, value: e.target.value } : cc) }))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewRule((r) => ({ ...r, conditions: r.conditions.map((cc, j) => j === i ? { ...cc, value: e.target.value } : cc) }))}
                     className="flex-1"
                   />
                 </div>
@@ -281,7 +282,7 @@ export default function WorkflowRulesPage() {
             </div>
             <div className="space-y-1">
               <Label>Description</Label>
-              <Textarea value={newRule.description} onChange={(e) => setNewRule((r) => ({ ...r, description: e.target.value }))} rows={2} />
+              <Textarea value={newRule.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewRule((r) => ({ ...r, description: e.target.value }))} rows={2} />
             </div>
           </div>
           <DialogFooter>

@@ -287,7 +287,7 @@ async def update_saved_report(
     return report
 
 
-@router.delete("/saved-reports/{report_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/saved-reports/{report_id}", status_code=status.HTTP_200_OK)
 async def delete_saved_report(
     report_id: uuid.UUID,
     current_user: CurrentUser,
@@ -306,7 +306,7 @@ async def delete_saved_report(
 
     await db.delete(report)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ---------------------------------------------------------------------------
@@ -388,7 +388,7 @@ async def update_dashboard_widget(
     return widget
 
 
-@router.delete("/dashboard-widgets/{widget_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/dashboard-widgets/{widget_id}", status_code=status.HTTP_200_OK)
 async def delete_dashboard_widget(
     widget_id: uuid.UUID,
     current_user: CurrentUser,
@@ -407,7 +407,7 @@ async def delete_dashboard_widget(
 
     await db.delete(widget)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 # ---------------------------------------------------------------------------

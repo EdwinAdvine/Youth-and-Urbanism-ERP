@@ -3,7 +3,35 @@ import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type EventType = 'meeting' | 'task' | 'reminder' | 'holiday'
+export type EventType = 'meeting' | 'task' | 'reminder' | 'holiday' | 'focus' | 'booking' | 'deadline'
+export type SensitivityLevel = 'normal' | 'private' | 'confidential'
+export type PriorityLevel = 'low' | 'normal' | 'high' | 'urgent'
+export type EventStatus = 'confirmed' | 'tentative' | 'cancelled'
+
+export interface ReminderConfig {
+  minutes_before: number
+  channel: 'push' | 'email' | 'in_app'
+}
+
+export interface ERPContext {
+  invoice_id?: string
+  ticket_id?: string
+  deal_id?: string
+  project_id?: string
+  task_id?: string
+  contact_id?: string
+  po_id?: string
+  // Denormalised display fields (populated by backend)
+  invoice_number?: string
+  invoice_amount?: number
+  ticket_subject?: string
+  ticket_priority?: string
+  deal_name?: string
+  deal_stage?: string
+  project_name?: string
+  task_title?: string
+  contact_name?: string
+}
 
 export interface CalendarEvent {
   id: string
@@ -21,6 +49,17 @@ export interface CalendarEvent {
   recurrence_end: string | null
   parent_event_id: string | null
   organizer_id: string
+  // New fields
+  sensitivity: SensitivityLevel
+  priority: PriorityLevel
+  buffer_before: number
+  buffer_after: number
+  timezone: string | null
+  reminders: ReminderConfig[] | null
+  erp_context: ERPContext | null
+  category_id: string | null
+  calendar_id: string | null
+  status: EventStatus
   created_at: string
   updated_at: string
 }
@@ -38,6 +77,16 @@ export interface CreateEventPayload {
   jitsi_room?: string
   recurrence_rule?: string
   recurrence_end?: string
+  sensitivity?: SensitivityLevel
+  priority?: PriorityLevel
+  buffer_before?: number
+  buffer_after?: number
+  timezone?: string
+  reminders?: ReminderConfig[]
+  erp_context?: ERPContext
+  category_id?: string
+  calendar_id?: string
+  status?: EventStatus
 }
 
 export interface UpdateEventPayload extends Partial<CreateEventPayload> {

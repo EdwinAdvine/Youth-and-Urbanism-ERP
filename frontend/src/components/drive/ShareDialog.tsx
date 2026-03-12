@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   useShareFile,
   useShareFolder,
@@ -21,7 +21,7 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
   const [tab, setTab] = useState<ShareTab>('people')
   const [userId, setUserId] = useState('')
   const [permission, setPermission] = useState('view')
-  const [createLink, setCreateLink] = useState(false)
+  const [createLink] = useState(false)
   const [linkPassword, setLinkPassword] = useState('')
   const [noDownload, setNoDownload] = useState(false)
   const [isFileDrop, setIsFileDrop] = useState(false)
@@ -29,7 +29,7 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
   const [maxDownloads, setMaxDownloads] = useState('')
   const [notifyOnAccess, setNotifyOnAccess] = useState(false)
   const [copiedLink, setCopiedLink] = useState<string | null>(null)
-  const [lastCreatedShare, setLastCreatedShare] = useState<FileShare | null>(null)
+  const [, _setLastCreatedShare] = useState<FileShare | null>(null)
 
   const shareFile = useShareFile()
   const shareFolder = useShareFolder()
@@ -58,7 +58,7 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
       } else {
         result = await shareFolder.mutateAsync({ folderId: itemId, ...payload })
       }
-      setLastCreatedShare(result)
+      _setLastCreatedShare(result)
       if (result.share_link) {
         const fullLink = `${window.location.origin}/drive/shared/${result.share_link}`
         setCopiedLink(fullLink)

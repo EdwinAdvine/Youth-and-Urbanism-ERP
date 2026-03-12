@@ -258,7 +258,7 @@ export default function ComplianceCalendarPage() {
               <Label>Title *</Label>
               <Input
                 value={form.title}
-                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, title: e.target.value }))}
                 placeholder="e.g. Q1 VAT Filing"
               />
             </div>
@@ -267,7 +267,7 @@ export default function ComplianceCalendarPage() {
                 <Label>Category *</Label>
                 <Select
                   value={form.category}
-                  onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}
+                  onValueChange={(v: string) => setForm((f) => ({ ...f, category: v }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -286,7 +286,7 @@ export default function ComplianceCalendarPage() {
                 <Input
                   type="date"
                   value={form.due_date}
-                  onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, due_date: e.target.value }))}
                 />
               </div>
             </div>
@@ -295,7 +295,7 @@ export default function ComplianceCalendarPage() {
                 <Label>Jurisdiction</Label>
                 <Input
                   value={form.jurisdiction}
-                  onChange={(e) => setForm((f) => ({ ...f, jurisdiction: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, jurisdiction: e.target.value }))}
                   placeholder="e.g. US-CA, EU, UK"
                 />
               </div>
@@ -303,7 +303,7 @@ export default function ComplianceCalendarPage() {
                 <Label>Recurrence</Label>
                 <Select
                   value={form.recurrence || "none"}
-                  onValueChange={(v) => setForm((f) => ({ ...f, recurrence: v === "none" ? "" : v }))}
+                  onValueChange={(v: string) => setForm((f) => ({ ...f, recurrence: v === "none" ? "" : v }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -321,7 +321,7 @@ export default function ComplianceCalendarPage() {
               <Label>Description</Label>
               <Textarea
                 value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((f) => ({ ...f, description: e.target.value }))}
                 rows={2}
                 placeholder="Optional details about this compliance obligation"
               />

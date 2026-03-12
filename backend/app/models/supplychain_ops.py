@@ -279,7 +279,7 @@ class StockHealthScore(UUIDPrimaryKeyMixin, Base):
 
 # ── Workflow Automation ──────────────────────────────────────────────────────
 
-class WorkflowTemplate(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class SCWorkflowTemplate(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """No-code workflow template — trigger event → ordered action steps."""
 
     __tablename__ = "sc_workflow_templates"
@@ -318,7 +318,7 @@ class WorkflowRun(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    template = relationship("WorkflowTemplate", back_populates="runs")
+    template = relationship("SCWorkflowTemplate", back_populates="runs")
     steps = relationship(
         "WorkflowStep", back_populates="run", cascade="all, delete-orphan"
     )

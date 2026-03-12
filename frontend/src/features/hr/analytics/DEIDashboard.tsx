@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Badge, Spinner } from '@/components/ui'
+import { Card, Button, Badge } from '@/components/ui'
 import { useDEIOverview } from '@/api/hr_phase3'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

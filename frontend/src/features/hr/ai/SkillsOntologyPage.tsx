@@ -1,15 +1,17 @@
 import { useState, useMemo } from 'react'
-import { Card, Badge, Button, Input, Select, Modal, Spinner } from '../../../components/ui'
+import { Card, Badge, Button, Input, Select, Modal } from '../../../components/ui'
 import {
   useSkillOntology,
   useSkillOntologyTree,
   useCreateSkillNode,
   useUpdateSkillNode,
   useDeleteSkillNode,
-  type SkillNode,
-  type SkillNodeCreatePayload,
-  type SkillNodeUpdatePayload,
+  type SkillOntologyNode,
 } from '@/api/hr_phase3'
+
+type SkillNode = SkillOntologyNode
+type SkillNodeCreatePayload = Partial<SkillOntologyNode>
+type SkillNodeUpdatePayload = Partial<SkillOntologyNode>
 import { toast } from '../../../components/ui'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -45,7 +47,7 @@ interface InlineEditFormProps {
   saving: boolean
 }
 
-function InlineEditForm({ node, allCategories, allSkills, onSave, onCancel, saving }: InlineEditFormProps) {
+function InlineEditForm({ node, allCategories, allSkills: _allSkills, onSave, onCancel, saving }: InlineEditFormProps) {
   const [name, setName] = useState(node.name)
   const [category, setCategory] = useState(node.category ?? '')
   const [description, setDescription] = useState(node.description ?? '')
@@ -265,8 +267,8 @@ function AddSkillModal({ open, onClose, allCategories, allSkills, onSave, saving
   const [aliasesStr, setAliasesStr] = useState('')
 
   function handleSave() {
-    if (!form.name.trim()) { toast('error', 'Name is required.'); return }
-    if (!form.category.trim()) { toast('error', 'Category is required.'); return }
+    if (!form.name?.trim()) { toast('error', 'Name is required.'); return }
+    if (!form.category?.trim()) { toast('error', 'Category is required.'); return }
     onSave({
       ...form,
       aliases: aliasesStr.split(',').map((a) => a.trim()).filter(Boolean),
@@ -367,12 +369,12 @@ export default function SkillsOntologyPage() {
   const [deleteNode, setDeleteNode] = useState<SkillNode | null>(null)
 
   const { data: allNodes, isLoading } = useSkillOntology()
-  const { data: treeData } = useSkillOntologyTree()
+  const { data: _treeData } = useSkillOntologyTree()
   const createMutation = useCreateSkillNode()
   const updateMutation = useUpdateSkillNode()
   const deleteMutation = useDeleteSkillNode()
 
-  const nodes: SkillNode[] = allNodes ?? []
+  const nodes: SkillNode[] = allNodes?.items ?? []
 
   const allCategories = useMemo(
     () => Array.from(new Set(nodes.map((n) => n.category).filter(Boolean) as string[])).sort(),
@@ -408,7 +410,7 @@ export default function SkillsOntologyPage() {
 
   async function handleUpdate(data: SkillNodeUpdatePayload) {
     if (!editingId) return
-    await updateMutation.mutateAsync({ nodeId: editingId, data })
+    await updateMutation.mutateAsync({ id: editingId, ...data })
     setEditingId(null)
     toast('success', 'Skill updated.')
   }

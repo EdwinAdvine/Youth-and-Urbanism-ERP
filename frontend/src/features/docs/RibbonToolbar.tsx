@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useActiveEditors, useConvertDocument, useAttachToEmail, useLinkToNote, ActiveEditor } from '../../api/docs'
+import { useActiveEditors, useConvertDocument, useAttachToEmail, useLinkToNote, useToggleBookmark, useBookmarks, ActiveEditor } from '../../api/docs'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -14,9 +14,11 @@ interface RibbonToolbarProps {
   onToggleComments?: () => void
   onToggleVersions?: () => void
   onToggleAI?: () => void
+  onToggleCopilot?: () => void
   commentsActive?: boolean
   versionsActive?: boolean
   aiActive?: boolean
+  copilotActive?: boolean
 }
 
 type MenuKey = 'file' | 'edit' | 'insert' | 'format' | null
@@ -244,14 +246,19 @@ export default function RibbonToolbar({
   onToggleComments,
   onToggleVersions,
   onToggleAI,
+  onToggleCopilot,
   commentsActive,
   versionsActive,
   aiActive,
+  copilotActive,
 }: RibbonToolbarProps) {
   const [activeMenu, setActiveMenu] = useState<MenuKey>(null)
   const [showConvert, setShowConvert] = useState(false)
   const [showLinkNote, setShowLinkNote] = useState(false)
   const attachToEmail = useAttachToEmail()
+  const toggleBookmark = useToggleBookmark()
+  const { data: bookmarksData } = useBookmarks()
+  const isBookmarked = bookmarksData?.bookmarks?.some((b) => b.file_id === fileId) ?? false
 
   const ext = fileExtension.replace(/^\./, '')
   const FILE_CONFIG: Record<string, { color: string; bg: string; label: string; icon: string }> = {
@@ -377,6 +384,29 @@ export default function RibbonToolbar({
             }`}
           >
             AI Assist
+          </button>
+          <button
+            onClick={onToggleCopilot}
+            className={`px-3 py-1.5 text-xs border rounded-[6px] transition-colors ${
+              copilotActive
+                ? 'border-[#51459d] bg-[#51459d]/10 text-[#51459d]'
+                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+          >
+            Copilot
+          </button>
+          <button
+            onClick={() => toggleBookmark.mutate(fileId)}
+            className={`p-1.5 border rounded-[6px] transition-colors ${
+              isBookmarked
+                ? 'border-[#ffa21d] bg-[#ffa21d]/10 text-[#ffa21d]'
+                : 'border-gray-200 dark:border-gray-700 text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+            title={isBookmarked ? 'Remove bookmark' : 'Bookmark this document'}
+          >
+            <svg className="h-3.5 w-3.5" fill={isBookmarked ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
           </button>
           <button
             onClick={onSave}

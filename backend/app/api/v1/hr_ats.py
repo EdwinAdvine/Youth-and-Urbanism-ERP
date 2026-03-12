@@ -369,7 +369,7 @@ async def update_requisition(
 
 @router.delete(
     "/requisitions/{req_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Cancel (soft-delete) a requisition",
 )
 async def cancel_requisition(
@@ -1038,7 +1038,7 @@ async def submit_interview_feedback(
 
 @router.delete(
     "/interviews/{int_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="Cancel an interview",
     response_model=None,
 )

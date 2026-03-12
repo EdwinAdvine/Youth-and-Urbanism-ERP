@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Badge, Card, Table, Input, Modal, Select } from '../../components/ui'
+import { Button, Badge, Card, Input, Modal, Select } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useNCRs, useCreateNCR, type NCR, type NCRCreate } from '../../api/manufacturing_quality'
 
-const severityColors: Record<string, string> = { minor: 'yellow', major: 'orange', critical: 'red' }
-const statusColors: Record<string, string> = { open: 'red', investigating: 'blue', resolved: 'green', closed: 'gray' }
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const severityColors: Record<string, BadgeVariant> = { minor: 'warning', major: 'warning', critical: 'danger' }
+const statusColors: Record<string, BadgeVariant> = { open: 'danger', investigating: 'info', resolved: 'success', closed: 'default' }
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -25,14 +27,14 @@ export default function NCRListPage() {
   const createNCR = useCreateNCR()
 
   const handleCreate = async () => {
-    if (!form.description) return toast({ title: 'Description is required', variant: 'destructive' })
+    if (!form.description) return toast('error', 'Description is required')
     try {
       const ncr = await createNCR.mutateAsync(form)
-      toast({ title: `NCR ${ncr.ncr_number} created` })
+      toast('success', `NCR ${ncr.ncr_number} created`)
       setModalOpen(false)
       setForm({ description: '', severity: 'major' })
     } catch {
-      toast({ title: 'Failed to create NCR', variant: 'destructive' })
+      toast('error', 'Failed to create NCR')
     }
   }
 
@@ -55,15 +57,15 @@ export default function NCRListPage() {
       </div>
 
       <Card>
-        <Table>
+        <table className="w-full text-sm">
           <thead>
             <tr>
-              <th>NCR #</th>
-              <th>Description</th>
-              <th>Severity</th>
-              <th>Status</th>
-              <th>Qty Affected</th>
-              <th>Created</th>
+              <th className="text-left py-3 px-4">NCR #</th>
+              <th className="text-left py-3 px-4">Description</th>
+              <th className="text-left py-3 px-4">Severity</th>
+              <th className="text-left py-3 px-4">Status</th>
+              <th className="text-left py-3 px-4">Qty Affected</th>
+              <th className="text-left py-3 px-4">Created</th>
             </tr>
           </thead>
           <tbody>
@@ -75,14 +77,14 @@ export default function NCRListPage() {
               <tr key={ncr.id} className="cursor-pointer hover:bg-gray-50" onClick={() => navigate(`/manufacturing/ncr/${ncr.id}`)}>
                 <td className="font-mono text-sm">{ncr.ncr_number}</td>
                 <td className="max-w-xs truncate">{ncr.description}</td>
-                <td><Badge variant={severityColors[ncr.severity] || 'gray'}>{ncr.severity}</Badge></td>
-                <td><Badge variant={statusColors[ncr.status] || 'gray'}>{ncr.status}</Badge></td>
+                <td><Badge variant={severityColors[ncr.severity] || 'default'}>{ncr.severity}</Badge></td>
+                <td><Badge variant={statusColors[ncr.status] || 'default'}>{ncr.status}</Badge></td>
                 <td>{ncr.quantity_affected}</td>
                 <td>{formatDate(ncr.created_at)}</td>
               </tr>
             ))}
           </tbody>
-        </Table>
+        </table>
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Create Non-Conformance Report">

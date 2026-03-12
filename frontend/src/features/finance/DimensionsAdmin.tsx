@@ -197,7 +197,7 @@ export default function DimensionsAdmin() {
               <Label>Dimension Type *</Label>
               <Select
                 value={form.dimension_type}
-                onValueChange={(v) => setForm((f) => ({ ...f, dimension_type: v }))}
+                onValueChange={(v: string) => setForm((f) => ({ ...f, dimension_type: v }))}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -216,7 +216,7 @@ export default function DimensionsAdmin() {
                 <Label>Name *</Label>
                 <Input
                   value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="e.g. North America"
                 />
               </div>
@@ -224,7 +224,7 @@ export default function DimensionsAdmin() {
                 <Label>Code</Label>
                 <Input
                   value={form.code}
-                  onChange={(e) =>
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setForm((f) => ({
                       ...f,
                       code: e.target.value.toUpperCase().replace(/\s+/g, "-"),
@@ -238,7 +238,7 @@ export default function DimensionsAdmin() {
               <Label>Description</Label>
               <Textarea
                 value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((f) => ({ ...f, description: e.target.value }))}
                 rows={2}
                 placeholder="Optional description"
               />
@@ -247,7 +247,7 @@ export default function DimensionsAdmin() {
               <Label>Parent Dimension ID</Label>
               <Input
                 value={form.parent_id}
-                onChange={(e) => setForm((f) => ({ ...f, parent_id: e.target.value }))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, parent_id: e.target.value }))}
                 placeholder="UUID of parent (optional)"
               />
               <p className="text-xs text-gray-400">Leave empty for top-level dimensions</p>

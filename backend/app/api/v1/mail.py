@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, File, HTTPException, Query, Response, UploadFile, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -906,3 +906,43 @@ async def ai_suggest_reply(
         return {"suggestions": suggestions[:3]}
     except Exception as exc:
         return {"suggestions": [], "error": str(exc)}
+
+
+# ── Attachment Upload ──────────────────────────────────────────────────────
+
+@router.post("/attachments/upload", summary="Upload an attachment for compose")
+async def upload_attachment(
+    current_user: CurrentUser,
+    file: UploadFile = File(...),
+) -> dict[str, Any]:
+    """Upload a file to MinIO for use as an email attachment.
+
+    Returns a storage_key that can be referenced when sending the message.
+    """
+    try:
+        from app.integrations import minio_client  # noqa: PLC0415
+
+        file_content = await file.read()
+        filename = file.filename or "attachment"
+        content_type = file.content_type or "application/octet-stream"
+
+        # Store in MinIO under mail-attachments/{user_id}/{uuid}/{filename}
+        storage_key = f"mail-attachments/{current_user.id}/{uuid.uuid4()}/{filename}"
+
+        result = minio_client.upload_file_from_bytes(
+            data=file_content,
+            object_name=storage_key,
+            content_type=content_type,
+        )
+
+        return {
+            "storage_key": storage_key,
+            "filename": filename,
+            "size": result["size"],
+            "content_type": content_type,
+        }
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to upload attachment: {exc}",
+        ) from exc

@@ -1,0 +1,11 @@
+export { default as CannedResponsesPage } from './CannedResponsesPage';
+export { default as CategoriesPage } from './CategoriesPage';
+export { default as KBEditorPage } from './KBEditorPage';
+export { default as KBPublicPage } from './KBPublicPage';
+export { default as RoutingRulesPage } from './RoutingRulesPage';
+export { default as SLAConfigPage } from './SLAConfigPage';
+export { default as SatisfactionPage } from './SatisfactionPage';
+export { default as SupportDashboard } from './SupportDashboard';
+export { default as SupportKPIsPage } from './SupportKPIsPage';
+export { default as TicketDetail } from './TicketDetail';
+export { default as TicketsPage } from './TicketsPage';

@@ -4,7 +4,9 @@ import { Button, Badge, Card, Input } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useCAPA, useUpdateCAPA, useVerifyCAPA } from '../../api/manufacturing_quality'
 
-const statusColors: Record<string, string> = { open: 'red', in_progress: 'blue', verification: 'yellow', closed: 'green' }
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+
+const statusColors: Record<string, BadgeVariant> = { open: 'danger', in_progress: 'info', verification: 'warning', closed: 'success' }
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return '—'
@@ -25,19 +27,19 @@ export default function CAPADetail() {
   const handleStatusChange = async (newStatus: string) => {
     try {
       await updateCAPA.mutateAsync({ id: capa.id, status: newStatus })
-      toast({ title: `Status updated to ${newStatus}` })
+      toast('success', `Status updated to ${newStatus}`)
     } catch {
-      toast({ title: 'Failed to update', variant: 'destructive' })
+      toast('error', 'Failed to update')
     }
   }
 
   const handleVerify = async (isEffective: boolean) => {
-    if (!verificationNotes) return toast({ title: 'Verification notes required', variant: 'destructive' })
+    if (!verificationNotes) return toast('error', 'Verification notes required')
     try {
       await verifyCAPA.mutateAsync({ capaId: capa.id, verification_notes: verificationNotes, is_effective: isEffective })
-      toast({ title: isEffective ? 'CAPA verified and closed' : 'CAPA reopened — not effective' })
+      toast('success', isEffective ? 'CAPA verified and closed' : 'CAPA reopened - not effective')
     } catch {
-      toast({ title: 'Failed to verify', variant: 'destructive' })
+      toast('error', 'Failed to verify')
     }
   }
 
@@ -89,8 +91,8 @@ export default function CAPADetail() {
           <h2 className="font-semibold">Effectiveness Verification</h2>
           <Input label="Verification Notes" value={verificationNotes} onChange={e => setVerificationNotes(e.target.value)} placeholder="Document your verification findings" />
           <div className="flex gap-2">
-            <Button variant="success" onClick={() => handleVerify(true)} loading={verifyCAPA.isPending}>Effective — Close CAPA</Button>
-            <Button variant="destructive" onClick={() => handleVerify(false)} loading={verifyCAPA.isPending}>Not Effective — Reopen</Button>
+            <Button variant="primary" onClick={() => handleVerify(true)} loading={verifyCAPA.isPending}>Effective — Close CAPA</Button>
+            <Button variant="danger" onClick={() => handleVerify(false)} loading={verifyCAPA.isPending}>Not Effective — Reopen</Button>
           </div>
         </Card>
       )}
