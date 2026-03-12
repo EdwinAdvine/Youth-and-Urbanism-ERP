@@ -1,8 +1,8 @@
 {
-  "name": "Urban ERP",
-  "short_name": "Urban ERP",
-  "description": "Urban ERP — Self-hosted business management platform",
-  "start_url": "/",
+  "name": "Era Mail — Urban ERP",
+  "short_name": "Era Mail",
+  "description": "AI-powered email client with full ERP integration",
+  "start_url": "/mail",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#51459d",
@@ -13,9 +13,33 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ],
   "shortcuts": [
+    {
+      "name": "Inbox",
+      "short_name": "Inbox",
+      "description": "Open your inbox",
+      "url": "/mail",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Compose",
+      "short_name": "Compose",
+      "description": "Write a new email",
+      "url": "/mail/compose",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
     {
       "name": "Create Expense",
       "short_name": "Expense",
@@ -38,5 +62,6 @@
       "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
     }
   ],
-  "categories": ["business", "finance", "productivity"]
+  "categories": ["productivity", "business"],
+  "screenshots": []
 }

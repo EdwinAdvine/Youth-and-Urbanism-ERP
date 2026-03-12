@@ -247,7 +247,7 @@ class UserCalendar(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     # For team/department calendars — optional link
     department_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("departments.id", ondelete="SET NULL"),
+        ForeignKey("hr_departments.id", ondelete="SET NULL"),
         nullable=True,
     )
 

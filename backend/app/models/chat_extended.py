@@ -261,7 +261,7 @@ class MeetingTranscript(BaseModel):
     )
 
     meeting_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("meetings.id", ondelete="CASCADE"), nullable=False,
+        UUID(as_uuid=True), nullable=False,
     )
     speaker_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True,
@@ -287,7 +287,7 @@ class MeetingAISummary(BaseModel):
     )
 
     meeting_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("meetings.id", ondelete="CASCADE"), nullable=False,
+        UUID(as_uuid=True), nullable=False,
     )
     summary: Mapped[str] = mapped_column(Text, nullable=False)
     key_topics: Mapped[list | None] = mapped_column(
@@ -335,7 +335,7 @@ class Whiteboard(BaseModel):
         UUID(as_uuid=True), ForeignKey("chat_channels.id", ondelete="SET NULL"), nullable=True,
     )
     meeting_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("meetings.id", ondelete="SET NULL"), nullable=True,
+        UUID(as_uuid=True), nullable=True,
     )
     state_url: Mapped[str | None] = mapped_column(
         String(500), nullable=True,
