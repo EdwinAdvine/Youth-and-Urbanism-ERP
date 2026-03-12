@@ -636,13 +636,104 @@ async def dashboard_kpis(
     )
     canned_count = canned_result.scalar() or 0
 
+    # Tickets created today
+    tickets_today_result = await db.execute(
+        select(func.count()).select_from(Ticket).where(Ticket.created_at >= today_start)
+    )
+    tickets_today = tickets_today_result.scalar() or 0
+
+    # Overdue tickets (sla_resolution_due passed but not resolved)
+    overdue_result = await db.execute(
+        select(func.count()).select_from(Ticket).where(
+            and_(
+                Ticket.sla_resolution_due.isnot(None),
+                Ticket.sla_resolution_due < now,
+                Ticket.resolved_at.is_(None),
+            )
+        )
+    )
+    overdue_tickets = overdue_result.scalar() or 0
+
+    # Avg first response time (hours, last 30 days, resolved tickets)
+    from sqlalchemy import extract  # noqa: PLC0415
+    avg_response_result = await db.execute(
+        select(
+            func.avg(
+                extract("epoch", Ticket.first_response_at - Ticket.created_at) / 3600
+            )
+        ).select_from(Ticket).where(
+            and_(
+                Ticket.first_response_at.isnot(None),
+                Ticket.created_at >= thirty_days_ago,
+            )
+        )
+    )
+    avg_first_response = avg_response_result.scalar()
+    avg_first_response_hours = round(float(avg_first_response), 2) if avg_first_response else 0.0
+
+    # Avg resolution time (hours, last 30 days)
+    avg_resolution_result = await db.execute(
+        select(
+            func.avg(
+                extract("epoch", Ticket.resolved_at - Ticket.created_at) / 3600
+            )
+        ).select_from(Ticket).where(
+            and_(
+                Ticket.resolved_at.isnot(None),
+                Ticket.created_at >= thirty_days_ago,
+            )
+        )
+    )
+    avg_resolution = avg_resolution_result.scalar()
+    avg_resolution_hours = round(float(avg_resolution), 2) if avg_resolution else 0.0
+
+    # SLA compliance rate (% of tickets that met SLA, last 30 days)
+    total_sla_result = await db.execute(
+        select(func.count()).select_from(Ticket).where(
+            Ticket.created_at >= thirty_days_ago
+        )
+    )
+    total_recent = total_sla_result.scalar() or 0
+    breached_recent_result = await db.execute(
+        select(func.count()).select_from(Ticket).where(
+            and_(
+                Ticket.created_at >= thirty_days_ago,
+                or_(
+                    Ticket.sla_response_breached == True,  # noqa: E712
+                    Ticket.sla_resolution_breached == True,  # noqa: E712
+                ),
+            )
+        )
+    )
+    breached_recent = breached_recent_result.scalar() or 0
+    sla_compliance_rate = round((1 - breached_recent / total_recent) * 100, 1) if total_recent > 0 else 100.0
+
+    # Top categories (by ticket count)
+    from app.models.support import TicketCategory  # noqa: PLC0415
+    top_cat_result = await db.execute(
+        select(TicketCategory.name, func.count(Ticket.id).label("cnt"))
+        .join(Ticket, Ticket.category_id == TicketCategory.id, isouter=True)
+        .group_by(TicketCategory.name)
+        .order_by(func.count(Ticket.id).desc())
+        .limit(5)
+    )
+    top_categories = [{"name": row[0], "count": int(row[1])} for row in top_cat_result.fetchall()]
+
     return {
-        "open_tickets": open_tickets,
+        "total_open_tickets": open_tickets,
         "unassigned_tickets": unassigned_tickets,
         "sla_breached": sla_breached,
         "sla_at_risk": at_risk,
         "avg_csat_30d": avg_csat,
+        "customer_satisfaction_avg": float(avg_csat) if avg_csat else 0.0,
         "resolved_today": resolved_today,
+        "tickets_today": tickets_today,
+        "overdue_tickets": overdue_tickets,
+        "avg_first_response_hours": avg_first_response_hours,
+        "avg_resolution_hours": avg_resolution_hours,
+        "sla_compliance_rate": sla_compliance_rate,
+        "top_categories": top_categories,
+        "agent_performance": [],
         "canned_responses_count": canned_count,
     }
 

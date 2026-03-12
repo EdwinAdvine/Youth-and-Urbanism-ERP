@@ -257,7 +257,7 @@ export function useSupportKPIs() {
   return useQuery({
     queryKey: ['support', 'kpis'],
     queryFn: async () => {
-      const { data } = await apiClient.get<SupportKPIs>('/support/kpis')
+      const { data } = await apiClient.get<SupportKPIs>('/support/dashboard/kpis')
       return data
     },
   })

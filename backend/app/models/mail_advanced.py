@@ -220,23 +220,6 @@ class MailContactProfile(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 
 # ---------------------------------------------------------------------------
-# 10. SensitivityLabel
-# ---------------------------------------------------------------------------
-class SensitivityLabel(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    __tablename__ = "sensitivity_labels"
-
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    color: Mapped[str] = mapped_column(String(20), nullable=False)
-    encryption_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    auto_apply_rules: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, nullable=True)
-    created_by: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False,
-    )
-
-    creator = relationship("User")
-
-
-# ---------------------------------------------------------------------------
 # 11. DLPPolicy
 # ---------------------------------------------------------------------------
 class DLPPolicy(UUIDPrimaryKeyMixin, TimestampMixin, Base):

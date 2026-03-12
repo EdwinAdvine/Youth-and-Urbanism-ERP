@@ -117,6 +117,12 @@ from app.models.projects_enhanced import (
 from app.models.agent import AgentRun, AgentRunStep, AgentApproval
 from app.models.handbook import HandbookCategory, HandbookArticle, HandbookFeedback, HandbookProgress, HandbookViewLog
 from app.models.mail_storage import MailboxMessage
+from app.models.mail_advanced import (
+    MailAccount, FocusedInboxScore, SmartFolder, SearchFolder,
+    MailCategory, MailQuickStep, MailTemplate, MailPoll, MailContactProfile,
+    DLPPolicy, PushSubscription, MailWebhook,
+    SharedMailbox, MailAnnotation, MailRetentionPolicy,
+)
 from app.models.crm_marketing import EmailCampaignConfig, Segment, SegmentContact, ContentCalendarItem, Unsubscribe
 from app.models.crm_service import Conversation, ConversationMessage, CRMKnowledgeBaseArticle, CRMSLAPolicy, SLATracker
 from app.models.crm_custom_objects import CustomObjectDefinition, CustomObjectRecord, CustomObjectRelationship

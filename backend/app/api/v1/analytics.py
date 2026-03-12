@@ -148,7 +148,7 @@ async def expense_stats(
                 TO_CHAR(DATE_TRUNC('month', je.entry_date), 'YYYY-MM') AS month,
                 COALESCE(SUM(jl.debit), 0) AS total_expenses
             FROM finance_journal_entries je
-            JOIN finance_journal_lines jl ON jl.entry_id = je.id
+            JOIN finance_journal_lines jl ON jl.journal_entry_id = je.id
             JOIN finance_accounts a ON a.id = jl.account_id AND a.account_type = 'expense'
             WHERE je.entry_date >= NOW() - make_interval(months => :months)
             GROUP BY 1
@@ -181,8 +181,8 @@ async def top_products_stats(
                 COUNT(oi.id) AS order_count,
                 COALESCE(SUM(oi.quantity), 0) AS total_qty,
                 COALESCE(SUM(oi.quantity * oi.unit_price), 0) AS total_revenue
-            FROM ecommerce_order_items oi
-            JOIN ecommerce_products p ON p.id = oi.product_id
+            FROM ecom_order_lines oi
+            JOIN ecom_products p ON p.id = oi.product_id
             GROUP BY p.id, p.name
             ORDER BY total_revenue DESC
             LIMIT :limit
@@ -215,7 +215,7 @@ async def support_metrics(
                 COUNT(*) FILTER (WHERE status = 'resolved') AS resolved_tickets,
                 COUNT(*) FILTER (WHERE status = 'closed') AS closed_tickets,
                 COUNT(*) AS total_tickets
-            FROM support_tickets
+            FROM tickets
         """))
         row = result.fetchone()
         if row:
