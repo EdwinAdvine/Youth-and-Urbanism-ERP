@@ -63,7 +63,7 @@ export const useCalendarStore = create<CalendarState>()(
   persist(
     (set, get) => ({
       // View
-      view: (typeof window !== 'undefined' && window.innerWidth < 640) ? 'day' : 'month',
+      view: 'month' as CalView,
       viewDate: new Date(),
       setView: (view) => set({ view }),
       setViewDate: (date) => set({ viewDate: date }),

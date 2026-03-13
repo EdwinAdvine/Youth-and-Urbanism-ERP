@@ -128,12 +128,12 @@ export default function KDSDisplay() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="p-3 sm:p-6 space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Kitchen Display</h1>
-          <div className="w-56">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Kitchen Display</h1>
+          <div className="w-full sm:w-56">
             <Select
               value={selectedStationId}
               onChange={(e) => setSelectedStationId(e.target.value)}

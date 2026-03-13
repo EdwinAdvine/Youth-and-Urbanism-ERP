@@ -1,5 +1,4 @@
 """Manufacturing Extensions — Routing, Scrap, Maintenance, QC, Reports, Dashboard KPIs."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone

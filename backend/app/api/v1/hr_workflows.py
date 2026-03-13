@@ -1,5 +1,4 @@
 """HR Workflow Automation — visual workflow builder, executor, approvals."""
-from __future__ import annotations
 
 import logging
 import uuid

@@ -1,3 +1,19 @@
+/**
+ * Booking API client — appointment scheduling, availability, and booking management.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/booking`.
+ *
+ * Key exports:
+ *   - useBookingPages()       — list the current user's booking page configs
+ *   - useBookingPage()        — fetch a single booking page by ID or slug
+ *   - useCreateBookingPage()  — create a new public booking page
+ *   - useUpdateBookingPage()  — update availability, buffer times, or questions
+ *   - useAvailableSlots()     — query open appointment slots for a booking page
+ *   - useCreateBooking()      — book an appointment slot (public endpoint)
+ *   - useBookings()           — list all bookings received by the current user
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

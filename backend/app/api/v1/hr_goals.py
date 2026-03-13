@@ -1,5 +1,4 @@
 """HR Goals, OKR, Continuous Feedback & 360 Review Cycles API."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone

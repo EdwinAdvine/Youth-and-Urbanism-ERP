@@ -1,14 +1,24 @@
 
 networks:
-  urban-erp-net:
+  urban-vibes-dynamics-net:
     driver: bridge
 
 volumes:
-  postgres_data:
+  postgres_data:       # single-node dev PostgreSQL
   redis_data:
   minio_data:
   ollama_data:
   stalwart_data:
+
+  # ── HA cluster volumes (profile: ha) ────────────────────────────────────────
+  etcd_data:
+  patroni1_data:
+  patroni2_data:
+  patroni3_data:
+
+  # ── Monitoring volumes (profile: monitoring) ──────────────────────────────
+  prometheus_data:
+  grafana_data:
 
   onlyoffice_data:
   onlyoffice_logs:
@@ -19,44 +29,61 @@ volumes:
 services:
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: urban-erp-postgres
+    container_name: urban-vibes-dynamics-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-urban}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-urban_secret}
-      POSTGRES_DB: ${POSTGRES_DB:-urban_erp}
+      POSTGRES_DB: ${POSTGRES_DB:-urban_vibes_dynamics}
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c pg_stat_statements.max=10000
+      -c log_min_duration_statement=200
+      -c log_statement=none
+      -c log_lock_waits=on
+      -c track_io_timing=on
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-urban} -d ${POSTGRES_DB:-urban_erp}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-urban} -d ${POSTGRES_DB:-urban_vibes_dynamics}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
     networks:
-      - urban-erp-net
+      - urban-vibes-dynamics-net
 
   redis:
     image: redis:7-alpine
-    container_name: urban-erp-redis
+    container_name: urban-vibes-dynamics-redis
     restart: unless-stopped
     ports:
       - "6380:6379"
     volumes:
       - redis_data:/data
+    command: >
+      sh -c "if [ -n \"$$REDIS_PASSWORD\" ]; then
+        redis-server --requirepass $$REDIS_PASSWORD;
+      else
+        redis-server;
+      fi"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "if [ -n \"$$REDIS_PASSWORD\" ]; then redis-cli -a $$REDIS_PASSWORD ping; else redis-cli ping; fi"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - urban-erp-net
+      - urban-vibes-dynamics-net
 
   minio:
     image: minio/minio:latest
-    container_name: urban-erp-minio
+    container_name: urban-vibes-dynamics-minio
     restart: unless-stopped
     ports:
       - "9010:9000"
@@ -67,24 +94,41 @@ services:
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
-      - urban-erp-net
+      - urban-vibes-dynamics-net
 
   ollama:
     image: ollama/ollama:latest
-    container_name: urban-erp-ollama
+    container_name: urban-vibes-dynamics-ollama
+    restart: unless-stopped
+    environment:
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_KEEP_ALIVE: "5m"
     ports:
       - "11435:11434"
     volumes:
       - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
-      - urban-erp-net
+      - urban-vibes-dynamics-net
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: urban-erp-backend
+    container_name: urban-vibes-dynamics-backend
     restart: unless-stopped
     ports:
       - "8010:8000"
@@ -105,13 +149,13 @@ services:
       retries: 5
       start_period: 15s
     networks:
-      - urban-erp-net
+      - urban-vibes-dynamics-net
 
   celery-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: urban-erp-celery-worker
+    container_name: urban-vibes-dynamics-celery-worker
     restart: unless-stopped
     depends_on:
       postgres:
@@ -123,14 +167,20 @@ services:
     volumes:
       - ./backend:/app
     command: celery -A app.tasks.celery_app worker -l info
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.tasks.celery_app", "inspect", "ping", "--timeout", "5"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 15s
     networks:
-      - urban-erp-net
+      - urban-vibes-dynamics-net
 
   celery-beat:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: urban-erp-celery-beat
+    container_name: urban-vibes-dynamics-celery-beat
     restart: unless-stopped
     depends_on:
       postgres:
@@ -142,14 +192,19 @@ services:
     volumes:
       - ./backend:/app
     command: celery -A app.tasks.celery_app beat -l info
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/celerybeat.pid"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
-      - urban-erp-net
+      - urban-vibes-dynamics-net
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: urban-erp-frontend
+    container_name: urban-vibes-dynamics-frontend
     restart: unless-stopped
     ports:
       - "3010:80"
@@ -161,13 +216,19 @@ services:
       - WATCHPACK_POLLING=true
       - VITE_API_TARGET=http://backend:8000
       - VITE_WS_TARGET=ws://backend:8000
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
-      - urban-erp-net
+      - urban-vibes-dynamics-net
 
 
   stalwart:
     image: stalwartlabs/mail-server:latest
-    container_name: urban-erp-stalwart
+    container_name: urban-vibes-dynamics-stalwart
     restart: unless-stopped
     ports:
       - "8082:8080"    # HTTP admin + JMAP
@@ -178,28 +239,40 @@ services:
       - STALWART_HOSTNAME=${MAIL_DOMAIN:-youthandurbanism.org}
     volumes:
       - stalwart_data:/opt/stalwart-mail
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     networks:
-      - urban-erp-net
+      - urban-vibes-dynamics-net
 
   onlyoffice:
     image: onlyoffice/documentserver:latest
-    container_name: urban-erp-onlyoffice
+    container_name: urban-vibes-dynamics-onlyoffice
     restart: unless-stopped
     ports:
       - "8083:80"
     environment:
       - JWT_ENABLED=true
-      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-onlyoffice-jwt-secret-2026}
+      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-onlyoffice-jwt-secret-2026-urban-vibes-dynamics}
       - JWT_HEADER=Authorization
     volumes:
       - onlyoffice_data:/var/www/onlyoffice/Data
       - onlyoffice_logs:/var/log/onlyoffice
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
-      - urban-erp-net
+      - urban-vibes-dynamics-net
 
   jitsi-web:
     image: jitsi/web:stable
-    container_name: urban-erp-jitsi-web
+    container_name: urban-vibes-dynamics-jitsi-web
     restart: unless-stopped
     ports:
       - "127.0.0.1:8443:443"
@@ -218,11 +291,11 @@ services:
     volumes:
       - jitsi_web_config:/config
     networks:
-      - urban-erp-net
+      - urban-vibes-dynamics-net
 
   jitsi-prosody:
     image: jitsi/prosody:stable
-    container_name: urban-erp-jitsi-prosody
+    container_name: urban-vibes-dynamics-jitsi-prosody
     restart: unless-stopped
     expose:
       - "5222"
@@ -245,7 +318,7 @@ services:
       - jitsi_prosody_config:/config
       - jitsi_prosody_plugins:/prosody-plugins-custom
     networks:
-      urban-erp-net:
+      urban-vibes-dynamics-net:
         aliases:
           - meet.jitsi
           - auth.meet.jitsi
@@ -255,7 +328,7 @@ services:
 
   jitsi-jicofo:
     image: jitsi/jicofo:stable
-    container_name: urban-erp-jitsi-jicofo
+    container_name: urban-vibes-dynamics-jitsi-jicofo
     restart: unless-stopped
     environment:
       - XMPP_SERVER=jitsi-prosody
@@ -270,11 +343,11 @@ services:
     depends_on:
       - jitsi-prosody
     networks:
-      - urban-erp-net
+      - urban-vibes-dynamics-net
 
   jitsi-jvb:
     image: jitsi/jvb:stable
-    container_name: urban-erp-jitsi-jvb
+    container_name: urban-vibes-dynamics-jitsi-jvb
     restart: unless-stopped
     ports:
       - "10000:10000/udp"
@@ -292,5 +365,334 @@ services:
     depends_on:
       - jitsi-prosody
     networks:
-      - urban-erp-net
+      - urban-vibes-dynamics-net
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # Phase 2: High-Availability PostgreSQL Cluster
+  # Profile: ha  →  docker compose --profile ha up -d
+  #
+  # Switch from single-node postgres to Patroni 3-node HA after running:
+  #   ./scripts/migrate-to-patroni.sh
+  #
+  # Architecture:
+  #   backend/celery
+  #     → pgbouncer (port 6432, transaction pooling)
+  #       → haproxy
+  #         → patroni1 (primary, port 5432)
+  #         → patroni2 (sync standby, port 5432)
+  #         → patroni3 (sync standby, port 5432)
+  #           ← etcd (leader election, port 2379)
+  # ════════════════════════════════════════════════════════════════════════════
+
+  etcd:
+    image: bitnami/etcd:3.5
+    container_name: urban-vibes-dynamics-etcd
+    restart: unless-stopped
+    profiles: [ha]
+    environment:
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_NAME: etcd1
+      ETCD_DATA_DIR: /bitnami/etcd/data
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_ADVERTISE_CLIENT_URLS: http://urban-vibes-dynamics-etcd:2379
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://urban-vibes-dynamics-etcd:2380
+      ETCD_INITIAL_CLUSTER: etcd1=http://urban-vibes-dynamics-etcd:2380
+      ETCD_INITIAL_CLUSTER_TOKEN: urban-vibes-dynamics-etcd-cluster
+      ETCD_INITIAL_CLUSTER_STATE: new
+    volumes:
+      - etcd_data:/bitnami/etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      urban-vibes-dynamics-net:
+        aliases:
+          - urban-vibes-dynamics-etcd
+
+  patroni1:
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile.patroni
+    container_name: urban-vibes-dynamics-patroni1
+    restart: unless-stopped
+    profiles: [ha]
+    environment:
+      PATRONI_NAME: patroni1
+      PATRONI_POSTGRESQL_CONNECT_ADDRESS: urban-vibes-dynamics-patroni1:5432
+      PATRONI_RESTAPI_CONNECT_ADDRESS: urban-vibes-dynamics-patroni1:8008
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-urban_secret}
+      PATRONI_REPLICATION_PASSWORD: ${PATRONI_REPLICATION_PASSWORD:-repl_secret_2026}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      PGBACKREST_CIPHER_PASS: ${PGBACKREST_CIPHER_PASS:-change-me-in-production}
+    volumes:
+      - patroni1_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"     # direct access for migrations / pgAdmin (dev only)
+      - "8008:8008"     # Patroni REST API
+    depends_on:
+      etcd:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8008/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      urban-vibes-dynamics-net:
+        aliases:
+          - urban-vibes-dynamics-patroni1
+
+  patroni2:
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile.patroni
+    container_name: urban-vibes-dynamics-patroni2
+    restart: unless-stopped
+    profiles: [ha]
+    environment:
+      PATRONI_NAME: patroni2
+      PATRONI_POSTGRESQL_CONNECT_ADDRESS: urban-vibes-dynamics-patroni2:5432
+      PATRONI_RESTAPI_CONNECT_ADDRESS: urban-vibes-dynamics-patroni2:8008
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-urban_secret}
+      PATRONI_REPLICATION_PASSWORD: ${PATRONI_REPLICATION_PASSWORD:-repl_secret_2026}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      PGBACKREST_CIPHER_PASS: ${PGBACKREST_CIPHER_PASS:-change-me-in-production}
+    volumes:
+      - patroni2_data:/var/lib/postgresql/data
+    depends_on:
+      etcd:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8008/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s  # replica needs time to stream from primary
+    networks:
+      urban-vibes-dynamics-net:
+        aliases:
+          - urban-vibes-dynamics-patroni2
+
+  patroni3:
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile.patroni
+    container_name: urban-vibes-dynamics-patroni3
+    restart: unless-stopped
+    profiles: [ha]
+    environment:
+      PATRONI_NAME: patroni3
+      PATRONI_POSTGRESQL_CONNECT_ADDRESS: urban-vibes-dynamics-patroni3:5432
+      PATRONI_RESTAPI_CONNECT_ADDRESS: urban-vibes-dynamics-patroni3:8008
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-urban_secret}
+      PATRONI_REPLICATION_PASSWORD: ${PATRONI_REPLICATION_PASSWORD:-repl_secret_2026}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      PGBACKREST_CIPHER_PASS: ${PGBACKREST_CIPHER_PASS:-change-me-in-production}
+    volumes:
+      - patroni3_data:/var/lib/postgresql/data
+    depends_on:
+      etcd:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8008/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      urban-vibes-dynamics-net:
+        aliases:
+          - urban-vibes-dynamics-patroni3
+
+  pgbouncer:
+    image: bitnami/pgbouncer:1
+    container_name: urban-vibes-dynamics-pgbouncer
+    restart: unless-stopped
+    profiles: [ha]
+    environment:
+      POSTGRESQL_HOST: urban-vibes-dynamics-haproxy
+      POSTGRESQL_PORT: "5000"
+      POSTGRESQL_DATABASE: urban_vibes_dynamics
+      POSTGRESQL_USERNAME: urban
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD:-urban_secret}
+      PGBOUNCER_AUTH_TYPE: scram-sha-256
+      PGBOUNCER_POOL_MODE: transaction
+      PGBOUNCER_MAX_CLIENT_CONN: "400"
+      PGBOUNCER_DEFAULT_POOL_SIZE: "30"
+    volumes:
+      - ./postgres/pgbouncer.ini:/bitnami/pgbouncer/conf/pgbouncer.ini:ro
+      - ./postgres/userlist.txt:/bitnami/pgbouncer/conf/userlist.txt:ro
+    ports:
+      - "6432:6432"
+    depends_on:
+      haproxy:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "psql", "-h", "localhost", "-p", "6432", "-U", "urban", "-d", "pgbouncer", "-c", "SHOW VERSION;"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      urban-vibes-dynamics-net:
+        aliases:
+          - urban-vibes-dynamics-pgbouncer
+
+  haproxy:
+    image: haproxy:2.9-alpine
+    container_name: urban-vibes-dynamics-haproxy
+    restart: unless-stopped
+    profiles: [ha]
+    volumes:
+      - ./postgres/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "5000:5000"    # write endpoint (primary)
+      - "5001:5001"    # read endpoint (replicas)
+      - "7010:7000"    # HAProxy stats dashboard
+    depends_on:
+      - patroni1
+      - patroni2
+      - patroni3
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:7000/stats"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      urban-vibes-dynamics-net:
+        aliases:
+          - urban-vibes-dynamics-haproxy
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # Phase 5: Monitoring Stack
+  # Profile: monitoring  →  docker compose --profile monitoring up -d
+  #
+  # Services:
+  #   prometheus         — metrics collection + alerting rules
+  #   grafana            — dashboards (http://localhost:3020)
+  #   pg-exporter        — PostgreSQL metrics → Prometheus
+  #   pgbouncer-exporter — PgBouncer metrics → Prometheus (HA mode)
+  #   alertmanager       — alert routing → email via Stalwart
+  # ════════════════════════════════════════════════════════════════════════════
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: urban-vibes-dynamics-prometheus
+    restart: unless-stopped
+    profiles: [monitoring]
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-lifecycle"
+      - "--web.enable-admin-api"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      urban-vibes-dynamics-net:
+        aliases:
+          - urban-vibes-dynamics-prometheus
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: urban-vibes-dynamics-grafana
+    restart: unless-stopped
+    profiles: [monitoring]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-urban-grafana-2026}
+      GF_SERVER_ROOT_URL: http://localhost:3020
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+    ports:
+      - "3020:3000"
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      urban-vibes-dynamics-net:
+        aliases:
+          - urban-vibes-dynamics-grafana
+
+  pg-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: urban-vibes-dynamics-pg-exporter
+    restart: unless-stopped
+    profiles: [monitoring]
+    environment:
+      DATA_SOURCE_NAME: "postgresql://urban:${POSTGRES_PASSWORD:-urban_secret}@postgres:5432/urban_vibes_dynamics?sslmode=disable"
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "true"
+    networks:
+      urban-vibes-dynamics-net:
+        aliases:
+          - urban-vibes-dynamics-pg-exporter
+
+  pgbouncer-exporter:
+    image: prometheuscommunity/pgbouncer-exporter:v0.7.0
+    container_name: urban-vibes-dynamics-pgbouncer-exporter
+    restart: unless-stopped
+    profiles: [monitoring, ha]
+    environment:
+      PGBOUNCER_EXPORTER_HOST: urban-vibes-dynamics-pgbouncer
+      PGBOUNCER_EXPORTER_PORT: "6432"
+      PGBOUNCER_EXPORTER_USER: postgres
+      PGBOUNCER_EXPORTER_PASSWORD: ${POSTGRES_PASSWORD:-urban_secret}
+    networks:
+      urban-vibes-dynamics-net:
+        aliases:
+          - urban-vibes-dynamics-pgbouncer-exporter
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: urban-vibes-dynamics-alertmanager
+    restart: unless-stopped
+    profiles: [monitoring]
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+      - "--web.external-url=http://localhost:9093"
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - "9093:9093"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9093/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      urban-vibes-dynamics-net:
+        aliases:
+          - urban-vibes-dynamics-alertmanager
 

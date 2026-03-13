@@ -1,4 +1,4 @@
-"""Backup service for Urban ERP — PostgreSQL dumps stored in MinIO."""
+"""Backup service for Urban Vibes Dynamics — PostgreSQL dumps stored in MinIO."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-BACKUP_BUCKET = "urban-erp-backups"
+BACKUP_BUCKET = "urban-vibes-dynamics-backups"
 
 
 class BackupService:
@@ -57,7 +57,7 @@ class BackupService:
             "port": str(parsed.port or 5432),
             "user": parsed.username or "urban",
             "password": parsed.password or "",
-            "dbname": parsed.path.lstrip("/") or "urban_erp",
+            "dbname": parsed.path.lstrip("/") or "urban_vibes_dynamics",
         }
 
     def create_db_backup(self) -> dict:
@@ -68,7 +68,7 @@ class BackupService:
         """
         db = self._parse_db_url()
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        filename = f"urban_erp_{timestamp}.sql.gz"
+        filename = f"urban_vibes_dynamics_{timestamp}.sql.gz"
 
         env = {
             "PGPASSWORD": db["password"],
@@ -102,15 +102,27 @@ class BackupService:
 
         # Gzip the dump
         compressed = gzip.compress(result.stdout)
-        size_bytes = len(compressed)
+
+        # Encrypt if BACKUP_ENCRYPTION_KEY is configured
+        if settings.BACKUP_ENCRYPTION_KEY:
+            from cryptography.fernet import Fernet  # noqa: PLC0415
+            fernet = Fernet(settings.BACKUP_ENCRYPTION_KEY.encode())
+            upload_data = fernet.encrypt(compressed)
+            filename = filename.replace(".sql.gz", ".sql.gz.enc")
+            content_type = "application/octet-stream"
+        else:
+            upload_data = compressed
+            content_type = "application/gzip"
+
+        size_bytes = len(upload_data)
 
         # Upload to MinIO
         self.s3.put_object(
             Bucket=BACKUP_BUCKET,
             Key=filename,
-            Body=io.BytesIO(compressed),
+            Body=io.BytesIO(upload_data),
             ContentLength=size_bytes,
-            ContentType="application/gzip",
+            ContentType=content_type,
             Metadata={
                 "backup-type": "full",
                 "database": db["dbname"],
@@ -180,12 +192,12 @@ class BackupService:
         now = datetime.now(timezone.utc)
         keep_set: set[str] = set()
 
-        # Parse dates from filenames (urban_erp_YYYYMMDD_HHMMSS.sql.gz)
+        # Parse dates from filenames (urban_vibes_dynamics_YYYYMMDD_HHMMSS.sql.gz)
         dated_backups = []
         for b in backups:
             try:
                 # Extract date from filename
-                parts = b["filename"].replace("urban_erp_", "").replace(".sql.gz", "")
+                parts = b["filename"].replace("urban_vibes_dynamics_", "").replace(".sql.gz", "")
                 dt = datetime.strptime(parts, "%Y%m%d_%H%M%S").replace(tzinfo=timezone.utc)
                 dated_backups.append((dt, b["filename"]))
             except (ValueError, IndexError):

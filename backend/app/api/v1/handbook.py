@@ -1,5 +1,4 @@
 """Handbook API — categories, articles, search, feedback, progress, and admin."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime
@@ -65,8 +64,11 @@ class CategoryOut(BaseModel):
 
 
 class CategoryTreeOut(CategoryOut):
-    children: list[CategoryTreeOut] = []
+    children: list["CategoryTreeOut"] = []
     article_count: int = 0
+
+
+CategoryTreeOut.model_rebuild()
 
 
 class ArticleCreate(BaseModel):
@@ -793,7 +795,7 @@ async def admin_upload_media(
     object_name = f"handbook/{article_id}/{uuid.uuid4()}.{ext}"
 
     url = await upload_file(
-        bucket="urban-erp-files",
+        bucket="urban-vibes-dynamics-files",
         object_name=object_name,
         data=file_content,
         content_type=file.content_type or "application/octet-stream",

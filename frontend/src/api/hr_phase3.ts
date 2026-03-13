@@ -1,3 +1,21 @@
+/**
+ * HR Phase 3 API client — HR workflow automation with trigger-based execution,
+ * multi-step actions, approval gates, and execution history.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the HR Phase 3
+ * workflow automation module. All requests go through `client.ts` (Axios
+ * instance with auth interceptors). Backend prefix: `/api/v1/hr`.
+ *
+ * Key exports:
+ *   - useHRWorkflows() / useHRWorkflow() — list and retrieve HR automation workflows
+ *   - useCreateHRWorkflow() / useUpdateHRWorkflow() / useDeleteHRWorkflow() — workflow CRUD
+ *   - useActivateHRWorkflow() / useDeactivateHRWorkflow() — enable/disable workflows
+ *   - useHRWorkflowExecutions() / useHRWorkflowExecution() — execution logs per workflow
+ *   - useHRWorkflowStats() — aggregate counts and monthly execution metrics
+ *
+ * Note: trigger types include employee_created, status_changed, date_based, and
+ * goal_completed. Steps support notifications, field updates, approval gates, and delays.
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

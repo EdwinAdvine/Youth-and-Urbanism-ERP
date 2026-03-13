@@ -1,5 +1,4 @@
 """CRM Sales Sequences — sequence CRUD + enrollment management."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

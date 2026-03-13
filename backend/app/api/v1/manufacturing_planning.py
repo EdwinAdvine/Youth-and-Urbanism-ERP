@@ -1,5 +1,4 @@
 """Manufacturing Planning & Scheduling — finite capacity, Gantt, scenarios."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta

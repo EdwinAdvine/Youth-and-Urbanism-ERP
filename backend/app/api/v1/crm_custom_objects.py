@@ -1,5 +1,4 @@
 """CRM Custom Objects — CRUD for user-defined object definitions, records & relationships."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

@@ -1,5 +1,4 @@
 """Manufacturing Intelligence & AI — bottlenecks, quality risk, scheduling suggestions, executive summary."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta, date as date_type

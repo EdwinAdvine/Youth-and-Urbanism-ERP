@@ -142,9 +142,9 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-3 sm:p-6 max-w-3xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Notifications</h1>
           <p className="text-sm text-gray-500 mt-1">Stay up to date with activity across your workspace</p>

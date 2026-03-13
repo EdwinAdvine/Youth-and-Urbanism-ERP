@@ -1,0 +1,149 @@
+groups:
+  - name: urban-vibes-dynamics-database
+    rules:
+      # ── Replication ─────────────────────────────────────────────────────────
+      - alert: ReplicationLagHigh
+        expr: patroni_lag_in_mb > 1
+        for: 30s
+        labels:
+          severity: critical
+          component: replication
+        annotations:
+          summary: "Patroni replication lag > 1 MB"
+          description: >
+            Node {{ $labels.instance }} is {{ $value }}MB behind the primary.
+            Automatic failover may be impacted if lag exceeds maximum_lag_on_failover.
+
+      - alert: PatroniNodeDown
+        expr: up{job="urban-vibes-dynamics-patroni"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: replication
+        annotations:
+          summary: "Patroni node {{ $labels.instance }} is unreachable"
+          description: "Patroni node is not responding. If this is the primary, a failover is in progress."
+
+      - alert: PatroniNoLeader
+        expr: sum(patroni_master) == 0
+        for: 60s
+        labels:
+          severity: critical
+          component: replication
+        annotations:
+          summary: "Patroni cluster has no leader"
+          description: "No Patroni node is currently the primary. The cluster may be in election state."
+
+      # ── Connections & Pooling ───────────────────────────────────────────────
+      - alert: PgBouncerPoolExhausted
+        expr: pgbouncer_pools_cl_waiting > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: pgbouncer
+        annotations:
+          summary: "PgBouncer pool has > 10 waiting clients"
+          description: >
+            {{ $value }} clients are waiting for a connection in pool {{ $labels.database }}/{{ $labels.user }}.
+            Consider increasing default_pool_size or adding more Patroni nodes.
+
+      - alert: PostgreSQLConnectionsHigh
+        expr: pg_stat_activity_count > 150
+        for: 5m
+        labels:
+          severity: warning
+          component: postgres
+        annotations:
+          summary: "PostgreSQL active connections > 150"
+          description: "{{ $value }} connections are active. Max is 200. Check for connection leaks."
+
+      # ── Disk Space ──────────────────────────────────────────────────────────
+      - alert: DiskSpaceHigh
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.20
+        for: 5m
+        labels:
+          severity: warning
+          component: disk
+        annotations:
+          summary: "Disk usage > 80% on {{ $labels.instance }}"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining. WAL archiving may be affected."
+
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.10
+        for: 2m
+        labels:
+          severity: critical
+          component: disk
+        annotations:
+          summary: "Disk usage > 90% on {{ $labels.instance }} — CRITICAL"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining. PostgreSQL may stop writing."
+
+      # ── Backups ─────────────────────────────────────────────────────────────
+      - alert: BackupTooOld
+        expr: urban_vibes_dynamics_backup_age_seconds{backup_type="diff"} > 86400
+        for: 1h
+        labels:
+          severity: critical
+          component: backup
+        annotations:
+          summary: "Last database backup is more than 24 hours old"
+          description: >
+            The last differential backup is {{ $value | humanizeDuration }} old.
+            Check Celery beat and pgBackRest logs.
+
+      - alert: BackupFailed
+        expr: urban_vibes_dynamics_backup_last_status == 0
+        for: 5m
+        labels:
+          severity: critical
+          component: backup
+        annotations:
+          summary: "Last {{ $labels.backup_type }} backup FAILED"
+          description: "The pgBackRest {{ $labels.backup_type }} backup failed. Data loss risk is increasing."
+
+      # ── WAL Archiving ───────────────────────────────────────────────────────
+      - alert: WALArchivingBehind
+        expr: urban_vibes_dynamics_wal_archive_lag_bytes > 67108864  # 64 MB
+        for: 10m
+        labels:
+          severity: warning
+          component: wal
+        annotations:
+          summary: "WAL archiving is > 64 MB behind"
+          description: >
+            {{ $value | humanizeBytes }} of WAL is not yet archived.
+            PITR recovery window may be limited if the primary fails.
+
+  - name: urban-vibes-dynamics-application
+    rules:
+      # ── API Performance ─────────────────────────────────────────────────────
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "API error rate > 5% on {{ $labels.instance }}"
+          description: "{{ $value | humanizePercentage }} of requests are returning 5xx errors."
+
+      - alert: APIHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "API p95 latency > 2s on {{ $labels.instance }}"
+          description: "95th percentile response time is {{ $value }}s."
+
+      # ── Celery ──────────────────────────────────────────────────────────────
+      - alert: CeleryQueueBacklog
+        expr: celery_queue_length > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: celery
+        annotations:
+          summary: "Celery queue backlog > 100 tasks"
+          description: "{{ $value }} tasks are queued. Workers may be overloaded or crashed."

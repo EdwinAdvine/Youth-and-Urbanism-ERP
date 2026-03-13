@@ -161,6 +161,16 @@ export default function SupportDashboard() {
           { label: 'Views', path: '/support/views' },
           { label: 'Templates', path: '/support/templates' },
           { label: 'Inbound Email', path: '/support/inbound-email' },
+          { label: 'Automations', path: '/support/automations' },
+          { label: 'Forum', path: '/support/forum' },
+          { label: 'Omnichannel', path: '/support/omnichannel' },
+          { label: 'Analytics', path: '/support/analytics' },
+          { label: 'Voice Calls', path: '/support/voice' },
+          { label: 'Proactive Rules', path: '/support/proactive-rules' },
+          { label: 'Agent Skills', path: '/support/agent-skills' },
+          { label: 'Schedule', path: '/support/agent-schedule' },
+          { label: 'Sandboxes', path: '/support/sandboxes' },
+          { label: 'Customer Health', path: '/support/customer-health' },
         ].map((item) => (
           <Button key={item.path} variant="outline" size="sm" onClick={() => navigate(item.path)}>
             {item.label}

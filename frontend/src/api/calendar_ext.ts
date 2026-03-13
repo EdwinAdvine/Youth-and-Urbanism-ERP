@@ -1,3 +1,21 @@
+/**
+ * Calendar Extended API client — iCal/CalDAV subscriptions, event categories,
+ * multi-user availability checking, and RSVP responses.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for extended Calendar
+ * features. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/calendar`.
+ *
+ * Key exports:
+ *   - useCalendarSubscriptions() / useCreateSubscription() — subscribe to external iCal feeds
+ *   - useSyncSubscription() — manually trigger re-sync of an iCal subscription
+ *   - useCalendarCategories() / useCreateCategory() — colour-coded event categories
+ *   - useUserAvailability() — query free/busy slots for one or more users
+ *   - useRSVP() — submit accepted/declined/tentative response to an event invite
+ *
+ * Note: subscriptions are polled on a configurable interval (sync_interval_minutes).
+ * Availability slots reflect confirmed + tentative events within the queried window.
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

@@ -1,5 +1,4 @@
 """Mail extensions — threads, drafts, search, labels, snooze, contacts, cross-module links."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone

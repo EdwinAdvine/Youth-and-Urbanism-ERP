@@ -112,18 +112,16 @@ export default function FinanceKPIsPage() {
   const { data, isLoading, error } = useFinanceKPIs(fromDate, toDate)
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Finance KPIs</h1>
-          <p className="text-sm text-gray-500 mt-1">Key performance indicators and financial health metrics</p>
-        </div>
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Finance KPIs</h1>
+        <p className="text-sm text-gray-500 mt-1">Key performance indicators and financial health metrics</p>
       </div>
 
       {/* Date range selector */}
       <div className="flex flex-wrap items-end gap-3 mb-6">
-        <div className="w-44">
+        <div className="w-full sm:w-44">
           <Input
             label="From"
             type="date"
@@ -131,7 +129,7 @@ export default function FinanceKPIsPage() {
             onChange={(e) => setFromDate(e.target.value)}
           />
         </div>
-        <div className="w-44">
+        <div className="w-full sm:w-44">
           <Input
             label="To"
             type="date"

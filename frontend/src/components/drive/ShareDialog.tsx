@@ -28,6 +28,7 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
   const [expiresAt, setExpiresAt] = useState('')
   const [maxDownloads, setMaxDownloads] = useState('')
   const [notifyOnAccess, setNotifyOnAccess] = useState(false)
+  const [linkScope, setLinkScope] = useState<'anyone' | 'organization' | 'specific_people'>('anyone')
   const [copiedLink, setCopiedLink] = useState<string | null>(null)
   const [, _setLastCreatedShare] = useState<FileShare | null>(null)
 
@@ -45,6 +46,7 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
       no_download: noDownload,
       is_file_drop: isFileDrop,
       notify_on_access: notifyOnAccess,
+      link_scope: linkScope,
     }
     if (userId.trim()) payload.user_id = userId.trim()
     if (linkPassword.trim()) payload.link_password = linkPassword.trim()
@@ -176,7 +178,33 @@ export default function ShareDialog({ itemId, itemName, itemType, onClose }: Sha
               <>
                 <div className="bg-[#51459d]/5 rounded-[8px] p-3">
                   <p className="text-xs font-medium text-[#51459d] mb-1">Public Link Settings</p>
-                  <p className="text-[10px] text-gray-500">Anyone with the link can access based on the settings below.</p>
+                  <p className="text-[10px] text-gray-500">Control who can access this link.</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Who can access this link</label>
+                  <div className="flex gap-1 rounded-[8px] overflow-hidden border border-gray-200 dark:border-gray-700">
+                    {(['anyone', 'organization', 'specific_people'] as const).map((scope) => (
+                      <button
+                        key={scope}
+                        type="button"
+                        onClick={() => setLinkScope(scope)}
+                        className={`flex-1 py-1.5 text-[11px] font-medium transition-colors ${
+                          linkScope === scope
+                            ? 'bg-[#51459d] text-white'
+                            : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        {scope === 'anyone' ? '🌐 Anyone' : scope === 'organization' ? '🏢 Org Only' : '👤 Specific'}
+                      </button>
+                    ))}
+                  </div>
+                  {linkScope === 'organization' && (
+                    <p className="text-[10px] text-amber-600 mt-1">Only users with an account in this organisation can access.</p>
+                  )}
+                  {linkScope === 'specific_people' && (
+                    <p className="text-[10px] text-blue-600 mt-1">Only users you have explicitly shared with can access this link.</p>
+                  )}
                 </div>
 
                 <div>

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Button, Spinner, Badge } from '../../components/ui'
 import { useDriveFile, useDownloadFile, formatFileSize, getFileType } from '../../api/drive'
+import { useLockFile, useUnlockFile } from '../../api/drive_ext'
+import { useThreadedComments, useCreateComment, useResolveComment, useFilePresence } from '../../api/drive_phase2'
 import AIInsightsPanel from './AIInsightsPanel'
 
 interface Props {
@@ -9,9 +11,28 @@ interface Props {
 }
 
 export default function FilePreviewPanel({ fileId, onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<'preview' | 'ai'>('preview')
+  const [activeTab, setActiveTab] = useState<'preview' | 'ai' | 'comments'>('preview')
+  const [commentText, setCommentText] = useState('')
+  const [replyTo, setReplyTo] = useState<{ id: string; user: string } | null>(null)
   const { data: file, isLoading } = useDriveFile(fileId)
   const downloadFile = useDownloadFile()
+  const lockFile = useLockFile()
+  const unlockFile = useUnlockFile()
+  const { data: commentsData, isLoading: commentsLoading } = useThreadedComments(fileId)
+  const createComment = useCreateComment()
+  const resolveComment = useResolveComment()
+  const { data: presenceData } = useFilePresence(fileId)
+
+  const handlePostComment = async () => {
+    if (!commentText.trim()) return
+    await createComment.mutateAsync({
+      fileId,
+      content: commentText,
+      parentId: replyTo?.id,
+    })
+    setCommentText('')
+    setReplyTo(null)
+  }
 
   const handleDownload = () => {
     downloadFile.mutate(fileId, {
@@ -63,6 +84,17 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
         </div>
       </div>
 
+      {/* Presence indicator */}
+      {presenceData && presenceData.users.length > 1 && (
+        <div className="px-4 py-1.5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-1.5 text-[10px] text-gray-500 shrink-0">
+          <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+          {presenceData.users.length} viewing
+          <span className="text-gray-400 ml-0.5">
+            — {presenceData.users.slice(0, 2).map(u => u.name).join(', ')}
+          </span>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex border-b border-gray-100 dark:border-gray-800 shrink-0">
         <button
@@ -77,11 +109,105 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
         >
           AI Insights
         </button>
+        <button
+          onClick={() => setActiveTab('comments')}
+          className={`flex-1 text-xs py-2 font-medium transition-colors relative ${activeTab === 'comments' ? 'text-[#51459d] border-b-2 border-[#51459d]' : 'text-gray-400 hover:text-gray-600'}`}
+        >
+          Comments
+          {commentsData && commentsData.total > 0 && (
+            <span className="absolute top-1 right-2 text-[9px] bg-[#51459d]/10 text-[#51459d] px-1 rounded-full">
+              {commentsData.total}
+            </span>
+          )}
+        </button>
       </div>
 
       {activeTab === 'ai' ? (
         <div className="flex-1 overflow-auto">
           <AIInsightsPanel fileId={fileId} />
+        </div>
+      ) : activeTab === 'comments' ? (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-auto p-3 space-y-3">
+            {commentsLoading ? (
+              <div className="flex justify-center py-8"><Spinner /></div>
+            ) : !commentsData?.threads.length ? (
+              <p className="text-xs text-gray-400 text-center py-8">No comments yet. Start the conversation.</p>
+            ) : (
+              commentsData.threads.map((thread) => (
+                <div key={thread.id} className={`rounded-[8px] border p-3 space-y-2 ${thread.is_resolved ? 'border-gray-100 dark:border-gray-800 opacity-60' : 'border-gray-200 dark:border-gray-700'}`}>
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 rounded-full bg-[#51459d]/20 text-[#51459d] text-[10px] flex items-center justify-center font-medium shrink-0">
+                      {thread.user_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">{thread.user_name}</span>
+                        <div className="flex items-center gap-1">
+                          {thread.is_resolved ? (
+                            <span className="text-[9px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">Resolved</span>
+                          ) : (
+                            <button
+                              onClick={() => resolveComment.mutate({ commentId: thread.id, fileId })}
+                              className="text-[9px] text-gray-400 hover:text-green-600 transition-colors"
+                              title="Mark resolved"
+                            >
+                              ✓
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5 leading-relaxed">{thread.content}</p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-[10px] text-gray-400">{new Date(thread.created_at).toLocaleDateString()}</span>
+                        <button
+                          onClick={() => setReplyTo({ id: thread.id, user: thread.user_name })}
+                          className="text-[10px] text-[#51459d] hover:underline"
+                        >
+                          Reply
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  {thread.replies.length > 0 && (
+                    <div className="ml-8 space-y-2 border-l-2 border-gray-100 dark:border-gray-800 pl-3">
+                      {thread.replies.map((reply) => (
+                        <div key={reply.id} className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-900 text-gray-500 text-[9px] flex items-center justify-center font-medium shrink-0">
+                            {reply.user_id.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-[11px] text-gray-600 dark:text-gray-400">{reply.content}</p>
+                            <span className="text-[10px] text-gray-400">{new Date(reply.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+          {/* Comment composer */}
+          <div className="p-3 border-t border-gray-100 dark:border-gray-800 shrink-0 space-y-2">
+            {replyTo && (
+              <div className="flex items-center gap-2 text-[10px] text-gray-500 bg-gray-50 dark:bg-gray-900 px-2 py-1 rounded">
+                <span>Replying to {replyTo.user}</span>
+                <button onClick={() => setReplyTo(null)} className="ml-auto text-gray-400 hover:text-gray-600">✕</button>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Add a comment... @mention someone"
+                rows={2}
+                className="flex-1 text-xs border border-gray-200 dark:border-gray-700 rounded-[8px] px-3 py-2 resize-none bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 focus:ring-1 focus:ring-[#51459d] focus:border-[#51459d] outline-none"
+                onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handlePostComment() }}
+              />
+              <Button size="sm" onClick={handlePostComment} loading={createComment.isPending} className="self-end shrink-0">Post</Button>
+            </div>
+          </div>
         </div>
       ) : (
       <>

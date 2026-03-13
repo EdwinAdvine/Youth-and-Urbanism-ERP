@@ -1,5 +1,4 @@
 """Calendar API — CRUD for calendar events."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime
@@ -11,7 +10,7 @@ from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DBSession
 from app.core.events import event_bus
-from app.models.calendar import CalendarEvent, EVENT_TYPES
+from app.models.calendar import CalendarAuditLog, CalendarEvent, EVENT_TYPES
 
 router = APIRouter()
 
@@ -195,6 +194,19 @@ async def create_event(
         "location": event.location or "",
         "attendees": event.attendees or [],
     })
+    await event_bus.publish_data_change("event", str(event.id), "created")
+
+    try:
+        audit = CalendarAuditLog(
+            event_id=event.id,
+            user_id=current_user.id,
+            action="created",
+            changes={"title": event.title, "start_time": str(event.start_time)},
+        )
+        db.add(audit)
+        await db.commit()
+    except Exception:
+        pass  # audit failure must never break the main operation
 
     return EventOut.model_validate(event).model_dump()
 
@@ -215,6 +227,8 @@ async def update_event(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"event_type must be one of: {', '.join(EVENT_TYPES)}",
         )
+
+    changed_fields = payload.model_dump(exclude_unset=True)
 
     for field, value in payload.model_dump(exclude_none=True).items():
         setattr(event, field, value)
@@ -237,6 +251,19 @@ async def update_event(
         "event_type": event.event_type,
         "organizer_id": str(current_user.id),
     })
+    await event_bus.publish_data_change("event", str(event.id), "updated")
+
+    try:
+        audit = CalendarAuditLog(
+            event_id=event.id,
+            user_id=current_user.id,
+            action="updated",
+            changes={k: str(v) for k, v in changed_fields.items()},
+        )
+        db.add(audit)
+        await db.commit()
+    except Exception:
+        pass  # audit failure must never break the main operation
 
     return EventOut.model_validate(event).model_dump()
 
@@ -254,9 +281,83 @@ async def delete_event(
     event = await db.get(CalendarEvent, event_id)
     if not event or event.organizer_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
+    try:
+        audit = CalendarAuditLog(
+            event_id=event.id,
+            user_id=current_user.id,
+            action="deleted",
+            changes={"title": event.title},
+        )
+        db.add(audit)
+        await db.commit()
+    except Exception:
+        pass  # audit failure must never break the main operation
+
     await db.delete(event)
     await db.commit()
+    await event_bus.publish_data_change("event", str(event_id), "deleted")
     return Response(status_code=status.HTTP_200_OK)
+
+
+@router.get(
+    "/events/{event_id}/audit-log",
+    summary="Get audit log for a calendar event",
+)
+async def get_event_audit_log(
+    event_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Return all CalendarAuditLog entries for an event, newest first.
+
+    Only the event organizer or a user who has been granted ``manage``-level
+    permission on the calendar that contains the event may access this endpoint.
+    """
+    # Load the event to enforce organizer / manage-permission check.
+    event = await db.get(CalendarEvent, event_id)
+    if event is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
+    is_organizer = event.organizer_id == current_user.id
+    has_manage = False
+
+    if not is_organizer and event.calendar_id is not None:
+        from app.models.calendar import CalendarPermission  # noqa: PLC0415
+        perm_result = await db.execute(
+            select(CalendarPermission).where(
+                CalendarPermission.calendar_id == event.calendar_id,
+                CalendarPermission.grantee_id == current_user.id,
+                CalendarPermission.permission_level == "manage",
+            )
+        )
+        has_manage = perm_result.scalar_one_or_none() is not None
+
+    if not is_organizer and not has_manage:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    logs_result = await db.execute(
+        select(CalendarAuditLog)
+        .where(CalendarAuditLog.event_id == event_id)
+        .order_by(CalendarAuditLog.timestamp.desc())
+    )
+    logs = logs_result.scalars().all()
+
+    return {
+        "event_id": str(event_id),
+        "total": len(logs),
+        "entries": [
+            {
+                "id": str(log.id),
+                "user_id": str(log.user_id) if log.user_id else None,
+                "action": log.action,
+                "changes": log.changes,
+                "timestamp": log.timestamp.isoformat(),
+                "ip_address": log.ip_address,
+            }
+            for log in logs
+        ],
+    }
 
 
 @router.post("/sync", summary="CalDAV sync (retired)")

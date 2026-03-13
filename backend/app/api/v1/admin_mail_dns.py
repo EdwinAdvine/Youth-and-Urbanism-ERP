@@ -5,7 +5,6 @@ Provides endpoints for Super Admins to:
 - Verify DNS records are properly configured
 - Check TLS certificate status
 """
-from __future__ import annotations
 
 import asyncio
 import logging

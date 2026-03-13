@@ -1,0 +1,92 @@
+# Pre-commit hook configuration for Urban Vibes Dynamics.
+#
+# Install pre-commit: pip install pre-commit
+# Enable hooks:       pre-commit install && pre-commit install --hook-type commit-msg
+# Run manually:       pre-commit run --all-files
+#
+# Hooks:
+#   1. commit-msg-check  — enforces conventional commit format
+#   2. changelog-check   — verifies CHANGELOG.md updated when source changes
+#   3. doc-coverage      — ensures new/modified Python files have docstrings
+#   4. Standard linters  — trailing whitespace, end-of-file, YAML/JSON validation
+#   5. Ruff              — Python linting + formatting (matches CI config)
+#   6. detect-secrets    — prevents committing credentials or tokens
+
+repos:
+
+  # ── Commit message validation ───────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: commit-msg-check
+        name: Conventional Commit Format
+        language: python
+        entry: python scripts/check-commit-msg.py
+        stages: [commit-msg]
+        # Pass the commit message file path automatically
+        pass_filenames: true
+
+  # ── Changelog check (source changes → CHANGELOG.md must be updated) ─────────
+  - repo: local
+    hooks:
+      - id: changelog-check
+        name: Changelog Updated
+        language: script
+        entry: scripts/changelog-check.sh
+        stages: [pre-push]
+        pass_filenames: false
+        # Only runs on pre-push, not on every commit (too slow for fast iteration)
+
+  # ── Documentation coverage (changed files only) ─────────────────────────────
+  - repo: local
+    hooks:
+      - id: doc-coverage
+        name: Docstring Coverage (changed files)
+        language: python
+        entry: python scripts/doc-coverage.py --changed-only --min-backend=70 --min-frontend=50
+        stages: [pre-commit]
+        pass_filenames: false
+        types: [python, ts, tsx]
+
+  # ── Standard file hygiene ───────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]   # allow custom YAML tags (e.g. in Docker Compose)
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1000]   # block files > 1MB (use MinIO for large assets)
+      - id: no-commit-to-branch
+        args: [--branch, main]   # force PRs; never commit directly to main
+
+  # ── Python: Ruff linter + formatter ────────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.10
+    hooks:
+      - id: ruff
+        name: Ruff (lint)
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: Ruff (format)
+        types_or: [python, pyi]
+
+  # ── Secret detection ────────────────────────────────────────────────────────
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: Detect Secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: |
+          (?x)
+          ^(
+            \.env\.example|
+            backend/tests/|
+            docs/
+          )

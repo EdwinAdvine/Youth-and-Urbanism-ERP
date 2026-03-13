@@ -1,67 +1,94 @@
 {
-  "name": "Era Mail — Urban ERP",
-  "short_name": "Era Mail",
-  "description": "AI-powered email client with full ERP integration",
-  "start_url": "/mail",
+  "name": "Urban Vibes Dynamics",
+  "short_name": "Urban Vibes Dynamics",
+  "description": "Urban Vibes Dynamics — Self-hosted enterprise platform",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#ffffff",
   "theme_color": "#51459d",
-  "orientation": "portrait-primary",
+  "lang": "en",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-192.png",
+      "src": "pwa-192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/icon-512.png",
+      "src": "pwa-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
+    },
+    {
+      "src": "pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
+  "categories": ["business", "productivity", "finance"],
   "shortcuts": [
     {
-      "name": "Inbox",
-      "short_name": "Inbox",
-      "description": "Open your inbox",
-      "url": "/mail",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "name": "POS",
+      "short_name": "POS",
+      "description": "Open Point of Sale",
+      "url": "/pos",
+      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Compose",
-      "short_name": "Compose",
-      "description": "Write a new email",
-      "url": "/mail/compose",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "name": "Support Tickets",
+      "short_name": "Support",
+      "description": "Open Support Tickets",
+      "url": "/support/tickets",
+      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Create Expense",
-      "short_name": "Expense",
-      "description": "Submit a new expense",
-      "url": "/finance/expenses?new=true",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "name": "HR Attendance",
+      "short_name": "Attendance",
+      "description": "Open HR Attendance",
+      "url": "/hr/attendance",
+      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
     },
     {
-      "name": "New Invoice",
-      "short_name": "Invoice",
-      "description": "Create a new invoice",
-      "url": "/finance/invoices?new=true",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "name": "Analytics",
+      "short_name": "Analytics",
+      "description": "Open Analytics Dashboard",
+      "url": "/analytics",
+      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Finance Dashboard",
+      "name": "Finance",
       "short_name": "Finance",
-      "description": "View finance overview",
+      "description": "Open Finance Module",
       "url": "/finance",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "CRM",
+      "short_name": "CRM",
+      "description": "Open CRM Pipeline",
+      "url": "/crm",
+      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
     }
   ],
-  "categories": ["productivity", "business"],
-  "screenshots": []
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": ["image/*", "application/pdf", ".docx", ".xlsx", ".csv"]
+        }
+      ]
+    }
+  },
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false
 }

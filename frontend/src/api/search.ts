@@ -1,3 +1,15 @@
+/**
+ * Search API client — global cross-module full-text search.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/search`.
+ *
+ * Key exports:
+ *   - useGlobalSearch() — query all modules at once; returns results grouped by module,
+ *                         each item with a title, subtitle, and deep-link URL.
+ *                         Debounced; only fires when query length >= 1.
+ */
 import { useQuery } from '@tanstack/react-query'
 import apiClient from './client'
 

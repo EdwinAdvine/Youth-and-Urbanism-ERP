@@ -1,3 +1,20 @@
+/**
+ * CRM Collaboration API client — threaded comments, @mentions, record followers,
+ * and audit log.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for CRM collaboration
+ * features. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/crm`.
+ *
+ * Key exports:
+ *   - useComments() — fetch threaded comments for any CRM entity (by entity_type + entity_id)
+ *   - useCreateComment() / useUpdateComment() / useDeleteComment() — comment mutations
+ *   - useFollowers() / useFollowRecord() / useUnfollowRecord() — record subscription management
+ *   - useAuditLog() — immutable change log for any CRM entity
+ *
+ * Note: comments support @mention arrays; the audit log is read-only and
+ * records all field-level changes with user and IP metadata.
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

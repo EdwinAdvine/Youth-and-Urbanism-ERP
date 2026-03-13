@@ -1,5 +1,4 @@
 """Inventory Phase 5 — Advanced Costing, Cost Layers, Audit Trail."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime

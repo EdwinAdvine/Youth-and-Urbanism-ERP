@@ -1,5 +1,4 @@
 """CRM Marketing — A/B tests, segments, content calendar, unsubscribes."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone

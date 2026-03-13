@@ -1,5 +1,4 @@
 """Support Ticket Templates API — pre-defined ticket creation templates."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

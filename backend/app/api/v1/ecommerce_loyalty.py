@@ -1,5 +1,4 @@
 """E-Commerce Loyalty & Rewards API — points, tiers, referrals, leaderboard."""
-from __future__ import annotations
 
 import random
 import string

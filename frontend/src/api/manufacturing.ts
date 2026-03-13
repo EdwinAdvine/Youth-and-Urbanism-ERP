@@ -1,3 +1,20 @@
+/**
+ * Manufacturing API client — bills of materials, work orders, workstations,
+ * material consumption, quality checks, and production KPIs.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Manufacturing
+ * module. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/manufacturing`.
+ *
+ * Key exports:
+ *   - useBOMs() / useBOM() / useCreateBOM() — bill of materials CRUD
+ *   - useWorkOrders() / useWorkOrder() / useCreateWorkOrder() — WO lifecycle
+ *   - useWorkStations() / useCreateWorkStation() — workstation management
+ *   - useMaterialConsumption() / useIssueMaterials() — material issue and tracking
+ *   - useQualityChecks() / useCreateQualityCheck() — inline QC inspections
+ *   - useMfgKPIs() — OEE, availability, performance, quality rate dashboard
+ *   - useOEEReport() — Overall Equipment Effectiveness historical report
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

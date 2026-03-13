@@ -1,3 +1,19 @@
+/**
+ * Profile API client — current user's profile, activity log, and MFA device management.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/profile`.
+ *
+ * Key exports:
+ *   - useProfile()           — fetch the authenticated user's full profile
+ *   - useUpdateProfile()     — update display name or avatar URL
+ *   - useChangePassword()    — change the current user's password
+ *   - useActivityLog()       — paginated list of the user's recent activity events
+ *   - useMFADevices()        — list registered TOTP/MFA devices
+ *   - useEnableMFA()         — begin TOTP enrollment (returns QR seed)
+ *   - useDisableMFA()        — remove a registered MFA device
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 import type { UserPreferences } from './settings'

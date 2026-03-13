@@ -1,4 +1,21 @@
+/**
+ * Projects API client — project management, tasks, boards, milestones, time logs.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Projects
+ * module. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/projects`.
+ *
+ * Key exports:
+ *   - useProjects() / useProject() / useCreateProject() — project CRUD
+ *   - useTasks() / useTask() / useCreateTask() / useUpdateTask() — task lifecycle
+ *   - useBoardView() — Kanban board grouped by status
+ *   - useMilestones() / useCreateMilestone() — project milestone tracking
+ *   - useTimeLogs() / useCreateTimeLog() — per-task time logging
+ *   - useProjectMembers() / useAddProjectMember() — team member management
+ *   - useSprints() / useCreateSprint() — sprint/iteration management
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { LIST_PRESET, DETAIL_PRESET } from '@/utils/queryDefaults'
 import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -129,6 +146,7 @@ export function useProjects() {
       const { data } = await apiClient.get<{ total: number; projects: Project[] }>('/projects/')
       return data.projects
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -140,6 +158,7 @@ export function useProject(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -185,6 +204,7 @@ export function useTasks(projectId: string) {
       return data.tasks
     },
     enabled: !!projectId,
+    ...LIST_PRESET,
   })
 }
 
@@ -239,6 +259,7 @@ export function useBoard(projectId: string) {
       return data
     },
     enabled: !!projectId,
+    ...LIST_PRESET,
   })
 }
 
@@ -252,6 +273,7 @@ export function useMilestones(projectId: string) {
       return data.milestones
     },
     enabled: !!projectId,
+    ...LIST_PRESET,
   })
 }
 
@@ -307,6 +329,7 @@ export function useTimeReport(projectId: string) {
       return data
     },
     enabled: !!projectId,
+    ...LIST_PRESET,
   })
 }
 
@@ -320,6 +343,7 @@ export function useTaskTimeLogs(projectId: string, taskId: string) {
       return data
     },
     enabled: !!projectId && !!taskId,
+    ...LIST_PRESET,
   })
 }
 

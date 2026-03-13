@@ -1,3 +1,18 @@
+/**
+ * useChatWebSocket — real-time WebSocket hook for the Urban Vibes Dynamics team Chat module.
+ *
+ * Connects to `/api/v1/chat/ws?token={jwt}` and handles the full chat event
+ * protocol: new/edited/deleted messages, typing indicators, presence changes,
+ * emoji reactions, and read receipts.
+ *
+ * Key behaviours:
+ * - 30-second heartbeat (ping/pong) to keep the connection alive through proxies
+ * - Exponential backoff reconnection (1s → 2s → 4s … max 30s)
+ * - Invalidates TanStack Query caches on message/reaction changes so UI stays fresh
+ * - Typing indicators auto-clear after 5 seconds with no new typing event
+ *
+ * Mount once at the App level (inside AppShell) when the user is authenticated.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useChatStore, type ChatMessage } from '@/store/chat'

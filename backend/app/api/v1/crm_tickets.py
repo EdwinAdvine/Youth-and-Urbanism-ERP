@@ -1,5 +1,4 @@
 """CRM Tickets API — CRUD for CRM support tickets."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone

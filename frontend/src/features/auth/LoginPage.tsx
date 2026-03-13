@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useLogin, useRegister } from '../../api/auth'
+import { useLogin, useRegister, useVerifyMFA, isMFARequired } from '../../api/auth'
 import { useSSOProviders } from '../../api/sso'
 import { Button, Input } from '../../components/ui'
 import { getPostLoginRoute } from '../../utils/getPostLoginRoute'
@@ -28,17 +28,25 @@ const registerSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>
 type RegisterFormData = z.infer<typeof registerSchema>
 
+const mfaSchema = z.object({
+  code: z.string().min(6, 'Enter the 6-digit code').max(8),
+})
+type MFAFormData = z.infer<typeof mfaSchema>
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const login = useLogin()
+  const verifyMFA = useVerifyMFA()
   const registerMutation = useRegister()
   const { data: ssoProviders } = useSSOProviders()
   const [showPassword, setShowPassword] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
+  const [mfaToken, setMfaToken] = useState<string | null>(null)
 
   const loginForm = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) })
   const registerForm = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) })
+  const mfaForm = useForm<MFAFormData>({ resolver: zodResolver(mfaSchema) })
 
   const {
     register: registerLogin,
@@ -47,21 +55,40 @@ export default function LoginPage() {
     setError,
   } = loginForm
 
+  const isMFAStep = mfaToken !== null
+
   const onSubmit = async (data: LoginFormData) => {
     setLoginError(null)
     try {
-      const user = await login.mutateAsync({ email: data.email, password: data.password })
-      navigate(getPostLoginRoute(user), { replace: true })
+      const result = await login.mutateAsync({ email: data.email, password: data.password })
+      if (isMFARequired(result)) {
+        setMfaToken(result.mfa_token)
+        return
+      }
+      navigate(getPostLoginRoute(result.user), { replace: true })
     } catch (err: unknown) {
       const resp = (err as { response?: { status?: number; data?: { detail?: string } } })?.response
       let message: string
       if (resp?.status === 429) {
         message = 'Too many login attempts. Please wait a minute and try again.'
+      } else if (resp?.status === 423) {
+        message = resp?.data?.detail || 'Account temporarily locked. Please try again later.'
       } else {
         message = resp?.data?.detail || 'Invalid email or password'
       }
       setLoginError(message)
       setError('password', { message })
+    }
+  }
+
+  const onMFASubmit = async (data: MFAFormData) => {
+    if (!mfaToken) return
+    try {
+      const user = await verifyMFA.mutateAsync({ mfa_token: mfaToken, code: data.code })
+      navigate(getPostLoginRoute(user), { replace: true })
+    } catch (err: unknown) {
+      const resp = (err as { response?: { status?: number; data?: { detail?: string } } })?.response
+      mfaForm.setError('code', { message: resp?.data?.detail || 'Invalid code. Please try again.' })
     }
   }
 
@@ -93,13 +120,57 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white dark:bg-gray-800 rounded-2xl shadow-lg mb-4">
             <span className="text-primary font-black text-2xl">Y</span>
           </div>
-          <h1 className="text-2xl font-bold text-white">Urban ERP</h1>
+          <h1 className="text-2xl font-bold text-white">Urban Vibes Dynamics</h1>
           <p className="text-white/60 text-sm mt-1">Enterprise Resource Planning</p>
         </div>
 
         {/* Card */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
-          {!isRegistering ? (
+          {isMFAStep ? (
+            <>
+              <div className="mb-6 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-xl mb-3">
+                  <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Two-factor authentication</h2>
+                <p className="text-gray-500 text-sm mt-1">Enter the 6-digit code from your authenticator app</p>
+              </div>
+
+              <form onSubmit={mfaForm.handleSubmit(onMFASubmit)} className="space-y-4">
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={8}
+                    autoFocus
+                    placeholder="000000"
+                    className={`w-full rounded-[10px] border px-4 py-3 text-center text-2xl font-mono tracking-[0.4em] transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary ${mfaForm.formState.errors.code ? 'border-danger' : 'border-gray-200'}`}
+                    {...mfaForm.register('code')}
+                  />
+                  {mfaForm.formState.errors.code && (
+                    <p className="text-xs text-danger text-center">{mfaForm.formState.errors.code.message}</p>
+                  )}
+                </div>
+
+                <Button type="submit" variant="primary" className="w-full" loading={verifyMFA.isPending}>
+                  Verify
+                </Button>
+              </form>
+
+              <p className="text-center text-sm text-gray-500 mt-4">
+                <button
+                  type="button"
+                  onClick={() => { setMfaToken(null); mfaForm.reset() }}
+                  className="text-primary font-medium hover:underline"
+                >
+                  Back to sign in
+                </button>
+              </p>
+            </>
+          ) : !isRegistering ? (
             <>
               <div className="mb-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Welcome back</h2>

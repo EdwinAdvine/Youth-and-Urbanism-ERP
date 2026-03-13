@@ -1,5 +1,4 @@
 """Storefront public API — catalog, customer auth, cart, checkout, customer orders."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone

@@ -1,5 +1,4 @@
 """E-Commerce Admin API — stores, products, orders, customers, dashboard."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone

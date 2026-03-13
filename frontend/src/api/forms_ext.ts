@@ -1,3 +1,18 @@
+/**
+ * Forms Extended API client — templates, collaborators, analytics, and conditional logic.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/forms`.
+ *
+ * Key exports:
+ *   - useFormTemplates()        — list available form templates by category
+ *   - useCreateFromTemplate()   — instantiate a new form from a template
+ *   - useFormCollaborators()    — manage per-form collaborator access
+ *   - useFormAnalytics()        — response rates and completion stats for a form
+ *   - useFormConditionalLogic() — fetch/update conditional field-visibility rules
+ *   - useFormWebhooks()         — configure outbound webhooks on form submission
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 import type { Form } from './forms'
@@ -71,16 +86,20 @@ export function useDuplicateForm() {
   })
 }
 
-// ─── Publish ────────────────────────────────────────────────────────────────
+// ─── Publish (uses toggle-publish endpoint which auto-creates version snapshot) ─
 
 export function usePublishForm() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ formId, is_published }: { formId: string; is_published: boolean }) => {
-      const { data } = await apiClient.put<Form>(`/forms/${formId}`, { is_published })
+      const { data } = await apiClient.post<Form>(`/forms/${formId}/toggle-publish`, { is_published })
       return data
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['forms'] }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['forms'] })
+      qc.invalidateQueries({ queryKey: ['forms', vars.formId, 'versions'] })
+      qc.invalidateQueries({ queryKey: ['forms', vars.formId, 'audit-log'] })
+    },
   })
 }
 

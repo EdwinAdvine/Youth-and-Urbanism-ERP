@@ -1,4 +1,5 @@
 import { ResponsiveContainer, PieChart as RPieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
+import { useIsMobile } from '../../hooks/useMediaQuery'
 
 interface PieChartProps {
   data: { name: string; value: number; color?: string }[]
@@ -12,8 +13,8 @@ interface PieChartProps {
 const COLORS = ['#51459d', '#6fd943', '#3ec9d6', '#ffa21d', '#ff3a6e', '#4a90d9', '#9b59b6', '#e67e22']
 
 const RADIAN = Math.PI / 180
- 
-function renderLabel(props: any) {
+
+function renderLabel(props: any, labelSize: number) {
   const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props as {
     cx: number; cy: number; midAngle: number; innerRadius: number; outerRadius: number; percent: number
   }
@@ -22,7 +23,7 @@ function renderLabel(props: any) {
   const y = cy + radius * Math.sin(-midAngle * RADIAN)
   if (percent < 0.05) return null
   return (
-    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={600}>
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={labelSize} fontWeight={600}>
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   )
@@ -36,6 +37,10 @@ export default function PieChart({
   showLabels = true,
   formatTooltip,
 }: PieChartProps) {
+  const isMobile = useIsMobile()
+  const labelSize = isMobile ? 9 : 11
+  const legendSize = isMobile ? 10 : 12
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RPieChart>
@@ -47,7 +52,7 @@ export default function PieChart({
           outerRadius="80%"
           dataKey="value"
           nameKey="name"
-          label={showLabels ? renderLabel : false}
+          label={showLabels ? (props) => renderLabel(props, labelSize) : false}
           labelLine={false}
           strokeWidth={2}
           stroke="#fff"
@@ -67,7 +72,7 @@ export default function PieChart({
         />
         {showLegend && (
           <Legend
-            wrapperStyle={{ fontSize: 12 }}
+            wrapperStyle={{ fontSize: legendSize }}
             iconType="circle"
             iconSize={8}
             layout="vertical"

@@ -1,5 +1,4 @@
 """Supply Chain Extensions — Shipments, Returns, Quality Inspections, Ratings, Contracts, Reports."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime

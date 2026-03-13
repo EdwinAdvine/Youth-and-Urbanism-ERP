@@ -1,3 +1,20 @@
+/**
+ * sidebarMenus — per-module secondary navigation menu definitions.
+ *
+ * Exports `APP_SUBMENUS`: a Record mapping URL module key → `AppMenu` (label,
+ * groups, optional role restriction). Each `AppMenu` contains `MenuGroup[]`,
+ * and each group holds `SubItem[]` (label + href + icon).
+ *
+ * Consumed by `Sidebar.tsx` and `MobileDrawer.tsx` to render the module's
+ * sub-navigation. Adding a new module's sidebar menu requires only adding an
+ * entry here — no other layout files need changing.
+ *
+ * Icon paths are inline SVG `d` attribute strings kept in the `P` constant map
+ * to avoid importing a full icon library.
+ *
+ * Role-restricted menus (e.g. `admin`) include a `roles` array; `Sidebar.tsx`
+ * checks this against the current user's role before rendering.
+ */
 import React from 'react'
 
 export interface SubItem {
@@ -442,6 +459,25 @@ const supplyChainMenu: AppMenu = {
       ],
     },
     {
+      label: 'Logistics',
+      items: [
+        { label: 'Transport Orders', href: '/supply-chain/transport-orders', icon: <Icon path={P.truck} /> },
+        { label: 'Carriers', href: '/supply-chain/carriers', icon: <Icon path={P.building} /> },
+        { label: 'Route Planner', href: '/supply-chain/route-planner', icon: <Icon path={P.globe} /> },
+        { label: 'Freight Audit', href: '/supply-chain/freight-audit', icon: <Icon path={P.doc} /> },
+        { label: 'Dock Schedules', href: '/supply-chain/dock-schedules', icon: <Icon path={P.calendar} /> },
+      ],
+    },
+    {
+      label: 'Risk & MRP',
+      items: [
+        { label: 'Risk Assessments', href: '/supply-chain/risk', icon: <Icon path={P.alert} /> },
+        { label: 'Scenario Simulation', href: '/supply-chain/scenarios', icon: <Icon path={P.brain} /> },
+        { label: 'MRP Run', href: '/supply-chain/mrp', icon: <Icon path={P.lightning} /> },
+        { label: 'Production Schedule', href: '/supply-chain/production-schedule', icon: <Icon path={P.calendar} /> },
+      ],
+    },
+    {
       label: 'Compliance & Analytics',
       items: [
         { label: 'Compliance & ESG', href: '/supply-chain/compliance', icon: <Icon path={P.shield} /> },
@@ -772,6 +808,7 @@ const docsMenu: AppMenu = {
         { label: 'Shared', href: '/docs/shared', icon: <Icon path={P.share} /> },
         { label: 'Recent', href: '/docs/recent', icon: <Icon path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /> },
         { label: 'Templates', href: '/docs/templates', icon: <Icon path={P.template} /> },
+        { label: 'Analytics', href: '/docs/analytics', icon: <Icon path="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /> },
       ],
     },
   ],
@@ -901,6 +938,7 @@ const settingsMenu: AppMenu = {
         { label: 'Notifications', href: '/settings/notifications', icon: <Icon path="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /> },
         { label: 'Integrations', href: '/settings/integrations', icon: <Icon path={P.link} /> },
         { label: 'Appearance', href: '/settings/appearance', icon: <Icon path="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /> },
+        { label: 'Changelog', href: '/settings/changelog', icon: <Icon path="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /> },
       ],
     },
   ],
@@ -918,6 +956,7 @@ const adminMenu: AppMenu = {
         { label: 'Dashboard', href: '/admin', icon: <Icon path={P.home} /> },
         { label: 'Users', href: '/admin/users', icon: <Icon path={P.users} /> },
         { label: 'Roles & Permissions', href: '/admin/roles', icon: <Icon path={P.shield} /> },
+        { label: 'Permission Matrix', href: '/admin/permission-matrix', icon: <Icon path="M3 10h18M3 14h18M10 3v18M14 3v18" /> },
         { label: 'App Admins', href: '/admin/app-admins', icon: <Icon path={P.user} /> },
       ],
     },

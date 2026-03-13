@@ -1,4 +1,5 @@
-import { KPICard, BarChart, LineChart, GaugeChart, PieChart } from '../../../components/charts'
+import ChartRenderer from '../../../components/charts/ChartRenderer'
+import { KPICard } from '../../../components/charts'
 import { Spinner } from '../../../components/ui'
 import { useModuleKPIs } from '../../../api/analytics_ext'
 import DashboardHeader from './DashboardHeader'
@@ -71,30 +72,55 @@ export default function ManufacturingDashboard() {
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Overall Equipment Effectiveness (OEE)</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="flex flex-col items-center">
-            <GaugeChart value={oee} label="OEE Score" size={150} />
-          </div>
-          <div className="flex flex-col items-center">
-            <GaugeChart
-              value={oeeAvailability}
-              label="Availability"
-              size={150}
-              thresholds={[{ value: 80, color: '#ff3a6e' }, { value: 90, color: '#ffa21d' }, { value: 100, color: '#6fd943' }]}
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">OEE Score</p>
+            <ChartRenderer
+              type="gauge"
+              data={[{ name: 'OEE Score', value: oee }]}
+              config={{
+                nameKey: 'name',
+                valueKey: 'value',
+                colors: ['#ff3a6e', '#ffa21d', '#6fd943'],
+              }}
+              height={150}
             />
           </div>
           <div className="flex flex-col items-center">
-            <GaugeChart
-              value={oeePerformance}
-              label="Performance"
-              size={150}
-              thresholds={[{ value: 70, color: '#ff3a6e' }, { value: 85, color: '#ffa21d' }, { value: 100, color: '#6fd943' }]}
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Availability</p>
+            <ChartRenderer
+              type="gauge"
+              data={[{ name: 'Availability', value: oeeAvailability }]}
+              config={{
+                nameKey: 'name',
+                valueKey: 'value',
+                colors: ['#ff3a6e', '#ffa21d', '#6fd943'],
+              }}
+              height={150}
             />
           </div>
           <div className="flex flex-col items-center">
-            <GaugeChart
-              value={oeeQuality}
-              label="Quality"
-              size={150}
-              thresholds={[{ value: 90, color: '#ff3a6e' }, { value: 95, color: '#ffa21d' }, { value: 100, color: '#6fd943' }]}
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Performance</p>
+            <ChartRenderer
+              type="gauge"
+              data={[{ name: 'Performance', value: oeePerformance }]}
+              config={{
+                nameKey: 'name',
+                valueKey: 'value',
+                colors: ['#ff3a6e', '#ffa21d', '#6fd943'],
+              }}
+              height={150}
+            />
+          </div>
+          <div className="flex flex-col items-center">
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Quality</p>
+            <ChartRenderer
+              type="gauge"
+              data={[{ name: 'Quality', value: oeeQuality }]}
+              config={{
+                nameKey: 'name',
+                valueKey: 'value',
+                colors: ['#ff3a6e', '#ffa21d', '#6fd943'],
+              }}
+              height={150}
             />
           </div>
         </div>
@@ -105,13 +131,16 @@ export default function ManufacturingDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Production Output</h3>
           <p className="text-xs text-gray-400 mb-4">Actual vs target</p>
-          <BarChart
+          <ChartRenderer
+            type="bar"
             data={productionData}
-            bars={[
-              { dataKey: 'output', color: '#51459d', name: 'Actual' },
-              { dataKey: 'target', color: '#e5e7eb', name: 'Target' },
-            ]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['output', 'target'],
+              colors: ['#51459d', '#e5e7eb'],
+              showGrid: true,
+              showLegend: true,
+            }}
             height={240}
           />
         </div>
@@ -119,12 +148,18 @@ export default function ManufacturingDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Defect Rate</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly defect percentage</p>
-          <LineChart
+          <ChartRenderer
+            type="line"
             data={defectData}
-            lines={[{ dataKey: 'rate', color: '#ff3a6e', name: 'Defect %' }]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['rate'],
+              colors: ['#ff3a6e'],
+              showGrid: true,
+              showLegend: false,
+              smooth: true,
+            }}
             height={240}
-            formatTooltip={(v) => `${v}%`}
           />
         </div>
       </div>
@@ -134,18 +169,34 @@ export default function ManufacturingDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Work Order Status</h3>
           <p className="text-xs text-gray-400 mb-4">Current work order distribution</p>
-          <PieChart data={woStatus} innerRadius={50} height={260} />
+          <ChartRenderer
+            type="donut"
+            data={woStatus}
+            config={{
+              nameKey: 'name',
+              valueKey: 'value',
+              colors: ['#6fd943', '#51459d', '#3ec9d6', '#ffa21d', '#ff3a6e'],
+              showLegend: true,
+            }}
+            height={260}
+          />
         </div>
 
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Workstation Utilization</h3>
           <p className="text-xs text-gray-400 mb-4">Current capacity usage (%)</p>
-          <BarChart
+          <ChartRenderer
+            type="bar"
             data={workstations}
-            bars={[{ dataKey: 'utilization', color: '#3ec9d6', name: 'Utilization %' }]}
-            xKey="name"
+            config={{
+              xKey: 'name',
+              yKeys: ['utilization'],
+              colors: ['#3ec9d6'],
+              showGrid: true,
+              showLegend: false,
+              horizontal: true,
+            }}
             height={260}
-            formatTooltip={(v) => `${v}%`}
           />
         </div>
       </div>

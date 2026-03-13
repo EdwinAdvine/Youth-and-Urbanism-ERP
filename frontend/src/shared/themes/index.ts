@@ -1,5 +1,5 @@
 /**
- * Design tokens — centralized theme constants for Urban ERP
+ * Design tokens — centralized theme constants for Urban Vibes Dynamics
  */
 
 export const colors = {

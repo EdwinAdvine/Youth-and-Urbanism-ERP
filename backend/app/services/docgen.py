@@ -18,7 +18,7 @@ from app.models.drive import DriveFile
 
 logger = logging.getLogger(__name__)
 
-BUCKET_NAME = "urban-erp-drive"
+BUCKET_NAME = "urban-vibes-dynamics-drive"
 
 
 def _get_minio_client():

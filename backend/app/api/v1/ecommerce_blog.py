@@ -1,5 +1,4 @@
 """E-Commerce Blog API — admin CRUD + public storefront endpoints."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone

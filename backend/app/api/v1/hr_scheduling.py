@@ -1,5 +1,4 @@
 """HR Scheduling API — shift templates, assignments, holiday calendar, overtime alerts."""
-from __future__ import annotations
 
 import uuid
 from collections import defaultdict

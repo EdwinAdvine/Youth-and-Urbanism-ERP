@@ -15,10 +15,13 @@ interface RibbonToolbarProps {
   onToggleVersions?: () => void
   onToggleAI?: () => void
   onToggleCopilot?: () => void
+  onToggleAgent?: () => void
+  onToggleSecurity?: () => void
   commentsActive?: boolean
   versionsActive?: boolean
   aiActive?: boolean
   copilotActive?: boolean
+  agentActive?: boolean
 }
 
 type MenuKey = 'file' | 'edit' | 'insert' | 'format' | null
@@ -247,10 +250,13 @@ export default function RibbonToolbar({
   onToggleVersions,
   onToggleAI,
   onToggleCopilot,
+  onToggleAgent,
+  onToggleSecurity,
   commentsActive,
   versionsActive,
   aiActive,
   copilotActive,
+  agentActive,
 }: RibbonToolbarProps) {
   const [activeMenu, setActiveMenu] = useState<MenuKey>(null)
   const [showConvert, setShowConvert] = useState(false)
@@ -394,6 +400,23 @@ export default function RibbonToolbar({
             }`}
           >
             Copilot
+          </button>
+          <button
+            onClick={onToggleAgent}
+            className={`px-3 py-1.5 text-xs border rounded-[6px] transition-colors ${
+              agentActive
+                ? 'border-[#51459d] bg-[#51459d]/10 text-[#51459d]'
+                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+          >
+            AI Agent
+          </button>
+          <button
+            onClick={onToggleSecurity}
+            className="px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 rounded-[6px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            title="Security & Compliance"
+          >
+            Security
           </button>
           <button
             onClick={() => toggleBookmark.mutate(fileId)}

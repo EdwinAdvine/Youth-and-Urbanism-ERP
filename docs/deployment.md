@@ -14,7 +14,7 @@
 ### 1. Clone and Configure
 
 ```bash
-cd urban-erp
+cd urban-vibes-dynamics
 cp .env.example .env
 ```
 
@@ -220,14 +220,15 @@ curl -X POST http://localhost:8010/api/v1/backups/{backup_id}/restore \
 | minio | 9000/9001 | 9010/9011 | Object storage |
 | ollama | 11434 | 11435 | Local LLM |
 | backend | 8000 | 8010 | FastAPI API |
-| frontend | 3000 | 3010 | React app |
-| stalwart | 25/143/587/993 | same | Mail server |
-| onlyoffice | 80 | 8083 | Document server |
-| jitsi-web | 80/443 | 8080/8443 | Video conferencing |
-| nextcloud-web | 80 | 8085 | File sharing |
-| superset | 8088 | 8088 | Analytics |
-| pgadmin | 80 | 5051 | DB admin (dev only) |
-| mailhog | 8025/1025 | 8026/1026 | Email testing (dev only) |
+| frontend | 80 | 3010 | React app (Nginx) |
+| celery-worker | — | — | Background task worker |
+| celery-beat | — | — | Scheduled task scheduler |
+| stalwart | 25/587/993/8080 | 1025/1587/1993/8082 | Mail server (SMTP + IMAP + admin) |
+| onlyoffice | 80 | 8083 | Document editing engine |
+| jitsi-web | 80/443 | 8085/8443 | Video conferencing engine |
+| jitsi-prosody | 5222/5280 | — | XMPP server (internal) |
+| jitsi-jicofo | — | — | Jitsi conference focus (internal) |
+| jitsi-jvb | 10000/udp | 10000/udp | Jitsi video bridge |
 
 ### Scaling Celery Workers
 

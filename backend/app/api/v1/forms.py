@@ -1,5 +1,4 @@
 """Forms API — CRUD for forms, fields, and responses with 30+ field types."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
@@ -530,6 +529,17 @@ async def submit_response(
             "answers": payload.answers,
             "respondent_id": str(respondent_id) if respondent_id else None,
         })
+
+    # Dispatch outbound webhooks asynchronously
+    try:
+        from app.tasks.celery_app import dispatch_form_webhooks
+        dispatch_form_webhooks.delay(
+            form_id=str(form_id),
+            event="response.submitted",
+            payload={"response_id": str(response.id), "answers": payload.answers},
+        )
+    except Exception:
+        pass
 
     return FormResponseOut.model_validate(response).model_dump()
 

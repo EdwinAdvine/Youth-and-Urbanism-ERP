@@ -1,5 +1,4 @@
 """Meetings API — calendar events with an associated Jitsi room."""
-from __future__ import annotations
 
 import json
 import uuid

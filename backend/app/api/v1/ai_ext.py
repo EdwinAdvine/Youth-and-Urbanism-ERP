@@ -1,5 +1,4 @@
 """AI extensions — prompt templates, knowledge base, usage stats, conversations."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta, timezone

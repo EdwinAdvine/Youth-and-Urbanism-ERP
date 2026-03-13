@@ -76,10 +76,10 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reports</h1>
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Reports</h1>
         <p className="text-sm text-gray-500 mt-1">Financial reports and summaries</p>
       </div>
 
@@ -106,13 +106,15 @@ export default function ReportsPage() {
           <p className="text-xs text-gray-500 mt-1">Summary of all account balances</p>
         </div>
 
-        <Table<TrialBalanceRow>
-          columns={columns}
-          data={trialBalance ?? []}
-          loading={isLoading}
-          emptyText="No data available"
-          keyExtractor={(row) => row.account_id}
-        />
+        <div className="overflow-x-auto">
+          <Table<TrialBalanceRow>
+            columns={columns}
+            data={trialBalance ?? []}
+            loading={isLoading}
+            emptyText="No data available"
+            keyExtractor={(row) => row.account_id}
+          />
+        </div>
 
         {/* Summary Totals */}
         {(trialBalance ?? []).length > 0 && (

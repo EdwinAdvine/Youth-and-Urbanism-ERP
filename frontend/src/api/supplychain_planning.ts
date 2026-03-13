@@ -1,3 +1,16 @@
+/**
+ * Supply Chain Planning API client — demand forecasting, S&OP plans, and supply plans.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/supplychain`.
+ *
+ * Key exports:
+ *   - useForecasts() — list demand forecasts by item/period/scenario
+ *   - useGenerateForecasts() — trigger AI-assisted forecast generation
+ *   - useWhatIfForecast() — run what-if scenario simulations
+ *   - useScenarios() — manage forecast scenarios (draft/active/archived)
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Urban ERP — Database Restore Script
+# Urban Vibes Dynamics — Database Restore Script
 # Downloads a backup from MinIO and restores it into PostgreSQL.
 #
 # Usage:
@@ -33,7 +33,7 @@ if [ -z "$BACKUP_FILENAME" ]; then
   exit 1
 fi
 
-echo "=== Urban ERP Database Restore ==="
+echo "=== Urban Vibes Dynamics Database Restore ==="
 echo "Backup: ${BACKUP_FILENAME}"
 echo "Target: ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 echo ""
@@ -53,7 +53,7 @@ trap "rm -f ${TMPFILE}" EXIT
 echo "Downloading backup from MinIO..."
 # Use the mc (MinIO Client) if available, otherwise use Python
 if command -v mc &>/dev/null; then
-  mc cp "urban/urban-erp-backups/${BACKUP_FILENAME}" "${TMPFILE}"
+  mc cp "urban/urban-vibes-dynamics-backups/${BACKUP_FILENAME}" "${TMPFILE}"
 else
   python3 -c "
 import boto3, os
@@ -64,7 +64,7 @@ s3 = boto3.client('s3',
     aws_secret_access_key=os.environ.get('MINIO_SECRET_KEY', 'urban_minio_secret'),
     config=Config(signature_version='s3v4'),
     region_name='us-east-1')
-s3.download_file('urban-erp-backups', '${BACKUP_FILENAME}', '${TMPFILE}')
+s3.download_file('urban-vibes-dynamics-backups', '${BACKUP_FILENAME}', '${TMPFILE}')
 print('Downloaded.')
 "
 fi

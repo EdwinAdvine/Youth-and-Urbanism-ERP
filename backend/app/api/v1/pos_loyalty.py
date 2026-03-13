@@ -1,5 +1,4 @@
 """POS Loyalty — Gift Cards & Store Credit endpoints."""
-from __future__ import annotations
 
 import secrets
 import uuid

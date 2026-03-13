@@ -86,10 +86,10 @@ export default function DealsPage() {
   ]
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Deals</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Deals</h1>
         <p className="text-sm text-gray-500 mt-1">Closed deals and their outcomes</p>
       </div>
 
@@ -115,13 +115,15 @@ export default function DealsPage() {
 
       {/* Deals Table */}
       <Card padding={false}>
-        <Table
-          columns={columns}
-          data={deals}
-          loading={isLoading}
-          emptyText="No deals closed yet"
-          keyExtractor={(row) => row.id}
-        />
+        <div className="overflow-x-auto">
+          <Table
+            columns={columns}
+            data={deals}
+            loading={isLoading}
+            emptyText="No deals closed yet"
+            keyExtractor={(row) => row.id}
+          />
+        </div>
 
         {/* Totals Row */}
         {deals.length > 0 && (

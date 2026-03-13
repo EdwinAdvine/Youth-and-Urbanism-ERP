@@ -1,5 +1,6 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useSwipeGesture } from '../../hooks/useSwipeGesture'
+import { useIsMobile } from '../../hooks/useMediaQuery'
 import {
   useCalendarEvents,
   useCreateCalendarEvent,
@@ -29,6 +30,12 @@ import FocusTimeManager from './FocusTimeManager'
 import ResourceBooking from './ResourceBooking'
 import AutomationBuilder from './AutomationBuilder'
 import MeetingPrepCard from './MeetingPrepCard'
+import MeetingROI from './MeetingROI'
+import WebhooksManager from './WebhooksManager'
+import WorldClockSidebar from './WorldClockSidebar'
+import CalendarOverlay from './CalendarOverlay'
+import VoiceEventCreator from './VoiceEventCreator'
+import OfflineIndicator from './OfflineIndicator'
 
 // ─── Event type config ────────────────────────────────────────────────────────
 
@@ -309,7 +316,10 @@ function MonthView({ events, year, month, onDayClick, onEventClick, onEventDrop 
   onEventClick: (ev: CalendarEvent) => void
   onEventDrop?: (event: CalendarEvent, newDate: string) => void
 }) {
-  const [expandedDay, setExpandedDay] = useState<string | null>(null)
+  const [morePopover, setMorePopover] = useState<{
+    dayKey: string
+    anchorRect: DOMRect
+  } | null>(null)
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
   const startPad = firstDay.getDay()
@@ -324,7 +334,15 @@ function MonthView({ events, year, month, onDayClick, onEventClick, onEventDrop 
   const todayStr = toDateStr(today)
   const weekCount = totalCells / 7
 
+  // Derive popover day label from dayKey (YYYY-MM-DD)
+  function formatPopoverDay(dayKey: string): string {
+    const [y, m, d] = dayKey.split('-').map(Number)
+    const date = new Date(y, m - 1, d)
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+  }
+
   return (
+    <>
     <div className="flex-1 overflow-auto">
       {/* Day headers + week numbers */}
       <div className="grid grid-cols-[32px_repeat(7,1fr)] border-b border-gray-100 dark:border-gray-800">
@@ -360,8 +378,7 @@ function MonthView({ events, year, month, onDayClick, onEventClick, onEventDrop 
               const dayEvents = events.filter((e) => getDateFromIso(e.start_time) === dateStr)
               const isToday = dateStr === todayStr
               const dayNum = parseInt(dateStr.split('-')[2])
-              const isExpanded = expandedDay === dateStr
-              const visibleCount = isExpanded ? dayEvents.length : 3
+              const visibleCount = 3
 
               return (
                 <div
@@ -408,20 +425,16 @@ function MonthView({ events, year, month, onDayClick, onEventClick, onEventDrop 
                         </button>
                       )
                     })}
-                    {dayEvents.length > 3 && !isExpanded && (
+                    {dayEvents.length > 3 && (
                       <button
-                        onClick={(e) => { e.stopPropagation(); setExpandedDay(dateStr) }}
-                        className="text-[9px] text-[#51459d] font-medium pl-1 hover:underline"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const rect = e.currentTarget.getBoundingClientRect()
+                          setMorePopover({ dayKey: dateStr, anchorRect: rect })
+                        }}
+                        className="text-[10px] text-[#51459d] hover:underline font-medium px-1"
                       >
                         +{dayEvents.length - 3} more
-                      </button>
-                    )}
-                    {isExpanded && dayEvents.length > 3 && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setExpandedDay(null) }}
-                        className="text-[9px] text-gray-400 font-medium pl-1 hover:underline"
-                      >
-                        Show less
                       </button>
                     )}
                   </div>
@@ -432,6 +445,63 @@ function MonthView({ events, year, month, onDayClick, onEventClick, onEventDrop 
         }).flat()}
       </div>
     </div>
+
+    {/* Floating popover for "+X more" events */}
+    {morePopover && (() => {
+      const popoverEvents = events.filter((e) => getDateFromIso(e.start_time) === morePopover.dayKey)
+      const rect = morePopover.anchorRect
+      const top = rect.bottom + 8 + window.scrollY
+      const left = Math.min(rect.left + window.scrollX, window.innerWidth - 288)
+      return (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setMorePopover(null)}
+          />
+          {/* Popover */}
+          <div
+            className="fixed z-50 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-3"
+            style={{ top, left }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                {formatPopoverDay(morePopover.dayKey)}
+              </span>
+              <button
+                onClick={() => setMorePopover(null)}
+                className="text-gray-400 hover:text-gray-600 text-xs leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-1 max-h-64 overflow-y-auto">
+              {popoverEvents.map(ev => {
+                const colors = EVENT_COLORS[ev.event_type] || EVENT_COLORS.meeting
+                return (
+                  <button
+                    key={ev.id}
+                    onClick={() => { onEventClick(ev); setMorePopover(null) }}
+                    className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colors.dot }} />
+                      <span className="text-xs text-gray-700 dark:text-gray-200 truncate">{ev.title}</span>
+                      {!ev.all_day && (
+                        <span className="text-[10px] text-gray-400 shrink-0 ml-auto">
+                          {formatTime(ev.start_time)}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )
+    })()}
+    </>
   )
 }
 
@@ -449,19 +519,28 @@ const VIEW_ICONS: Record<CalView, JSX.Element> = {
 // ─── Main Calendar Page ──────────────────────────────────────────────────────
 
 export default function CalendarPage() {
+  const isMobile = useIsMobile()
   const {
     view, viewDate, setView, setViewDate, navigate: navStore, goToToday,
     sidebarOpen, toggleSidebar,
   } = useCalendarStore()
+
+  // Default to 'day' view on mobile
+  useEffect(() => {
+    if (isMobile && view === 'month') {
+      setView('day')
+    }
+  }, [isMobile, view, setView])
 
   const [modal, setModal] = useState<{ date: string; event?: CalendarEvent; startTime?: string; endTime?: string } | null>(null)
   const [popoverEvent, setPopoverEvent] = useState<{ event: CalendarEvent; rect: DOMRect | null } | null>(null)
   const [showRecurring, setShowRecurring] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [showPrint, setShowPrint] = useState(false)
-  const [subPanel, setSubPanel] = useState<'analytics' | 'booking' | 'focus' | 'resources' | 'automation' | null>(null)
+  const [subPanel, setSubPanel] = useState<'analytics' | 'booking' | 'focus' | 'resources' | 'automation' | 'roi' | 'webhooks' | null>(null)
   const [moreOpen, setMoreOpen] = useState(false)
   const [prepEventId, setPrepEventId] = useState<string | null>(null)
+  const [worldClockOpen, setWorldClockOpen] = useState(false)
 
   const { data } = useCalendarEvents()
   const events = data?.events ?? []
@@ -576,6 +655,23 @@ export default function CalendarPage() {
           </div>
 
           <div className="p-3 border-b border-gray-100 dark:border-gray-800">
+            <VoiceEventCreator
+              onEventParsed={(parsed) => {
+                const dateStr = parsed.start_time
+                  ? parsed.start_time.slice(0, 10)
+                  : toDateStr(today)
+                const startTime = parsed.start_time
+                  ? parsed.start_time.slice(11, 16)
+                  : undefined
+                const endTime = parsed.end_time
+                  ? parsed.end_time.slice(11, 16)
+                  : undefined
+                setModal({ date: dateStr, startTime, endTime })
+              }}
+            />
+          </div>
+
+          <div className="p-3 border-b border-gray-100 dark:border-gray-800">
             <MiniCalendar
               selectedDate={viewDate}
               onDateSelect={(date) => {
@@ -674,6 +770,21 @@ export default function CalendarPage() {
             ))}
           </div>
 
+          {/* World Clock toggle */}
+          <button
+            onClick={() => setWorldClockOpen(!worldClockOpen)}
+            className={`px-2 py-1.5 text-xs rounded-[8px] border transition-colors ${
+              worldClockOpen
+                ? 'bg-[#51459d] text-white border-[#51459d]'
+                : 'text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+            title="World Clock"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+
           {/* More features dropdown */}
           <div className="relative">
             <button
@@ -700,6 +811,8 @@ export default function CalendarPage() {
                   { key: 'focus', label: 'Focus Time', icon: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z' },
                   { key: 'resources', label: 'Resource Booking', icon: 'M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21' },
                   { key: 'automation', label: 'Automations', icon: 'M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z' },
+                  { key: 'roi', label: 'Meeting ROI', icon: 'M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941' },
+                  { key: 'webhooks', label: 'Webhooks & API Keys', icon: 'M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244' },
                 ] as { key: typeof subPanel & string; label: string; icon: string }[]).map((item) => (
                   <button
                     key={item.key}
@@ -727,6 +840,8 @@ export default function CalendarPage() {
         {subPanel === 'focus' && <FocusTimeManager />}
         {subPanel === 'resources' && <ResourceBooking />}
         {subPanel === 'automation' && <AutomationBuilder />}
+        {subPanel === 'roi' && <MeetingROI />}
+        {subPanel === 'webhooks' && <WebhooksManager />}
 
         {/* Meeting Prep Card overlay */}
         {prepEventId && (
@@ -855,6 +970,12 @@ export default function CalendarPage() {
           onClose={() => setShowPrint(false)}
         />
       )}
+
+      {/* World Clock Sidebar */}
+      <WorldClockSidebar open={worldClockOpen} onClose={() => setWorldClockOpen(false)} />
+
+      {/* Offline / sync status indicator */}
+      <OfflineIndicator />
     </div>
   )
 }

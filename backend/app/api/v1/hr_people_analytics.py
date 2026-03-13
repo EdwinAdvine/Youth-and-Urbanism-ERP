@@ -1,5 +1,4 @@
 """HR People Analytics — Custom Dashboards, DEI, Predictive Reports, Cost Modeling."""
-from __future__ import annotations
 
 import csv
 import io

@@ -142,7 +142,7 @@ class NotesAIService:
             erp_context = await self.gather_erp_context(prompt, user_id)
 
         system_msg = (
-            "You are Y&U Notes AI, an intelligent writing assistant inside Urban ERP. "
+            "You are Y&U Notes AI, an intelligent writing assistant inside Urban Vibes Dynamics. "
             "Generate well-structured, professional content for notes. "
             "Use Markdown formatting with headings, lists, and emphasis. "
             "Be concise but thorough."

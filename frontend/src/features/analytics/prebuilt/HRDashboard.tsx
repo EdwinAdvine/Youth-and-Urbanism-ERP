@@ -1,5 +1,6 @@
 import { useDashboardStats } from '../../../api/analytics'
-import { KPICard, BarChart, PieChart, LineChart, GaugeChart } from '../../../components/charts'
+import ChartRenderer from '../../../components/charts/ChartRenderer'
+import { KPICard } from '../../../components/charts'
 import { Spinner } from '../../../components/ui'
 import DashboardHeader from './DashboardHeader'
 
@@ -74,10 +75,17 @@ export default function HRDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Headcount Trend</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly employee count</p>
-          <LineChart
+          <ChartRenderer
+            type="line"
             data={headcountData}
-            lines={[{ dataKey: 'headcount', color: '#51459d', name: 'Headcount' }]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['headcount'],
+              colors: ['#51459d'],
+              showGrid: true,
+              showLegend: false,
+              smooth: true,
+            }}
             height={240}
           />
         </div>
@@ -85,12 +93,18 @@ export default function HRDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Attrition Rate</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly turnover percentage</p>
-          <LineChart
+          <ChartRenderer
+            type="line"
             data={attritionData}
-            lines={[{ dataKey: 'rate', color: '#ff3a6e', name: 'Attrition %' }]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['rate'],
+              colors: ['#ff3a6e'],
+              showGrid: true,
+              showLegend: false,
+              smooth: true,
+            }}
             height={240}
-            formatTooltip={(v) => `${v}%`}
           />
         </div>
       </div>
@@ -100,22 +114,34 @@ export default function HRDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Department Distribution</h3>
           <p className="text-xs text-gray-400 mb-4">Employees by department</p>
-          <PieChart data={deptDistribution} innerRadius={50} height={260} />
+          <ChartRenderer
+            type="donut"
+            data={deptDistribution}
+            config={{
+              nameKey: 'name',
+              valueKey: 'value',
+              colors: ['#51459d', '#6fd943', '#3ec9d6', '#ffa21d', '#ff3a6e', '#a78bfa'],
+              showLegend: true,
+            }}
+            height={260}
+          />
         </div>
 
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Attendance Breakdown</h3>
           <p className="text-xs text-gray-400 mb-4">Present vs Remote vs Absent (%)</p>
-          <BarChart
+          <ChartRenderer
+            type="bar"
             data={attendanceData}
-            bars={[
-              { dataKey: 'present', color: '#6fd943', name: 'Present', stackId: 'a' },
-              { dataKey: 'remote', color: '#3ec9d6', name: 'Remote', stackId: 'a' },
-              { dataKey: 'absent', color: '#ff3a6e', name: 'Absent', stackId: 'a' },
-            ]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['present', 'remote', 'absent'],
+              colors: ['#6fd943', '#3ec9d6', '#ff3a6e'],
+              showGrid: true,
+              showLegend: true,
+              stacked: true,
+            }}
             height={260}
-            formatTooltip={(v) => `${v}%`}
           />
         </div>
       </div>
@@ -125,27 +151,31 @@ export default function HRDashboard() {
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Leave Utilization</h3>
           <p className="text-xs text-gray-400 mb-4">Days used vs allocated by type</p>
-          <BarChart
+          <ChartRenderer
+            type="bar"
             data={leaveData}
-            bars={[
-              { dataKey: 'used', color: '#51459d', name: 'Used' },
-              { dataKey: 'total', color: '#e5e7eb', name: 'Allocated' },
-            ]}
-            xKey="type"
+            config={{
+              xKey: 'type',
+              yKeys: ['used', 'total'],
+              colors: ['#51459d', '#e5e7eb'],
+              showGrid: true,
+              showLegend: true,
+            }}
             height={240}
           />
         </div>
 
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm flex flex-col items-center justify-center">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Overall Leave Usage</h3>
-          <GaugeChart
-            value={leaveUtilization}
-            label="Leave Utilization"
-            thresholds={[
-              { value: 50, color: '#6fd943' },
-              { value: 80, color: '#ffa21d' },
-              { value: 100, color: '#ff3a6e' },
-            ]}
+          <ChartRenderer
+            type="gauge"
+            data={[{ name: 'Leave Utilization', value: leaveUtilization }]}
+            config={{
+              nameKey: 'name',
+              valueKey: 'value',
+              colors: ['#6fd943', '#ffa21d', '#ff3a6e'],
+            }}
+            height={200}
           />
         </div>
       </div>

@@ -23,6 +23,14 @@ const MODULE_META: Record<string, ModuleMeta> = {
   calendar:      { label: 'Calendar',      icon: '📅', color: 'from-rose-400 to-rose-600',        description: 'Schedule & events' },
   docs:          { label: 'Docs',          icon: '📄', color: 'from-teal-400 to-teal-600',        description: 'Documents & files' },
   drive:         { label: 'Drive',         icon: '💾', color: 'from-cyan-400 to-cyan-600',        description: 'File storage' },
+  ecommerce:     { label: 'E-Commerce',    icon: '🛒', color: 'from-fuchsia-400 to-fuchsia-600',  description: 'Online store & orders' },
+  notes:         { label: 'Notes',         icon: '📝', color: 'from-pink-400 to-pink-600',         description: 'Personal notes & rich text' },
+  forms:         { label: 'Forms',         icon: '📋', color: 'from-emerald-400 to-emerald-600',   description: 'Form builder & responses' },
+  teams:         { label: 'Teams',         icon: '🎥', color: 'from-red-400 to-red-600',           description: 'Video meetings (Jitsi)' },
+  kds:           { label: 'KDS',           icon: '🍳', color: 'from-orange-400 to-orange-600',     description: 'Kitchen display system' },
+  loyalty:       { label: 'Loyalty',       icon: '⭐', color: 'from-yellow-400 to-yellow-600',     description: 'Points & rewards' },
+  handbook:      { label: 'Handbook',      icon: '📖', color: 'from-sky-400 to-sky-600',           description: 'Company policies & KB' },
+  settings:      { label: 'Settings',      icon: '⚙️',  color: 'from-gray-400 to-gray-600',         description: 'System configuration' },
 }
 
 function getGreeting() {
@@ -87,6 +95,39 @@ export default function MyModulesPage() {
         <div className="text-center py-12 text-gray-400">
           <p className="text-lg font-medium">No modules assigned</p>
           <p className="text-sm mt-1">Contact a Super Admin to get module access.</p>
+        </div>
+      )}
+
+      {/* My App Access */}
+      {user?.app_access && user.app_access.length > 0 && (
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">My App Access</h2>
+          <p className="text-gray-500 text-sm mb-4">Apps you currently have access to.</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {user.app_access.map((appId) => {
+              const meta = MODULE_META[appId] ?? {
+                label: appId.charAt(0).toUpperCase() + appId.slice(1),
+                icon: '📁',
+                color: 'from-gray-400 to-gray-600',
+                description: `Access to ${appId}`,
+              }
+              return (
+                <button
+                  key={appId}
+                  onClick={() => navigate(`/${appId}`)}
+                  className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 p-4 shadow-sm hover:shadow-md transition-all text-left group"
+                >
+                  <div
+                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${meta.color} flex items-center justify-center text-xl shadow-sm group-hover:scale-105 transition-transform mb-3`}
+                  >
+                    {meta.icon}
+                  </div>
+                  <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{meta.label}</p>
+                  <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-1">{meta.description}</p>
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

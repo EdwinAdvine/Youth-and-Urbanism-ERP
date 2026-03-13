@@ -1,3 +1,17 @@
+/**
+ * Manufacturing ECO API client — Engineering Change Orders (ECO) for BOM
+ * revisions, multi-step approval workflows, and change implementation tracking.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Manufacturing
+ * module's ECO feature. All requests go through `client.ts` (Axios instance
+ * with auth interceptors). Backend prefix: `/api/v1/manufacturing`.
+ *
+ * Key exports:
+ *   - useECOs() / useECO() / useCreateECO() — ECO document CRUD
+ *   - useSubmitECO() — submit an ECO for approval routing
+ *   - useECOApprovals() / useApproveECO() / useRejectECO() — approval decisions
+ *   - useImplementECO() — mark an approved ECO as implemented (updates BOM)
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

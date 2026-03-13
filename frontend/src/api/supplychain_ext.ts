@@ -1,3 +1,16 @@
+/**
+ * Supply Chain Extended API client — shipments, returns, and quality inspections.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/supplychain`.
+ *
+ * Key exports:
+ *   - useShipments() — list shipments with status/supplier filters
+ *   - useTrackShipment() — get live tracking events for a shipment
+ *   - useReturns() — manage return orders (refund/exchange/repair)
+ *   - useQualityInspections() — fetch quality inspection records
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

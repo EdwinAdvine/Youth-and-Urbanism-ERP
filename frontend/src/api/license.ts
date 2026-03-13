@@ -1,3 +1,17 @@
+/**
+ * License API client — Urban Vibes Dynamics license management (status, activation, seat tracking).
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/license`.
+ *
+ * Key exports:
+ *   - useLicenseStatus()    — current license validity, days remaining, and feature flags
+ *   - useLicenses()         — full list of license records (Super Admin only)
+ *   - useCreateLicense()    — register a new license key (trial, standard, professional, enterprise)
+ *   - useUpdateLicense()    — update seat count, expiry, or notes on an existing license
+ *   - useDeleteLicense()    — deactivate and remove a license record
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

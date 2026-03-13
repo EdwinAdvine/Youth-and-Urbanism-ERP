@@ -1,3 +1,16 @@
+/**
+ * Docs Extended API client — templates, version diffs, permissions, and full-text search.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/docs`.
+ *
+ * Key exports:
+ *   - useDocVersionsExt() / useRestoreVersion() — extended version management
+ *   - useDocPermissions() / useCreateDocPermission() — per-file access control
+ *   - useDocCommentsExt() / useResolveComment() — comment resolution workflow
+ *   - useDocTemplates() — library of document templates by category
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 import type { DocVersion, DocComment } from './docs'
@@ -12,8 +25,30 @@ export interface DocumentTemplate {
   thumbnail_url: string | null
   doc_type: string
   minio_key: string
+  rating: number
+  rating_count: number
   created_at: string
   updated_at: string
+}
+
+export interface VersionDiff {
+  file_id: string
+  version_a: { id: string; version_number: number; label: string | null }
+  version_b: { id: string; version_number: number; label: string | null }
+  added_lines: number
+  removed_lines: number
+  total_changed_lines: number
+  diff: string[]
+}
+
+export interface DocSearchResult {
+  id: string
+  name: string
+  extension: string
+  content_type: string
+  folder_path: string
+  updated_at: string
+  score?: number
 }
 
 export interface RecentDoc {
@@ -231,6 +266,53 @@ export function useRecentDocs(limit: number = 10) {
         params: { limit },
       })
       return data.documents
+    },
+  })
+}
+
+// ─── Search ──────────────────────────────────────────────────────────────────
+
+export function useDocSearch(q: string, limit: number = 20) {
+  return useQuery({
+    queryKey: ['docs', 'search', q, limit],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ results: DocSearchResult[]; total: number }>(
+        '/docs/search',
+        { params: { q, limit } }
+      )
+      return data
+    },
+    enabled: q.trim().length > 0,
+  })
+}
+
+// ─── Version Compare ─────────────────────────────────────────────────────────
+
+export function useCompareVersions(docId: string) {
+  return useMutation({
+    mutationFn: async ({ versionId, otherVersionId }: { versionId: string; otherVersionId: string }) => {
+      const { data } = await apiClient.post<VersionDiff>(
+        `/docs/${docId}/versions/${versionId}/compare/${otherVersionId}`
+      )
+      return data
+    },
+  })
+}
+
+// ─── Template Rating ─────────────────────────────────────────────────────────
+
+export function useRateTemplate() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ templateId, rating }: { templateId: string; rating: number }) => {
+      const { data } = await apiClient.post<{ rating: number; rating_count: number }>(
+        `/docs/templates/${templateId}/rate`,
+        { rating }
+      )
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['docs', 'templates'] })
     },
   })
 }

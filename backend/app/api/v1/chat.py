@@ -3,7 +3,6 @@
 Endpoints for channel CRUD, messaging, threading, reactions, presence,
 search, pinning, bookmarks, and channel tabs.
 """
-from __future__ import annotations
 
 import json
 import re

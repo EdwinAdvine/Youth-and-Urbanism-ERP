@@ -1,5 +1,4 @@
 """Booking pages API — public scheduling links (Calendly-style)."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta

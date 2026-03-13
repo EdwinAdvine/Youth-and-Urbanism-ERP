@@ -1,4 +1,4 @@
-"""Structured logging configuration for Urban ERP.
+"""Structured logging configuration for Urban Vibes Dynamics.
 
 Uses structlog for structured logging with JSON output in production
 and colored console output in development. Includes request-ID tracking
@@ -39,7 +39,7 @@ def add_app_info(
     logger: Any, method: str, event_dict: dict[str, Any]
 ) -> dict[str, Any]:
     """Add application name to every log entry."""
-    event_dict["app"] = "urban-erp"
+    event_dict["app"] = "urban-vibes-dynamics"
     return event_dict
 
 

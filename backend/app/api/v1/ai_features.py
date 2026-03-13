@@ -1,5 +1,4 @@
 """AI-powered feature endpoints — lead scoring, ticket classification, demand forecasting, etc."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

@@ -4,12 +4,11 @@ Exposes the full ERP database schema (tables, columns, types, foreign keys)
 grouped by module, enabling the dashboard builder and copilot to auto-discover
 all available data sources without manual configuration.
 """
-from __future__ import annotations
 
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import text
 
@@ -591,3 +590,396 @@ async def get_semantic_model(
         "created_at": model.created_at.isoformat(),
         "updated_at": model.updated_at.isoformat(),
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DashboardBookmark Endpoints — save/restore filter states
+# ═══════════════════════════════════════════════════════════════════════════════
+
+import uuid as _uuid  # noqa: E402 — needed only in this section
+from fastapi import HTTPException, status as _status  # noqa: E402
+from sqlalchemy import select as _select  # noqa: E402
+
+
+class BookmarkCreate(BaseModel):
+    name: str
+    filter_state: dict = {}
+    visual_states: dict = {}
+    is_default: bool = False
+
+
+@router.get("/dashboards/{dashboard_id}/bookmarks")
+async def list_bookmarks(
+    dashboard_id: str,
+    db: DBSession,
+    user: CurrentUser,
+):
+    """List all bookmarks for a dashboard."""
+    from app.models.analytics import DashboardBookmark
+
+    result = await db.execute(
+        _select(DashboardBookmark)
+        .where(DashboardBookmark.dashboard_id == _uuid.UUID(dashboard_id))
+        .order_by(DashboardBookmark.is_default.desc(), DashboardBookmark.created_at.asc())
+    )
+    bookmarks = result.scalars().all()
+    return [
+        {
+            "id": str(b.id),
+            "name": b.name,
+            "filter_state": b.filter_state,
+            "visual_states": b.visual_states,
+            "is_default": b.is_default,
+            "created_at": b.created_at.isoformat(),
+        }
+        for b in bookmarks
+    ]
+
+
+@router.post("/dashboards/{dashboard_id}/bookmarks")
+async def create_bookmark(
+    dashboard_id: str,
+    body: BookmarkCreate,
+    db: DBSession,
+    user: CurrentUser,
+):
+    """Save current filter/visual state as a named bookmark."""
+    from app.models.analytics import DashboardBookmark
+
+    # If this is the new default, clear other defaults
+    if body.is_default:
+        existing = await db.execute(
+            _select(DashboardBookmark)
+            .where(DashboardBookmark.dashboard_id == _uuid.UUID(dashboard_id))
+            .where(DashboardBookmark.is_default == True)  # noqa: E712
+        )
+        for bm in existing.scalars().all():
+            bm.is_default = False
+
+    bookmark = DashboardBookmark(
+        dashboard_id=_uuid.UUID(dashboard_id),
+        name=body.name,
+        filter_state=body.filter_state,
+        visual_states=body.visual_states,
+        is_default=body.is_default,
+    )
+    db.add(bookmark)
+    await db.commit()
+    await db.refresh(bookmark)
+
+    return {
+        "id": str(bookmark.id),
+        "name": bookmark.name,
+        "filter_state": bookmark.filter_state,
+        "visual_states": bookmark.visual_states,
+        "is_default": bookmark.is_default,
+        "created_at": bookmark.created_at.isoformat(),
+    }
+
+
+@router.delete("/dashboards/{dashboard_id}/bookmarks/{bookmark_id}", status_code=204)
+async def delete_bookmark(
+    dashboard_id: str,
+    bookmark_id: str,
+    db: DBSession,
+    user: CurrentUser,
+):
+    """Delete a bookmark."""
+    from app.models.analytics import DashboardBookmark
+
+    result = await db.execute(
+        _select(DashboardBookmark).where(
+            DashboardBookmark.id == _uuid.UUID(bookmark_id),
+            DashboardBookmark.dashboard_id == _uuid.UUID(dashboard_id),
+        )
+    )
+    bookmark = result.scalar_one_or_none()
+    if not bookmark:
+        raise HTTPException(status_code=_status.HTTP_404_NOT_FOUND, detail="Bookmark not found")
+
+    await db.delete(bookmark)
+    await db.commit()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# E. DashboardShare CRUD
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.post("/dashboards/{dashboard_id}/shares")
+async def create_share(dashboard_id: str, payload: dict, db: DBSession, user: CurrentUser):
+    from app.models.analytics import DashboardShare
+    share = DashboardShare(
+        dashboard_id=dashboard_id,
+        shared_with_user_id=payload.get("user_id"),
+        shared_with_role=payload.get("role"),
+        is_public=payload.get("is_public", False),
+        permission=payload.get("permission", "view"),
+        created_by=str(user.id),
+    )
+    db.add(share)
+    await db.commit()
+    await db.refresh(share)
+    return share
+
+
+@router.get("/dashboards/{dashboard_id}/shares")
+async def list_shares(dashboard_id: str, db: DBSession, user: CurrentUser):
+    from app.models.analytics import DashboardShare
+    from sqlalchemy import select
+    result = await db.execute(select(DashboardShare).where(DashboardShare.dashboard_id == dashboard_id))
+    return result.scalars().all()
+
+
+@router.delete("/dashboards/{dashboard_id}/shares/{share_id}")
+async def delete_share(dashboard_id: str, share_id: str, db: DBSession, user: CurrentUser):
+    from app.models.analytics import DashboardShare
+    from sqlalchemy import select
+    result = await db.execute(select(DashboardShare).where(DashboardShare.id == share_id))
+    share = result.scalar_one_or_none()
+    if not share:
+        raise HTTPException(status_code=404, detail="Share not found")
+    await db.delete(share)
+    await db.commit()
+    return {"deleted": True}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# F. Embed token endpoints
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.post("/embed/tokens")
+async def create_embed_token(payload: dict, db: DBSession, user: CurrentUser):
+    from app.models.analytics import EmbedToken
+    t = EmbedToken(
+        dashboard_id=payload["dashboard_id"],
+        name=payload.get("name", "Embed Token"),
+        created_by=str(user.id),
+        allowed_origins=payload.get("allowed_origins"),
+    )
+    db.add(t)
+    await db.commit()
+    await db.refresh(t)
+    return t
+
+
+@router.get("/embed/tokens")
+async def list_embed_tokens(db: DBSession, user: CurrentUser):
+    from app.models.analytics import EmbedToken
+    from sqlalchemy import select
+    result = await db.execute(select(EmbedToken).where(EmbedToken.created_by == str(user.id)))
+    return result.scalars().all()
+
+
+@router.get("/embed/{token}", include_in_schema=False)
+async def get_embed_dashboard(token: str, db: DBSession):
+    from app.models.analytics import EmbedToken, Dashboard
+    from sqlalchemy import select
+    from datetime import datetime, timezone
+    result = await db.execute(
+        select(EmbedToken).where(EmbedToken.token == token, EmbedToken.is_active == True)  # noqa: E712
+    )
+    token_obj = result.scalar_one_or_none()
+    if not token_obj:
+        raise HTTPException(status_code=404, detail="Invalid embed token")
+    if token_obj.expires_at and token_obj.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=403, detail="Token expired")
+    token_obj.last_used_at = datetime.now(timezone.utc)
+    token_obj.view_count = (token_obj.view_count or 0) + 1
+    await db.commit()
+    dash_r = await db.execute(select(Dashboard).where(Dashboard.id == token_obj.dashboard_id))
+    dashboard = dash_r.scalar_one_or_none()
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+    return {"token": token, "dashboard": dashboard, "embed_mode": True}
+
+
+@router.delete("/embed/tokens/{token_id}")
+async def delete_embed_token(token_id: str, db: DBSession, user: CurrentUser):
+    from app.models.analytics import EmbedToken
+    from sqlalchemy import select
+    result = await db.execute(select(EmbedToken).where(EmbedToken.id == token_id))
+    t = result.scalar_one_or_none()
+    if not t:
+        raise HTTPException(status_code=404, detail="Token not found")
+    await db.delete(t)
+    await db.commit()
+    return {"deleted": True}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# G. Compliance reports
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/compliance/kra-itax")
+async def kra_itax_report(
+    db: DBSession,
+    user: CurrentUser,
+    year: int = Query(default=None),
+):
+    from sqlalchemy import text
+    from datetime import datetime
+    if not year:
+        year = datetime.now().year
+    try:
+        r = await db.execute(
+            text("""
+                SELECT
+                    COALESCE(u.full_name, u.email) as employee_name,
+                    u.id as employee_id,
+                    SUM(CASE WHEN je.entry_type='payroll_paye' THEN je.amount ELSE 0 END) as paye_total,
+                    SUM(CASE WHEN je.entry_type='payroll_gross' THEN je.amount ELSE 0 END) as gross_pay
+                FROM journal_entries je
+                JOIN users u ON je.reference_id=u.id::text
+                WHERE EXTRACT(YEAR FROM je.entry_date)=:year
+                  AND je.entry_type IN ('payroll_paye','payroll_gross')
+                GROUP BY u.id, u.full_name, u.email
+                ORDER BY u.full_name
+            """),
+            {"year": year},
+        )
+        rows = [dict(x) for x in r.mappings().all()]
+    except Exception:
+        rows = []
+    return {
+        "report_type": "kra_itax",
+        "tax_year": year,
+        "generated_at": datetime.now().isoformat(),
+        "records": rows,
+        "total_records": len(rows),
+    }
+
+
+@router.get("/compliance/nhif-nssf")
+async def nhif_nssf_report(
+    db: DBSession,
+    user: CurrentUser,
+    year: int = Query(default=None),
+    month: int = Query(default=None),
+):
+    from sqlalchemy import text
+    from datetime import datetime
+    if not year:
+        year = datetime.now().year
+    if not month:
+        month = datetime.now().month
+    try:
+        r = await db.execute(
+            text("""
+                SELECT
+                    COALESCE(u.full_name, u.email) as employee_name,
+                    u.id as employee_id,
+                    SUM(CASE WHEN je.entry_type='payroll_nhif' THEN je.amount ELSE 0 END) as nhif_contribution,
+                    SUM(CASE WHEN je.entry_type='payroll_nssf' THEN je.amount ELSE 0 END) as nssf_contribution
+                FROM journal_entries je
+                JOIN users u ON je.reference_id=u.id::text
+                WHERE EXTRACT(YEAR FROM je.entry_date)=:year
+                  AND EXTRACT(MONTH FROM je.entry_date)=:month
+                  AND je.entry_type IN ('payroll_nhif','payroll_nssf')
+                GROUP BY u.id, u.full_name, u.email
+                ORDER BY u.full_name
+            """),
+            {"year": year, "month": month},
+        )
+        rows = [dict(x) for x in r.mappings().all()]
+    except Exception:
+        rows = []
+    return {
+        "report_type": "nhif_nssf",
+        "period": f"{year}-{month:02d}",
+        "generated_at": datetime.now().isoformat(),
+        "records": rows,
+    }
+
+
+@router.get("/compliance/vat-return")
+async def vat_return_report(
+    db: DBSession,
+    user: CurrentUser,
+    year: int = Query(default=None),
+    quarter: int = Query(default=None),
+):
+    from sqlalchemy import text
+    from datetime import datetime
+    if not year:
+        year = datetime.now().year
+    if not quarter:
+        quarter = (datetime.now().month - 1) // 3 + 1
+    try:
+        r = await db.execute(
+            text("""
+                SELECT
+                    SUM(vat_amount) as total_output_vat,
+                    SUM(subtotal) as total_taxable_sales,
+                    COUNT(*) as invoice_count
+                FROM invoices
+                WHERE EXTRACT(YEAR FROM issue_date)=:year
+                  AND EXTRACT(QUARTER FROM issue_date)=:quarter
+                  AND status NOT IN ('cancelled','draft')
+            """),
+            {"year": year, "quarter": quarter},
+        )
+        summary = r.mappings().first()
+    except Exception:
+        summary = None
+    return {
+        "report_type": "vat_return",
+        "year": year,
+        "quarter": quarter,
+        "period": f"Q{quarter} {year}",
+        "generated_at": datetime.now().isoformat(),
+        "summary": dict(summary) if summary else {
+            "total_output_vat": 0,
+            "total_taxable_sales": 0,
+            "invoice_count": 0,
+        },
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# H. What-If Simulator
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.post("/whatif/simulate")
+async def whatif_simulate(payload: dict, db: DBSession, user: CurrentUser):
+    from sqlalchemy import text
+    base_metric = payload.get("base_metric", "revenue")
+    METRIC_QUERIES = {
+        "revenue": "SELECT COALESCE(SUM(total_amount),0) as value FROM invoices WHERE status='paid'",
+        "expenses": "SELECT COALESCE(SUM(amount),0) as value FROM journal_entries WHERE entry_type LIKE 'expense%'",
+        "headcount": "SELECT COUNT(*) as value FROM employees WHERE status='active'",
+        "deals": "SELECT COALESCE(SUM(value),0) as value FROM deals WHERE status='won'",
+    }
+    base_value = 0.0
+    if base_metric in METRIC_QUERIES:
+        try:
+            r = await db.execute(text(METRIC_QUERIES[base_metric]))
+            row = r.mappings().first()
+            base_value = float(row["value"] or 0) if row else 0.0
+        except Exception:
+            pass
+    results = []
+    for s in payload.get("scenarios", []):
+        ct = s.get("change_type", "pct")
+        cv = float(s.get("change_value", 0))
+        if ct == "pct":
+            proj = base_value * (1 + cv / 100)
+        elif ct == "abs":
+            proj = base_value + cv
+        else:
+            proj = cv
+        delta = proj - base_value
+        results.append({
+            "scenario": s.get("name", "Scenario"),
+            "base_value": base_value,
+            "projected_value": proj,
+            "delta": delta,
+            "delta_pct": round((delta / base_value * 100) if base_value else 0, 2),
+            "parameter": s.get("parameter", ""),
+            "change_type": ct,
+            "change_value": cv,
+        })
+    return {"base_metric": base_metric, "base_value": base_value, "scenarios": results}

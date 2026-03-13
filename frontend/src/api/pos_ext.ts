@@ -1,3 +1,16 @@
+/**
+ * POS Extended API client — terminals, discounts, receipts, and loyalty programs.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/pos`.
+ *
+ * Key exports:
+ *   - useTerminals() / useCreateTerminal() — manage POS terminal hardware configs
+ *   - useDiscounts() / useCreateDiscount() — discount rules (% or fixed, per-item or order)
+ *   - useSessionSummary() — revenue and payment method breakdown for a session
+ *   - useCloseSession() — close a terminal session with reconciliation data
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

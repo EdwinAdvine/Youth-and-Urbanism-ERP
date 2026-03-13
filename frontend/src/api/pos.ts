@@ -1,3 +1,16 @@
+/**
+ * POS API client — Point of Sale sessions, transactions, products, and cash management.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/pos`.
+ *
+ * Key exports:
+ *   - usePOSSessions() / useActiveSession() — session lifecycle management
+ *   - useOpenSession() / useCloseSession() — open and reconcile a cash drawer session
+ *   - usePOSTransactions() / usePOSTransaction() — list and retrieve sale records
+ *   - useSessionReconciliation() — end-of-session cash count and discrepancy report
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

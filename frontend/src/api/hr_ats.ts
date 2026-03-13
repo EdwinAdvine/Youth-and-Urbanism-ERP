@@ -1,3 +1,22 @@
+/**
+ * HR ATS API client — applicant tracking system covering job requisitions,
+ * candidate profiles, applications, interviews, and offer letters.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the HR Applicant
+ * Tracking System. All requests go through `client.ts` (Axios instance with
+ * auth interceptors). Backend prefix: `/api/v1/hr`.
+ *
+ * Key exports:
+ *   - useJobRequisitions() / useCreateRequisition() — open role management
+ *   - useCandidates() / useCandidate() — candidate profiles with AI resume summary
+ *   - useCreateCandidate() / useUpdateCandidate() — candidate mutations
+ *   - useCandidateApplications() / useCreateApplication() — application pipeline
+ *   - useAdvanceApplicationStage() / useRejectApplication() — stage progression
+ *   - useInterviews() / useScheduleInterview() — interview scheduling
+ *   - useOfferLetters() / useCreateOfferLetter() — offer generation and tracking
+ *
+ * Note: candidate AI summary (ai_summary) is populated server-side on resume upload.
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

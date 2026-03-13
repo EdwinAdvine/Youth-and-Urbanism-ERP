@@ -1,5 +1,4 @@
 """License / Subscription Tracking API — Super Admin only."""
-from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime

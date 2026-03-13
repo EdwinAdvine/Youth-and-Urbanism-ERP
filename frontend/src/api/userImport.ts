@@ -1,3 +1,15 @@
+/**
+ * User Import API client — bulk user provisioning via CSV/spreadsheet upload.
+ *
+ * Exports TanStack Query mutation hooks. All requests go through `client.ts`
+ * (Axios instance with auth interceptors). Super Admin access required.
+ * Backend prefix: `/api/v1/admin`.
+ *
+ * Key exports:
+ *   - usePreviewImport()   — upload a CSV and receive a parsed preview (valid + error rows)
+ *                            before committing; returns ImportPreviewResponse
+ *   - useConfirmImport()   — commit a previewed import batch; returns created/skipped counts
+ */
 import { useMutation } from '@tanstack/react-query'
 import apiClient from './client'
 

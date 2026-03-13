@@ -71,6 +71,10 @@ class DocumentTemplate(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 
     is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
+    rating: Mapped[float] = mapped_column(Float, nullable=False, default=0.0, comment="Average star rating 0–5")
+
+    rating_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="Number of ratings")
+
     def __repr__(self) -> str:
         return (
             f"<DocumentTemplate id={self.id} name={self.name!r} "

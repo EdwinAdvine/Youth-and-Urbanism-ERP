@@ -1,3 +1,16 @@
+/**
+ * Mail Extended API client — threads, labels, contacts, snooze, and cross-module actions.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/mail`.
+ *
+ * Key exports:
+ *   - useMailThreads() — list conversation threads with unread status
+ *   - useMailLabels() / useCreateLabel() — label management
+ *   - useMailSearch() — full-text search across messages
+ *   - useSnoozeMessage() — defer a message to a later time
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

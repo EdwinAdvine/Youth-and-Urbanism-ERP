@@ -1,4 +1,30 @@
+/**
+ * CRM API client — contacts, leads, opportunities, deals, and pipeline.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the core CRM
+ * module. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/crm`.
+ *
+ * Key exports:
+ *   - useContacts() / useContact() — paginated contact list and detail
+ *   - useCreateContact() / useUpdateContact() / useDeleteContact() — contact mutations
+ *   - useLeads() / useLead() — lead list and detail with status filtering
+ *   - useCreateLead() / useUpdateLead() — lead lifecycle mutations
+ *   - useOpportunities() / useOpportunity() — opportunity pipeline
+ *   - useCreateOpportunity() / useUpdateOpportunity() — opportunity mutations
+ *   - useDeals() / useDeal() — deal tracking
+ *   - usePipeline() — kanban-style pipeline board view
+ *
+ * Note: list queries accept pagination params (page, limit, search). Query
+ * keys are namespaced under ['crm', '<entity>'].
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  LIST_PRESET,
+  DETAIL_PRESET,
+  DASHBOARD_PRESET,
+} from '@/utils/queryDefaults'
+import { optimisticListUpdate } from '@/utils/optimisticMutation'
 import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -167,6 +193,7 @@ export function useContacts(params: {
       })
       return { total: data.total ?? 0, items: data.contacts ?? data.items ?? [] } as PaginatedResponse<Contact>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -178,6 +205,7 @@ export function useContact(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -199,7 +227,12 @@ export function useUpdateContact() {
       const { data } = await apiClient.put<Contact>(`/crm/contacts/${id}`, payload)
       return data
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['crm', 'contacts'] }),
+    ...optimisticListUpdate(
+      qc,
+      ['crm', 'contacts'],
+      (list: Contact[], updated: UpdateContactPayload) =>
+        list.map(c => c.id === updated.id ? { ...c, ...updated } : c),
+    ),
   })
 }
 
@@ -234,6 +267,7 @@ export function useLeads(params: {
       })
       return { total: data.total ?? 0, items: data.leads ?? data.items ?? [] } as PaginatedResponse<Lead>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -245,6 +279,7 @@ export function useLead(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -324,6 +359,7 @@ export function useOpportunities(params: {
       })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -335,6 +371,7 @@ export function useOpportunity(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -360,11 +397,12 @@ export function useUpdateOpportunity() {
       const { data } = await apiClient.put<Opportunity>(`/crm/opportunities/${id}`, payload)
       return data
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['crm', 'opportunities'] })
-      qc.invalidateQueries({ queryKey: ['crm', 'pipeline'] })
-      qc.invalidateQueries({ queryKey: ['crm', 'dashboard'] })
-    },
+    ...optimisticListUpdate(
+      qc,
+      ['crm', 'opportunities'],
+      (list: Opportunity[], updated: UpdateOpportunityPayload) =>
+        list.map(o => o.id === updated.id ? { ...o, ...updated } : o),
+    ),
   })
 }
 
@@ -408,6 +446,7 @@ export function usePipeline() {
       const { data } = await apiClient.get<PipelineResponse>('/crm/pipeline')
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -425,6 +464,7 @@ export function useDeals(params: { page?: number; limit?: number }) {
       })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -437,6 +477,7 @@ export function useCRMStats() {
       const { data } = await apiClient.get<CRMStats>('/crm/dashboard/stats')
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -509,6 +550,7 @@ export function useCampaigns(params: { status?: CampaignStatus; campaign_type?: 
       const { data } = await apiClient.get<{ campaigns: Campaign[] }>('/crm/campaigns', { params })
       return data.campaigns
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -552,6 +594,7 @@ export function useCampaignAnalytics(campaignId: string) {
       return data
     },
     enabled: !!campaignId,
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -631,6 +674,7 @@ export function useQuotes(params: { status?: QuoteStatus; contact_id?: string } 
       const { data } = await apiClient.get<{ quotes: Quote[] }>('/crm/quotes', { params })
       return data.quotes
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -701,6 +745,7 @@ export function useCRMProducts(params: { category?: string; is_active?: boolean 
       const { data } = await apiClient.get<{ products: CRMProduct[] }>('/crm/products', { params })
       return data.products
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -761,6 +806,7 @@ export function usePipelineReport(params: { date_from?: string; date_to?: string
       const { data } = await apiClient.get<PipelineReport>('/crm/reports/pipeline', { params })
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -771,6 +817,7 @@ export function useSalesForecast(params: { months?: number } = {}) {
       const { data } = await apiClient.get<SalesForecast>('/crm/reports/sales-forecast', { params })
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -794,6 +841,7 @@ export function useContactTimeline(contactId: string) {
       return data.events
     },
     enabled: !!contactId,
+    ...LIST_PRESET,
   })
 }
 
@@ -885,6 +933,7 @@ export function useTickets(params: {
       })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -896,6 +945,7 @@ export function useTicket(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -1094,6 +1144,7 @@ export function useLeadCaptureForms() {
       const { data } = await apiClient.get<{ forms: { id: string; title: string; is_published: boolean; created_at: string }[] }>('/crm/lead-capture-forms')
       return data.forms
     },
+    ...LIST_PRESET,
   })
 }
 

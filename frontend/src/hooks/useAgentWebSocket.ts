@@ -1,3 +1,17 @@
+/**
+ * useAgentWebSocket — WebSocket hook for the Urban Bad AI multi-agent system.
+ *
+ * Manages the WebSocket connection to `/api/v1/agent/ws/{sessionId}?token={jwt}`.
+ * Handles connect/disconnect, automatic reconnection with exponential backoff,
+ * and the full agent message protocol (plan, agent_thinking, step events, approval).
+ *
+ * Message protocol:
+ *   Send:    { type: "prompt", message: "...", context: { module, route } }
+ *   Send:    { type: "approve", run_id: "...", step_ids: [...], decision: "approve"|"reject" }
+ *   Receive: plan | agent_thinking | step_started | step_completed | approval_needed | result
+ *
+ * Reconnection: exponential backoff (1s → 2s → 4s → 8s → max 30s)
+ */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuthStore } from '../store/auth'
 

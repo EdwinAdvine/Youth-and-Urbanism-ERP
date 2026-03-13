@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { sanitizeHTML } from '@/shared/utils/sanitize'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios'
@@ -322,7 +323,7 @@ export default function BlogPostEditor() {
               )}
               <div
                 className="prose prose-sm text-gray-700 text-sm leading-relaxed max-h-[500px] overflow-y-auto"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(form.content) || '<p class="text-gray-400">Start writing to see a preview...</p>' }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHTML(renderMarkdown(form.content) || '<p class="text-gray-400">Start writing to see a preview...</p>') }}
               />
             </Card>
           </div>

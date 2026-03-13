@@ -1,4 +1,16 @@
+/**
+ * Dashboard API client — homepage summary widgets (finance, HR, CRM, projects, activity feed).
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/dashboard`.
+ *
+ * Key exports:
+ *   - useDashboardStats()    — cross-module KPI snapshot (revenue, headcount, pipeline, tasks)
+ *   - useActivityFeed()      — recent activity entries from all modules for the current user
+ */
 import { useQuery } from '@tanstack/react-query'
+import { DASHBOARD_PRESET } from '@/utils/queryDefaults'
 import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -45,6 +57,7 @@ export function useDashboardStats() {
       return data
     },
     refetchInterval: 60_000, // refresh every minute
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -58,5 +71,6 @@ export function useDashboardActivity(limit = 10) {
       return data.items
     },
     refetchInterval: 30_000, // refresh every 30s
+    ...DASHBOARD_PRESET,
   })
 }

@@ -1,3 +1,20 @@
+/**
+ * Calendar Analytics API client — usage statistics, meeting load analysis,
+ * focus-time ratios, and AI-powered meeting preparation cards.
+ *
+ * Exports TanStack Query query hooks for Calendar analytics features. All
+ * requests go through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/calendar`.
+ *
+ * Key exports:
+ *   - useCalendarAnalytics(days?) — summary metrics: event counts by type/priority,
+ *     total meeting hours, meetings per week, focus-time ratio, busiest day
+ *   - useMeetingPrepCard(eventId) — AI-generated prep card for an upcoming meeting,
+ *     including linked CRM/Finance/Support context and attendee details
+ *
+ * Note: analytics are computed server-side over the requested lookback period
+ * (default 30 days). Meeting prep cards are cached per event ID.
+ */
 import { useQuery } from '@tanstack/react-query'
 import apiClient from './client'
 

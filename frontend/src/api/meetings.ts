@@ -1,3 +1,16 @@
+/**
+ * Meetings API client — Jitsi-based video meetings, scheduling, and virtual backgrounds.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/meetings`.
+ *
+ * Key exports:
+ *   - useMeetings() — list upcoming and past meetings
+ *   - useCreateMeeting() — schedule a meeting and provision a Jitsi room + JWT
+ *   - useJoinMeeting() — obtain a room URL and JWT to join an existing meeting
+ *   - useVirtualBackgrounds() — list and upload custom virtual backgrounds
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

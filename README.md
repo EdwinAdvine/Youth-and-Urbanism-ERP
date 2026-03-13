@@ -1,10 +1,10 @@
-# Urban ERP
+# Urban Vibes Dynamics
 
 A fully self-hosted ERP platform consolidating Microsoft 365 + Google Workspace + enterprise resource planning into a single Docker Compose stack. Zero external API dependencies for core functionality. 100% code ownership.
 
 ## Overview
 
-Urban ERP replaces fragmented SaaS tools with one unified, privacy-first platform:
+Urban Vibes Dynamics replaces fragmented SaaS tools with one unified, privacy-first platform:
 
 - **Communication** — Email (Stalwart), Video Meetings (Jitsi), Notes (Tiptap)
 - **Productivity** — Docs/Excel/PowerPoint (ONLYOFFICE), Calendar (FullCalendar + CalDAV), Forms, Projects (Kanban)
@@ -33,7 +33,7 @@ Urban ERP replaces fragmented SaaS tools with one unified, privacy-first platfor
 
 ```bash
 # Clone and enter the project
-cd urban-erp
+cd urban-vibes-dynamics
 
 # Copy environment config
 cp .env.example .env
@@ -63,7 +63,7 @@ docker compose exec backend alembic upgrade head
 ## Project Structure
 
 ```
-urban-erp/
+urban-vibes-dynamics/
 ├── backend/                    # FastAPI Python application
 │   ├── app/
 │   │   ├── main.py             # App entry point, lifespan, event handlers

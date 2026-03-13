@@ -1,5 +1,4 @@
 """Projects Extensions API — Dependencies, Milestones v2, Timeline, Reports, Templates."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime

@@ -1,6 +1,41 @@
 import { useState } from 'react'
 import { Card, Button, Spinner, Modal, Input, Badge, toast } from '../../components/ui'
-import { useDocTemplates, useCreateFromTemplate, type DocumentTemplate } from '../../api/docs_ext'
+import { useDocTemplates, useCreateFromTemplate, useRateTemplate, type DocumentTemplate } from '../../api/docs_ext'
+
+// ─── Star Rating widget ───────────────────────────────────────────────────────
+
+function StarRating({ templateId, rating, ratingCount }: { templateId: string; rating: number; ratingCount: number }) {
+  const [hovered, setHovered] = useState(0)
+  const rateTemplate = useRateTemplate()
+
+  const handleRate = (e: React.MouseEvent, stars: number) => {
+    e.stopPropagation()
+    rateTemplate.mutate(
+      { templateId, rating: stars },
+      { onSuccess: () => toast('success', `Rated ${stars} star${stars !== 1 ? 's' : ''}`) }
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1 mt-2" onClick={(e) => e.stopPropagation()}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          className="text-sm leading-none focus:outline-none"
+          onMouseEnter={() => setHovered(star)}
+          onMouseLeave={() => setHovered(0)}
+          onClick={(e) => handleRate(e, star)}
+          title={`Rate ${star} star${star !== 1 ? 's' : ''}`}
+        >
+          <span style={{ color: star <= (hovered || Math.round(rating)) ? '#ffa21d' : '#d1d5db' }}>★</span>
+        </button>
+      ))}
+      {ratingCount > 0 && (
+        <span className="text-xs text-gray-400 ml-1">({ratingCount})</span>
+      )}
+    </div>
+  )
+}
 
 const TYPE_ICONS: Record<string, string> = {
   docx: 'W',
@@ -54,7 +89,7 @@ export default function TemplateGalleryPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Document Templates</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Document Templates</h1>
           <p className="text-sm text-gray-500 mt-1">Start from a template to save time</p>
         </div>
       </div>
@@ -102,6 +137,7 @@ export default function TemplateGalleryPage() {
                   <Badge variant="default">{tmpl.doc_type.toUpperCase()}</Badge>
                   {tmpl.category && <Badge variant="info">{tmpl.category}</Badge>}
                 </div>
+                <StarRating templateId={tmpl.id} rating={tmpl.rating ?? 0} ratingCount={tmpl.rating_count ?? 0} />
                 <Button size="sm" variant="primary" className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                   Use Template
                 </Button>

@@ -1,3 +1,17 @@
+/**
+ * Drive Extended API client — versioning, trash, bulk ops, tags, and storage usage.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/drive`.
+ *
+ * Key exports:
+ *   - useFileVersions() — list version history for a file
+ *   - useTrash() — list soft-deleted files and folders
+ *   - useRestoreFile() — restore a trashed item
+ *   - useBulkDelete() / useBulkMove() — multi-file batch operations
+ *   - useStorageUsage() — total vs. used MinIO storage for the tenant
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 import type { DriveFile } from './drive'

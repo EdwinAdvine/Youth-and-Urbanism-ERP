@@ -1,5 +1,4 @@
 """Inventory Phase 3 — Replenishment Rules, Purchase Suggestions, ABC/XYZ Analysis."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime

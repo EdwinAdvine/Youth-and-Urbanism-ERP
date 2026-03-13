@@ -1,4 +1,5 @@
 import { ResponsiveContainer, BarChart as RBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
+import { useIsMobile } from '../../hooks/useMediaQuery'
 
 interface BarChartProps {
   data: Record<string, unknown>[]
@@ -23,6 +24,9 @@ export default function BarChart({
   layout = 'horizontal',
   formatTooltip,
 }: BarChartProps) {
+  const isMobile = useIsMobile()
+  const tickSize = isMobile ? 10 : 11
+  const legendSize = isMobile ? 10 : 12
   const isVertical = layout === 'vertical'
 
   return (
@@ -35,13 +39,13 @@ export default function BarChart({
         {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />}
         {isVertical ? (
           <>
-            <XAxis type="number" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-            <YAxis dataKey={xKey} type="category" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} width={80} />
+            <XAxis type="number" tick={{ fontSize: tickSize, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+            <YAxis dataKey={xKey} type="category" tick={{ fontSize: tickSize, fill: '#9ca3af' }} axisLine={false} tickLine={false} width={80} />
           </>
         ) : (
           <>
-            <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={{ stroke: '#e5e7eb' }} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} width={50} />
+            <XAxis dataKey={xKey} tick={{ fontSize: tickSize, fill: '#9ca3af' }} axisLine={{ stroke: '#e5e7eb' }} tickLine={false} />
+            <YAxis tick={{ fontSize: tickSize, fill: '#9ca3af' }} axisLine={false} tickLine={false} width={50} />
           </>
         )}
         <Tooltip
@@ -53,7 +57,7 @@ export default function BarChart({
           }}
           formatter={formatTooltip ? (v: unknown) => [formatTooltip(Number(v))] : undefined}
         />
-        {showLegend && <Legend wrapperStyle={{ fontSize: 12 }} iconType="square" iconSize={10} />}
+        {showLegend && <Legend wrapperStyle={{ fontSize: legendSize }} iconType="square" iconSize={10} />}
         {bars.map((bar, i) => (
           <Bar
             key={bar.dataKey}

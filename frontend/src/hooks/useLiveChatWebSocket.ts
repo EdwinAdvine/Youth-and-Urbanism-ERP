@@ -1,3 +1,19 @@
+/**
+ * useLiveChatWebSocket — WebSocket hook for the Support module live-chat widget.
+ *
+ * Connects to `/api/v1/support/live-chat/ws/{sessionId}?token={jwt}` and
+ * handles the live-chat event protocol: incoming messages from agents/bots,
+ * typing indicators, system notifications, and session closure.
+ *
+ * Key behaviours:
+ * - Exponential backoff reconnection (1s → 2s → 4s … max 30s)
+ * - Capped at MAX_RECONNECT_ATTEMPTS (5) to avoid infinite loops
+ * - On `closed` event the session is ended server-side; reconnection is
+ *   intentionally disabled by setting attempt count to the cap
+ * - Typing indicators auto-clear after 3 seconds with no new event
+ *
+ * Used by the customer-facing live-chat widget embedded in the Support module.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuthStore } from '../store/auth'
 

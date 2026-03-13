@@ -1,12 +1,14 @@
 """POS API — Sessions, Transactions, Products, Dashboard."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, status
+import asyncio
+import json
+
+from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import selectinload
@@ -1532,3 +1534,90 @@ async def lookup_product_by_rfid(
         "barcode": item.barcode,
         "rfid_tag": item.rfid_tag,
     }
+
+
+# ── Customer-Facing Display WebSocket ─────────────────────────────────────────
+#
+# The terminal (cashier) sends transaction state updates via HTTP events;
+# the customer display browser tab holds a long-lived WebSocket connection.
+# Architecture: one asyncio.Queue per terminal_id, fed by publish endpoint,
+# drained by the WebSocket handler.
+#
+_display_queues: dict[str, list[asyncio.Queue]] = {}
+
+
+@router.websocket("/customer-display/ws/{terminal_id}")
+async def customer_display_ws(
+    websocket: WebSocket,
+    terminal_id: str,
+) -> None:
+    """WebSocket endpoint for customer-facing display screens.
+
+    The customer display page connects here and receives real-time cart/payment
+    updates pushed by the cashier's POS terminal.
+
+    Protocol:
+      - Server sends JSON frames: ``{"type": "cart_update"|"payment"|"idle"|"ping", ...}``
+      - Client may send ``{"type": "ack"}`` frames (ignored)
+    """
+    await websocket.accept()
+
+    queue: asyncio.Queue = asyncio.Queue(maxsize=100)
+    _display_queues.setdefault(terminal_id, []).append(queue)
+
+    try:
+        # Send initial idle state
+        await websocket.send_text(json.dumps({"type": "idle", "terminal_id": terminal_id}))
+
+        while True:
+            try:
+                # Wait for a message from the cashier with a ping timeout
+                msg = await asyncio.wait_for(queue.get(), timeout=30)
+                await websocket.send_text(json.dumps(msg))
+            except asyncio.TimeoutError:
+                # Send ping to keep connection alive
+                await websocket.send_text(json.dumps({"type": "ping"}))
+            except asyncio.CancelledError:
+                break
+    except WebSocketDisconnect:
+        pass
+    finally:
+        queues = _display_queues.get(terminal_id, [])
+        if queue in queues:
+            queues.remove(queue)
+        if not queues:
+            _display_queues.pop(terminal_id, None)
+
+
+@router.post(
+    "/customer-display/{terminal_id}/push",
+    status_code=status.HTTP_200_OK,
+    summary="Push an update to the customer-facing display for a terminal",
+)
+async def push_customer_display(
+    terminal_id: str,
+    payload: dict,
+    current_user: CurrentUser,
+) -> dict[str, str | int]:
+    """Push a display update from the cashier's POS to the customer screen.
+
+    Expected payload examples::
+
+        {"type": "cart_update", "items": [...], "subtotal": "12.50", "tax": "1.50"}
+        {"type": "payment", "amount": "14.00", "method": "cash", "change": "6.00"}
+        {"type": "idle"}
+    """
+    queues = _display_queues.get(terminal_id, [])
+    if not queues:
+        return {"detail": "No display connected", "connected": 0}
+
+    message = {"terminal_id": terminal_id, **payload}
+    delivered = 0
+    for q in queues:
+        try:
+            q.put_nowait(message)
+            delivered += 1
+        except asyncio.QueueFull:
+            pass
+
+    return {"detail": "Pushed", "connected": len(queues), "delivered": delivered}

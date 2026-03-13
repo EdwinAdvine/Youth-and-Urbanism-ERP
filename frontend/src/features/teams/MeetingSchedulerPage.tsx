@@ -69,7 +69,7 @@ export default function MeetingSchedulerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Schedule Meeting</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Schedule Meeting</h1>
         <p className="text-sm text-gray-500 mt-1">Create a new meeting with Jitsi video conferencing</p>
       </div>
 

@@ -1,3 +1,19 @@
+/**
+ * Calendar AI API client — AI-powered smart scheduling features including
+ * natural language event parsing, optimal time suggestions, and reschedule hints.
+ *
+ * Exports TanStack Query mutation hooks for Calendar AI features. All requests
+ * go through `client.ts` (Axios instance with auth interceptors). Backend
+ * prefix: `/api/v1/calendar`.
+ *
+ * Key exports:
+ *   - useParseNaturalLanguageEvent() — convert free-text into a structured CalendarEvent payload
+ *   - useSuggestOptimalTimes() — find free slots across multiple attendees' calendars
+ *   - useSuggestReschedule() — generate alternative time slots for an existing event
+ *
+ * Note: all hooks use useMutation (no caching) as results depend on real-time
+ * availability data. AI inference runs via Ollama (local) with cloud fallback.
+ */
 import { useMutation } from '@tanstack/react-query'
 import apiClient from './client'
 

@@ -1,3 +1,16 @@
+/**
+ * Supply Chain Operations API client — control tower, alerts, and KPI tracking.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/supplychain`.
+ *
+ * Key exports:
+ *   - useControlTowerDashboard() — health score, recent alerts, and events
+ *   - useAlerts() — supply chain alerts filtered by severity/status
+ *   - useAcknowledgeAlert() / useResolveAlert() — alert lifecycle mutations
+ *   - useSupplyChainKPIs() — KPI metrics by category and period
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

@@ -190,9 +190,9 @@ export default function HomePage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Quick stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {liveStats.map((stat) => (
             <div key={stat.label} className="bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
               <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
@@ -201,11 +201,11 @@ export default function HomePage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* App grid */}
-          <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+          <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-800 p-4 sm:p-5 shadow-sm">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Applications</h2>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
               {APP_TILES.map((tile) => (
                 <button
                   key={tile.id}

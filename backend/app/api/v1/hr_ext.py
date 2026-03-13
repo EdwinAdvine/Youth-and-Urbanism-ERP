@@ -1,5 +1,4 @@
 """HR Extensions API — documents, training, performance, benefits, overtime, reports, org chart."""
-from __future__ import annotations
 
 import csv
 import datetime as dt

@@ -1,5 +1,4 @@
 """Notes extensions — folders, sharing, tags, utilities, templates, AI summarize, cross-module links."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta
@@ -685,7 +684,7 @@ async def email_note(
     import re  # noqa: PLC0415
     plain_text = re.sub(r"<[^>]+>", "", html_body)
 
-    from_email = getattr(current_user, "email", "noreply@urban-erp.local")
+    from_email = getattr(current_user, "email", "noreply@urban-vibes-dynamics.local")
 
     try:
         from app.integrations.smtp_client import send_email  # noqa: PLC0415

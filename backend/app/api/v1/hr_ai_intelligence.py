@@ -1,5 +1,4 @@
 """HR AI Intelligence — Skills Ontology, Flight Risk, Burnout, Chatbot, Workforce Planning."""
-from __future__ import annotations
 
 import logging
 import uuid
@@ -641,7 +640,7 @@ async def get_employee_burnout_indicator(
 # ---------------------------------------------------------------------------
 
 _HR_SYSTEM_PROMPT = (
-    "You are an HR assistant for Urban ERP. Answer questions about HR policies, "
+    "You are an HR assistant for Urban Vibes Dynamics. Answer questions about HR policies, "
     "employee data, and best practices. Be concise and professional."
 )
 

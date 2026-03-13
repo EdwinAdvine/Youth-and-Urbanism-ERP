@@ -1,5 +1,4 @@
 """CRM Email Templates — CRUD + preview with merge fields."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

@@ -1,3 +1,17 @@
+/**
+ * E-Commerce API client — storefronts, products, customers, orders.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the E-Commerce
+ * module. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/ecommerce`.
+ *
+ * Key exports:
+ *   - useStores() / useCreateStore() — multi-store management
+ *   - useProducts() / useProduct() / useCreateProduct() — product catalogue CRUD
+ *   - useOrders() / useOrder() / useUpdateOrderStatus() — order lifecycle
+ *   - useCustomers() / useCustomer() — customer profiles and address book
+ *   - useEcomDashboardStats() — revenue, orders, and top-product summary
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

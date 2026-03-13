@@ -1,3 +1,18 @@
+/**
+ * useDocCopilot — AI copilot WebSocket hook for ONLYOFFICE document editing.
+ *
+ * Connects to `/api/v1/docs/ws/copilot/{fileId}?token={jwt}` and streams
+ * AI assistant responses while the user edits a document. Responses arrive
+ * as streaming chunks (`type: "chunk"`) which build up the `streamBuffer`,
+ * then a final `type: "done"` message commits the full response to the
+ * message history.
+ *
+ * Reconnects automatically every 3 seconds on drop (no exponential backoff —
+ * doc copilot sessions are short-lived and user-initiated).
+ * A 15-second ping heartbeat keeps the connection alive through load balancers.
+ *
+ * Usage: Mount per document editor session; pass `fileId = null` to disable.
+ */
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useAuthStore } from '../store/auth'
 

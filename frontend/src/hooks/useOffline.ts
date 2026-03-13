@@ -1,3 +1,17 @@
+/**
+ * useOffline — network connectivity and offline draft management hook.
+ *
+ * Tracks browser online/offline status via `window` events, initialises the
+ * IndexedDB offline store (via `lib/offlineStore`), counts pending drafts
+ * saved while offline, registers the service worker (`/sw.js`), and
+ * auto-syncs pending drafts 2 seconds after network connectivity is restored.
+ *
+ * Mount once at AppShell level so the service worker registers on first load
+ * and the pending draft count badge stays accurate across all pages.
+ *
+ * Pending draft count refreshes every 10 seconds via a polling interval as
+ * a fallback when the sync callback is not provided.
+ */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   initOfflineDB,

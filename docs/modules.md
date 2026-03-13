@@ -1,6 +1,52 @@
 # Module Guide
 
-Detailed breakdown of every module in Urban ERP, including data models, features, integrations, and frontend pages.
+> Index of all Urban Vibes Dynamics modules. Click any module for full documentation.
+
+Detailed per-module docs live in `docs/modules/`. This file provides a quick
+overview index. For full documentation including architecture, data models,
+API endpoints, and workflows, follow the links below.
+
+## Module Index
+
+| Module | Quick Link | Description |
+|--------|-----------|-------------|
+| Admin | [docs/modules/admin.md](modules/admin.md) | Users, roles, permissions, RBAC, SSO, backups |
+| Finance | [docs/modules/finance.md](modules/finance.md) | Accounting, invoicing, payments, reports |
+| CRM | [docs/modules/crm.md](modules/crm.md) | Contacts, leads, deals, pipelines, campaigns |
+| HR & Payroll | [docs/modules/hr.md](modules/hr.md) | Employees, leave, attendance, payroll |
+| Calendar | [docs/modules/calendar.md](modules/calendar.md) | Events, smart scheduling, meetings |
+| Projects | [docs/modules/projects.md](modules/projects.md) | Tasks, Kanban, sprints, time tracking |
+| Support | [docs/modules/support.md](modules/support.md) | Tickets, SLA, live chat, AI triage |
+| AI System | [docs/modules/ai.md](modules/ai.md) | Chat, Urban Bad AI, 55 tools |
+| E-Commerce | [docs/modules/ecommerce.md](modules/ecommerce.md) | Online store, products, orders, B2B |
+| Inventory | [docs/modules/inventory.md](modules/inventory.md) | Warehouses, stock, purchase orders |
+| Supply Chain | [docs/modules/supply-chain.md](modules/supply-chain.md) | Suppliers, procurement, GRN |
+| Manufacturing | [docs/modules/manufacturing.md](modules/manufacturing.md) | BOM, work orders, quality, traceability |
+| POS | [docs/modules/pos.md](modules/pos.md) | In-store terminal, sessions, receipts |
+| Drive & Docs | [docs/modules/drive.md](modules/drive.md) | File management, ONLYOFFICE editing |
+| Mail | [docs/modules/mail.md](modules/mail.md) | Full email client, rules, AI features |
+| Notes | [docs/modules/notes.md](modules/notes.md) | Rich text notebooks, AI, sharing |
+| Chat/Teams | [docs/modules/chat.md](modules/chat.md) | Real-time messaging, video calls |
+| Analytics | [docs/modules/analytics.md](modules/analytics.md) | Built-in metrics dashboard |
+| Forms | [docs/modules/forms.md](modules/forms.md) | Form builder, responses, CRM integration |
+| Booking | [docs/modules/booking.md](modules/booking.md) | Appointment scheduling |
+
+## Core Infrastructure
+
+| Topic | Link |
+|-------|------|
+| Configuration (env vars) | [docs/core/configuration.md](core/configuration.md) |
+| Authentication & RBAC | [docs/core/authentication.md](core/authentication.md) |
+| Event Bus | [docs/core/event-bus.md](core/event-bus.md) |
+| Database & Migrations | [docs/core/database.md](core/database.md) |
+
+---
+
+## Original Module Breakdown (below)
+
+The detailed per-module breakdown follows below for quick reference. For complete documentation, use the index links above.
+
+---
 
 ---
 
@@ -497,7 +543,7 @@ Detailed breakdown of every module in Urban ERP, including data models, features
 **Frontend Pages:** Superset embedded dashboards
 
 **Features:**
-- Direct PostgreSQL connection to all Urban ERP data
+- Direct PostgreSQL connection to all Urban Vibes Dynamics data
 - Pre-built dashboards per module
 - Custom SQL queries and visualizations
 - Scheduled report delivery

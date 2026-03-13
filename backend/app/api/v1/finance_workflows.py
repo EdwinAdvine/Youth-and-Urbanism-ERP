@@ -3,7 +3,6 @@
 Supports: expense.submitted, invoice.overdue, bill.received, bill.approved,
 budget.exceeded, invoice.paid, and more. Each rule has conditions + actions.
 """
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone

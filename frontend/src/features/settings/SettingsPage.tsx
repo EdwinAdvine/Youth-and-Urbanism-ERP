@@ -348,15 +348,15 @@ export default function SettingsPage() {
   }, [isSuperAdmin, activeTab])
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-3 sm:p-6 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
         <p className="text-sm text-gray-500 mt-1">Manage your application and account settings</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-gray-100 dark:border-gray-800">
+      <div className="flex flex-wrap gap-1 mb-4 sm:mb-6 border-b border-gray-100 dark:border-gray-800">
         {visibleTabs.map((tab) => (
           <button
             key={tab.id}

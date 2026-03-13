@@ -1,5 +1,4 @@
 """HR Bulk Import API — CSV/JSON imports for Rippling, BambooHR, HiBob, ADP formats."""
-from __future__ import annotations
 
 import csv
 import io

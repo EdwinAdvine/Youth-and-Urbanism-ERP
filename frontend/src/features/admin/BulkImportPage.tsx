@@ -74,10 +74,10 @@ export default function BulkImportPage() {
   }
 
   return (
-    <div className="p-6 space-y-5 max-w-5xl mx-auto">
+    <div className="p-3 sm:p-6 space-y-5 max-w-5xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Bulk User Import</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Bulk User Import</h1>
         <p className="text-gray-500 text-sm mt-0.5">
           Upload a CSV file to import multiple users at once. Required columns: email, full_name. Optional: role, department.
         </p>

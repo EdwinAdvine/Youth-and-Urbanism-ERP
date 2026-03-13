@@ -1,5 +1,4 @@
 """Supply Chain Planning API — Demand Forecasting, S&OP, Supply Plans, Capacity."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime

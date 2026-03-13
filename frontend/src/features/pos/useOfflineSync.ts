@@ -1,4 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import apiClient from '@/api/client';
+import {
+  cacheProductCatalog,
+  countPending,
+  getCatalogSyncedAt,
+  type OfflineProduct,
+} from './posOfflineDb';
 
 // Background Sync API augmentation
 interface SyncManager {
@@ -10,36 +17,13 @@ interface ServiceWorkerRegistrationWithSync extends ServiceWorkerRegistration {
 }
 
 // ---------------------------------------------------------------------------
-// IndexedDB wrapper (mirrors the service worker's DB for direct reads)
+// Catalog sync helper (server-wins conflict strategy)
 // ---------------------------------------------------------------------------
 
-const DB_NAME = 'pos-offline-db';
-const DB_VERSION = 1;
-const STORE_NAME = 'pending-transactions';
-
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function getPendingCount(): Promise<number> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const req = store.count();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+async function syncProductCatalog(): Promise<void> {
+  const response = await apiClient.get<{ items: OfflineProduct[] }>('/pos/products/catalog-export');
+  const products = response.data.items ?? [];
+  await cacheProductCatalog(products);
 }
 
 // ---------------------------------------------------------------------------
@@ -80,6 +64,12 @@ export interface OfflineSyncState {
   lastSyncResult: { synced: number; failed: number } | null;
   /** Manually trigger a sync (useful as a retry button) */
   syncNow: () => Promise<void>;
+  /** Epoch ms of last product catalog sync (null = never synced) */
+  catalogSyncedAt: number | null;
+  /** Manually refresh the product catalog from the server */
+  refreshCatalog: () => Promise<void>;
+  /** True while catalog is being refreshed */
+  isCatalogRefreshing: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,6 +81,8 @@ export function useOfflineSync(): OfflineSyncState {
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<{ synced: number; failed: number } | null>(null);
+  const [catalogSyncedAt, setCatalogSyncedAt] = useState<number | null>(null);
+  const [isCatalogRefreshing, setIsCatalogRefreshing] = useState(false);
   const swRef = useRef<ServiceWorkerRegistrationWithSync | null>(null);
 
   // -- Register service worker --
@@ -112,11 +104,14 @@ export function useOfflineSync(): OfflineSyncState {
     });
   }, []);
 
-  // -- Read pending count from IDB on mount --
+  // -- Read initial state from IDB on mount --
   useEffect(() => {
-    getPendingCount()
+    countPending()
       .then(setPendingCount)
       .catch(() => setPendingCount(0));
+    getCatalogSyncedAt()
+      .then(setCatalogSyncedAt)
+      .catch(() => setCatalogSyncedAt(null));
   }, []);
 
   // -- Online / Offline listeners --
@@ -126,13 +121,22 @@ export function useOfflineSync(): OfflineSyncState {
       // Attempt sync via Background Sync API or fallback
       if (swRef.current?.sync) {
         swRef.current.sync.register('pos-sync-transactions').catch(() => {
-          // Fallback: tell SW to sync directly
           navigator.serviceWorker.controller?.postMessage({ type: 'POS_TRIGGER_SYNC' });
         });
       } else {
         navigator.serviceWorker.controller?.postMessage({ type: 'POS_TRIGGER_SYNC' });
       }
       setIsSyncing(true);
+
+      // Refresh catalog if stale (>1h) or never synced
+      getCatalogSyncedAt().then((ts) => {
+        const stale = !ts || Date.now() - ts > 60 * 60 * 1000;
+        if (stale) {
+          syncProductCatalog()
+            .then(() => getCatalogSyncedAt().then(setCatalogSyncedAt))
+            .catch((e) => console.warn('[POS Offline] Catalog refresh failed:', e));
+        }
+      });
     };
 
     const goOffline = () => {
@@ -197,11 +201,29 @@ export function useOfflineSync(): OfflineSyncState {
     // isSyncing will be set to false by the POS_SYNC_COMPLETE message
   }, [isSyncing]);
 
+  // -- Manual catalog refresh --
+  const refreshCatalog = useCallback(async () => {
+    if (isCatalogRefreshing || isOffline) return;
+    setIsCatalogRefreshing(true);
+    try {
+      await syncProductCatalog();
+      const ts = await getCatalogSyncedAt();
+      setCatalogSyncedAt(ts);
+    } catch (e) {
+      console.error('[POS Offline] Manual catalog refresh failed:', e);
+    } finally {
+      setIsCatalogRefreshing(false);
+    }
+  }, [isCatalogRefreshing, isOffline]);
+
   return {
     isOffline,
     pendingCount,
     isSyncing,
     lastSyncResult,
     syncNow,
+    catalogSyncedAt,
+    refreshCatalog,
+    isCatalogRefreshing,
   };
 }

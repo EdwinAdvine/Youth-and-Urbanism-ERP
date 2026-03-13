@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react'
+import { useIsMobile } from '../../hooks/useMediaQuery'
 import {
   useDriveFiles,
   useDriveFolders,
@@ -24,6 +25,13 @@ import FavoritesView, { FavoriteToggle } from './FavoritesView'
 import FileVersionsPanel from './FileVersionsPanel'
 import FilePreviewPanel from './FilePreviewPanel'
 import { useSmartFolders, useSmartFolderFiles, useCreateSmartFolder, useDeleteSmartFolder, type SmartFolder } from '../../api/drive_ext'
+import { useVaultStatus, useLockVault, useFileRequests, useDriveSnapshots, useAnomalyAlerts } from '../../api/drive_phase2'
+import DriveAnalyticsDashboard from './DriveAnalyticsDashboard'
+import DriveVaultPanel from './DriveVaultPanel'
+import FileRequestsPanel from './FileRequestsPanel'
+import DriveRestorePanel from './DriveRestorePanel'
+import DriveAdminPanel from './DriveAdminPanel'
+import DriveContractPanel from './DriveContractPanel'
 
 // ─── File type config ─────────────────────────────────────────────────────────
 
@@ -227,9 +235,10 @@ function FileGridItem({ item, cfg, isSelected, onSelect, onContextMenu, onOpen }
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function DrivePage() {
+  const isMobile = useIsMobile()
   const [activeSection, setActiveSection] = useState<string>('my-files')
   const [activeFolderId, setActiveFolderId] = useState<string | undefined>(undefined)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>(window.innerWidth < 768 ? 'list' : 'grid')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(isMobile ? 'list' : 'grid')
   const [search, setSearch] = useState('')
   const [breadcrumbs, setBreadcrumbs] = useState<{ label: string; folderId?: string }[]>([{ label: 'My Files' }])
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: DisplayItem } | null>(null)
@@ -277,6 +286,11 @@ export default function DrivePage() {
   const { data: smartFolderFiles } = useSmartFolderFiles(activeSmartFolder || '')
   const createSmartFolder = useCreateSmartFolder()
   const deleteSmartFolder = useDeleteSmartFolder()
+  const { data: vaultData } = useVaultStatus()
+  const lockVault = useLockVault()
+  const { data: fileRequestsData } = useFileRequests()
+  const { data: snapshotsData } = useDriveSnapshots()
+  const { data: alertsData } = useAnomalyAlerts(true)
 
   // ─── Build display items ───────────────────────────────────────────────────
 
@@ -432,6 +446,12 @@ export default function DrivePage() {
     { id: 'recent',   label: 'Recent',         icon: '🕐' },
     { id: 'starred',  label: 'Starred',        icon: '⭐' },
     { id: 'trash',    label: 'Trash',          icon: '🗑️' },
+    { id: 'file-requests', label: 'File Requests', icon: '📥', badge: fileRequestsData?.requests.filter(r => r.is_active).length },
+    { id: 'vault',    label: 'Personal Vault', icon: vaultData?.is_locked ? '🔒' : '🔓' },
+    { id: 'snapshots', label: 'Restore Points', icon: '⏪', badge: snapshotsData?.snapshots.length },
+    { id: 'analytics', label: 'Analytics',      icon: '📊' },
+    { id: 'contracts', label: 'Contracts',       icon: '📋' },
+    { id: 'admin',     label: 'Admin Panel',     icon: '🛡️', badge: alertsData?.alerts.length },
   ]
 
   return (
@@ -469,7 +489,10 @@ export default function DrivePage() {
               }`}
             >
               <span>{link.icon}</span>
-              {link.label}
+              <span className="flex-1 text-left">{link.label}</span>
+              {'badge' in link && link.badge != null && link.badge > 0 && (
+                <span className="text-[10px] bg-[#51459d] text-white rounded-full px-1.5 py-0.5 leading-none">{link.badge}</span>
+              )}
             </button>
           ))}
 
@@ -740,6 +763,38 @@ export default function DrivePage() {
             <FavoritesView />
           )}
 
+          {/* Phase 2+3 section views */}
+          {activeSection === 'analytics' && (
+            <div className="flex-1 overflow-auto p-4 sm:p-5">
+              <DriveAnalyticsDashboard />
+            </div>
+          )}
+          {activeSection === 'vault' && (
+            <div className="flex-1 overflow-auto p-4 sm:p-5">
+              <DriveVaultPanel />
+            </div>
+          )}
+          {activeSection === 'file-requests' && (
+            <div className="flex-1 overflow-auto p-4 sm:p-5">
+              <FileRequestsPanel />
+            </div>
+          )}
+          {activeSection === 'snapshots' && (
+            <div className="flex-1 overflow-auto p-4 sm:p-5">
+              <DriveRestorePanel />
+            </div>
+          )}
+          {activeSection === 'contracts' && (
+            <div className="flex-1 overflow-auto p-4 sm:p-5">
+              <DriveContractPanel />
+            </div>
+          )}
+          {activeSection === 'admin' && (
+            <div className="flex-1 overflow-auto p-4 sm:p-5">
+              <DriveAdminPanel />
+            </div>
+          )}
+
           {/* Smart folder files view */}
           {activeSection === 'smart-folder' && activeSmartFolder && (
             <div className="mb-4">
@@ -794,7 +849,7 @@ export default function DrivePage() {
             </div>
           )}
 
-          {activeSection === 'starred' ? null : activeSection === 'smart-folder' ? null : !isTeamView && items.length === 0 ? (
+          {['starred', 'smart-folder', 'analytics', 'vault', 'file-requests', 'snapshots', 'contracts', 'admin'].includes(activeSection) ? null : !isTeamView && items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-center">
               <div className="text-4xl mb-3">📭</div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">

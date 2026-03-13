@@ -1,5 +1,4 @@
 """Notebooks API — hierarchical note organisation (Notebook > Section > Page)."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

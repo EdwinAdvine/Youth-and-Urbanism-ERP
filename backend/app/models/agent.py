@@ -28,8 +28,8 @@ class AgentRun(Base, UUIDPrimaryKeyMixin):
     )
     plan: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     result_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
-    provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    model: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    provider: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    model: Mapped[str | None] = mapped_column(String(100), nullable=True)
     total_llm_calls: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     total_tool_calls: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     total_tokens_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -43,6 +43,9 @@ class AgentRun(Base, UUIDPrimaryKeyMixin):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False,
     )
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True,
@@ -65,7 +68,7 @@ class AgentRunStep(Base, UUIDPrimaryKeyMixin):
         nullable=False, index=True,
     )
     agent: Mapped[str] = mapped_column(
-        String(20), nullable=False,
+        String(30), nullable=False,
         comment="orchestrator | researcher | executor | verifier",
     )
     action: Mapped[str] = mapped_column(
@@ -79,7 +82,7 @@ class AgentRunStep(Base, UUIDPrimaryKeyMixin):
         comment="pending | running | completed | failed | skipped | awaiting_approval | approved | rejected",
     )
     approval_tier: Mapped[str | None] = mapped_column(
-        String(20), nullable=True,
+        String(30), nullable=True,
         comment="auto_approve | warn | require_approval",
     )
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -87,6 +90,9 @@ class AgentRunStep(Base, UUIDPrimaryKeyMixin):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False,
     )
 
     run = relationship("AgentRun", back_populates="steps")
@@ -112,9 +118,9 @@ class AgentApproval(Base, UUIDPrimaryKeyMixin):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False, index=True,
     )
-    action_description: Mapped[str] = mapped_column(Text, nullable=False)
+    action_description: Mapped[str | None] = mapped_column(Text, nullable=True)
     risk_level: Mapped[str] = mapped_column(
-        String(20), nullable=False,
+        String(30), nullable=False,
         comment="warn | require_approval",
     )
     status: Mapped[str] = mapped_column(
@@ -124,6 +130,9 @@ class AgentApproval(Base, UUIDPrimaryKeyMixin):
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False,
     )
 
     run = relationship("AgentRun", foreign_keys=[run_id])

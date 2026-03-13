@@ -1,12 +1,13 @@
-from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.audit import log_audit
 from app.core.database import get_db
 from app.core.deps import SuperAdminUser
+from app.core.rate_limit import limiter
 from app.core.rbac import get_user_app_scopes
 from app.schemas.user import UserCreate, UserMeResponse, UserResponse, UserUpdate
 from app.services.user import UserService
@@ -21,7 +22,9 @@ async def _enrich_user(db: AsyncSession, user: object) -> UserMeResponse:
     role = "superadmin" if base.is_superadmin else ("admin" if scopes else "user")
     data = base.model_dump()
     data["role"] = role
-    data["app_admin_scopes"] = scopes if role == "admin" else []
+    data["app_admin_scopes"] = scopes if role in ("admin", "superadmin") else []
+    data.setdefault("app_access", [])
+    data.setdefault("permissions", [])
     return UserMeResponse(**data)
 
 
@@ -37,12 +40,18 @@ async def list_users(
 
 
 @router.post("", response_model=UserMeResponse, status_code=status.HTTP_201_CREATED, summary="Create user (Super Admin)")
+@limiter.limit("10/minute")
 async def create_user(
+    request: Request,
     payload: UserCreate,
-    _: SuperAdminUser,
+    current_user: SuperAdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> UserMeResponse:
     user = await UserService(db).create_user(payload)
+    await log_audit(db, current_user, "user.created",
+                    resource_type="user", resource_id=str(user.id),
+                    metadata={"email": user.email, "full_name": user.full_name},
+                    request=request)
     return await _enrich_user(db, user)
 
 
@@ -58,19 +67,28 @@ async def get_user(
 
 @router.put("/{user_id}", response_model=UserMeResponse, summary="Update user (Super Admin)")
 async def update_user(
+    request: Request,
     user_id: uuid.UUID,
     payload: UserUpdate,
-    _: SuperAdminUser,
+    current_user: SuperAdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> UserMeResponse:
     user = await UserService(db).update_user(user_id, payload)
+    await log_audit(db, current_user, "user.updated",
+                    resource_type="user", resource_id=str(user_id),
+                    metadata={"changes": payload.model_dump(exclude_unset=True, exclude={"password"})},
+                    request=request)
     return await _enrich_user(db, user)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_200_OK, summary="Delete user (Super Admin)")
 async def delete_user(
+    request: Request,
     user_id: uuid.UUID,
-    _: SuperAdminUser,
+    current_user: SuperAdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> None:
     await UserService(db).delete_user(user_id)
+    await log_audit(db, current_user, "user.deleted",
+                    resource_type="user", resource_id=str(user_id),
+                    request=request)

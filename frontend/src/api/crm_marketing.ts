@@ -1,3 +1,21 @@
+/**
+ * CRM Marketing API client — email campaigns (with A/B testing), contact
+ * segments, nurture sequences, and content calendar.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the CRM marketing
+ * sub-module. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/crm`.
+ *
+ * Key exports:
+ *   - useEmailCampaignConfigs() / useCreateEmailCampaignConfig() — campaign email settings + A/B test config
+ *   - useSegments() / useCreateSegment() — dynamic contact segments (rule-based or AI-suggested)
+ *   - useNurtureSequences() / useCreateNurtureSequence() — multi-step drip sequences
+ *   - useEnrollInSequence() — enrol a contact into a nurture sequence
+ *   - useContentCalendar() / useCreateContentCalendarItem() — scheduled content planning
+ *
+ * Note: A/B test winner selection can be automatic (ab_winner_auto_send) or manual.
+ * Segment rules are stored as JSON and evaluated server-side.
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

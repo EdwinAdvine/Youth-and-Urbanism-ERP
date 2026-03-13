@@ -1,5 +1,4 @@
 """CRM Sales Activities — unified activity log CRUD."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime

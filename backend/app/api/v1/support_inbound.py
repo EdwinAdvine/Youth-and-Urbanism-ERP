@@ -1,5 +1,4 @@
 """Support Inbound Email API — configure email-to-ticket routing rules."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

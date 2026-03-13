@@ -1,5 +1,4 @@
 """Finance Extensions API — Currencies, Exchange Rates, Bank Statements, Reconciliation, P&L, Balance Sheet."""
-from __future__ import annotations
 
 import csv
 import io

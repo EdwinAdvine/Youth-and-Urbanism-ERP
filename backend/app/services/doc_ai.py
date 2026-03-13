@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # System prompts per action
 _SYSTEM_PROMPTS = {
     "generate": (
-        "You are a professional document writer for Urban ERP. "
+        "You are a professional document writer for Urban Vibes Dynamics. "
         "Generate well-structured, clear content based on the user's instructions. "
         "Use proper formatting with headings, bullet points, and paragraphs as appropriate."
     ),

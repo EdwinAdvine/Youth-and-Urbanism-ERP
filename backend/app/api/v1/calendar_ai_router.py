@@ -1,6 +1,5 @@
 """Calendar AI endpoints — NLP event creation, scheduling suggestions, smart rescheduling."""
 
-from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any
 from uuid import UUID
 
@@ -38,9 +36,12 @@ class CommentOut(BaseModel):
     mentions: list[UUID] | None
     author_id: UUID
     is_edited: bool
-    children: list[CommentOut] = []
+    children: list["CommentOut"] = []
 
     model_config = {"from_attributes": True}
+
+
+CommentOut.model_rebuild()
 
 
 # ---------------------------------------------------------------------------

@@ -1,5 +1,4 @@
 """Urban Bad AI — WebSocket + REST endpoints for multi-agent orchestration."""
-from __future__ import annotations
 
 import json
 import uuid

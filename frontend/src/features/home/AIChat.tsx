@@ -25,7 +25,7 @@ export default function AIChat({ onClose, context, fullPage, initialMessage }: A
     {
       id: '0',
       role: 'assistant',
-      content: "Hello! I'm your Urban ERP assistant. I can help you with finance reports, HR queries, inventory management, and much more. What can I help you with today?",
+      content: "Hello! I'm your Urban Vibes Dynamics assistant. I can help you with finance reports, HR queries, inventory management, and much more. What can I help you with today?",
       timestamp: new Date(),
     },
   ])

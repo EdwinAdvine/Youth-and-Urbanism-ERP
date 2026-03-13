@@ -1,5 +1,4 @@
 """Manufacturing Labor & Workforce — operator skills, crew scheduling, timesheet push."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, date as date_type

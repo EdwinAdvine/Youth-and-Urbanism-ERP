@@ -1,3 +1,17 @@
+/**
+ * SSO API client — OAuth2/OIDC provider configuration for single sign-on.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/auth/sso`.
+ *
+ * Key exports:
+ *   - useSSOProviders()       — list all configured SSO/OAuth2 providers
+ *   - useCreateSSOProvider()  — add a new provider (Google, Microsoft, GitHub, custom OIDC)
+ *   - useUpdateSSOProvider()  — update client credentials or endpoint URLs
+ *   - useDeleteSSOProvider()  — remove an SSO provider configuration
+ *   - useToggleSSOProvider()  — enable or disable a provider without deleting it
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

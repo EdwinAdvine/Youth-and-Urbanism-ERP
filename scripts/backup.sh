@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Urban ERP — Database Backup Script
+# Urban Vibes Dynamics — Database Backup Script
 # Creates a pg_dump backup and uploads to MinIO via the backup API.
 #
 # Usage:
@@ -12,7 +12,7 @@ BACKUP_API_URL="${BACKUP_API_URL:-http://backend:8000}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@youthandurbanism.org}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-admin123}"
 
-echo "=== Urban ERP Database Backup ==="
+echo "=== Urban Vibes Dynamics Database Backup ==="
 echo "API: ${BACKUP_API_URL}"
 echo "Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 

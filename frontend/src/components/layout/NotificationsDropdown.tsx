@@ -1,3 +1,17 @@
+/**
+ * NotificationsDropdown — bell-icon notification panel in the AppShell header.
+ *
+ * Fetches notifications via `api/notifications` (TanStack Query, 30s stale
+ * time) and displays an unread-count badge. Clicking the bell opens a dropdown
+ * list of recent notifications with relative timestamps ("2 min ago").
+ *
+ * Mark-as-read:
+ * - Clicking an individual notification → `useMarkRead` mutation
+ * - "Mark all read" button → `useMarkAllRead` mutation
+ *
+ * Navigates to the notification's linked route on click.
+ * Closes on outside-click via a `mousedown` listener on `document`.
+ */
 import { useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {

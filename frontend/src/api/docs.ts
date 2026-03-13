@@ -1,3 +1,16 @@
+/**
+ * Docs API client — ONLYOFFICE document management (create, edit, comment, version).
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/docs`.
+ *
+ * Key exports:
+ *   - useDocuments() — list documents filtered by type and view (all/mine/shared/recent)
+ *   - useCreateDocument() — create a new blank document in ONLYOFFICE
+ *   - useEditorConfig() — fetch ONLYOFFICE editor configuration JWT for a file
+ *   - useDocComments() / useDocVersions() — per-file comments and version history
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 
@@ -35,11 +48,12 @@ interface DocumentsResponse {
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
-export function useDocuments(docType?: string) {
+export function useDocuments(docType?: string, view: 'all' | 'mine' | 'shared' | 'recent' = 'all') {
   return useQuery({
-    queryKey: ['docs', docType],
+    queryKey: ['docs', docType, view],
     queryFn: async () => {
-      const params = docType ? { doc_type: docType } : {}
+      const params: Record<string, string> = { view }
+      if (docType) params.doc_type = docType
       const { data } = await apiClient.get<DocumentsResponse>('/docs/files', { params })
       return data
     },
@@ -59,12 +73,12 @@ export function useCreateDocument() {
   })
 }
 
-export function useEditorConfig(fileId: string, mode: string = 'edit') {
+export function useEditorConfig(fileId: string, mode: string = 'edit', theme: string = 'light') {
   return useQuery({
-    queryKey: ['docs', 'editor-config', fileId, mode],
+    queryKey: ['docs', 'editor-config', fileId, mode, theme],
     queryFn: async () => {
       const { data } = await apiClient.get<EditorConfigResponse>(`/docs/editor-config/${fileId}`, {
-        params: { mode },
+        params: { mode, theme },
       })
       return data
     },

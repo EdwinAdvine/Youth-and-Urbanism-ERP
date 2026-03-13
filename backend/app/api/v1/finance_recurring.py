@@ -1,5 +1,4 @@
 """Finance API — Recurring Invoices."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timedelta

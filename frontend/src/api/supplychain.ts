@@ -1,3 +1,16 @@
+/**
+ * Supply Chain API client — suppliers, procurement requisitions, and purchase orders.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/supplychain`.
+ *
+ * Key exports:
+ *   - useSuppliers() — list/search suppliers with filtering
+ *   - useCreateSupplier() / useUpdateSupplier() — supplier CRUD mutations
+ *   - useRequisitions() — fetch procurement requisitions
+ *   - useCreateRequisition() — submit a new purchase requisition
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

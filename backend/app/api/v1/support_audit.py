@@ -1,5 +1,4 @@
 """Support Audit Log API — full ticket change history."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

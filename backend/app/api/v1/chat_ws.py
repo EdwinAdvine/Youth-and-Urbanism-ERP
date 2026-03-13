@@ -4,7 +4,6 @@ One WebSocket connection per user (multiplexed across all channels).
 Real-time delivery of messages, typing, presence, reactions, and read receipts
 via Redis pub/sub for multi-instance fan-out.
 """
-from __future__ import annotations
 
 import asyncio
 import json

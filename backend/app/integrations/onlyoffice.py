@@ -73,6 +73,22 @@ def create_document(filename: str, user_id: str) -> dict[str, Any]:
     }
 
 
+_LOGO_LIGHT = (
+    "data:image/svg+xml;charset=utf-8,"
+    "%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='32'%3E"
+    "%3Crect width='140' height='32' rx='6' fill='%2351459d'/%3E"
+    "%3Ctext x='12' y='22' font-family='sans-serif' font-size='14' font-weight='700' fill='white'%3E"
+    "Y%26U Docs%3C/text%3E%3C/svg%3E"
+)
+_LOGO_DARK = (
+    "data:image/svg+xml;charset=utf-8,"
+    "%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='32'%3E"
+    "%3Crect width='140' height='32' rx='6' fill='%23a99fd8'/%3E"
+    "%3Ctext x='12' y='22' font-family='sans-serif' font-size='14' font-weight='700' fill='%23120f2b'%3E"
+    "Y%26U Docs%3C/text%3E%3C/svg%3E"
+)
+
+
 def get_editor_config(
     file_id: str,
     filename: str,
@@ -85,6 +101,7 @@ def get_editor_config(
     macros_enabled: bool = True,
     macros_mode: str = "warn",
     plugins_enabled: bool = True,
+    ui_theme: str = "theme-light",
 ) -> dict[str, Any]:
     """Build the full ONLYOFFICE editor config dict for the JS SDK.
 
@@ -135,6 +152,25 @@ def get_editor_config(
                 "macros": macros_enabled,
                 "plugins": plugins_enabled,
                 "macrosMode": macros_mode,
+                "uiTheme": ui_theme,
+                "toolbarNoTabs": False,
+                "logo": {
+                    "image": _LOGO_LIGHT,
+                    "imageDark": _LOGO_DARK,
+                    "url": "",
+                    "visible": True,
+                },
+                "customer": {
+                    "name": "Y&U ERP",
+                    "logo": _LOGO_LIGHT,
+                    "logoDark": _LOGO_DARK,
+                    "address": "",
+                    "mail": "",
+                    "www": "",
+                },
+                "hideRightMenu": False,
+                "compactHeader": False,
+                "toolbarHideFileName": False,
             },
         },
     }
@@ -209,6 +245,7 @@ def get_editor_config_mobile(
     macros_enabled: bool = True,
     macros_mode: str = "warn",
     plugins_enabled: bool = True,
+    ui_theme: str = "theme-light",
 ) -> dict[str, Any]:
     """Build ONLYOFFICE editor config for mobile devices.
 
@@ -226,6 +263,7 @@ def get_editor_config_mobile(
         macros_enabled=macros_enabled,
         macros_mode=macros_mode,
         plugins_enabled=plugins_enabled,
+        ui_theme=ui_theme,
     )
     config["type"] = "mobile"
     # Re-sign without the token field, then re-attach

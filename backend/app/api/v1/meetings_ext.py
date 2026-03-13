@@ -1,5 +1,4 @@
 """Meetings Extensions API — Invite, RSVP, Recordings, Start/End, Chat, AI, Upcoming, Instant, Recurring, Templates, Cross-Module Links."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta, timezone

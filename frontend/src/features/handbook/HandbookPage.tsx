@@ -76,7 +76,7 @@ export default function HandbookPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Handbook</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Your guide to everything in Urban ERP. Search, browse, or follow the quick-start guides.
+            Your guide to everything in Urban Vibes Dynamics. Search, browse, or follow the quick-start guides.
           </p>
         </div>
         <div className="flex items-center gap-2">

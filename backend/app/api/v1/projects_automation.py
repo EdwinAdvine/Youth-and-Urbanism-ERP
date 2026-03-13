@@ -1,5 +1,4 @@
 """Projects API — Automation rules (no-code triggers and actions)."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

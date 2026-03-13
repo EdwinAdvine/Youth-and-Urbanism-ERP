@@ -1,3 +1,19 @@
+/**
+ * Axios client — shared HTTP instance with JWT auth and automatic token-refresh interceptors.
+ *
+ * This is the single Axios instance used by every API client in `src/api/`.
+ * It is NOT a React hook — import the default export directly.
+ *
+ * Behaviour:
+ *   - `baseURL` is set to `/api/v1` (proxied to the backend container in dev).
+ *   - Request interceptor reads the JWT from the Zustand auth store and injects
+ *     `Authorization: Bearer <token>` on every outgoing request.
+ *   - Response interceptor detects HTTP 401, attempts a silent token refresh via
+ *     `/auth/refresh`, retries the original request, and logs out on failure.
+ *   - Concurrent 401s are queued and replayed after the single refresh completes.
+ *
+ * Default export: `apiClient` (Axios instance).
+ */
 import axios from 'axios'
 import { useAuthStore } from '../store/auth'
 

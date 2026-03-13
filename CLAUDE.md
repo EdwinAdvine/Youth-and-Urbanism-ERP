@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Urban ERP — a fully self-hosted ERP platform consolidating Microsoft 365 + Google Workspace + ERP into a single Docker Compose stack. Zero external API dependencies for core functionality.
+Urban Vibes Dynamics — a fully self-hosted ERP platform consolidating Microsoft 365 + Google Workspace + ERP into a single Docker Compose stack. Zero external API dependencies for core functionality.
 
 ## Commands
 
@@ -92,8 +92,8 @@ docker compose exec backend alembic upgrade head
 
 ```
 backend/app/
-├── api/v1/           # Routers (36 files) — thin HTTP layer, one per module
-├── models/           # SQLAlchemy models (29 files) — one per domain
+├── api/v1/           # Routers (198 files) — thin HTTP layer, one per module
+├── models/           # SQLAlchemy models (78 files) — one per domain
 ├── schemas/          # Pydantic schemas — request/response validation
 ├── services/         # Business logic (ai.py, ai_tools.py, auth.py, etc.)
 ├── core/             # Shared utilities — NEVER import from module code
@@ -122,8 +122,8 @@ backend/app/
 
 ```
 frontend/src/
-├── api/              # API clients (33 files) — Axios + TanStack Query hooks
-├── features/         # Feature modules (26 dirs) — pages + module components
+├── api/              # API clients (100 files) — Axios + TanStack Query hooks
+├── features/         # Feature modules (29 dirs) — pages + module components
 ├── components/
 │   ├── ui/           # Radix UI primitives (Button, Dialog, etc.)
 │   ├── layout/       # AppShell, Header, Sidebar, SearchModal, NotificationsDropdown
@@ -146,12 +146,28 @@ Three-tier: **Super Admin** (full system) → **App Admin** (scoped to one modul
 ### Adding a New Module
 
 1. Create model in `backend/app/models/newmodule.py`
-2. Create router in `backend/app/api/v1/newmodule.py`
-3. Register router in `backend/app/api/v1/__init__.py`
-4. Generate + apply migration: `alembic revision --autogenerate -m "add_newmodule"` then `alembic upgrade head`
-5. Create API client in `frontend/src/api/newmodule.ts`
-6. Create page in `frontend/src/features/newmodule/` and add lazy route in `App.tsx`
-7. (Optional) Add AI tools in `backend/app/services/ai_tools.py`
+2. Import all model classes in `backend/app/models/__init__.py` and add them to `__all__`
+3. Create router in `backend/app/api/v1/newmodule.py` (**do not** use `from __future__ import annotations`)
+4. Register router in `backend/app/api/v1/__init__.py`
+5. Generate + apply migration: `alembic revision --autogenerate -m "add_newmodule"` then `alembic upgrade head`
+6. Create API client in `frontend/src/api/newmodule.ts`
+7. Create page in `frontend/src/features/newmodule/` and add lazy route in `App.tsx`
+8. Run `python3 scripts/audit/run_all_checks.py` — all checks must pass
+9. (Optional) Add AI tools in `backend/app/services/ai_tools.py`
+
+### Parity Audit
+
+Run `python3 scripts/audit/run_all_checks.py` to verify database-backend-frontend parity. Individual checks:
+
+```bash
+python3 scripts/audit/check_alembic_dupes.py       # No duplicate revision IDs
+python3 scripts/audit/check_model_imports.py        # All model files imported
+python3 scripts/audit/check_router_registration.py  # All routers registered
+python3 scripts/audit/check_sidebar_routes.py       # Sidebar → route parity
+python3 scripts/audit/check_future_annotations.py   # No from __future__ in routers
+```
+
+Super Admin parity dashboard: `GET /api/v1/admin/parity` (frontend at `/admin/parity`).
 
 ### Design Tokens
 

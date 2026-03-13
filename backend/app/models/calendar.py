@@ -288,8 +288,17 @@ class CalendarPermission(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         comment="free_busy | read | propose | edit | manage",
     )
 
+    # Who granted this permission (for audit trail)
+    granted_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        comment="User who granted this permission",
+    )
+
     calendar = relationship("UserCalendar", back_populates="permissions")
     grantee = relationship("User", foreign_keys=[grantee_id])
+    granter = relationship("User", foreign_keys=[granted_by])
 
     def __repr__(self) -> str:
         return f"<CalendarPermission calendar={self.calendar_id} grantee={self.grantee_id} level={self.permission_level}>"

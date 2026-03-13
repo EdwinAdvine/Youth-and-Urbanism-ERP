@@ -78,10 +78,10 @@ export default function CustomersPage() {
   ]
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-3 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Customers</h1>
           <p className="text-sm text-gray-500 mt-1">{data?.total ?? 0} customers total</p>
         </div>
       </div>
@@ -91,7 +91,7 @@ export default function CustomersPage() {
         <input
           type="text"
           placeholder="Search customers..."
-          className="border border-gray-200 rounded-[10px] px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="border border-gray-200 rounded-[10px] px-3 py-2 text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-primary/40"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1) }}
         />

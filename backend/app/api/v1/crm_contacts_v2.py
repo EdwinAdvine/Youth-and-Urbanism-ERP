@@ -1,5 +1,4 @@
 """CRM Contacts V2 — 360° view, notes, duplicate detection & merge."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

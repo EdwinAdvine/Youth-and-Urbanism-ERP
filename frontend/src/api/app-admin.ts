@@ -1,3 +1,18 @@
+/**
+ * App Admin API client — per-module App Admin dashboard APIs (stats, config, user access).
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/admin/apps/{appName}`.
+ *
+ * Key exports:
+ *   - useAppStats()        — module-scoped stats (record counts, activity) for a given app
+ *   - useAppConfig()       — read the configuration object for a specific app module
+ *   - useUpdateAppConfig() — update configuration values for a specific app module
+ *   - useAppUsers()        — list users with access to a specific app module
+ *   - useGrantAppAccess()  — grant a user access to an app module
+ *   - useRevokeAppAccess() — revoke a user's access to an app module
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

@@ -74,6 +74,22 @@ def _build_tool_list_str(include_admin: bool = False) -> str:
     return ", ".join(names)
 
 
+# ── Analytics-aware routing ───────────────────────────────────────────────────
+
+ANALYTICS_KEYWORDS = [
+    "dashboard", "analytics", "chart", "graph", "metric", "kpi",
+    "revenue trend", "forecast", "anomaly", "insight", "report",
+    "show me", "visualize", "plot", "trend", "performance", "stats",
+    "how many", "how much", "total", "average", "count", "sum",
+]
+
+
+def is_analytics_question(message: str) -> bool:
+    """Detect if a user message is an analytics/data question."""
+    msg_lower = message.lower()
+    return any(kw in msg_lower for kw in ANALYTICS_KEYWORDS)
+
+
 def _parse_json_plan(text: str) -> list[dict[str, Any]] | None:
     """Try to parse the LLM output as a JSON array of plan steps."""
     text = text.strip()
@@ -516,6 +532,12 @@ class AgentOrchestrator:
             system_content += f"\n\nCurrent page context: {json.dumps(page_context)}"
         if user_context:
             system_content += f"\n\nUser context: role={user_context['role']}, admin_scopes={user_context['app_admin_scopes']}"
+        if is_analytics_question(prompt):
+            system_content += (
+                "\n\nNote: This appears to be an analytics or data question. "
+                "Prefer using the analytics copilot service for data queries and visualisations. "
+                "You may call _handle_analytics_query to retrieve SQL results, narrative summaries, and chart suggestions."
+            )
 
         messages: list[dict[str, str]] = [{"role": "system", "content": system_content}]
 
@@ -688,6 +710,23 @@ class AgentOrchestrator:
             step.error = str(exc)
             step.completed_at = datetime.now(UTC)
             return {"error": str(exc)}
+
+    async def _handle_analytics_query(self, question: str) -> dict[str, Any]:
+        """Route analytics questions to the NL-to-SQL copilot."""
+        from app.services.analytics_copilot import copilot_query
+        try:
+            result = await copilot_query(question=question, db=self.db)
+            return {
+                "type": "analytics_result",
+                "sql": result.get("sql", ""),
+                "data": result.get("data", []),
+                "narrative": result.get("narrative", ""),
+                "suggested_visuals": result.get("suggested_visuals", []),
+                "total_rows": result.get("total_rows", 0),
+            }
+        except Exception as exc:
+            logger.warning("Analytics copilot query failed: %s", exc)
+            return {"type": "analytics_error", "error": str(exc)}
 
     async def _orchestrator_summarize(
         self,

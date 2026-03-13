@@ -1,5 +1,4 @@
 """Support Extensions — SLA status, Canned Responses, Ticket Merge, CSAT, Reports, Dashboard KPIs."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta, timezone

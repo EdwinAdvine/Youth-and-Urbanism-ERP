@@ -1,5 +1,4 @@
 """Payroll Extensions API — Tax Brackets, Statutory Deductions, Pay Runs."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone

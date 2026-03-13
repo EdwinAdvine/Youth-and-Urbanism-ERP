@@ -1,5 +1,4 @@
 """API router for live ERP widget data embedded in Y&U Notes."""
-from __future__ import annotations
 
 import logging
 from typing import Any

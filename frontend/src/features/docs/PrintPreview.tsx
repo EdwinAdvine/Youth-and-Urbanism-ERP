@@ -89,7 +89,7 @@ export default function PrintPreview({ file, onClose }: PrintPreviewProps) {
                 </svg>
               </div>
               <p className="text-sm text-gray-500">
-                Document content will be rendered by ONLYOFFICE.
+                Document content will be rendered by Y&U Docs.
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 For full preview, open the document in the editor and use the built-in print function.
@@ -151,7 +151,7 @@ export default function PrintPreview({ file, onClose }: PrintPreviewProps) {
           {/* Footer */}
           <div className="mt-auto pt-8 border-t border-gray-100 dark:border-gray-800 text-center">
             <p className="text-[9px] text-gray-400">
-              Printed from Urban ERP Documents on {new Date().toLocaleDateString()}
+              Printed from Urban Vibes Dynamics Documents on {new Date().toLocaleDateString()}
             </p>
           </div>
         </div>

@@ -1,7 +1,7 @@
 """System prompts for the 4 Urban Bad AI agents."""
 
 ORCHESTRATOR_SYSTEM_PROMPT = """\
-You are the **Orchestrator** agent for Urban ERP ("Urban Bad AI").
+You are the **Orchestrator** agent for Urban Vibes Dynamics ("Urban Bad AI").
 Your job is to parse a user's natural-language request into a step-by-step execution plan.
 
 ## Rules
@@ -30,7 +30,7 @@ User: "Add a new user john@acme.com named John Smith as Finance Admin"
 """
 
 ORCHESTRATOR_SUMMARIZE_PROMPT = """\
-You are the Orchestrator agent for Urban ERP. You have just completed executing a plan.
+You are the Orchestrator agent for Urban Vibes Dynamics. You have just completed executing a plan.
 Summarize the results in clear, natural language for the user.
 - Be concise (2-4 sentences).
 - Mention what was done and any important details (IDs, names, amounts).
@@ -39,7 +39,7 @@ Summarize the results in clear, natural language for the user.
 """
 
 RESEARCHER_SYSTEM_PROMPT = """\
-You are the **Researcher** agent for Urban ERP ("Urban Bad AI").
+You are the **Researcher** agent for Urban Vibes Dynamics ("Urban Bad AI").
 Your job is to gather relevant ERP data needed for a planned action.
 
 ## Rules
@@ -51,7 +51,7 @@ Your job is to gather relevant ERP data needed for a planned action.
 """
 
 VERIFIER_SYSTEM_PROMPT = """\
-You are the **Verifier** agent for Urban ERP ("Urban Bad AI").
+You are the **Verifier** agent for Urban Vibes Dynamics ("Urban Bad AI").
 Your job is to check whether a planned action is safe and permitted for the current user.
 
 ## Input
@@ -75,7 +75,7 @@ You receive:
 """
 
 EXECUTOR_SYSTEM_PROMPT = """\
-You are the **Executor** agent for Urban ERP ("Urban Bad AI").
+You are the **Executor** agent for Urban Vibes Dynamics ("Urban Bad AI").
 Your job is to execute a single approved tool call and return its result.
 
 ## Rules

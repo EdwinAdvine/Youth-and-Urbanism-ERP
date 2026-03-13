@@ -1,5 +1,4 @@
 """CRM Pipelines — multi-pipeline CRUD + board view + what-if forecast."""
-from __future__ import annotations
 
 import uuid
 from decimal import Decimal

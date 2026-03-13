@@ -1,3 +1,19 @@
+/**
+ * AI Extended API client — prompt templates, knowledge bases, and usage statistics.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/ai`.
+ *
+ * Key exports:
+ *   - usePromptTemplates()       — list saved AI prompt templates (public + personal)
+ *   - useCreatePromptTemplate()  — create a reusable named prompt with variable slots
+ *   - useUpdatePromptTemplate()  — update template content or visibility
+ *   - useDeletePromptTemplate()  — remove a prompt template
+ *   - useKnowledgeBases()        — list RAG knowledge bases and their indexing status
+ *   - useCreateKnowledgeBase()   — create a new knowledge base and trigger indexing
+ *   - useAIUsageStats()          — token usage, model call counts, and cost estimates
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

@@ -172,14 +172,14 @@ export default function StockMovementsPage() {
   ]
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Stock Movements</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Stock Movements</h1>
           <p className="text-sm text-gray-500 mt-1">Track all inventory inflows and outflows</p>
         </div>
-        <Button onClick={openModal}>
+        <Button onClick={openModal} className="w-full sm:w-auto">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -188,15 +188,15 @@ export default function StockMovementsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-44">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
+        <div className="w-full sm:w-44">
           <Select
             options={TYPE_FILTER_OPTIONS}
             value={typeFilter}
             onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }}
           />
         </div>
-        <div className="w-64">
+        <div className="w-full sm:w-64">
           <Input
             placeholder="Search by item name..."
             value={search}

@@ -72,7 +72,7 @@ class DriveFolder(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 class DriveFile(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     """Represents a file stored in MinIO.
 
-    ``minio_key`` is the object key within the ``urban-erp-drive`` bucket.
+    ``minio_key`` is the object key within the ``urban-vibes-dynamics-drive`` bucket.
     ``folder_path`` is a denormalized path string for quick display/filtering;
     the FK ``folder_id`` links to the parent ``DriveFolder`` row.
     """

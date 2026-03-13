@@ -1,5 +1,4 @@
 """Projects API — Subtasks, checklists, task relationships, and audit log."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime

@@ -1,20 +1,24 @@
 """Analytics models — dashboards, widgets, saved queries, reports, data alerts."""
 from __future__ import annotations
 
+import secrets
 import uuid
 from datetime import datetime
 from decimal import Decimal
 
+import sqlalchemy as sa
 from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Integer,
     Numeric,
     String,
     Text,
 )
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
@@ -295,3 +299,104 @@ class AnalyticsInsight(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     dismissed_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
+
+
+# ── DashboardRLS ──────────────────────────────────────────────────────────────
+class DashboardRLS(Base):
+    """Row-Level Security rules — filter injected into queries based on user role."""
+
+    __tablename__ = "dashboard_rls"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    dashboard_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("analytics_dashboards.id", ondelete="CASCADE"), nullable=False
+    )
+    role: Mapped[str | None] = mapped_column(sa.String, nullable=True)         # applies to this role (None = all roles)
+    user_id: Mapped[str | None] = mapped_column(sa.String, nullable=True)       # applies to specific user
+    field: Mapped[str] = mapped_column(sa.String, nullable=False)               # e.g. "department_id"
+    operator: Mapped[str] = mapped_column(sa.String, default="eq")              # eq, in, gt, lt
+    value_template: Mapped[str] = mapped_column(sa.String, nullable=False)      # "{current_user.department_id}" or literal
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=func.now())
+
+
+# ── AnalyticsUsageLog ─────────────────────────────────────────────────────────
+class AnalyticsUsageLog(Base):
+    """Tracks dashboard views, widget clicks, query executions."""
+
+    __tablename__ = "analytics_usage_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[str | None] = mapped_column(sa.String, nullable=True)
+    resource_type: Mapped[str] = mapped_column(sa.String, nullable=False)       # "dashboard", "widget", "query", "copilot"
+    resource_id: Mapped[str | None] = mapped_column(sa.String, nullable=True)
+    action: Mapped[str] = mapped_column(sa.String, nullable=False)              # "view", "click", "export", "query"
+    duration_ms: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)  # query/load time
+    metadata_: Mapped[dict | None] = mapped_column("metadata", sa.JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=func.now())
+
+
+# ── DashboardShare ────────────────────────────────────────────────────────────
+class DashboardShare(Base):
+    """Granular per-user/role sharing with permission levels."""
+
+    __tablename__ = "dashboard_shares"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    dashboard_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("analytics_dashboards.id", ondelete="CASCADE"), nullable=False
+    )
+    shared_with_user_id: Mapped[str | None] = mapped_column(sa.String, nullable=True)
+    shared_with_role: Mapped[str | None] = mapped_column(sa.String, nullable=True)
+    is_public: Mapped[bool] = mapped_column(sa.Boolean, default=False)
+    permission: Mapped[str] = mapped_column(sa.String, default="view")          # "view", "edit", "admin"
+    created_by: Mapped[str | None] = mapped_column(sa.String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True), nullable=True)
+
+
+# ── EmbedToken ────────────────────────────────────────────────────────────────
+class EmbedToken(Base):
+    """Secure embed tokens for public/partner embedding."""
+
+    __tablename__ = "analytics_embed_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    token: Mapped[str] = mapped_column(sa.String, unique=True, nullable=False, default=lambda: secrets.token_urlsafe(32))
+    dashboard_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("analytics_dashboards.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(sa.String, nullable=False)                # friendly label
+    created_by: Mapped[str | None] = mapped_column(sa.String, nullable=True)
+    allowed_origins: Mapped[list | None] = mapped_column(sa.JSON, nullable=True)# list of allowed domains
+    is_active: Mapped[bool] = mapped_column(sa.Boolean, default=True)
+    expires_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True), nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True), nullable=True)
+    view_count: Mapped[int] = mapped_column(sa.Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=func.now())
+
+
+# ── DataLineage ───────────────────────────────────────────────────────────────
+class DataLineage(Base):
+    """Tracks data lineage: which source tables/columns feed each widget/transform."""
+
+    __tablename__ = "analytics_data_lineage"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Either a widget or a transform pipeline is the target
+    widget_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("analytics_dashboard_widgets.id", ondelete="CASCADE"), nullable=True
+    )
+    transform_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("analytics_transform_pipelines.id", ondelete="CASCADE"), nullable=True
+    )
+    # Source description
+    source_type: Mapped[str] = mapped_column(sa.String(50), nullable=False)  # "table" | "query" | "transform"
+    source_name: Mapped[str] = mapped_column(sa.String(255), nullable=False)  # table name or query label
+    source_columns: Mapped[list | None] = mapped_column(sa.JSON, nullable=True)  # list of column names used
+    # Graph edge: if source is another transform, link it
+    source_transform_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("analytics_transform_pipelines.id", ondelete="SET NULL"), nullable=True
+    )
+    # Human-readable description of the transformation applied
+    transformation_notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=func.now())

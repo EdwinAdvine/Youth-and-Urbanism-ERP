@@ -1,5 +1,4 @@
 """HR Manager Dashboard API — team insights, delegation, and manager self-service."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone

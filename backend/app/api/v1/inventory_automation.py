@@ -1,5 +1,4 @@
 """Inventory Phase 6 — Automation Rules, Demand Forecasting, AI Insights."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime

@@ -365,3 +365,143 @@ class FormCollaborator(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     form = relationship("Form", foreign_keys=[form_id])
     user = relationship("User", foreign_keys=[user_id])
+
+
+# ── Phase 2 & Phase 3 Models ─────────────────────────────────────────────────
+
+
+class FormResponseDraft(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Offline-created draft not yet submitted."""
+
+    __tablename__ = "form_response_drafts"
+
+    form_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("forms.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    device_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    draft_data: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    offline_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    form = relationship("Form", foreign_keys=[form_id])
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class FormQuizResult(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Quiz score for a form response."""
+
+    __tablename__ = "form_quiz_results"
+
+    form_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("forms.id", ondelete="CASCADE"), nullable=False, index=True)
+    response_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("form_responses.id", ondelete="CASCADE"), nullable=False, unique=True)
+    score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    max_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    percentage: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    pass_fail: Mapped[str | None] = mapped_column(String(10), nullable=True)  # "pass" | "fail"
+    graded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    graded_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    ai_feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    form = relationship("Form", foreign_keys=[form_id])
+    response = relationship("FormResponse", foreign_keys=[response_id])
+    grader = relationship("User", foreign_keys=[graded_by])
+
+
+class FormSchedule(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Recurring form distribution schedule."""
+
+    __tablename__ = "form_schedules"
+
+    form_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("forms.id", ondelete="CASCADE"), nullable=False, index=True)
+    recurrence_rule: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="RFC 5545 RRULE string")
+    next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    recipients: Mapped[list | None] = mapped_column(JSON, nullable=True, comment="List of email addresses or user IDs")
+    distribution_channel: Mapped[str] = mapped_column(String(20), nullable=False, default="email", comment="email | in_app | both")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    form = relationship("Form", foreign_keys=[form_id])
+
+
+class FormApprovalWorkflow(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Approval chain for form responses (Phase 3)."""
+
+    __tablename__ = "form_approval_workflows"
+
+    form_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("forms.id", ondelete="CASCADE"), nullable=False, unique=True)
+    steps: Mapped[list] = mapped_column(JSON, nullable=False, default=list, comment="List of {approver_id, role, step_index, label}")
+    current_step: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    form = relationship("Form", foreign_keys=[form_id])
+
+
+class FormResponseApproval(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """One approval record per step per response."""
+
+    __tablename__ = "form_response_approvals"
+
+    response_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("form_responses.id", ondelete="CASCADE"), nullable=False, index=True)
+    step_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    approver_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", comment="pending | approved | rejected")
+    comments: Mapped[str | None] = mapped_column(Text, nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    response = relationship("FormResponse", foreign_keys=[response_id])
+    approver = relationship("User", foreign_keys=[approver_id])
+
+
+class FormTranslation(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Multi-language support for forms."""
+
+    __tablename__ = "form_translations"
+
+    form_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("forms.id", ondelete="CASCADE"), nullable=False, index=True)
+    locale: Mapped[str] = mapped_column(String(10), nullable=False, comment="BCP-47 locale code e.g. en, fr, sw, ar")
+    translations: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict, comment="{field_id: {label: str, options: [str], description: str}}")
+    is_ai_generated: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    form = relationship("Form", foreign_keys=[form_id])
+
+
+class FormConsent(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """GDPR consent configuration for a form."""
+
+    __tablename__ = "form_consents"
+
+    form_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("forms.id", ondelete="CASCADE"), nullable=False, unique=True)
+    consent_text: Mapped[str] = mapped_column(Text, nullable=False, default="I agree to the privacy policy and data processing terms.")
+    is_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    data_retention_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    privacy_policy_url: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+
+    form = relationship("Form", foreign_keys=[form_id])
+
+
+class FormConsentRecord(Base, UUIDPrimaryKeyMixin):
+    """Per-respondent consent record."""
+
+    __tablename__ = "form_consent_records"
+
+    form_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("forms.id", ondelete="CASCADE"), nullable=False, index=True)
+    response_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("form_responses.id", ondelete="SET NULL"), nullable=True)
+    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
+    consented_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class FormAutomation(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Visual automation rule (trigger → actions)."""
+
+    __tablename__ = "form_automations"
+
+    form_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("forms.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    trigger: Mapped[str] = mapped_column(String(50), nullable=False, comment="submitted | approved | rejected | scheduled")
+    trigger_conditions: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    actions: Mapped[list] = mapped_column(JSON, nullable=False, default=list, comment="[{type: create_lead|send_email|create_invoice|assign_task|update_inventory, config: {}}]")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    run_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    form = relationship("Form", foreign_keys=[form_id])

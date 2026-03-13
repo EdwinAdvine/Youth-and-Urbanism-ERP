@@ -1,3 +1,18 @@
+/**
+ * Manufacturing Extended API client — routing steps, scrap tracking, maintenance
+ * schedules, and inline quality control records.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Manufacturing
+ * module's extended operations. All requests go through `client.ts` (Axios
+ * instance with auth interceptors). Backend prefix: `/api/v1/manufacturing`.
+ *
+ * Key exports:
+ *   - useRoutingSteps() / useCreateRoutingStep() — BOM operation routing CRUD
+ *   - useScrapEntries() / useCreateScrapEntry() — material and WIP scrap logging
+ *   - useMaintenanceSchedules() / useCreateMaintenanceSchedule() — PM/CM scheduling
+ *   - useQualityControlRecords() / useCreateQCRecord() — step-level QC recording
+ *   - useMfgKPIs() — OEE and production KPI aggregates
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

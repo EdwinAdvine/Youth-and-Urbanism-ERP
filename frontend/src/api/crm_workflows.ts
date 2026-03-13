@@ -1,3 +1,22 @@
+/**
+ * CRM Workflows API client — visual automation workflows with trigger-based
+ * execution, branching logic, and execution history.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the CRM workflow
+ * automation module. All requests go through `client.ts` (Axios instance with
+ * auth interceptors). Backend prefix: `/api/v1/crm`.
+ *
+ * Key exports:
+ *   - useWorkflows() / useWorkflow() — list and retrieve automation workflows
+ *   - useCreateWorkflow() / useUpdateWorkflow() / useDeleteWorkflow() — workflow CRUD
+ *   - useActivateWorkflow() / useDeactivateWorkflow() — toggle workflow status
+ *   - useWorkflowExecutions() / useWorkflowExecution() — execution history and step logs
+ *   - useWorkflowTemplates() / useCreateFromTemplate() — pre-built workflow templates
+ *   - useWorkflowStats() — aggregate counts and monthly execution totals
+ *
+ * Note: workflow nodes are stored as a JSON graph. Executions are logged
+ * step-by-step and can be inspected for debugging failed runs.
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

@@ -7,7 +7,7 @@ Provides helpers to:
 - delete objects
 - "create" a folder (by writing an empty marker object)
 
-All storage lives inside a single bucket (``urban-erp-drive``).  Object keys
+All storage lives inside a single bucket (``urban-vibes-dynamics-drive``).  Object keys
 follow the pattern::
 
     <user_id>/<folder_path>/<filename>
@@ -29,7 +29,7 @@ except ImportError:  # pragma: no cover
 
 from app.core.config import settings
 
-BUCKET_NAME = "urban-erp-drive"
+BUCKET_NAME = "urban-vibes-dynamics-drive"
 PRESIGNED_EXPIRY = 3600  # 1 hour in seconds
 
 
@@ -43,7 +43,10 @@ def _get_client() -> Any:
         endpoint_url=settings.MINIO_URL,
         aws_access_key_id=settings.MINIO_ACCESS_KEY,
         aws_secret_access_key=settings.MINIO_SECRET_KEY,
-        config=Config(signature_version="s3v4"),
+        config=Config(
+            signature_version="s3v4",
+            s3={"addressing_style": "path"},  # force path-style: http://minio:9000/bucket/key
+        ),
         region_name="us-east-1",
     )
 

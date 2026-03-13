@@ -1,5 +1,4 @@
 """CRM API — CRUD for contacts, leads, opportunities, deals, pipeline & dashboard."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone
@@ -11,7 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy import extract, func, or_, select
 from sqlalchemy.orm import selectinload
 
-from app.core.deps import CurrentUser, DBSession
+from app.core.deps import CurrentUser, DBSession, SparseFields, apply_sparse_fields
 from app.core.events import event_bus
 from app.core.sanitize import like_pattern
 from app.models.crm import Contact, Deal, Lead, Opportunity
@@ -184,6 +183,7 @@ async def list_contacts(
     search: str | None = Query(None, description="Search first_name, last_name, or email"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=500),
+    fields: SparseFields = None,
 ) -> dict[str, Any]:
     query = select(Contact).where(Contact.is_active == True)  # noqa: E712
 
@@ -214,9 +214,12 @@ async def list_contacts(
     query = query.order_by(Contact.updated_at.desc()).offset((page - 1) * limit).limit(limit)
     result = await db.execute(query)
     contacts = result.scalars().all()
+    contact_data = [ContactOut.model_validate(c) for c in contacts]
+    if fields:
+        contact_data = [apply_sparse_fields(c, fields) for c in contact_data]
     return {
         "total": total,
-        "contacts": [ContactOut.model_validate(c) for c in contacts],
+        "contacts": contact_data,
     }
 
 
@@ -242,6 +245,7 @@ async def create_contact(
     db.add(contact)
     await db.commit()
     await db.refresh(contact)
+    await event_bus.publish_data_change("contact", str(contact.id), "created")
     return ContactOut.model_validate(contact).model_dump()
 
 
@@ -282,6 +286,7 @@ async def update_contact(
 
     await db.commit()
     await db.refresh(contact)
+    await event_bus.publish_data_change("contact", str(contact.id), "updated")
     return ContactOut.model_validate(contact).model_dump()
 
 
@@ -299,8 +304,10 @@ async def delete_contact(
     if not contact or not contact.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
 
+    contact_id_str = str(contact.id)
     contact.is_active = False
     await db.commit()
+    await event_bus.publish_data_change("contact", contact_id_str, "deleted")
     return Response(status_code=status.HTTP_200_OK)
 
 
@@ -363,6 +370,7 @@ async def create_lead(
         "title": lead.title,
         "owner_id": str(lead.owner_id),
     })
+    await event_bus.publish_data_change("lead", str(lead.id), "created")
 
     return LeadOut.model_validate(lead).model_dump()
 
@@ -408,6 +416,7 @@ async def update_lead(
 
     await db.commit()
     await db.refresh(lead)
+    await event_bus.publish_data_change("lead", str(lead.id), "updated")
     return LeadOut.model_validate(lead).model_dump()
 
 
@@ -508,6 +517,7 @@ async def create_opportunity(
     db.add(opportunity)
     await db.commit()
     await db.refresh(opportunity)
+    await event_bus.publish_data_change("opportunity", str(opportunity.id), "created")
     return OpportunityOut.model_validate(opportunity).model_dump()
 
 
@@ -562,6 +572,7 @@ async def update_opportunity(
             "new_stage": opportunity.stage,
             "owner_id": str(opportunity.owner_id),
         })
+    await event_bus.publish_data_change("opportunity", str(opportunity.id), "updated")
 
     return OpportunityOut.model_validate(opportunity).model_dump()
 
@@ -605,6 +616,7 @@ async def close_won(
         "deal_value": str(deal.deal_value),
         "owner_id": str(current_user.id),
     })
+    await event_bus.publish_data_change("deal", str(deal.id), "created")
 
     return DealOut.model_validate(deal).model_dump()
 

@@ -83,18 +83,18 @@ export default function LoyaltyDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
             Loyalty Programs
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Create and manage customer loyalty programs, tiers, and rewards
           </p>
         </div>
-        <Button variant="primary" onClick={openCreate}>
+        <Button variant="primary" onClick={openCreate} className="w-full sm:w-auto">
           + Create Program
         </Button>
       </div>

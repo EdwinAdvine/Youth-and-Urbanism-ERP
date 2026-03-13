@@ -1,6 +1,5 @@
 """Phase 2 + 3 Drive endpoints: File Requests, Webhooks, API Keys, Templates, Vault, DLP,
 Comment @mentions, Presence WebSocket, Sharing Analytics, Point-in-Time Restore, eDiscovery."""
-from __future__ import annotations
 
 import hashlib
 import hmac
@@ -13,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi.responses import StreamingResponse  # noqa: F401 — used in ediscovery_export_zip
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, delete, func, select, update
 from sqlalchemy.orm import selectinload
@@ -29,7 +29,7 @@ from app.models.drive import (
 from app.models.drive_phase2 import (
     DlpRule,
     DlpViolation,
-    DocumentTemplate,
+    DriveTemplate as DocumentTemplate,
     DriveApiKey,
     DriveWebhook,
     FileRequest,
@@ -175,16 +175,20 @@ _file_presence: dict[str, dict[str, dict]] = {}
 
 
 @router.websocket("/ws/file/{file_id}/presence")
-async def file_presence_ws(websocket: WebSocket, file_id: str):
+async def file_presence_ws(websocket: WebSocket, file_id: str, token: str = Query("")):
     """WebSocket for real-time file presence tracking."""
+    from app.core.ws_auth import validate_ws_token  # noqa: PLC0415
+    payload = await validate_ws_token(websocket, token)
+    if payload is None:
+        return
+
     await websocket.accept()
-    user_id = None
+    user_id = payload.get("sub", str(uuid.uuid4()))
 
     try:
-        # First message should contain auth info
+        # First message may contain display name
         init = await websocket.receive_json()
-        user_id = init.get("user_id", str(uuid.uuid4()))
-        user_name = init.get("user_name", "Anonymous")
+        user_name = init.get("user_name", "User")
 
         if file_id not in _file_presence:
             _file_presence[file_id] = {}
@@ -1166,4 +1170,161 @@ async def file_lifecycle_analytics(
         "total_files": total,
         "stale_files_90d": stale_count,
         "by_type": by_type,
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# EDISCOVERY: ZIP EXPORT
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/admin/ediscovery/export", summary="Export eDiscovery results as ZIP (Admin)")
+async def ediscovery_export_zip(
+    db: DBSession,
+    _admin: SuperAdminUser,
+    query: str | None = Query(None),
+    owner_id: str | None = Query(None),
+    content_type: str | None = Query(None),
+    date_from: str | None = Query(None),
+    date_to: str | None = Query(None),
+    sensitivity: str | None = Query(None),
+) -> "StreamingResponse":
+    """Export all files matching eDiscovery criteria as a ZIP archive with audit manifest."""
+    import io
+    import json
+    import zipfile
+    from fastapi.responses import StreamingResponse
+    from app.integrations import minio_client
+
+    filters = [DriveFile.is_on_hold.is_(True) if not query else DriveFile.name.ilike(f"%{query}%")]
+    if owner_id:
+        try:
+            filters.append(DriveFile.owner_id == uuid.UUID(owner_id))
+        except ValueError:
+            pass
+    if content_type:
+        filters.append(DriveFile.content_type.ilike(f"%{content_type}%"))
+    if sensitivity:
+        filters.append(DriveFile.sensitivity_level == sensitivity)
+    if date_from:
+        try:
+            filters.append(DriveFile.created_at >= datetime.fromisoformat(date_from))
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            filters.append(DriveFile.created_at <= datetime.fromisoformat(date_to))
+        except ValueError:
+            pass
+
+    result = await db.execute(
+        select(DriveFile).where(*filters).limit(300)
+    )
+    files = result.scalars().all()
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for f in files:
+            try:
+                data = minio_client.download_file(f.minio_key)
+                safe_path = f"files/{f.folder_path.strip('/')}/{f.name}".replace("//", "/")
+                zf.writestr(safe_path, data)
+            except Exception:
+                zf.writestr(f"files/{f.name}.UNAVAILABLE.txt", f"Download failed: {f.name}")
+
+        manifest = {
+            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "total_files": len(files),
+            "query": query,
+            "filters": {"owner_id": owner_id, "content_type": content_type, "sensitivity": sensitivity},
+            "files": [{"id": str(f.id), "name": f.name, "owner": str(f.owner_id),
+                       "sensitivity": f.sensitivity_level, "hold": f.is_on_hold} for f in files],
+        }
+        zf.writestr("ediscovery_manifest.json", json.dumps(manifest, indent=2))
+
+    buf.seek(0)
+    filename = f"ediscovery_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# NOTIFICATION DISPATCH ON FILE.SHARED
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+async def _notify_user(db: Any, user_id: uuid.UUID, title: str, message: str,
+                       module: str = "drive", link_url: str | None = None) -> None:
+    """Create a Notification record for a user."""
+    try:
+        from app.models.notification import Notification
+        notif = Notification(
+            user_id=user_id,
+            title=title,
+            message=message,
+            type="info",
+            module=module,
+            link_url=link_url,
+            is_read=False,
+        )
+        db.add(notif)
+        await db.flush()
+    except Exception:
+        pass  # Notification model may not be importable in all contexts
+
+
+@router.post("/files/{file_id}/notify-share", summary="Dispatch share notification to recipient")
+async def notify_share(
+    file_id: uuid.UUID,
+    db: DBSession,
+    user: CurrentUser,
+    recipient_id: uuid.UUID = Query(..., description="User ID to notify"),
+    permission: str = Query("view"),
+) -> dict[str, Any]:
+    """Send a Drive share notification to a specific user."""
+    file = await db.get(DriveFile, file_id)
+    if not file or file.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    await _notify_user(
+        db,
+        recipient_id,
+        title=f"{user.full_name or 'Someone'} shared a file with you",
+        message=f'"{file.name}" was shared with {permission} access.',
+        link_url=f"/drive",
+    )
+    await db.commit()
+    return {"notified": True, "recipient_id": str(recipient_id)}
+
+
+@router.post("/files/{file_id}/version-comment", summary="Add a comment to a specific file version")
+async def add_version_comment(
+    file_id: uuid.UUID,
+    db: DBSession,
+    user: CurrentUser,
+    version_id: str = Query(...),
+    comment: str = Query(..., min_length=1, max_length=500),
+) -> dict[str, Any]:
+    """Attach a textual comment/annotation to a specific MinIO version ID."""
+    file = await db.get(DriveFile, file_id)
+    if not file or file.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    from app.models.drive import FileComment
+    version_comment = FileComment(
+        file_id=file_id,
+        user_id=user.id,
+        content=f"[Version {version_id[:8]}] {comment}",
+    )
+    db.add(version_comment)
+    await db.commit()
+    await db.refresh(version_comment)
+    return {
+        "comment_id": str(version_comment.id),
+        "version_id": version_id,
+        "content": version_comment.content,
+        "created_at": version_comment.created_at.isoformat(),
     }

@@ -1,7 +1,7 @@
 """Cross-module event bus using Redis pub/sub.
 
 Provides a lightweight async event bus backed by Redis pub/sub for
-decoupled communication between Urban ERP modules.
+decoupled communication between Urban Vibes Dynamics modules.
 
 Usage:
     from app.core.events import event_bus
@@ -105,6 +105,44 @@ class EventBus:
         message = json.dumps(payload)
         await self._redis.publish(channel, message)
         logger.debug("Published event %s on '%s'", payload["id"], channel)
+
+    async def publish_data_change(
+        self,
+        entity_type: str,
+        entity_id: str | None = None,
+        action: str = "updated",
+        user_ids: list[str] | None = None,
+    ) -> None:
+        """Publish a data change event for frontend cache invalidation via SSE.
+
+        This is the bridge between backend mutations and the frontend's
+        TanStack Query cache. The frontend SSE client maps entity_type to
+        query keys and calls invalidateQueries().
+
+        Args:
+            entity_type: The entity that changed (e.g. "invoice", "contact", "task").
+            entity_id: Optional ID of the changed entity.
+            action: The action taken ("created", "updated", "deleted").
+            user_ids: If set, notify only these users. If None, broadcast to all.
+        """
+        if self._redis is None:
+            return
+
+        payload = json.dumps({
+            "entity": entity_type,
+            "id": entity_id,
+            "action": action,
+            "ts": datetime.now(timezone.utc).isoformat(),
+        })
+
+        try:
+            if user_ids:
+                for uid in user_ids:
+                    await self._redis.publish(f"user:{uid}:changes", payload)
+            else:
+                await self._redis.publish("broadcast:changes", payload)
+        except Exception:
+            logger.warning("Failed to publish data change for %s:%s", entity_type, entity_id)
 
     # -- lifecycle --------------------------------------------------------
 

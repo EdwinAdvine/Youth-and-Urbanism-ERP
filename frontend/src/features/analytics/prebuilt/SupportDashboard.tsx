@@ -1,5 +1,6 @@
 import { useSupportMetrics } from '../../../api/analytics'
-import { KPICard, BarChart, LineChart, PieChart, GaugeChart } from '../../../components/charts'
+import ChartRenderer from '../../../components/charts/ChartRenderer'
+import { KPICard } from '../../../components/charts'
 import { Spinner } from '../../../components/ui'
 import DashboardHeader from './DashboardHeader'
 
@@ -38,10 +39,10 @@ export default function SupportDashboard() {
 
   // Priority breakdown
   const priorities = [
-    { name: 'Critical', value: 8, color: '#ff3a6e' },
-    { name: 'High', value: 22, color: '#ffa21d' },
-    { name: 'Medium', value: 45, color: '#3ec9d6' },
-    { name: 'Low', value: 30, color: '#6fd943' },
+    { name: 'Critical', value: 8 },
+    { name: 'High', value: 22 },
+    { name: 'Medium', value: 45 },
+    { name: 'Low', value: 30 },
   ]
 
   // CSAT trend
@@ -71,13 +72,16 @@ export default function SupportDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Ticket Volume</h3>
           <p className="text-xs text-gray-400 mb-4">New vs Resolved tickets</p>
-          <BarChart
+          <ChartRenderer
+            type="bar"
             data={volumeData}
-            bars={[
-              { dataKey: 'new', color: '#ff3a6e', name: 'New' },
-              { dataKey: 'resolved', color: '#6fd943', name: 'Resolved' },
-            ]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['new', 'resolved'],
+              colors: ['#ff3a6e', '#6fd943'],
+              showGrid: true,
+              showLegend: true,
+            }}
             height={240}
           />
         </div>
@@ -85,12 +89,18 @@ export default function SupportDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Resolution Time</h3>
           <p className="text-xs text-gray-400 mb-4">Average hours to resolve</p>
-          <LineChart
+          <ChartRenderer
+            type="line"
             data={resolutionData}
-            lines={[{ dataKey: 'hours', color: '#3ec9d6', name: 'Avg Hours' }]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['hours'],
+              colors: ['#3ec9d6'],
+              showGrid: true,
+              showLegend: false,
+              smooth: true,
+            }}
             height={240}
-            formatTooltip={(v) => `${v}h`}
           />
         </div>
       </div>
@@ -100,16 +110,32 @@ export default function SupportDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Ticket Categories</h3>
           <p className="text-xs text-gray-400 mb-4">Distribution by type</p>
-          <PieChart data={categories} innerRadius={50} height={260} />
+          <ChartRenderer
+            type="donut"
+            data={categories}
+            config={{
+              nameKey: 'name',
+              valueKey: 'value',
+              colors: ['#51459d', '#6fd943', '#3ec9d6', '#ffa21d', '#ff3a6e', '#a78bfa'],
+              showLegend: true,
+            }}
+            height={260}
+          />
         </div>
 
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Priority Breakdown</h3>
           <p className="text-xs text-gray-400 mb-4">Tickets by priority level</p>
-          <BarChart
+          <ChartRenderer
+            type="bar"
             data={priorities}
-            bars={[{ dataKey: 'value', name: 'Tickets' }]}
-            xKey="name"
+            config={{
+              xKey: 'name',
+              yKeys: ['value'],
+              colors: ['#ff3a6e', '#ffa21d', '#3ec9d6', '#6fd943'],
+              showGrid: true,
+              showLegend: false,
+            }}
             height={260}
           />
         </div>
@@ -120,25 +146,32 @@ export default function SupportDashboard() {
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Customer Satisfaction</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly CSAT score trend</p>
-          <LineChart
+          <ChartRenderer
+            type="line"
             data={csatData}
-            lines={[{ dataKey: 'score', color: '#6fd943', name: 'CSAT %' }]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['score'],
+              colors: ['#6fd943'],
+              showGrid: true,
+              showLegend: false,
+              smooth: true,
+            }}
             height={240}
-            formatTooltip={(v) => `${v}%`}
           />
         </div>
 
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm flex flex-col items-center justify-center">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">SLA Compliance</h3>
-          <GaugeChart
-            value={92}
-            label="SLA Met"
-            thresholds={[
-              { value: 80, color: '#ff3a6e' },
-              { value: 90, color: '#ffa21d' },
-              { value: 100, color: '#6fd943' },
-            ]}
+          <ChartRenderer
+            type="gauge"
+            data={[{ name: 'SLA Met', value: 92 }]}
+            config={{
+              nameKey: 'name',
+              valueKey: 'value',
+              colors: ['#ff3a6e', '#ffa21d', '#6fd943'],
+            }}
+            height={200}
           />
         </div>
       </div>

@@ -7,6 +7,7 @@
  * Endpoint shapes match `/api/v1/mail/*` in `backend/app/api/v1/mail.py`.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { REFERENCE_PRESET, LIST_PRESET, DETAIL_PRESET, DASHBOARD_PRESET } from '@/utils/queryDefaults'
 import apiClient from './client'
 
 // ── TypeScript interfaces (matching backend response shapes) ──────────────────
@@ -85,6 +86,7 @@ export interface SendMessagePayload {
     size: number
     content_type: string
   }>
+  account_id?: string  // Send from a specific mail account
 }
 
 // ── Rules & Signatures & Read Receipts ──────────────────────────────────────
@@ -184,10 +186,11 @@ export async function fetchMessages(
   folder: string = 'inbox',
   page: number = 1,
   limit: number = 50,
+  account_id?: string | null,
 ): Promise<MailMessagesResponse> {
-  const { data } = await apiClient.get<MailMessagesResponse>('/mail/messages', {
-    params: { folder, page, limit },
-  })
+  const params: Record<string, any> = { folder, page, limit }
+  if (account_id) params.account_id = account_id
+  const { data } = await apiClient.get<MailMessagesResponse>('/mail/messages', { params })
   return data
 }
 
@@ -235,15 +238,17 @@ export function useMailFolders() {
     queryFn: fetchFolders,
     select: (res) => res.folders,
     retry: 1,
+    ...LIST_PRESET,
   })
 }
 
-export function useMailMessages(params?: { folder?: string; page?: number; limit?: number }) {
+export function useMailMessages(params?: { folder?: string; page?: number; limit?: number; account_id?: string | null }) {
   return useQuery({
     queryKey: ['mail', 'messages', params],
     queryFn: () =>
-      fetchMessages(params?.folder ?? 'inbox', params?.page ?? 1, params?.limit ?? 50),
+      fetchMessages(params?.folder ?? 'inbox', params?.page ?? 1, params?.limit ?? 50, params?.account_id),
     retry: 1,
+    ...LIST_PRESET,
   })
 }
 
@@ -254,6 +259,7 @@ export function useMailMessage(id: string) {
     select: (res) => res.message,
     enabled: !!id,
     retry: 1,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -306,6 +312,7 @@ export function useMailRules() {
       const { data } = await apiClient.get<{ total: number; rules: MailRule[] }>('/mail/rules')
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -350,6 +357,7 @@ export function useMailSignatures() {
       const { data } = await apiClient.get<{ total: number; signatures: MailSignature[] }>('/mail/signatures')
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -394,6 +402,7 @@ export function useReadReceipts() {
       const { data } = await apiClient.get<{ total: number; receipts: ReadReceipt[] }>('/mail/read-receipts')
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -562,6 +571,7 @@ export function useMailCRMLinks(messageId: string) {
       return data
     },
     enabled: !!messageId,
+    ...LIST_PRESET,
   })
 }
 
@@ -662,6 +672,7 @@ export function useMailContacts(search?: string) {
       return data.contacts ?? []
     },
     enabled: search === undefined || search.length >= 1,
+    ...LIST_PRESET,
   })
 }
 
@@ -801,6 +812,7 @@ export function useTriageSummary() {
       const { data } = await apiClient.get<{ categories: TriageSummary[] }>('/mail/triage/summary')
       return data.categories ?? []
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -824,6 +836,7 @@ export function useFocusedInbox(params?: { page?: number; limit?: number }) {
       })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -836,6 +849,7 @@ export function useOtherInbox(params?: { page?: number; limit?: number }) {
       })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -848,6 +862,7 @@ export function useSmartFolders() {
       const { data } = await apiClient.get<{ folders: SmartFolder[] }>('/mail/smart-folders')
       return data.folders ?? []
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -892,6 +907,7 @@ export function useMailSearch(params: {
       return data
     },
     enabled: !!(params.q || params.from_addr || params.has_attachment || params.is_unread),
+    ...LIST_PRESET,
   })
 }
 
@@ -947,6 +963,7 @@ export function useMailCategories() {
       const { data } = await apiClient.get<{ categories: MailCategory[] }>('/mail/categories')
       return data.categories ?? []
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -970,6 +987,7 @@ export function useQuickSteps() {
       const { data } = await apiClient.get<{ quick_steps: MailQuickStep[] }>('/mail/quick-steps')
       return data.quick_steps ?? []
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -993,6 +1011,7 @@ export function useMailTemplates() {
       const { data } = await apiClient.get<{ templates: MailTemplate[] }>('/mail/templates')
       return data.templates ?? []
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1071,6 +1090,7 @@ export function useMailAnalytics(days: number = 30) {
       })
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -1081,6 +1101,7 @@ export function useTopContacts() {
       const { data } = await apiClient.get<{ contacts: TopContact[] }>('/mail/analytics/top-contacts')
       return data.contacts ?? []
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -1091,6 +1112,7 @@ export function useHourlyHeatmap() {
       const { data } = await apiClient.get<{ hours: HourlyHeatmap[] }>('/mail/analytics/hourly-heatmap')
       return data.hours ?? []
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -1106,6 +1128,7 @@ export function useContactProfiles(page: number = 1, limit: number = 50) {
       )
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1119,6 +1142,7 @@ export function useContactProfile(email: string) {
       return data
     },
     enabled: !!email,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -1354,6 +1378,7 @@ export function useContactRelationship(email: string) {
       return data
     },
     enabled: !!email,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -1435,6 +1460,7 @@ export function useMessageAnnotations(messageId: string) {
       return data
     },
     enabled: !!messageId,
+    ...LIST_PRESET,
   })
 }
 

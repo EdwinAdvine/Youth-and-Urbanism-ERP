@@ -1,5 +1,4 @@
 """Manufacturing Quality API — Inspection Plans, NCR, CAPA, SPC."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime

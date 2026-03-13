@@ -595,7 +595,7 @@ function PayslipsTab() {
     <div>
       {/* Filters row */}
       <div className="flex flex-wrap items-end gap-3 mb-4">
-        <div className="w-44">
+        <div className="w-full sm:w-44">
           <Select
             label="Status"
             options={STATUS_OPTIONS}
@@ -603,7 +603,7 @@ function PayslipsTab() {
             onChange={(e) => setStatusFilter(e.target.value)}
           />
         </div>
-        <div className="w-44">
+        <div className="w-full sm:w-44">
           <Input
             label="Period Start"
             type="date"
@@ -611,7 +611,7 @@ function PayslipsTab() {
             onChange={(e) => setPeriodStart(e.target.value)}
           />
         </div>
-        <div className="w-44">
+        <div className="w-full sm:w-44">
           <Input
             label="Period End"
             type="date"
@@ -619,8 +619,8 @@ function PayslipsTab() {
             onChange={(e) => setPeriodEnd(e.target.value)}
           />
         </div>
-        <div className="ml-auto flex items-end">
-          <Button onClick={() => setGenerateOpen(true)}>
+        <div className="sm:ml-auto flex items-end w-full sm:w-auto">
+          <Button onClick={() => setGenerateOpen(true)} className="w-full sm:w-auto">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -630,13 +630,15 @@ function PayslipsTab() {
       </div>
 
       <Card padding={false}>
-        <Table<Payslip>
-          columns={columns}
-          data={payslipsData?.items ?? []}
-          loading={isLoading}
-          emptyText="No payslips found"
-          keyExtractor={(row) => row.id}
-        />
+        <div className="overflow-x-auto">
+          <Table<Payslip>
+            columns={columns}
+            data={payslipsData?.items ?? []}
+            loading={isLoading}
+            emptyText="No payslips found"
+            keyExtractor={(row) => row.id}
+          />
+        </div>
       </Card>
 
       <GeneratePayslipsModal
@@ -655,10 +657,10 @@ export default function PayrollPage() {
   const [activeTab, setActiveTab] = useState<Tab>('structures')
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Payroll</h1>
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Payroll</h1>
         <p className="text-sm text-gray-500 mt-1">Manage salary structures and payslips</p>
       </div>
 

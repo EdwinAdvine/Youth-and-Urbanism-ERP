@@ -1,3 +1,20 @@
+/**
+ * Storefront API client — public e-commerce storefront (catalog, cart, checkout, orders).
+ *
+ * Uses a dedicated Axios instance (`sfClient`) with `baseURL: /api/v1/storefront`.
+ * Customer JWT is stored in `sessionStorage` under `sf_token` (separate from the
+ * internal employee JWT held in the Zustand auth store).
+ * Backend prefix: `/api/v1/storefront`.
+ *
+ * Key exports:
+ *   - useStorefrontCatalog()     — paginated public product catalog with search/filter
+ *   - useStorefrontProduct()     — single published product detail by slug
+ *   - useStorefrontLogin()       — customer login returning a storefront-scoped JWT
+ *   - useCart()                  — fetch the current customer's active cart
+ *   - useAddToCart()             — add a product variant to the cart
+ *   - useCheckout()              — submit cart for order creation
+ *   - useCustomerOrders()        — list the authenticated customer's order history
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 

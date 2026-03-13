@@ -1,3 +1,17 @@
+/**
+ * Manufacturing Labor API client — operator skills, labour time entries, and
+ * skills-matrix reporting for workstation assignments.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Manufacturing
+ * module's labour tracking feature. All requests go through `client.ts` (Axios
+ * instance with auth interceptors). Backend prefix: `/api/v1/manufacturing`.
+ *
+ * Key exports:
+ *   - useOperatorSkills() / useCreateSkill() — operator skill and certification records
+ *   - useSkillsMatrix() — cross-employee skill proficiency matrix
+ *   - useLaborEntries() / useCreateLaborEntry() — time-on-machine labour entries
+ *   - useLaborSummary() — aggregated labour cost and hours per work order
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

@@ -37,25 +37,35 @@ import {
 
 // ─── Standard lazy imports (sub-pages within modules) ────────────────────────
 
-const UsersPage        = lazy(() => import('./features/admin/UsersPage'))
-const RolesPage        = lazy(() => import('./features/admin/RolesPage'))
-const AppAdminsPage    = lazy(() => import('./features/admin/AppAdminsPage'))
-const AIConfigPage     = lazy(() => import('./features/admin/AIConfigPage'))
-const AuditLogsPage    = lazy(() => import('./features/admin/AuditLogsPage'))
-const AppAdminDashboard = lazy(() => import('./features/admin/AppAdminDashboard'))
-const MyModulesPage    = lazy(() => import('./features/admin/MyModulesPage'))
-const BulkImportPage   = lazy(() => import('./features/admin/BulkImportPage'))
-const LicensePage      = lazy(() => import('./features/admin/LicensePage'))
-const SSOConfigPage    = lazy(() => import('./features/admin/SSOConfigPage'))
-const BackupsPage      = lazy(() => import('./features/admin/BackupsPage'))
-const MailConfigPage   = lazy(() => import('./features/admin/MailConfigPage'))
-const DriveConfigPage  = lazy(() => import('./features/admin/DriveConfigPage'))
-const DocsConfigPage   = lazy(() => import('./features/admin/DocsConfigPage'))
+const UsersPage           = lazy(() => import('./features/admin/UsersPage'))
+const RolesPage           = lazy(() => import('./features/admin/RolesPage'))
+const AppAdminsPage       = lazy(() => import('./features/admin/AppAdminsPage'))
+const AIConfigPage        = lazy(() => import('./features/admin/AIConfigPage'))
+const AuditLogsPage       = lazy(() => import('./features/admin/AuditLogsPage'))
+const AppAdminDashboard   = lazy(() => import('./features/admin/AppAdminDashboard'))
+const MyModulesPage       = lazy(() => import('./features/admin/MyModulesPage'))
+const BulkImportPage      = lazy(() => import('./features/admin/BulkImportPage'))
+const LicensePage         = lazy(() => import('./features/admin/LicensePage'))
+const SSOConfigPage       = lazy(() => import('./features/admin/SSOConfigPage'))
+const BackupsPage         = lazy(() => import('./features/admin/BackupsPage'))
+const MailConfigPage      = lazy(() => import('./features/admin/MailConfigPage'))
+const DriveConfigPage     = lazy(() => import('./features/admin/DriveConfigPage'))
+const DocsConfigPage      = lazy(() => import('./features/admin/DocsConfigPage'))
+const UserAppAccessPage   = lazy(() => import('./features/admin/UserAppAccessPage'))
+const PermissionMatrixPage = lazy(() => import('./features/admin/PermissionMatrixPage'))
+const TemplateGalleryPage = lazy(() => import('./features/docs/TemplateGalleryPage'))
+const DocsAnalyticsPage   = lazy(() => import('./features/docs/DocsAnalyticsPage'))
 const MeetingsConfigPage = lazy(() => import('./features/admin/MeetingsConfigPage'))
+const PerformanceDashboard = lazy(() => import('./features/admin/PerformanceDashboard'))
+const SecurityDashboard   = lazy(() => import('./features/admin/SecurityDashboard'))
+const ParityDashboard     = lazy(() => import('./features/admin/ParityDashboard'))
+const SecurityPage        = lazy(() => import('./features/settings/SecurityPage'))
+const ChangelogPage       = lazy(() => import('./features/settings/ChangelogPage'))
 
 const FormBuilder      = lazy(() => import('./features/forms/FormBuilder'))
 const FormResponses    = lazy(() => import('./features/forms/FormResponses'))
 const FormSubmit       = lazy(() => import('./features/forms/FormSubmit'))
+const PublicFormPage   = lazy(() => import('./features/forms/PublicFormPage'))
 
 // Handbook
 const HandbookPage           = lazy(() => import('./features/handbook/HandbookPage'))
@@ -330,6 +340,16 @@ const WorkflowRunDetail      = lazy(() => import('./features/supplychain/Workflo
 const CompliancePage         = lazy(() => import('./features/supplychain/CompliancePage'))
 const SCAnalyticsPage        = lazy(() => import('./features/supplychain/SCAnalyticsPage'))
 
+// Supply Chain Phase 2 sub-pages
+const TransportOrdersPage    = lazy(() => import('./features/supplychain/TransportOrdersPage'))
+const CarriersPage           = lazy(() => import('./features/supplychain/CarriersPage'))
+const RoutePlannerPage       = lazy(() => import('./features/supplychain/RoutePlannerPage'))
+const FreightAuditPage       = lazy(() => import('./features/supplychain/FreightAuditPage'))
+const RiskAssessmentsPage    = lazy(() => import('./features/supplychain/RiskAssessmentsPage'))
+const ScenarioSimulationPage = lazy(() => import('./features/supplychain/ScenarioSimulationPage'))
+const MRPRunPage             = lazy(() => import('./features/supplychain/MRPRunPage'))
+const ProductionSchedulePage = lazy(() => import('./features/supplychain/ProductionSchedulePage'))
+
 // POS sub-pages
 const POSTerminal          = lazy(() => import('./features/pos/POSTerminal'))
 const POSSessions          = lazy(() => import('./features/pos/POSSessions'))
@@ -378,6 +398,7 @@ const EcomOrdersPage      = lazy(() => import('./features/ecommerce/OrdersPage')
 const EcomOrderDetail     = lazy(() => import('./features/ecommerce/OrderDetail'))
 const EcomCustomersPage   = lazy(() => import('./features/ecommerce/CustomersPage'))
 const EcomCouponsPage     = lazy(() => import('./features/ecommerce/CouponsPage'))
+const EcomFlashSalesPage  = lazy(() => import('./features/ecommerce/FlashSalesPage'))
 const EcomShippingPage    = lazy(() => import('./features/ecommerce/ShippingPage'))
 const EcomReviewsPage     = lazy(() => import('./features/ecommerce/ReviewsPage'))
 const EcomCartPage        = lazy(() => import('./features/ecommerce/CartPage'))
@@ -417,6 +438,8 @@ const CustomerOrderDetail = lazy(() => import('./features/storefront/CustomerOrd
 
 // Public share page
 const PublicSharePage     = lazy(() => import('./features/drive/PublicSharePage'))
+// Public booking embed page
+const BookingEmbed        = lazy(() => import('./features/calendar/BookingEmbed'))
 const SLAConfigPage       = lazy(() => import('./features/support/SLAConfigPage'))
 const CannedResponsesPage = lazy(() => import('./features/support/CannedResponsesPage'))
 const SatisfactionPage    = lazy(() => import('./features/support/SatisfactionPage'))
@@ -431,6 +454,27 @@ const LiveChatWindow      = lazy(() => import('./features/support/LiveChatWindow
 const SavedViewsPage      = lazy(() => import('./features/support/SavedViewsPage'))
 const TicketTemplatesPage = lazy(() => import('./features/support/TicketTemplatesPage'))
 const InboundEmailConfig  = lazy(() => import('./features/support/InboundEmailConfig'))
+// Support Phase 2 — Automations, Portal, Forum, Omnichannel, Escalation, AI Copilot
+const AutomationList      = lazy(() => import('./features/support/AutomationList'))
+const AutomationBuilder   = lazy(() => import('./features/support/AutomationBuilder'))
+const ForumPage           = lazy(() => import('./features/support/ForumPage'))
+const ForumPostDetail     = lazy(() => import('./features/support/ForumPostDetail'))
+const OmnichannelConfigPage = lazy(() => import('./features/support/OmnichannelConfigPage'))
+const SLAEscalationConfig = lazy(() => import('./features/support/SLAEscalationConfig'))
+const AICopilotPanel      = lazy(() => import('./features/support/AICopilotPanel'))
+const CustomerPortalLogin = lazy(() => import('./features/support/CustomerPortalLogin'))
+const CustomerPortalTickets = lazy(() => import('./features/support/CustomerPortalTickets'))
+// Support Phase 3 — Analytics, Proactive, Voice, Skills, Sandboxes, Customer Health
+const AnalyticsOverview   = lazy(() => import('./features/support/AnalyticsOverview'))
+const AnalyticsAgents     = lazy(() => import('./features/support/AnalyticsAgents'))
+const AnalyticsAIImpact   = lazy(() => import('./features/support/AnalyticsAIImpact'))
+const ProactiveRulesPage  = lazy(() => import('./features/support/ProactiveRulesPage'))
+const VoiceCallPage       = lazy(() => import('./features/support/VoiceCallPage'))
+const CallDetailPage      = lazy(() => import('./features/support/CallDetailPage'))
+const AgentSkillsPage     = lazy(() => import('./features/support/AgentSkillsPage'))
+const AgentSchedulePage   = lazy(() => import('./features/support/AgentSchedulePage'))
+const SandboxPage         = lazy(() => import('./features/support/SandboxPage'))
+const CustomerHealthDashboard = lazy(() => import('./features/support/CustomerHealthDashboard'))
 
 // Settings, Profile, Notifications
 const ProfilePage         = lazy(() => import('./features/profile/ProfilePage'))
@@ -467,6 +511,11 @@ const PrebuiltInventoryDash   = lazy(() => import('./features/analytics/prebuilt
 const PrebuiltECommerceDash   = lazy(() => import('./features/analytics/prebuilt/ECommerceDashboard'))
 const PrebuiltSupportDash     = lazy(() => import('./features/analytics/prebuilt/SupportDashboard'))
 const PrebuiltManufacturingDash = lazy(() => import('./features/analytics/prebuilt/ManufacturingDashboard'))
+const ScorecardsPage          = lazy(() => import('./features/analytics/ScorecardsPage'))
+const EmbedViewer             = lazy(() => import('./features/analytics/EmbedViewer'))
+const MetaAnalyticsPage       = lazy(() => import('./features/analytics/MetaAnalyticsPage'))
+const WhatIfSimulatorPage     = lazy(() => import('./features/analytics/WhatIfSimulatorPage'))
+const TransformEditorPage     = lazy(() => import('./features/analytics/TransformEditorPage'))
 
 // AI enhancements
 const ConversationHistoryPage = lazy(() => import('./features/ai/ConversationHistoryPage'))
@@ -568,6 +617,9 @@ export default function App() {
 
           {/* Public share link */}
           <Route path="/share/:link" element={<S><PublicSharePage /></S>} />
+
+          {/* Public booking page — no auth required */}
+          <Route path="/book/:slug" element={<S><BookingEmbed /></S>} />
 
           {/* POS Customer-Facing Display (full-screen, outside AppShell) */}
           <Route path="/pos/customer-display" element={<RequireAuth><S><CustomerDisplay /></S></RequireAuth>} />
@@ -804,6 +856,15 @@ export default function App() {
             <Route path="supply-chain/workflows/:id" element={<S><WorkflowRunDetail /></S>} />
             <Route path="supply-chain/compliance" element={<S><CompliancePage /></S>} />
             <Route path="supply-chain/analytics" element={<S><SCAnalyticsPage /></S>} />
+            {/* Supply Chain Phase 2 */}
+            <Route path="supply-chain/transport-orders" element={<S><TransportOrdersPage /></S>} />
+            <Route path="supply-chain/carriers" element={<S><CarriersPage /></S>} />
+            <Route path="supply-chain/route-planner" element={<S><RoutePlannerPage /></S>} />
+            <Route path="supply-chain/freight-audit" element={<S><FreightAuditPage /></S>} />
+            <Route path="supply-chain/risk" element={<S><RiskAssessmentsPage /></S>} />
+            <Route path="supply-chain/scenarios" element={<S><ScenarioSimulationPage /></S>} />
+            <Route path="supply-chain/mrp" element={<S><MRPRunPage /></S>} />
+            <Route path="supply-chain/production-schedule" element={<S><ProductionSchedulePage /></S>} />
             {/* Manufacturing */}
             <Route path="manufacturing" element={<S><ManufacturingDashboard /></S>} />
             <Route path="manufacturing/bom" element={<S><BOMListPage /></S>} />
@@ -898,6 +959,7 @@ export default function App() {
             <Route path="ecommerce/orders/:id" element={<S><EcomOrderDetail /></S>} />
             <Route path="ecommerce/customers" element={<S><EcomCustomersPage /></S>} />
             <Route path="ecommerce/coupons" element={<S><EcomCouponsPage /></S>} />
+            <Route path="ecommerce/flash-sales" element={<S><EcomFlashSalesPage /></S>} />
             <Route path="ecommerce/shipping" element={<S><EcomShippingPage /></S>} />
             <Route path="ecommerce/reviews" element={<S><EcomReviewsPage /></S>} />
             <Route path="ecommerce/cart" element={<S><EcomCartPage /></S>} />
@@ -939,13 +1001,42 @@ export default function App() {
             <Route path="support/views" element={<S><SavedViewsPage /></S>} />
             <Route path="support/templates" element={<S><TicketTemplatesPage /></S>} />
             <Route path="support/inbound-email" element={<S><InboundEmailConfig /></S>} />
+            {/* Support Phase 2 */}
+            <Route path="support/automations" element={<S><AutomationList /></S>} />
+            <Route path="support/automations/new" element={<S><AutomationBuilder /></S>} />
+            <Route path="support/automations/:id" element={<S><AutomationBuilder /></S>} />
+            <Route path="support/forum" element={<S><ForumPage /></S>} />
+            <Route path="support/forum/:postId" element={<S><ForumPostDetail /></S>} />
+            <Route path="support/omnichannel" element={<S><OmnichannelConfigPage /></S>} />
+            <Route path="support/sla/:slaPolicyId/escalation" element={<S><SLAEscalationConfig /></S>} />
+            <Route path="support/ai-copilot" element={<S><AICopilotPanel /></S>} />
+            <Route path="portal/login" element={<CustomerPortalLogin />} />
+            <Route path="portal/tickets" element={<CustomerPortalTickets />} />
+            {/* Support Phase 3 */}
+            <Route path="support/analytics" element={<S><AnalyticsOverview /></S>} />
+            <Route path="support/analytics/agents" element={<S><AnalyticsAgents /></S>} />
+            <Route path="support/analytics/ai-impact" element={<S><AnalyticsAIImpact /></S>} />
+            <Route path="support/proactive-rules" element={<S><ProactiveRulesPage /></S>} />
+            <Route path="support/voice" element={<S><VoiceCallPage /></S>} />
+            <Route path="support/voice/:callId" element={<S><CallDetailPage /></S>} />
+            <Route path="support/agent-skills" element={<S><AgentSkillsPage /></S>} />
+            <Route path="support/agent-schedule" element={<S><AgentSchedulePage /></S>} />
+            <Route path="support/sandboxes" element={<S><SandboxPage /></S>} />
+            <Route path="support/customer-health" element={<S><CustomerHealthDashboard /></S>} />
             <Route path="settings/*" element={<S><SettingsPage /></S>} />
+            <Route path="settings/security" element={<S><SecurityPage /></S>} />
+            <Route path="settings/changelog" element={<S><ChangelogPage /></S>} />
             <Route path="profile" element={<S><ProfilePage /></S>} />
             <Route path="notifications" element={<S><NotificationsPage /></S>} />
 
             {/* Phase 1 service pages */}
             <Route path="mail/*" element={<S><MailPage /></S>} />
             <Route path="calendar/*" element={<S><CalendarPage /></S>} />
+            <Route path="docs/templates" element={<S><TemplateGalleryPage /></S>} />
+            <Route path="docs/analytics" element={<S><DocsAnalyticsPage /></S>} />
+            <Route path="docs/mine" element={<S><DocsPage /></S>} />
+            <Route path="docs/shared" element={<S><DocsPage /></S>} />
+            <Route path="docs/recent" element={<S><DocsPage /></S>} />
             <Route path="docs/*" element={<S><DocsPage /></S>} />
             <Route path="notes/*" element={<S><NotesPage /></S>} />
             <Route path="drive/*" element={<S><DrivePage /></S>} />
@@ -964,6 +1055,10 @@ export default function App() {
             <Route path="analytics/prebuilt/ecommerce" element={<S><PrebuiltECommerceDash /></S>} />
             <Route path="analytics/prebuilt/support" element={<S><PrebuiltSupportDash /></S>} />
             <Route path="analytics/prebuilt/manufacturing" element={<S><PrebuiltManufacturingDash /></S>} />
+            <Route path="analytics/scorecards" element={<S><ScorecardsPage /></S>} />
+            <Route path="analytics/meta" element={<S><MetaAnalyticsPage /></S>} />
+            <Route path="analytics/whatif" element={<S><WhatIfSimulatorPage /></S>} />
+            <Route path="analytics/transforms" element={<S><TransformEditorPage /></S>} />
             <Route path="analytics/*" element={<S><AnalyticsPage /></S>} />
             <Route path="teams/*" element={<S><TeamsPage /></S>} />
 
@@ -1015,6 +1110,22 @@ export default function App() {
               element={
                 <RequireSuperAdmin>
                   <S><AppAdminsPage /></S>
+                </RequireSuperAdmin>
+              }
+            />
+            <Route
+              path="admin/users/:userId/access"
+              element={
+                <RequireSuperAdmin>
+                  <S><UserAppAccessPage /></S>
+                </RequireSuperAdmin>
+              }
+            />
+            <Route
+              path="admin/permission-matrix"
+              element={
+                <RequireSuperAdmin>
+                  <S><PermissionMatrixPage /></S>
                 </RequireSuperAdmin>
               }
             />
@@ -1107,6 +1218,30 @@ export default function App() {
               }
             />
             <Route
+              path="admin/performance"
+              element={
+                <RequireSuperAdmin>
+                  <S><PerformanceDashboard /></S>
+                </RequireSuperAdmin>
+              }
+            />
+            <Route
+              path="admin/security"
+              element={
+                <RequireSuperAdmin>
+                  <S><SecurityDashboard /></S>
+                </RequireSuperAdmin>
+              }
+            />
+            <Route
+              path="admin/parity"
+              element={
+                <RequireSuperAdmin>
+                  <S><ParityDashboard /></S>
+                </RequireSuperAdmin>
+              }
+            />
+            <Route
               path="admin/apps/:appName"
               element={
                 <RequireAdmin>
@@ -1124,6 +1259,12 @@ export default function App() {
             {/* 404 within app */}
             <Route path="*" element={<ComingSoon title="Page Not Found" />} />
           </Route>
+
+          {/* Public Form — unauthenticated */}
+          <Route path="/forms/public/:shareToken" element={<PublicFormPage />} />
+
+          {/* Public embed viewer — no auth required */}
+          <Route path="/embed/dashboard/:token" element={<S><EmbedViewer /></S>} />
 
           {/* Top-level redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />

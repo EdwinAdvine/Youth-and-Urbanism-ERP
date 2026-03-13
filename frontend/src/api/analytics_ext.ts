@@ -1,3 +1,19 @@
+/**
+ * Analytics Extended API client — custom dashboards, widgets, and saved reports.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/analytics`.
+ *
+ * Key exports:
+ *   - useDashboards()         — list all user dashboards
+ *   - useCreateDashboard()    — create a new custom dashboard
+ *   - useDashboardWidgets()   — fetch widgets for a given dashboard
+ *   - useCreateWidget()       — add a widget to a dashboard
+ *   - useUpdateWidget()       — update widget config or position
+ *   - useDeleteWidget()       — remove a widget from a dashboard
+ *   - useSavedReports()       — list saved analytic reports
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

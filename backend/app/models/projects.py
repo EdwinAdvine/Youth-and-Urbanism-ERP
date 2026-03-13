@@ -8,10 +8,10 @@ from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Te
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, OptimisticLockMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 
-class Project(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+class Project(OptimisticLockMixin, Base, UUIDPrimaryKeyMixin, TimestampMixin):
     """A project that groups tasks and milestones.
 
     ``members`` is a JSON array of user-id strings for quick membership
@@ -70,7 +70,7 @@ class Project(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         return f"<Project id={self.id} name={self.name!r} status={self.status}>"
 
 
-class Task(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+class Task(OptimisticLockMixin, Base, UUIDPrimaryKeyMixin, TimestampMixin):
     """A task within a project, shown on the Kanban board.
 
     ``tags`` is stored as a PostgreSQL ARRAY of TEXT values for efficient

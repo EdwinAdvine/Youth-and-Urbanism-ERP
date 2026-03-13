@@ -1,5 +1,4 @@
 """Finance Currencies API — dedicated CRUD for currency management."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone

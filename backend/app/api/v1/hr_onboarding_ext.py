@@ -1,5 +1,4 @@
 """HR Enhanced Onboarding/Offboarding API — templates, tasks, buddy system, progress, exit."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timedelta, timezone

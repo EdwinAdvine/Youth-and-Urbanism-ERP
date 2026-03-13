@@ -1,4 +1,24 @@
+/**
+ * HR API client — employees, departments, leave requests, and attendance.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the core HR
+ * module. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/hr`.
+ *
+ * Key exports:
+ *   - useDepartments() / useCreateDepartment() — org-chart department management
+ *   - useEmployees() / useEmployee() — employee roster with department/manager joins
+ *   - useCreateEmployee() / useUpdateEmployee() — employee lifecycle mutations
+ *   - useLeaveRequests() / useCreateLeaveRequest() — leave application and approval
+ *   - useApproveLeave() / useRejectLeave() — manager approval workflow
+ *   - useAttendance() / useClockIn() / useClockOut() — daily attendance tracking
+ *   - usePayslips() — payroll slip history per employee
+ *
+ * Note: leave approval triggers an email notification via the Celery task queue.
+ * Attendance clock-in/out is date-scoped per employee.
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { REFERENCE_PRESET, LIST_PRESET, DETAIL_PRESET, DASHBOARD_PRESET } from '@/utils/queryDefaults'
 import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -137,6 +157,7 @@ export function useDepartments() {
       const { data } = await apiClient.get<{ total: number; departments: Department[] }>('/hr/departments')
       return data.departments
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -181,6 +202,7 @@ export function useEmployees(params: { page?: number; limit?: number; department
       const { data } = await apiClient.get<any>('/hr/employees', { params })
       return { total: data.total ?? 0, items: data.employees ?? data.items ?? [] } as PaginatedResponse<Employee>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -192,6 +214,7 @@ export function useEmployee(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -202,6 +225,7 @@ export function useMyEmployeeProfile() {
       const { data } = await apiClient.get<Employee>('/hr/employees/me')
       return data
     },
+    ...DETAIL_PRESET,
   })
 }
 
@@ -252,6 +276,7 @@ export function useLeaveRequests(params: { page?: number; limit?: number; status
       const { data } = await apiClient.get<any>('/hr/leave-requests', { params })
       return { total: data.total ?? 0, items: data.leave_requests ?? data.items ?? [] } as PaginatedResponse<LeaveRequest>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -298,6 +323,7 @@ export function useLeaveBalance(employeeId: string) {
       return data
     },
     enabled: !!employeeId,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -310,6 +336,7 @@ export function useAttendance(params: { page?: number; limit?: number; employee_
       const { data } = await apiClient.get<any>('/hr/attendance', { params })
       return { total: data.total ?? 0, items: data.attendance ?? data.records ?? data.items ?? [] } as PaginatedResponse<AttendanceRecord>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -344,6 +371,7 @@ export function useHRDashboardStats() {
       const { data } = await apiClient.get<HRDashboardStats>('/hr/dashboard/stats')
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -401,6 +429,7 @@ export function useSalaryStructures() {
       const { data } = await apiClient.get<SalaryStructure[]>('/hr/salary-structures')
       return data
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -450,6 +479,7 @@ export function usePayslips(params?: {
       const { data } = await apiClient.get<any>('/hr/payslips', { params })
       return { total: data.total ?? 0, items: data.payslips ?? data.items ?? [] } as PaginatedResponse<Payslip>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -461,6 +491,7 @@ export function usePayslipDetail(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -536,6 +567,7 @@ export function useTaxBrackets(countryCode?: string) {
       const { data } = await apiClient.get<{ tax_brackets: TaxBracket[] }>('/hr/tax-brackets', { params })
       return data.tax_brackets
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -605,6 +637,7 @@ export function useStatutoryDeductions() {
       const { data } = await apiClient.get<{ statutory_deductions: StatutoryDeduction[] }>('/hr/statutory-deductions')
       return data.statutory_deductions
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -667,6 +700,7 @@ export function useEmployeeDocuments(employeeId: string) {
       return data.documents
     },
     enabled: !!employeeId,
+    ...LIST_PRESET,
   })
 }
 
@@ -750,6 +784,7 @@ export function useTrainings(params: { status?: TrainingStatus; department_id?: 
       const { data } = await apiClient.get<{ trainings: Training[] }>('/hr/trainings', { params })
       return data.trainings
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -783,6 +818,7 @@ export function useTrainingAttendees(trainingId: string) {
       return data.attendees
     },
     enabled: !!trainingId,
+    ...LIST_PRESET,
   })
 }
 
@@ -848,6 +884,7 @@ export function usePerformanceReviews(params: { employee_id?: string; status?: s
       const { data } = await apiClient.get<{ reviews: PerformanceReview[] }>('/hr/performance-reviews', { params })
       return data.reviews
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -916,6 +953,7 @@ export function useBenefits(params: { employee_id?: string; benefit_type?: Benef
       const { data } = await apiClient.get<{ benefits: Benefit[] }>('/hr/benefits', { params })
       return data.benefits
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -975,6 +1013,7 @@ export function useOvertime(params: { employee_id?: string; status?: OvertimeSta
       const { data } = await apiClient.get<{ records: Overtime[] }>('/hr/overtime', { params })
       return data.records
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1029,6 +1068,7 @@ export function useOrgChart() {
       const { data } = await apiClient.get<{ nodes: OrgChartNode[] }>('/hr/org-chart')
       return data.nodes
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -1063,6 +1103,7 @@ export function useHRReports(params: { period_start?: string; period_end?: strin
       const { data } = await apiClient.get<HRReportData>('/hr/reports', { params })
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -1073,6 +1114,7 @@ export function useHRKPIs() {
       const { data } = await apiClient.get<HRKPIs>('/hr/kpis')
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -1109,6 +1151,7 @@ export function usePayRuns(statusFilter?: string) {
       const { data } = await apiClient.get<{ pay_runs: PayRun[] }>('/hr/pay-runs', { params })
       return data.pay_runs
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1120,6 +1163,7 @@ export function usePayRun(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 

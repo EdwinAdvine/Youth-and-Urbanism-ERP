@@ -1,6 +1,7 @@
 import { useDashboardStats } from '../../../api/analytics'
 import { useModuleKPIs } from '../../../api/analytics_ext'
-import { KPICard, BarChart, PieChart, FunnelChart, LineChart } from '../../../components/charts'
+import ChartRenderer from '../../../components/charts/ChartRenderer'
+import { KPICard } from '../../../components/charts'
 import { Spinner } from '../../../components/ui'
 import DashboardHeader from './DashboardHeader'
 
@@ -80,13 +81,33 @@ export default function CRMDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Sales Pipeline</h3>
           <p className="text-xs text-gray-400 mb-4">Funnel conversion by stage</p>
-          <FunnelChart data={pipelineStages} height={260} />
+          <ChartRenderer
+            type="funnel"
+            data={pipelineStages}
+            config={{
+              nameKey: 'name',
+              valueKey: 'value',
+              colors: ['#51459d', '#6fd943', '#3ec9d6', '#ffa21d', '#ff3a6e'],
+              showLegend: true,
+            }}
+            height={260}
+          />
         </div>
 
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Lead Sources</h3>
           <p className="text-xs text-gray-400 mb-4">Where leads come from</p>
-          <PieChart data={leadSources} innerRadius={50} height={260} />
+          <ChartRenderer
+            type="donut"
+            data={leadSources}
+            config={{
+              nameKey: 'name',
+              valueKey: 'value',
+              colors: ['#51459d', '#6fd943', '#3ec9d6', '#ffa21d', '#ff3a6e'],
+              showLegend: true,
+            }}
+            height={260}
+          />
         </div>
       </div>
 
@@ -95,24 +116,35 @@ export default function CRMDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Conversion Rate Trend</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly lead-to-deal conversion</p>
-          <LineChart
+          <ChartRenderer
+            type="line"
             data={conversionData}
-            lines={[{ dataKey: 'rate', color: '#6fd943', name: 'Conversion %' }]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['rate'],
+              colors: ['#6fd943'],
+              showGrid: true,
+              showLegend: false,
+              smooth: true,
+            }}
             height={240}
-            formatTooltip={(v) => `${v}%`}
           />
         </div>
 
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Deal Velocity</h3>
           <p className="text-xs text-gray-400 mb-4">Average days to close</p>
-          <BarChart
+          <ChartRenderer
+            type="bar"
             data={velocityData}
-            bars={[{ dataKey: 'days', color: '#3ec9d6', name: 'Days to Close' }]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['days'],
+              colors: ['#3ec9d6'],
+              showGrid: true,
+              showLegend: false,
+            }}
             height={240}
-            formatTooltip={(v) => `${v} days`}
           />
         </div>
       </div>
@@ -121,10 +153,16 @@ export default function CRMDashboard() {
       <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Deal Size Distribution</h3>
         <p className="text-xs text-gray-400 mb-4">Number of deals by value range</p>
-        <BarChart
+        <ChartRenderer
+          type="bar"
           data={dealSizes}
-          bars={[{ dataKey: 'count', color: '#51459d', name: 'Deals' }]}
-          xKey="range"
+          config={{
+            xKey: 'range',
+            yKeys: ['count'],
+            colors: ['#51459d'],
+            showGrid: true,
+            showLegend: false,
+          }}
           height={240}
         />
       </div>

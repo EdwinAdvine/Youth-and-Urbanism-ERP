@@ -1,5 +1,4 @@
 """Projects API — CRUD for projects, tasks, milestones, and time logs."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime
@@ -10,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy import and_, cast, func, or_, select
 from sqlalchemy.dialects.postgresql import JSONB as JSONB_TYPE
 
-from app.core.deps import CurrentUser, DBSession
+from app.core.deps import CurrentUser, DBSession, SparseFields, apply_sparse_fields
 from app.core.events import event_bus
 from app.models.projects import Milestone, Project, Task, TimeLog
 from app.models.projects_enhanced import TaskAuditLog
@@ -217,6 +216,7 @@ async def create_project(
     db.add(project)
     await db.commit()
     await db.refresh(project)
+    await event_bus.publish_data_change("project", str(project.id), "created")
     return ProjectOut.model_validate(project).model_dump()
 
 
@@ -263,6 +263,7 @@ async def update_project(
 
     await db.commit()
     await db.refresh(project)
+    await event_bus.publish_data_change("project", str(project.id), "updated")
     return ProjectOut.model_validate(project).model_dump()
 
 
@@ -279,8 +280,10 @@ async def delete_project(
     project = await db.get(Project, project_id)
     if not project or project.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    project_id_str = str(project.id)
     await db.delete(project)
     await db.commit()
+    await event_bus.publish_data_change("project", project_id_str, "deleted")
     return Response(status_code=status.HTTP_200_OK)
 
 
@@ -295,6 +298,7 @@ async def list_tasks(
     assignee: uuid.UUID | None = Query(None, description="Filter by assignee ID"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
+    fields: SparseFields = None,
 ) -> dict[str, Any]:
     project = await db.get(Project, project_id)
     if not project or not _user_can_access_project(project, current_user.id):
@@ -316,9 +320,12 @@ async def list_tasks(
     query = query.order_by(Task.order.asc()).offset((page - 1) * limit).limit(limit)
     result = await db.execute(query)
     tasks = result.scalars().all()
+    task_data = [TaskOut.model_validate(t) for t in tasks]
+    if fields:
+        task_data = [apply_sparse_fields(t, fields) for t in task_data]
     return {
         "total": total,
-        "tasks": [TaskOut.model_validate(t) for t in tasks],
+        "tasks": task_data,
     }
 
 
@@ -383,6 +390,7 @@ async def create_task(
             "assignee_id": str(task.assignee_id),
             "assigned_by": str(current_user.id),
         })
+    await event_bus.publish_data_change("task", str(task.id), "created")
 
     return TaskOut.model_validate(task).model_dump()
 
@@ -461,6 +469,7 @@ async def update_task(
             "owner_id": str(project.owner_id),
             "assignee_id": str(task.assignee_id) if task.assignee_id else None,
         })
+    await event_bus.publish_data_change("task", str(task.id), "updated")
 
     return TaskOut.model_validate(task).model_dump()
 
@@ -484,8 +493,10 @@ async def delete_task(
     if not task or task.project_id != project_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 
+    task_id_str = str(task.id)
     await db.delete(task)
     await db.commit()
+    await event_bus.publish_data_change("task", task_id_str, "deleted")
     return Response(status_code=status.HTTP_200_OK)
 
 

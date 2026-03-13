@@ -1,14 +1,28 @@
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
-from app.models.user import AppAdmin, Permission, Role, RolePermission, Team, TeamMember, User, UserRole
+from app.models.user import (
+    AppAccess,
+    AppAdmin,
+    AppConfig,
+    AuditLog,
+    Permission,
+    Role,
+    RolePermission,
+    Team,
+    TeamMember,
+    User,
+    UserRole,
+)
 from app.schemas.user import (
     AppAdminCreate,
     AssignRoleRequest,
@@ -287,3 +301,201 @@ class UserService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team member not found")
         await self.db.delete(tm)
         await self.db.flush()
+
+    # ── App Access ────────────────────────────────────────────────────────────
+    async def list_user_app_access(self, user_id: uuid.UUID) -> list[AppAccess]:
+        result = await self.db.execute(
+            select(AppAccess).where(AppAccess.user_id == user_id).order_by(AppAccess.app_name)
+        )
+        return list(result.scalars().all())
+
+    async def set_app_access(
+        self,
+        user_id: uuid.UUID,
+        app_name: str,
+        granted: bool,
+        granted_by: uuid.UUID | None = None,
+    ) -> AppAccess:
+        result = await self.db.execute(
+            select(AppAccess).where(AppAccess.user_id == user_id, AppAccess.app_name == app_name)
+        )
+        entry = result.scalar_one_or_none()
+        if entry is None:
+            entry = AppAccess(user_id=user_id, app_name=app_name, granted=granted, granted_by=granted_by)
+            self.db.add(entry)
+        else:
+            entry.granted = granted
+            if granted_by is not None:
+                entry.granted_by = granted_by
+        await self.db.flush()
+        await self.db.refresh(entry)
+        return entry
+
+    async def bulk_set_app_access(
+        self,
+        user_id: uuid.UUID,
+        app_grants: dict[str, bool],
+        granted_by: uuid.UUID | None = None,
+    ) -> int:
+        count = 0
+        for app_name, granted in app_grants.items():
+            await self.set_app_access(user_id, app_name, granted, granted_by)
+            count += 1
+        return count
+
+    async def get_accessible_apps(self, user_id: uuid.UUID) -> list[str]:
+        """Return app names where this user has an explicit granted=True row.
+
+        If the user has NO rows at all, returns [] (caller should treat as
+        'no restrictions' for backward compatibility, handled at the API layer).
+        """
+        result = await self.db.execute(
+            select(AppAccess.app_name)
+            .where(AppAccess.user_id == user_id, AppAccess.granted.is_(True))
+            .order_by(AppAccess.app_name)
+        )
+        return [row[0] for row in result.all()]
+
+    # ── App Config (persisted) ────────────────────────────────────────────────
+    async def get_app_config(self, app_name: str) -> dict[str, Any]:
+        """Read all config keys for an app from DB. Returns dict of key→value."""
+        result = await self.db.execute(
+            select(AppConfig).where(AppConfig.app_name == app_name)
+        )
+        rows = list(result.scalars().all())
+        config: dict[str, Any] = {}
+        for row in rows:
+            try:
+                config[row.config_key] = json.loads(row.config_value)
+            except (json.JSONDecodeError, TypeError):
+                config[row.config_key] = row.config_value
+        return config
+
+    async def set_app_config(
+        self, app_name: str, config: dict[str, Any], updated_by: uuid.UUID | None = None
+    ) -> dict[str, Any]:
+        """Upsert each key in config dict as a separate AppConfig row."""
+        for key, value in config.items():
+            result = await self.db.execute(
+                select(AppConfig).where(AppConfig.app_name == app_name, AppConfig.config_key == key)
+            )
+            row = result.scalar_one_or_none()
+            serialized = json.dumps(value)
+            if row is None:
+                row = AppConfig(
+                    app_name=app_name,
+                    config_key=key,
+                    config_value=serialized,
+                    updated_by=updated_by,
+                )
+                self.db.add(row)
+            else:
+                row.config_value = serialized
+                if updated_by is not None:
+                    row.updated_by = updated_by
+        await self.db.flush()
+        return await self.get_app_config(app_name)
+
+    # ── Audit Logs ────────────────────────────────────────────────────────────
+    async def log_action(
+        self,
+        action: str,
+        *,
+        user_id: uuid.UUID | None = None,
+        user_email: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+        metadata: dict | None = None,
+        ip_address: str | None = None,
+    ) -> None:
+        entry = AuditLog(
+            user_id=user_id,
+            user_email=user_email,
+            action=action,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            metadata_=metadata,
+            ip_address=ip_address,
+        )
+        self.db.add(entry)
+        await self.db.flush()
+
+    async def list_audit_logs(
+        self,
+        skip: int = 0,
+        limit: int = 50,
+        user_id: uuid.UUID | None = None,
+        action: str | None = None,
+        resource_type: str | None = None,
+    ) -> list[AuditLog]:
+        q = select(AuditLog).order_by(AuditLog.created_at.desc())
+        if user_id is not None:
+            q = q.where(AuditLog.user_id == user_id)
+        if action is not None:
+            q = q.where(AuditLog.action == action)
+        if resource_type is not None:
+            q = q.where(AuditLog.resource_type == resource_type)
+        result = await self.db.execute(q.offset(skip).limit(limit))
+        return list(result.scalars().all())
+
+    # ── Role permissions (bulk) ───────────────────────────────────────────────
+    async def get_role_permissions(self, role_id: uuid.UUID) -> list[Permission]:
+        result = await self.db.execute(
+            select(Permission)
+            .join(RolePermission, RolePermission.permission_id == Permission.id)
+            .where(RolePermission.role_id == role_id)
+            .order_by(Permission.app_scope, Permission.name)
+        )
+        return list(result.scalars().all())
+
+    async def bulk_assign_permissions(
+        self,
+        role_id: uuid.UUID,
+        permission_ids: list[uuid.UUID],
+        replace: bool = False,
+    ) -> dict[str, int]:
+        """Assign a list of permissions to a role. If replace=True, removes unlisted ones."""
+        role = await self.get_role(role_id)
+        if role.is_system:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot modify permissions of system roles",
+            )
+
+        assigned = 0
+        removed = 0
+        new_set = set(permission_ids)
+
+        if replace:
+            # Find existing role-permission rows
+            existing_result = await self.db.execute(
+                select(RolePermission).where(RolePermission.role_id == role_id)
+            )
+            existing_rps = list(existing_result.scalars().all())
+            existing_set = {rp.permission_id for rp in existing_rps}
+
+            # Remove permissions not in new_set
+            for rp in existing_rps:
+                if rp.permission_id not in new_set:
+                    await self.db.delete(rp)
+                    removed += 1
+
+            # Add permissions not already present
+            for pid in new_set:
+                if pid not in existing_set:
+                    self.db.add(RolePermission(role_id=role_id, permission_id=pid))
+                    assigned += 1
+        else:
+            for pid in new_set:
+                existing = await self.db.execute(
+                    select(RolePermission).where(
+                        RolePermission.role_id == role_id,
+                        RolePermission.permission_id == pid,
+                    )
+                )
+                if existing.scalar_one_or_none() is None:
+                    self.db.add(RolePermission(role_id=role_id, permission_id=pid))
+                    assigned += 1
+
+        await self.db.flush()
+        return {"assigned": assigned, "removed": removed}

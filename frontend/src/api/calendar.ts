@@ -1,4 +1,24 @@
+/**
+ * Calendar API client — events, Jitsi video meetings, recurrence rules, and
+ * cross-module ERP context linking.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Calendar
+ * module. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/calendar`.
+ *
+ * Key exports:
+ *   - useCalendarEvents() — range-filtered event list (start/end date params)
+ *   - useCalendarEvent() — single event detail including ERP context fields
+ *   - useCreateEvent() / useUpdateEvent() / useDeleteEvent() — event mutations
+ *   - useUpcomingEvents() — next N events for the authenticated user
+ *   - useCreateJitsiMeeting() — create event with auto-generated Jitsi room
+ *
+ * Note: events carry an ERPContext object linking to CRM deals, Finance invoices,
+ * Support tickets, and Projects. Recurrence is stored as an RRULE string.
+ * Query keys are namespaced under ['calendar', 'events'].
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { LIST_PRESET } from '@/utils/queryDefaults'
 import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -119,6 +139,7 @@ export function useCalendarEvents(params?: { start?: string; end?: string; event
       const { data } = await apiClient.get<EventsResponse>('/calendar/events', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 

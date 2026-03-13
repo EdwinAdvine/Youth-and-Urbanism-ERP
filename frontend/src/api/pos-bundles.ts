@@ -1,3 +1,16 @@
+/**
+ * POS Bundles API client — product bundle/combo management and item modifier groups.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/pos`.
+ *
+ * Key exports:
+ *   - useBundles() — list active product bundles with their constituent items
+ *   - useCreateBundle() / useUpdateBundle() — bundle CRUD with pricing and items
+ *   - useModifierGroups() / useCreateModifierGroup() — option groups (size, add-ons, etc.)
+ *   - useDeleteBundle() — deactivate or permanently remove a bundle
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

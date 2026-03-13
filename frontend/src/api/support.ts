@@ -1,4 +1,27 @@
+/**
+ * Support API client — core helpdesk: tickets, SLA policies, knowledge base.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Support
+ * module. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/support`.
+ *
+ * Key exports:
+ *   - useTickets() — paginated ticket list with filters
+ *   - useTicket() — single ticket with comments
+ *   - useCreateTicket() / useUpdateTicket() — ticket CRUD
+ *   - useTicketCategories() — category management
+ *   - useSLAPolicies() — SLA policy list
+ *   - useKBArticles() / useKBArticle() — knowledge base articles
+ *   - useSupportStats() — dashboard KPI summary
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  REFERENCE_PRESET,
+  LIST_PRESET,
+  DETAIL_PRESET,
+  DASHBOARD_PRESET,
+} from '@/utils/queryDefaults'
+import { optimisticListUpdate } from '@/utils/optimisticMutation'
 import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -184,6 +207,7 @@ export function useTicketCategories() {
       const { data } = await apiClient.get<TicketCategory[]>('/support/categories')
       return data
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -236,6 +260,7 @@ export function useTickets(params: {
       const { data } = await apiClient.get<PaginatedTickets>('/support/tickets', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -247,6 +272,7 @@ export function useTicketDetail(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -271,10 +297,12 @@ export function useUpdateTicket() {
       const { data } = await apiClient.put<Ticket>(`/support/tickets/${id}`, payload)
       return data
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['support', 'tickets'] })
-      qc.invalidateQueries({ queryKey: ['support', 'dashboard'] })
-    },
+    ...optimisticListUpdate(
+      qc,
+      ['support', 'tickets'],
+      (list: Ticket[], updated: UpdateTicketPayload) =>
+        list.map(t => t.id === updated.id ? { ...t, ...updated } : t),
+    ),
   })
 }
 
@@ -285,10 +313,12 @@ export function useAssignTicket() {
       const { data } = await apiClient.post<Ticket>(`/support/tickets/${id}/assign`, { assigned_to })
       return data
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['support', 'tickets'] })
-      qc.invalidateQueries({ queryKey: ['support', 'dashboard'] })
-    },
+    ...optimisticListUpdate(
+      qc,
+      ['support', 'tickets'],
+      (list: Ticket[], updated: { id: string; assigned_to: string | null }) =>
+        list.map(t => t.id === updated.id ? { ...t, assigned_to: updated.assigned_to } : t),
+    ),
   })
 }
 
@@ -344,6 +374,7 @@ export function useTicketComments(ticketId: string) {
       return data
     },
     enabled: !!ticketId,
+    ...LIST_PRESET,
   })
 }
 
@@ -378,6 +409,7 @@ export function useKBArticles(params: {
       const { data } = await apiClient.get<PaginatedArticles>('/support/kb', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -389,6 +421,7 @@ export function useKBArticle(slug: string) {
       return data
     },
     enabled: !!slug,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -444,6 +477,7 @@ export function useSLAPolicies() {
       const { data } = await apiClient.get<SLAPolicy[]>('/support/sla')
       return data
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -478,6 +512,7 @@ export function useSupportStats() {
       const { data } = await apiClient.get<SupportStats>('/support/dashboard/stats')
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 

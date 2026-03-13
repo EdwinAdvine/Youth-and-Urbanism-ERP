@@ -1,5 +1,4 @@
 """E-Commerce B2B API — companies, pricing tiers, quotes."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone

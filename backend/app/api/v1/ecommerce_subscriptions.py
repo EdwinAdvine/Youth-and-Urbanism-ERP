@@ -1,5 +1,4 @@
 """E-Commerce Subscriptions API — recurring product subscriptions."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, timedelta

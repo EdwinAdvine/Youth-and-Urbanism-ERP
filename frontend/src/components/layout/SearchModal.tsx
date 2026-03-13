@@ -1,3 +1,19 @@
+/**
+ * SearchModal — global cross-module search modal (Cmd+K / Ctrl+K).
+ *
+ * Opens as a full-screen overlay. Queries the backend via `api/search`
+ * (`GET /search?q=...`) with a 300ms debounce to avoid excessive requests.
+ * Results are grouped by module (Inventory, HR, CRM, etc.) with module-specific
+ * emoji icons for quick visual scanning.
+ *
+ * Keyboard navigation:
+ * - Arrow Up/Down — move through results
+ * - Enter — navigate to selected result
+ * - Escape — close modal
+ *
+ * Navigates to the result's `url` field and closes the modal on selection.
+ * Empty state shows a "No results" message. Loading state shows a spinner.
+ */
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { cn, Spinner } from '../ui'
@@ -71,17 +87,17 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   const hasResults = (data?.results?.length ?? 0) > 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-0 md:pt-[10vh]">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Modal panel */}
-      <div className="relative bg-white dark:bg-gray-800 rounded-[10px] shadow-2xl w-full max-w-xl mx-4 overflow-hidden">
+      {/* Modal panel — full-screen on mobile, centered card on desktop */}
+      <div className="relative bg-white dark:bg-gray-800 md:rounded-[10px] shadow-2xl w-full md:max-w-xl md:mx-4 h-full md:h-auto overflow-hidden flex flex-col">
         {/* Search input row */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center gap-3 px-4 py-3 md:py-3 border-b border-gray-100 dark:border-gray-800 safe-top shrink-0">
           <svg
             className="h-5 w-5 text-gray-400 shrink-0"
             fill="none"
@@ -101,19 +117,22 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Search anything..."
-            className="flex-1 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 bg-transparent focus:outline-none"
+            className="flex-1 text-base md:text-sm min-h-[44px] text-gray-900 dark:text-gray-100 placeholder:text-gray-400 bg-transparent focus:outline-none"
           />
           {isFetching && <Spinner size="sm" />}
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors text-xs font-medium border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-gray-600 active:text-gray-800 transition-colors text-xs font-medium border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5 md:min-h-0 md:min-w-0"
           >
-            Esc
+            <span className="hidden md:inline">Esc</span>
+            <svg className="h-5 w-5 md:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
         {/* Results area */}
-        <div className="max-h-[60vh] overflow-y-auto">
+        <div className="flex-1 md:flex-none md:max-h-[60vh] overflow-y-auto">
           {!hasQuery && (
             <div className="py-12 text-center text-sm text-gray-400">
               Start typing to search...
@@ -144,8 +163,8 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
                   key={item.id}
                   onClick={() => handleItemClick(item.link)}
                   className={cn(
-                    'w-full flex items-center gap-3 px-4 py-2.5 text-left',
-                    'hover:bg-primary/5 transition-colors'
+                    'w-full flex items-center gap-3 px-4 py-2.5 min-h-[44px] text-left',
+                    'hover:bg-primary/5 active:bg-primary/10 transition-colors'
                   )}
                 >
                   <span

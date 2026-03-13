@@ -3,7 +3,6 @@
 All config is stored in the system_settings table as JSON values
 under the 'docs_admin' category.
 """
-from __future__ import annotations
 
 import json
 from typing import Any

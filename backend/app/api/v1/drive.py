@@ -1,5 +1,4 @@
 """Drive API — file/folder management + enterprise sharing (SharePoint-level)."""
-from __future__ import annotations
 
 import logging
 import secrets
@@ -15,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import CurrentUser, DBSession
 from app.core.events import event_bus
+from app.core.rate_limit import limiter
 from app.core.sanitize import like_pattern
 from app.models.drive import DriveFile, DriveFolder
 from app.models.file_share import FileShare, ShareAuditLog, TeamFolder, TeamFolderMember
@@ -229,7 +229,9 @@ async def list_files(
 
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED, summary="Upload a file to the drive")
+@limiter.limit("20/minute")
 async def upload_file(
+    request: Request,
     current_user: CurrentUser,
     db: DBSession,
     file: UploadFile = File(...),

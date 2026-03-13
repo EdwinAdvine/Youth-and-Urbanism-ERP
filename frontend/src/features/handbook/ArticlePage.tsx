@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { sanitizeHTML } from '@/shared/utils/sanitize'
 import { Spinner } from '@/components/ui'
 import { useHandbookArticle, useRelatedArticles, useMarkArticleRead } from '@/api/handbook'
 import BreadcrumbNav from './components/BreadcrumbNav'
@@ -15,7 +16,7 @@ function MarkdownRenderer({ html, markdown }: { html: string | null; markdown: s
     return (
       <div
         className="prose prose-sm max-w-none prose-headings:scroll-mt-20 prose-headings:font-semibold prose-a:text-primary prose-code:bg-gray-100 prose-code:px-1 prose-code:rounded"
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHTML(html) }}
       />
     )
   }
@@ -36,7 +37,7 @@ function MarkdownRenderer({ html, markdown }: { html: string | null; markdown: s
   return (
     <div
       className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed"
-      dangerouslySetInnerHTML={{ __html: `<p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-3">${rendered}</p>` }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHTML(`<p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-3">${rendered}</p>`) }}
     />
   )
 }

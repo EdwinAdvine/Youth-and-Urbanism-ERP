@@ -1,5 +1,4 @@
 """Support / Customer Center API — tickets, comments, KB, SLA, dashboard."""
-from __future__ import annotations
 
 import re
 import uuid
@@ -11,7 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import selectinload
 
-from app.core.deps import CurrentUser, DBSession
+from app.core.deps import CurrentUser, DBSession, SparseFields, apply_sparse_fields
 from app.core.events import event_bus
 from app.core.export import rows_to_csv
 from app.models.support import (
@@ -21,6 +20,7 @@ from app.models.support import (
     TicketCategory,
     TicketComment,
 )
+from app.models.support_phase2 import TicketFollower, SLAEscalationChain
 
 router = APIRouter()
 
@@ -339,6 +339,7 @@ async def list_tickets(
     search: str | None = None,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
+    fields: SparseFields = None,
 ) -> dict[str, Any]:
     filters = []
     if status_filter:
@@ -372,10 +373,12 @@ async def list_tickets(
         q = q.where(and_(*filters))
     result = await db.execute(q)
     tickets = result.scalars().all()
-
+    ticket_data = [_ticket_out(t) for t in tickets]
+    if fields:
+        ticket_data = [apply_sparse_fields(t, fields) for t in ticket_data]
     return {
         "total": total,
-        "tickets": [_ticket_out(t) for t in tickets],
+        "tickets": ticket_data,
     }
 
 
@@ -440,6 +443,7 @@ async def create_ticket(
         "assigned_to": str(ticket.assigned_to) if ticket.assigned_to else "",
         "created_by": str(ticket.created_by),
     })
+    await event_bus.publish_data_change("ticket", str(ticket.id), "created")
 
     return _ticket_out(ticket)
 
@@ -546,6 +550,7 @@ async def update_ticket(
     # Re-fetch
     result = await db.execute(select(Ticket).where(Ticket.id == ticket.id))
     ticket = result.scalar_one()
+    await event_bus.publish_data_change("ticket", str(ticket.id), "updated")
     return _ticket_out(ticket)
 
 
@@ -1047,3 +1052,158 @@ async def dashboard_stats(
         "tickets_by_priority": priority_counts,
         "tickets_by_category": tickets_by_category,
     }
+
+
+# ── Ticket Followers ──────────────────────────────────────────────────────────
+
+class FollowerCreate(BaseModel):
+    user_id: uuid.UUID
+    notify_on_comment: bool = True
+    notify_on_status_change: bool = True
+
+class FollowerOut(BaseModel):
+    id: uuid.UUID
+    ticket_id: uuid.UUID
+    user_id: uuid.UUID
+    notify_on_comment: bool
+    notify_on_status_change: bool
+    user_name: str | None = None
+    created_at: Any
+    model_config = {"from_attributes": True}
+
+@router.get("/tickets/{ticket_id}/followers", summary="List ticket followers")
+async def list_followers(ticket_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> list[dict[str, Any]]:
+    ticket = await db.get(Ticket, ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    result = await db.execute(select(TicketFollower).where(TicketFollower.ticket_id == ticket_id))
+    followers = result.scalars().all()
+    return [
+        {**FollowerOut.model_validate(f).model_dump(), "user_name": f.user.full_name if f.user else None}
+        for f in followers
+    ]
+
+@router.post("/tickets/{ticket_id}/followers", status_code=201, summary="Add follower to ticket")
+async def add_follower(ticket_id: uuid.UUID, payload: FollowerCreate, db: DBSession, current_user: CurrentUser) -> dict[str, Any]:
+    ticket = await db.get(Ticket, ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    # Check not already following
+    existing = await db.execute(
+        select(TicketFollower).where(TicketFollower.ticket_id == ticket_id, TicketFollower.user_id == payload.user_id)
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="User already following this ticket")
+    follower = TicketFollower(
+        ticket_id=ticket_id, user_id=payload.user_id,
+        notify_on_comment=payload.notify_on_comment,
+        notify_on_status_change=payload.notify_on_status_change,
+    )
+    db.add(follower)
+    await db.commit()
+    await db.refresh(follower)
+    return {**FollowerOut.model_validate(follower).model_dump(), "user_name": follower.user.full_name if follower.user else None}
+
+@router.delete("/tickets/{ticket_id}/followers/{follower_id}", status_code=204, summary="Remove follower")
+async def remove_follower(ticket_id: uuid.UUID, follower_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> Response:
+    follower = await db.get(TicketFollower, follower_id)
+    if not follower or follower.ticket_id != ticket_id:
+        raise HTTPException(status_code=404, detail="Follower not found")
+    await db.delete(follower)
+    await db.commit()
+    return Response(status_code=204)
+
+@router.post("/tickets/{ticket_id}/follow", summary="Follow ticket (self)")
+async def follow_ticket(ticket_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> dict[str, str]:
+    ticket = await db.get(Ticket, ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    existing = await db.execute(
+        select(TicketFollower).where(TicketFollower.ticket_id == ticket_id, TicketFollower.user_id == current_user.id)
+    )
+    if existing.scalar_one_or_none():
+        return {"status": "already_following"}
+    follower = TicketFollower(ticket_id=ticket_id, user_id=current_user.id)
+    db.add(follower)
+    await db.commit()
+    return {"status": "following"}
+
+@router.post("/tickets/{ticket_id}/unfollow", summary="Unfollow ticket (self)")
+async def unfollow_ticket(ticket_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> dict[str, str]:
+    result = await db.execute(
+        select(TicketFollower).where(TicketFollower.ticket_id == ticket_id, TicketFollower.user_id == current_user.id)
+    )
+    follower = result.scalar_one_or_none()
+    if not follower:
+        return {"status": "not_following"}
+    await db.delete(follower)
+    await db.commit()
+    return {"status": "unfollowed"}
+
+
+# ── SLA Escalation Chains ─────────────────────────────────────────────────────
+
+class EscalationChainCreate(BaseModel):
+    sla_policy_id: uuid.UUID
+    level: int
+    trigger_minutes_before_breach: int = 60
+    action: str = "notify"  # notify, reassign, escalate
+    target_user_id: uuid.UUID | None = None
+    notify_channel: str = "in_app"  # in_app, email, both
+
+class EscalationChainOut(BaseModel):
+    id: uuid.UUID
+    sla_policy_id: uuid.UUID
+    level: int
+    trigger_minutes_before_breach: int
+    action: str
+    target_user_id: uuid.UUID | None
+    notify_channel: str
+    target_user_name: str | None = None
+    created_at: Any
+    updated_at: Any
+    model_config = {"from_attributes": True}
+
+@router.get("/sla/{sla_policy_id}/escalation-chain", summary="List escalation chain for SLA")
+async def list_escalation_chain(sla_policy_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> list[dict[str, Any]]:
+    result = await db.execute(
+        select(SLAEscalationChain).where(SLAEscalationChain.sla_policy_id == sla_policy_id).order_by(SLAEscalationChain.level)
+    )
+    chains = result.scalars().all()
+    return [
+        {**EscalationChainOut.model_validate(c).model_dump(), "target_user_name": c.target_user.full_name if c.target_user else None}
+        for c in chains
+    ]
+
+@router.post("/sla/{sla_policy_id}/escalation-chain", status_code=201, summary="Add escalation level")
+async def add_escalation_level(sla_policy_id: uuid.UUID, payload: EscalationChainCreate, db: DBSession, current_user: CurrentUser) -> dict[str, Any]:
+    chain = SLAEscalationChain(
+        sla_policy_id=sla_policy_id, level=payload.level,
+        trigger_minutes_before_breach=payload.trigger_minutes_before_breach,
+        action=payload.action, target_user_id=payload.target_user_id,
+        notify_channel=payload.notify_channel,
+    )
+    db.add(chain)
+    await db.commit()
+    await db.refresh(chain)
+    return {**EscalationChainOut.model_validate(chain).model_dump(), "target_user_name": chain.target_user.full_name if chain.target_user else None}
+
+@router.put("/sla/escalation-chain/{chain_id}", summary="Update escalation level")
+async def update_escalation_level(chain_id: uuid.UUID, payload: EscalationChainCreate, db: DBSession, current_user: CurrentUser) -> dict[str, Any]:
+    chain = await db.get(SLAEscalationChain, chain_id)
+    if not chain:
+        raise HTTPException(status_code=404, detail="Escalation chain not found")
+    for field, value in payload.model_dump(exclude_none=True).items():
+        setattr(chain, field, value)
+    await db.commit()
+    await db.refresh(chain)
+    return EscalationChainOut.model_validate(chain).model_dump()
+
+@router.delete("/sla/escalation-chain/{chain_id}", status_code=204, summary="Delete escalation level")
+async def delete_escalation_level(chain_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> Response:
+    chain = await db.get(SLAEscalationChain, chain_id)
+    if not chain:
+        raise HTTPException(status_code=404, detail="Escalation chain not found")
+    await db.delete(chain)
+    await db.commit()
+    return Response(status_code=204)

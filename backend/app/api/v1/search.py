@@ -1,5 +1,4 @@
 """Global cross-module search endpoint."""
-from __future__ import annotations
 
 from fastapi import APIRouter, Query
 from sqlalchemy import or_, select
@@ -17,7 +16,7 @@ from app.models.handbook import HandbookArticle
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("")
 async def global_search(
     q: str = Query(..., min_length=1, description="Search term"),
     current_user: CurrentUser = None,

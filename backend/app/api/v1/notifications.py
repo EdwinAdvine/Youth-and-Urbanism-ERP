@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 from datetime import datetime
 from typing import Any
@@ -37,7 +36,7 @@ class UnreadCountOut(PydanticBase):
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 
-@router.get("/", response_model=dict[str, Any])
+@router.get("", response_model=dict[str, Any])
 async def list_notifications(
     db: DBSession,
     current_user: CurrentUser,

@@ -1,5 +1,4 @@
 """CRM Lead Scoring — CRUD for scoring rules + score execution."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

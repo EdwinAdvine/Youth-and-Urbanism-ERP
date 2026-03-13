@@ -189,14 +189,14 @@ export default function JournalPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Journal Entries</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Journal Entries</h1>
           <p className="text-sm text-gray-500 mt-1">Record and manage journal entries</p>
         </div>
-        <Button onClick={() => setModalOpen(true)}>
+        <Button onClick={() => setModalOpen(true)} className="w-full sm:w-auto">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -205,8 +205,8 @@ export default function JournalPage() {
       </div>
 
       {/* Filter */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-40">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
+        <div className="w-full sm:w-40">
           <Select
             options={STATUS_OPTIONS}
             value={statusFilter}
@@ -218,13 +218,15 @@ export default function JournalPage() {
 
       {/* Table */}
       <Card padding={false}>
-        <Table<JournalEntry>
-          columns={columns}
-          data={data?.items ?? []}
-          loading={isLoading}
-          emptyText="No journal entries"
-          keyExtractor={(row) => row.id}
-        />
+        <div className="overflow-x-auto">
+          <Table<JournalEntry>
+            columns={columns}
+            data={data?.items ?? []}
+            loading={isLoading}
+            emptyText="No journal entries"
+            keyExtractor={(row) => row.id}
+          />
+        </div>
         <Pagination
           page={page}
           pages={totalPages}
@@ -236,7 +238,7 @@ export default function JournalPage() {
       {/* Create Entry Modal */}
       <Modal open={modalOpen} onClose={() => { setModalOpen(false); resetForm() }} title="New Journal Entry" size="xl">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Date"
               type="date"

@@ -1,3 +1,20 @@
+/**
+ * useWebSocket — generic, reusable WebSocket hook for Urban Vibes Dynamics.
+ *
+ * Manages a single WebSocket connection with optional automatic reconnection.
+ * Appends the current JWT as a query parameter so the backend can authenticate
+ * the connection without a custom upgrade header.
+ *
+ * Usage:
+ *   const { status, connect, disconnect, send } = useWebSocket({
+ *     url: '/api/v1/ai/ws/chat/session-id',
+ *     onMessage: (msg) => handleStreamChunk(msg),
+ *     autoReconnect: true,
+ *   })
+ *
+ * For module-specific protocols (agent, team chat, live-chat, doc copilot) use
+ * the dedicated hooks instead — this hook is for generic streaming scenarios.
+ */
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useAuthStore } from '../store/auth'
 

@@ -1,5 +1,4 @@
 """Analytics Extension API — dashboards, widgets, queries, reports, alerts, KPIs."""
-from __future__ import annotations
 
 import csv
 import io
@@ -10,8 +9,8 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, status
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect, status
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select, text
 
@@ -20,6 +19,7 @@ from app.models.analytics import (
     Dashboard,
     AnalyticsDashboardWidget as DashboardWidget,
     DataAlert,
+    DataLineage,
     Report,
     SavedQuery,
 )
@@ -945,6 +945,7 @@ async def module_trends(
 # Cross-module Executive Summary
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 _EXECUTIVE_QUERIES: list[dict[str, str]] = [
     {"name": "total_revenue", "label": "Total Revenue", "sql": "SELECT COALESCE(SUM(total), 0) FROM finance_invoices WHERE status = 'paid'"},
     {"name": "total_expenses", "label": "Total Expenses", "sql": "SELECT COALESCE(SUM(jl.debit), 0) FROM finance_journal_lines jl JOIN finance_accounts a ON a.id = jl.account_id AND a.account_type = 'expense'"},
@@ -975,3 +976,405 @@ async def cross_module_summary(
         kpis.append({"name": item["name"], "label": item["label"], "value": value})
 
     return {"kpis": kpis}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# A. WebSocket — live dashboard push
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.websocket("/ws/dashboard/{dashboard_id}")
+async def dashboard_websocket(websocket: WebSocket, dashboard_id: str, token: str = Query(default="")):
+    await websocket.accept()
+    redis_client = None
+    pubsub = None
+    channel = f"analytics:dashboard:{dashboard_id}"
+    try:
+        from jose import jwt as jose_jwt, JWTError
+        from app.core.config import settings
+        try:
+            jose_jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        except (JWTError, Exception):
+            await websocket.send_json({"type": "error", "message": "Invalid token"})
+            await websocket.close(code=4001)
+            return
+        import redis.asyncio as aioredis
+        import json as _json
+        redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        pubsub = redis_client.pubsub()
+        await pubsub.subscribe(channel)
+        await websocket.send_json({"type": "connected", "dashboard_id": dashboard_id})
+        async for message in pubsub.listen():
+            if message["type"] == "message":
+                try:
+                    data = _json.loads(message["data"])
+                    await websocket.send_json({"type": "update", "data": data})
+                except Exception:
+                    pass
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        try:
+            await websocket.send_json({"type": "error", "message": str(e)})
+        except Exception:
+            pass
+    finally:
+        if pubsub:
+            try: await pubsub.unsubscribe(channel)
+            except Exception: pass
+        if redis_client:
+            try: await redis_client.aclose()
+            except Exception: pass
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# B. Usage tracking
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.post("/usage/track")
+async def track_usage(payload: dict, user: CurrentUser, db: DBSession):
+    from app.models.analytics import AnalyticsUsageLog
+    log = AnalyticsUsageLog(
+        user_id=str(user.id),
+        resource_type=payload.get("resource_type", "unknown"),
+        resource_id=payload.get("resource_id"),
+        action=payload.get("action", "view"),
+        duration_ms=payload.get("duration_ms"),
+        metadata_=payload.get("metadata"),
+    )
+    db.add(log)
+    await db.commit()
+    return {"status": "logged"}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# C. RLS CRUD
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+async def get_rls_filters(dashboard_id: str, user_id: str, user_role: str, db) -> list[dict]:
+    from app.models.analytics import DashboardRLS
+    from sqlalchemy import select, or_
+    result = await db.execute(
+        select(DashboardRLS).where(
+            DashboardRLS.dashboard_id == dashboard_id,
+            or_(
+                DashboardRLS.role == user_role,
+                DashboardRLS.user_id == user_id,
+                DashboardRLS.role.is_(None),
+            ),
+        )
+    )
+    return [
+        {"field": r.field, "operator": r.operator, "value_template": r.value_template}
+        for r in result.scalars().all()
+    ]
+
+
+@router.get("/dashboards/{dashboard_id}/rls")
+async def list_rls_rules(dashboard_id: str, user: CurrentUser, db: DBSession):
+    from app.models.analytics import DashboardRLS
+    from sqlalchemy import select
+    result = await db.execute(select(DashboardRLS).where(DashboardRLS.dashboard_id == dashboard_id))
+    return result.scalars().all()
+
+
+@router.post("/dashboards/{dashboard_id}/rls")
+async def create_rls_rule(dashboard_id: str, payload: dict, user: CurrentUser, db: DBSession):
+    from app.models.analytics import DashboardRLS
+    rule = DashboardRLS(
+        dashboard_id=dashboard_id,
+        role=payload.get("role"),
+        user_id=payload.get("user_id"),
+        field=payload["field"],
+        operator=payload.get("operator", "eq"),
+        value_template=payload["value_template"],
+    )
+    db.add(rule)
+    await db.commit()
+    await db.refresh(rule)
+    return rule
+
+
+@router.delete("/dashboards/{dashboard_id}/rls/{rule_id}")
+async def delete_rls_rule(dashboard_id: str, rule_id: str, user: CurrentUser, db: DBSession):
+    from app.models.analytics import DashboardRLS
+    from sqlalchemy import select
+    result = await db.execute(
+        select(DashboardRLS).where(
+            DashboardRLS.id == rule_id,
+            DashboardRLS.dashboard_id == dashboard_id,
+        )
+    )
+    rule = result.scalar_one_or_none()
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    await db.delete(rule)
+    await db.commit()
+    return {"deleted": True}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# D. Meta analytics usage
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/meta/usage")
+async def get_usage_stats(
+    user: CurrentUser,
+    db: DBSession,
+    days: int = Query(default=30),
+):
+    from sqlalchemy import text
+    from datetime import datetime, timedelta
+    since = datetime.now() - timedelta(days=days)
+    try:
+        dr = await db.execute(
+            text(
+                "SELECT DATE(created_at) as date, COUNT(*) as views "
+                "FROM analytics_usage_logs "
+                "WHERE created_at >= :since AND action = 'view' "
+                "GROUP BY DATE(created_at) ORDER BY date"
+            ),
+            {"since": since},
+        )
+        daily_views = [dict(r) for r in dr.mappings().all()]
+        tr = await db.execute(
+            text(
+                "SELECT resource_id as dashboard_id, COUNT(*) as views "
+                "FROM analytics_usage_logs "
+                "WHERE created_at >= :since AND resource_type = 'dashboard' "
+                "GROUP BY resource_id ORDER BY views DESC LIMIT 10"
+            ),
+            {"since": since},
+        )
+        top_dashboards = [dict(r) for r in tr.mappings().all()]
+        pr = await db.execute(
+            text(
+                "SELECT AVG(duration_ms) as avg_ms, MAX(duration_ms) as max_ms, COUNT(*) as total "
+                "FROM analytics_usage_logs "
+                "WHERE created_at >= :since AND duration_ms IS NOT NULL"
+            ),
+            {"since": since},
+        )
+        perf_row = pr.mappings().first()
+    except Exception:
+        daily_views, top_dashboards, perf_row = [], [], None
+    return {
+        "period_days": days,
+        "daily_views": daily_views,
+        "top_dashboards": top_dashboards,
+        "performance": dict(perf_row) if perf_row else {"avg_ms": 0, "max_ms": 0, "total": 0},
+    }
+
+
+# ── PPTX Export ───────────────────────────────────────────────────────────────
+
+class PPTXWidgetPayload(BaseModel):
+    title: str
+    type: str = "table"
+    rows: list[dict] = []
+
+
+class PPTXExportPayload(BaseModel):
+    dashboard_name: str
+    widgets: list[PPTXWidgetPayload]
+
+
+@router.post(
+    "/export/pptx",
+    summary="Export a dashboard to PowerPoint (.pptx)",
+    response_class=Response,
+)
+async def export_dashboard_pptx(
+    payload: PPTXExportPayload,
+    current_user: CurrentUser,
+) -> Response:
+    from app.services.analytics_export import export_dashboard_to_pptx
+    widgets = [w.model_dump() for w in payload.widgets]
+    pptx_bytes = export_dashboard_to_pptx(payload.dashboard_name, widgets)
+    safe_name = payload.dashboard_name.replace(" ", "_").replace("/", "-")[:50]
+    filename = f"{safe_name}_dashboard.pptx"
+    return Response(
+        content=pptx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ── Data Lineage ──────────────────────────────────────────────────────────────
+
+class LineageNodeOut(BaseModel):
+    id: str
+    type: str          # "widget" | "transform" | "table"
+    label: str
+    source_type: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class LineageEdgeOut(BaseModel):
+    id: str
+    source: str
+    target: str
+    label: str | None = None
+
+
+class LineageGraphOut(BaseModel):
+    nodes: list[LineageNodeOut]
+    edges: list[LineageEdgeOut]
+
+
+class LineageCreatePayload(BaseModel):
+    widget_id: uuid.UUID | None = None
+    transform_id: uuid.UUID | None = None
+    source_type: str                        # "table" | "query" | "transform"
+    source_name: str
+    source_columns: list[str] | None = None
+    source_transform_id: uuid.UUID | None = None
+    transformation_notes: str | None = None
+
+
+@router.post(
+    "/lineage",
+    response_model=LineageNodeOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Record a data lineage edge",
+)
+async def create_lineage_entry(
+    body: LineageCreatePayload,
+    db: DBSession,
+    current_user: CurrentUser,
+) -> LineageNodeOut:
+    entry = DataLineage(
+        widget_id=body.widget_id,
+        transform_id=body.transform_id,
+        source_type=body.source_type,
+        source_name=body.source_name,
+        source_columns=body.source_columns,
+        source_transform_id=body.source_transform_id,
+        transformation_notes=body.transformation_notes,
+    )
+    db.add(entry)
+    await db.commit()
+    await db.refresh(entry)
+    return LineageNodeOut(
+        id=str(entry.id),
+        type=entry.source_type,
+        label=entry.source_name,
+        source_type=entry.source_type,
+    )
+
+
+@router.get(
+    "/lineage/widget/{widget_id}",
+    response_model=LineageGraphOut,
+    summary="Get data lineage graph for a widget",
+)
+async def get_widget_lineage(
+    widget_id: uuid.UUID,
+    db: DBSession,
+    current_user: CurrentUser,
+) -> LineageGraphOut:
+    result = await db.execute(
+        select(DataLineage).where(DataLineage.widget_id == widget_id)
+    )
+    entries = result.scalars().all()
+
+    nodes: list[LineageNodeOut] = []
+    edges: list[LineageEdgeOut] = []
+    seen_nodes: set[str] = set()
+
+    # Add the widget itself as a node
+    widget_node_id = f"widget:{widget_id}"
+    nodes.append(LineageNodeOut(id=widget_node_id, type="widget", label="Widget"))
+    seen_nodes.add(widget_node_id)
+
+    for entry in entries:
+        src_id = f"source:{entry.id}"
+        if src_id not in seen_nodes:
+            nodes.append(LineageNodeOut(
+                id=src_id,
+                type=entry.source_type,
+                label=entry.source_name,
+                source_type=entry.source_type,
+            ))
+            seen_nodes.add(src_id)
+
+        edges.append(LineageEdgeOut(
+            id=f"edge:{entry.id}",
+            source=src_id,
+            target=widget_node_id,
+            label=entry.transformation_notes,
+        ))
+
+        # If source is another transform, add a link
+        if entry.source_transform_id:
+            t_id = f"transform:{entry.source_transform_id}"
+            if t_id not in seen_nodes:
+                nodes.append(LineageNodeOut(id=t_id, type="transform", label=f"Transform {str(entry.source_transform_id)[:8]}"))
+                seen_nodes.add(t_id)
+            edges.append(LineageEdgeOut(
+                id=f"edge-src:{entry.id}",
+                source=t_id,
+                target=src_id,
+            ))
+
+    return LineageGraphOut(nodes=nodes, edges=edges)
+
+
+@router.get(
+    "/lineage/dashboard/{dashboard_id}",
+    response_model=LineageGraphOut,
+    summary="Get data lineage graph for all widgets in a dashboard",
+)
+async def get_dashboard_lineage(
+    dashboard_id: uuid.UUID,
+    db: DBSession,
+    current_user: CurrentUser,
+) -> LineageGraphOut:
+    # Get all widget IDs for this dashboard
+    widget_result = await db.execute(
+        select(DashboardWidget.id).where(DashboardWidget.dashboard_id == dashboard_id)
+    )
+    widget_ids = [row[0] for row in widget_result.fetchall()]
+
+    if not widget_ids:
+        return LineageGraphOut(nodes=[], edges=[])
+
+    lineage_result = await db.execute(
+        select(DataLineage).where(DataLineage.widget_id.in_(widget_ids))
+    )
+    entries = lineage_result.scalars().all()
+
+    nodes: list[LineageNodeOut] = []
+    edges: list[LineageEdgeOut] = []
+    seen_nodes: set[str] = set()
+
+    for wid in widget_ids:
+        wnode_id = f"widget:{wid}"
+        if wnode_id not in seen_nodes:
+            nodes.append(LineageNodeOut(id=wnode_id, type="widget", label=f"Widget {str(wid)[:8]}"))
+            seen_nodes.add(wnode_id)
+
+    for entry in entries:
+        src_id = f"source:{entry.id}"
+        if src_id not in seen_nodes:
+            nodes.append(LineageNodeOut(
+                id=src_id,
+                type=entry.source_type,
+                label=entry.source_name,
+                source_type=entry.source_type,
+            ))
+            seen_nodes.add(src_id)
+
+        target_id = f"widget:{entry.widget_id}"
+        edges.append(LineageEdgeOut(
+            id=f"edge:{entry.id}",
+            source=src_id,
+            target=target_id,
+            label=entry.transformation_notes,
+        ))
+
+    return LineageGraphOut(nodes=nodes, edges=edges)

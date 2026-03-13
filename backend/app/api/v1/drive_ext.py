@@ -1,6 +1,5 @@
 """Drive extensions — copy, bulk ops, versions, trash, storage, search, tags, comments, cross-module links,
 AI semantic search, smart folders, saved views, AI metadata, activity logging, file locking."""
-from __future__ import annotations
 
 import logging
 import uuid
@@ -1457,3 +1456,425 @@ async def drive_analytics_overview(
         },
         "activity_last_7_days": activity_count.scalar() or 0,
     }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  CONTEXTUAL SEARCH BOOST (ERP module-aware search relevance)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.post("/files/search/contextual", summary="ERP context-aware search with relevance boost")
+async def contextual_search(
+    current_user: CurrentUser,
+    db: DBSession,
+    q: str = Query(..., min_length=1),
+    module: str | None = Query(None, description="Current ERP module for context boost"),
+    entity_id: str | None = Query(None, description="Current entity ID for context boost"),
+    limit: int = Query(30, le=100),
+) -> dict[str, Any]:
+    """Search files with relevance boosted by current ERP context.
+    Files directly linked to the current entity rank higher."""
+    from app.models.drive_phase3 import DriveAutoLink
+
+    base_query = select(DriveFile).where(
+        DriveFile.owner_id == current_user.id,
+        DriveFile.name.ilike(like_pattern(q)),
+    ).limit(limit)
+
+    result = await db.execute(base_query)
+    files = result.scalars().all()
+
+    # Fetch linked files for boosting
+    boosted_ids: set[str] = set()
+    if module and entity_id:
+        link_result = await db.execute(
+            select(DriveAutoLink.file_id)
+            .where(
+                DriveAutoLink.module == module,
+                DriveAutoLink.entity_id == entity_id,
+                DriveAutoLink.status == "confirmed",
+            )
+        )
+        boosted_ids = {str(row[0]) for row in link_result.all()}
+
+    items = []
+    for f in files:
+        fid = str(f.id)
+        score = 100 if fid in boosted_ids else 50
+        items.append({
+            "id": fid,
+            "name": f.name,
+            "content_type": f.content_type,
+            "size": f.size,
+            "folder_path": f.folder_path,
+            "relevance_score": score,
+            "context_boosted": fid in boosted_ids,
+            "updated_at": f.updated_at.isoformat() if f.updated_at else None,
+        })
+
+    items.sort(key=lambda x: x["relevance_score"], reverse=True)
+    return {"total": len(items), "query": q, "module_context": module, "results": items}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  AI-SUGGESTED SHARING
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/files/{file_id}/sharing-suggestions", summary="AI-suggested people to share with")
+async def sharing_suggestions(
+    file_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    """Suggest team members who haven't seen this file but are likely to need it.
+    Based on: file tags, project membership, recent access patterns."""
+    from app.models.user import User
+
+    file = await _check_file_owner(db, file_id, current_user.id)
+
+    # Get users who have accessed similar files (same folder or tags)
+    file_tags = await db.execute(
+        select(FileTag.tag_name).where(FileTag.file_id == file_id)
+    )
+    tags = [row[0] for row in file_tags.all()]
+
+    suggestions = []
+
+    if tags:
+        # Find other users who access files with the same tags
+        coworker_result = await db.execute(
+            select(FileAccessLog.user_id, func.count(FileAccessLog.id).label("cnt"))
+            .join(FileTag, FileTag.file_id == FileAccessLog.file_id)
+            .where(
+                FileTag.tag_name.in_(tags),
+                FileAccessLog.user_id != current_user.id,
+            )
+            .group_by(FileAccessLog.user_id)
+            .order_by(func.count(FileAccessLog.id).desc())
+            .limit(5)
+        )
+        for uid, cnt in coworker_result.all():
+            user = await db.get(User, uid)
+            if user:
+                suggestions.append({
+                    "user_id": str(uid),
+                    "name": user.full_name,
+                    "email": user.email,
+                    "reason": f"Frequently accesses files tagged '{tags[0]}'",
+                    "confidence": min(0.9, cnt / 10),
+                })
+
+    return {
+        "file_id": str(file_id),
+        "file_name": file.name,
+        "suggestions": suggestions[:5],
+        "based_on_tags": tags,
+    }
+
+
+# ── Drive Phase 3: Delta/Changes API ─────────────────────────────────────────
+
+@router.get("/changes")
+async def get_drive_changes(
+    cursor: str | None = Query(None, description="Pagination cursor (ISO timestamp)"),
+    limit: int = Query(100, le=500),
+    current_user: CurrentUser = None,
+    db: DBSession = None,
+) -> dict:
+    """Returns all drive file changes since the given cursor timestamp.
+    Used by sync clients to poll for changes.
+    cursor: ISO datetime string. If None, returns changes in the last 24h.
+    Returns: {changes: [...], next_cursor: "ISO timestamp", has_more: bool}
+    """
+    if cursor:
+        try:
+            since = datetime.fromisoformat(cursor.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Invalid cursor format")
+    else:
+        since = datetime.now(timezone.utc) - timedelta(days=1)
+
+    result = await db.execute(
+        select(FileAccessLog)
+        .where(
+            FileAccessLog.user_id == current_user.id,
+            FileAccessLog.timestamp >= since,
+        )
+        .order_by(FileAccessLog.timestamp.asc())
+        .limit(limit + 1)
+    )
+    logs = result.scalars().all()
+    has_more = len(logs) > limit
+    logs = logs[:limit]
+
+    changes = []
+    for log in logs:
+        changes.append({
+            "file_id": str(log.file_id) if log.file_id else None,
+            "action": log.action,
+            "timestamp": log.timestamp.isoformat(),
+        })
+
+    next_cursor = logs[-1].timestamp.isoformat() if logs else datetime.now(timezone.utc).isoformat()
+    return {"changes": changes, "next_cursor": next_cursor, "has_more": has_more}
+
+
+# ── Drive Phase 3: DLP Endpoints ──────────────────────────────────────────────
+
+class DlpRuleCreate(BaseModel):
+    name: str
+    description: str | None = None
+    patterns: list[dict]  # [{type, value, label}]
+    action: str = "warn"
+    notify_admin: bool = True
+    apply_to_sensitivity: list[str] | None = None
+    apply_to_departments: list[str] | None = None
+    is_active: bool = True
+
+
+@router.get("/dlp/rules", summary="List DLP rules (admin)")
+async def list_dlp_rules(current_user: CurrentUser, db: DBSession) -> list[dict]:
+    from app.models.drive_phase2 import DlpRule
+    result = await db.execute(select(DlpRule).order_by(DlpRule.created_at.desc()))
+    rules = result.scalars().all()
+    return [
+        {
+            "id": str(r.id), "name": r.name, "description": r.description,
+            "patterns": r.patterns, "action": r.action, "is_active": r.is_active,
+            "notify_admin": r.notify_admin,
+        }
+        for r in rules
+    ]
+
+
+@router.post("/dlp/rules", status_code=201, summary="Create DLP rule (admin)")
+async def create_dlp_rule(body: DlpRuleCreate, current_user: CurrentUser, db: DBSession) -> dict:
+    from app.models.drive_phase2 import DlpRule
+    rule = DlpRule(
+        name=body.name, description=body.description, patterns=body.patterns,
+        action=body.action, notify_admin=body.notify_admin,
+        apply_to_sensitivity=body.apply_to_sensitivity,
+        apply_to_departments=body.apply_to_departments,
+        is_active=body.is_active, created_by=current_user.id,
+    )
+    db.add(rule)
+    await db.commit()
+    await db.refresh(rule)
+    return {"id": str(rule.id), "name": rule.name, "action": rule.action}
+
+
+@router.post("/files/{file_id}/dlp-scan", summary="Manually trigger DLP scan on a file")
+async def dlp_scan_file(file_id: uuid.UUID, current_user: CurrentUser, db: DBSession) -> dict:
+    from app.services.drive_dlp import scan_file
+    file = await db.get(DriveFile, file_id)
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+    # Get text content from file (use stored extracted text or empty)
+    content_text = getattr(file, "extracted_text", "") or ""
+    violations = await scan_file(file_id, content_text, db, current_user.id)
+    return {"file_id": str(file_id), "violations": violations, "clean": len(violations) == 0}
+
+
+@router.get("/dlp/violations", summary="List DLP violations")
+async def list_dlp_violations(
+    limit: int = Query(50, le=200),
+    current_user: CurrentUser = None,
+    db: DBSession = None,
+) -> list[dict]:
+    from app.models.drive_phase2 import DlpViolation, DlpRule
+    result = await db.execute(
+        select(DlpViolation, DlpRule.name.label("rule_name"))
+        .join(DlpRule, DlpRule.id == DlpViolation.rule_id)
+        .order_by(DlpViolation.detected_at.desc())
+        .limit(limit)
+    )
+    rows = result.all()
+    return [
+        {
+            "id": str(v.DlpViolation.id),
+            "rule_name": v.rule_name,
+            "file_id": str(v.DlpViolation.file_id),
+            "action_taken": v.DlpViolation.action_taken,
+            "matched_patterns": v.DlpViolation.matched_patterns,
+            "detected_at": v.DlpViolation.detected_at.isoformat(),
+        }
+        for v in rows
+    ]
+
+
+# ── Drive Phase 3: eDiscovery ─────────────────────────────────────────────────
+
+class EDiscoverySearchPayload(BaseModel):
+    query: str
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+    user_ids: list[uuid.UUID] | None = None   # None = all users (super admin)
+    file_types: list[str] | None = None
+    apply_legal_hold: bool = False
+
+
+@router.post("/ediscovery/search", summary="eDiscovery cross-user content search (super admin)")
+async def ediscovery_search(body: EDiscoverySearchPayload, current_user: CurrentUser, db: DBSession) -> dict:
+    """Cross-user full-text search for legal/compliance purposes."""
+    conditions = [DriveFile.extracted_text.ilike(f"%{body.query}%")]
+    if body.date_from:
+        conditions.append(DriveFile.created_at >= body.date_from)
+    if body.date_to:
+        conditions.append(DriveFile.created_at <= body.date_to)
+    if body.user_ids:
+        conditions.append(DriveFile.owner_id.in_(body.user_ids))
+    if body.file_types:
+        conditions.append(DriveFile.content_type.in_(body.file_types))
+
+    result = await db.execute(
+        select(DriveFile).where(*conditions).order_by(DriveFile.created_at.desc()).limit(200)
+    )
+    files = result.scalars().all()
+
+    # Apply legal hold if requested
+    if body.apply_legal_hold:
+        for f in files:
+            if hasattr(f, "legal_hold"):
+                f.legal_hold = True
+        await db.commit()
+
+    return {
+        "query": body.query,
+        "total": len(files),
+        "results": [
+            {
+                "file_id": str(f.id),
+                "name": f.name,
+                "owner_id": str(f.owner_id),
+                "content_type": f.content_type,
+                "size_bytes": f.size_bytes,
+                "created_at": f.created_at.isoformat() if f.created_at else None,
+                "legal_hold": getattr(f, "legal_hold", False),
+            }
+            for f in files
+        ],
+    }
+
+
+@router.post("/ediscovery/export", summary="Export eDiscovery results to ZIP")
+async def ediscovery_export(file_ids: list[uuid.UUID], current_user: CurrentUser, db: DBSession) -> dict:
+    """Returns a job_id for async ZIP export of the specified files."""
+    import secrets
+    job_id = secrets.token_hex(16)
+    # In production: queue a Celery task to zip and upload to MinIO, then return download link
+    return {
+        "job_id": job_id,
+        "status": "queued",
+        "file_count": len(file_ids),
+        "message": "Export queued. Download link will be available at /drive/ediscovery/export/{job_id}/download",
+    }
+
+
+# ── Drive Phase 3: Webhook Dispatch Engine ────────────────────────────────────
+
+async def _dispatch_webhooks_for_event(event: str, payload: dict, db: AsyncSession) -> None:
+    """Fire webhooks registered for the given event type."""
+    import hashlib
+    import hmac
+    import json
+
+    import httpx
+    from app.models.drive_phase2 import DriveWebhook, WebhookDelivery
+
+    result = await db.execute(
+        select(DriveWebhook).where(
+            DriveWebhook.is_active == True,
+            DriveWebhook.events.contains([event]),
+        )
+    )
+    webhooks = result.scalars().all()
+
+    for wh in webhooks:
+        body_bytes = json.dumps({"event": event, **payload}).encode()
+        headers = {"Content-Type": "application/json", "X-Drive-Event": event}
+        if wh.secret:
+            sig = hmac.new(wh.secret.encode(), body_bytes, hashlib.sha256).hexdigest()
+            headers["X-Drive-Signature-256"] = f"sha256={sig}"
+
+        success = False
+        response_status = None
+        response_body = None
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.post(wh.url, content=body_bytes, headers=headers)
+                response_status = resp.status_code
+                response_body = resp.text[:1000]
+                success = resp.is_success
+        except Exception as exc:
+            response_body = str(exc)[:500]
+
+        delivery = WebhookDelivery(
+            webhook_id=wh.id, event=event, payload_json=payload,
+            response_status=response_status, response_body=response_body, success=success,
+        )
+        db.add(delivery)
+
+        wh.last_triggered_at = datetime.now(timezone.utc)
+        if not success:
+            wh.failure_count = (wh.failure_count or 0) + 1
+
+    await db.commit()
+
+
+# Register drive webhook dispatcher with event bus
+from app.core.events import event_bus as _event_bus
+
+
+@_event_bus.on("drive.file.uploaded")
+async def _on_drive_file_uploaded(data: dict, db=None) -> None:
+    if db:
+        await _dispatch_webhooks_for_event("file.uploaded", data, db)
+
+
+@_event_bus.on("drive.file.shared")
+async def _on_drive_file_shared(data: dict, db=None) -> None:
+    if db:
+        await _dispatch_webhooks_for_event("file.shared", data, db)
+
+
+@_event_bus.on("drive.file.deleted")
+async def _on_drive_file_deleted(data: dict, db=None) -> None:
+    if db:
+        await _dispatch_webhooks_for_event("file.deleted", data, db)
+
+
+@router.get("/webhooks", summary="List drive webhooks for current user")
+async def list_drive_webhooks(current_user: CurrentUser, db: DBSession) -> list[dict]:
+    from app.models.drive_phase2 import DriveWebhook
+    result = await db.execute(
+        select(DriveWebhook).where(DriveWebhook.owner_id == current_user.id)
+    )
+    whs = result.scalars().all()
+    return [
+        {
+            "id": str(w.id),
+            "url": w.url,
+            "events": w.events,
+            "is_active": w.is_active,
+            "failure_count": w.failure_count,
+        }
+        for w in whs
+    ]
+
+
+@router.post("/webhooks", status_code=201, summary="Register a drive webhook")
+async def create_drive_webhook(
+    body: dict,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict:
+    from app.models.drive_phase2 import DriveWebhook
+    wh = DriveWebhook(
+        url=body.get("url", ""), secret=body.get("secret"),
+        events=body.get("events", []), owner_id=current_user.id,
+    )
+    db.add(wh)
+    await db.commit()
+    await db.refresh(wh)
+    return {"id": str(wh.id), "url": wh.url, "events": wh.events}

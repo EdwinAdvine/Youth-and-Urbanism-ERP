@@ -1,3 +1,19 @@
+/**
+ * Handbook API client — user handbook articles, categories, and search.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/handbook`.
+ *
+ * Key exports:
+ *   - useHandbookCategories()  — nested category tree (with article counts)
+ *   - useHandbookArticles()    — list articles filtered by category, status, or module
+ *   - useHandbookArticle()     — fetch a single article by ID or slug
+ *   - useCreateArticle()       — create a new handbook article (draft or published)
+ *   - useUpdateArticle()       — update article content, status, or category
+ *   - useDeleteArticle()       — permanently remove an article
+ *   - useHandbookSearch()      — full-text search across all published articles
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

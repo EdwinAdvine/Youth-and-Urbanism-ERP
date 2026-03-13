@@ -23,15 +23,15 @@ export default function PipelineAnalyticsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Pipeline Analytics</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Pipeline Analytics</h1>
         <p className="text-sm text-gray-500 mt-1">Win rates, deal velocity, and pipeline health</p>
       </div>
 
-      <div className="flex gap-4 items-end">
-        <Input label="From" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-48" />
-        <Input label="To" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-48" />
+      <div className="flex flex-wrap gap-4 items-end">
+        <Input label="From" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-full sm:w-48" />
+        <Input label="To" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-full sm:w-48" />
       </div>
 
       {report ? (

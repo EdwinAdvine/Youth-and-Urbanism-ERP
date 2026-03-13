@@ -11,7 +11,6 @@ Integrations:
   8. Manufacturing -> Supply Chain: Material requisition
   9. Manufacturing -> HR: Operator scheduling
 """
-from __future__ import annotations
 
 import uuid
 from datetime import date
@@ -323,7 +322,7 @@ async def email_pos_receipt(
         f"Total: {txn.total}\n\n"
         f"Payment:\n{payments_text}\n"
         f"Thank you for your purchase!\n"
-        f"--- Urban ERP POS ---"
+        f"--- Urban Vibes Dynamics POS ---"
     )
 
     subject = f"Your Receipt — {txn.transaction_number}"
@@ -333,7 +332,7 @@ async def email_pos_receipt(
         from app.integrations.smtp_client import send_email  # noqa: PLC0415
         from app.core.config import settings  # noqa: PLC0415
 
-        from_addr = getattr(settings, "SYSTEM_EMAIL", "noreply@urban-erp.local")
+        from_addr = getattr(settings, "SYSTEM_EMAIL", "noreply@urban-vibes-dynamics.local")
         await send_email(from_addr=from_addr, to_addrs=[payload.email], subject=subject, body_text=body)
     except Exception:
         # Mail service may be unavailable in dev

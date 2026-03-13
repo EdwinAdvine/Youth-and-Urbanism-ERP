@@ -1,5 +1,4 @@
 """CRM Workflow Automation — workflow CRUD, node management, execution & templates."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

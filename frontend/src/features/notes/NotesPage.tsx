@@ -5,15 +5,28 @@ import {
   type Note,
 } from '../../api/notes'
 import {
-  useNotebooks, useRecentPages, useFavoritePages, useCreateSection,
-  usePageBreadcrumb, useEntityLinks, useNoteVersions,
-  useNoteComments, useCreateVersion,
+  useNotebooks, useRecentPages, useFavoritePages,
+  usePageBreadcrumb, useEntityLinks,
 } from '../../api/notebooks'
+import { useNoteVersions, useNoteComments } from '../../api/noteCollab'
 import NoteBlockEditor from './NoteBlockEditor'
 import NotebookNav from './NotebookNav'
 import LinkedItemsSidebar from './LinkedItemsSidebar'
 import ExportMenu from './ExportMenu'
 import QuickNoteFAB from './QuickNoteFAB'
+import NotesAIPanel from './NotesAIPanel'
+import { ERPWidgetPicker } from './ERPWidgetCard'
+import DatabasesPage from './database/DatabasesPage'
+import PresenceAvatars from './collab/PresenceAvatars'
+import CommentsSidebar from './collab/CommentsSidebar'
+import VersionHistory from './collab/VersionHistory'
+import VoiceRecorder from './ai/VoiceRecorder'
+import MindMapView from './ai/MindMapView'
+import AgenticNotesCopilot from './ai/AgenticNotesCopilot'
+import NotesAnalyticsDashboard from './NotesAnalyticsDashboard'
+import SecuritySettingsDialog from './SecuritySettingsDialog'
+import AuditLogViewer from './AuditLogViewer'
+import KnowledgeGraph from './KnowledgeGraph'
 
 // ── Breadcrumb ──────────────────────────────────────────────────────────────
 
@@ -199,10 +212,12 @@ function CrossModuleDialog({
 
 function NoteEditorPanel({
   note,
+  notebookId,
   onSave,
   onDelete,
 }: {
   note: Note
+  notebookId?: string
   onSave: (updated: { title?: string; content?: string; tags?: string[]; is_pinned?: boolean; content_format?: string }) => void
   onDelete: (id: string) => void
 }) {
@@ -210,17 +225,25 @@ function NoteEditorPanel({
   const [tags, setTags] = useState((note.tags || []).join(', '))
   const [tagInput, setTagInput] = useState('')
   const [showLinkedItems, setShowLinkedItems] = useState(false)
+  const [showAIPanel, setShowAIPanel] = useState(false)
+  const [showERPPicker, setShowERPPicker] = useState(false)
   const [showCrossModuleMenu, setShowCrossModuleMenu] = useState(false)
+  const [showComments, setShowComments] = useState(false)
+  const [showVersionHistory, setShowVersionHistory] = useState(false)
   const [dialogType, setDialogType] = useState<'attach-file' | 'create-event' | 'email-note' | 'link-task' | null>(null)
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
+  const [showMindMap, setShowMindMap] = useState(false)
+  const [showAgenticCopilot, setShowAgenticCopilot] = useState(false)
+  const [showSecuritySettings, setShowSecuritySettings] = useState(false)
+  const [showAuditLog, setShowAuditLog] = useState(false)
+  const [showKnowledgeGraph, setShowKnowledgeGraph] = useState(false)
 
-  const createVersion = useCreateVersion()
+  const [pendingInsert, setPendingInsert] = useState<string | null>(null)
 
   useEffect(() => {
     setTitle(note.title)
     setTags((note.tags || []).join(', '))
   }, [note.id])
-
-  const saveTimer = { current: null as ReturnType<typeof setTimeout> | null }
 
   const triggerTitleSave = useCallback((newTitle: string) => {
     onSave({ title: newTitle, tags: tags.split(',').map((t) => t.trim()).filter(Boolean) })
@@ -241,17 +264,101 @@ function NoteEditorPanel({
 
         <div className="flex-1" />
 
+        {/* Presence avatars */}
+        <PresenceAvatars noteId={note.id} />
+
         <NoteMetaBar noteId={note.id} />
 
         <div className="h-4 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
 
         {/* Save version */}
         <button
-          onClick={() => createVersion.mutate({ noteId: note.id, label: `Manual save` })}
+          onClick={() => setShowVersionHistory(!showVersionHistory)}
           className="p-1.5 text-gray-400 hover:text-[#51459d] hover:bg-[#51459d]/10 rounded-[6px] transition-colors"
           title="Save version"
         >
           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" /><polyline points="17,21 17,13 7,13 7,21" /><polyline points="7,3 7,8 15,8" /></svg>
+        </button>
+
+        {/* ERP Widget */}
+        <button
+          onClick={() => setShowERPPicker(true)}
+          className="p-1.5 text-gray-400 hover:text-[#3ec9d6] hover:bg-[#3ec9d6]/10 rounded-[6px] transition-colors"
+          title="Add ERP widget"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" /></svg>
+        </button>
+
+        {/* AI Assistant */}
+        <button
+          onClick={() => setShowAIPanel(!showAIPanel)}
+          className={`p-1.5 rounded-[6px] transition-colors ${showAIPanel ? 'text-[#51459d] bg-[#51459d]/10' : 'text-gray-400 hover:text-[#51459d] hover:bg-[#51459d]/10'}`}
+          title="AI Assistant"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+        </button>
+
+        {/* Comments */}
+        <button
+          onClick={() => setShowComments(!showComments)}
+          className={`p-1.5 rounded-[6px] transition-colors ${showComments ? 'text-[#3ec9d6] bg-[#3ec9d6]/10' : 'text-gray-400 hover:text-[#3ec9d6] hover:bg-[#3ec9d6]/10'}`}
+          title="Comments"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+        </button>
+
+        {/* Voice Recorder */}
+        <button
+          onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
+          className={`p-1.5 rounded-[6px] transition-colors ${showVoiceRecorder ? 'text-[#ff3a6e] bg-[#ff3a6e]/10' : 'text-gray-400 hover:text-[#ff3a6e] hover:bg-[#ff3a6e]/10'}`}
+          title="Voice Recorder"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+        </button>
+
+        {/* Mind Map */}
+        <button
+          onClick={() => setShowMindMap(!showMindMap)}
+          className={`p-1.5 rounded-[6px] transition-colors ${showMindMap ? 'text-[#6fd943] bg-[#6fd943]/10' : 'text-gray-400 hover:text-[#6fd943] hover:bg-[#6fd943]/10'}`}
+          title="Mind Map"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="3" strokeWidth={2} /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9V3M12 21v-6M9 12H3M21 12h-6M6.34 6.34l1.42 1.42M16.24 16.24l1.42 1.42M6.34 17.66l1.42-1.42M16.24 7.76l1.42-1.42" /></svg>
+        </button>
+
+        {/* Agent Copilot */}
+        <button
+          onClick={() => setShowAgenticCopilot(!showAgenticCopilot)}
+          className={`p-1.5 rounded-[6px] transition-colors ${showAgenticCopilot ? 'text-[#ffa21d] bg-[#ffa21d]/10' : 'text-gray-400 hover:text-[#ffa21d] hover:bg-[#ffa21d]/10'}`}
+          title="Agent Copilot"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+        </button>
+
+        {/* Security Settings */}
+        <button
+          onClick={() => setShowSecuritySettings(!showSecuritySettings)}
+          className={`p-1.5 rounded-[6px] transition-colors ${showSecuritySettings ? 'text-[#51459d] bg-[#51459d]/10' : 'text-gray-400 hover:text-[#51459d] hover:bg-[#51459d]/10'}`}
+          title="Security Settings"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+        </button>
+
+        {/* Audit Log */}
+        <button
+          onClick={() => setShowAuditLog(!showAuditLog)}
+          className={`p-1.5 rounded-[6px] transition-colors ${showAuditLog ? 'text-[#3ec9d6] bg-[#3ec9d6]/10' : 'text-gray-400 hover:text-[#3ec9d6] hover:bg-[#3ec9d6]/10'}`}
+          title="Audit Log"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        </button>
+
+        {/* Knowledge Graph */}
+        <button
+          onClick={() => setShowKnowledgeGraph(!showKnowledgeGraph)}
+          className={`p-1.5 rounded-[6px] transition-colors ${showKnowledgeGraph ? 'text-[#9333ea] bg-[#9333ea]/10' : 'text-gray-400 hover:text-[#9333ea] hover:bg-[#9333ea]/10'}`}
+          title="Knowledge Graph"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="18" cy="5" r="3" strokeWidth={2} /><circle cx="6" cy="12" r="3" strokeWidth={2} /><circle cx="18" cy="19" r="3" strokeWidth={2} /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" strokeWidth={2} strokeLinecap="round" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" strokeWidth={2} strokeLinecap="round" /></svg>
         </button>
 
         {/* Pin toggle */}
@@ -358,9 +465,12 @@ function NoteEditorPanel({
         <div className="flex-1 flex flex-col overflow-hidden">
           <NoteBlockEditor
             key={note.id}
-            content={note.content || ''}
+            content={pendingInsert ?? note.content ?? ''}
             contentFormat={(note as any).content_format || 'html'}
-            onChange={handleContentChange}
+            onChange={(content, format) => {
+              setPendingInsert(null)
+              handleContentChange(content, format)
+            }}
             placeholder="Start writing, or press / for commands..."
           />
         </div>
@@ -368,7 +478,70 @@ function NoteEditorPanel({
         {showLinkedItems && (
           <LinkedItemsSidebar noteId={note.id} onClose={() => setShowLinkedItems(false)} />
         )}
+
+        {showAIPanel && (
+          <NotesAIPanel
+            noteContent={note.content || ''}
+            notebookId={notebookId}
+            onClose={() => setShowAIPanel(false)}
+            onInsert={(text) => {
+              const appended = (note.content || '') + '\n\n' + text
+              setPendingInsert(appended)
+              onSave({ content: appended, content_format: 'html' })
+            }}
+          />
+        )}
+
+        {showComments && (
+          <CommentsSidebar noteId={note.id} onClose={() => setShowComments(false)} />
+        )}
+
+        {showVersionHistory && (
+          <VersionHistory noteId={note.id} onClose={() => setShowVersionHistory(false)} />
+        )}
+
+        {showMindMap && (
+          <MindMapView noteId={note.id} onClose={() => setShowMindMap(false)} />
+        )}
+
+        {showAgenticCopilot && (
+          <AgenticNotesCopilot
+            noteId={note.id}
+            onClose={() => setShowAgenticCopilot(false)}
+            onNoteCreated={() => {
+              setShowAgenticCopilot(false)
+            }}
+          />
+        )}
+
+        {showKnowledgeGraph && (
+          <KnowledgeGraph noteId={note.id} onClose={() => setShowKnowledgeGraph(false)} />
+        )}
       </div>
+
+      {/* Voice Recorder overlay */}
+      {showVoiceRecorder && (
+        <VoiceRecorder
+          onTranscribed={(_text: string, newNoteId?: string) => {
+            setShowVoiceRecorder(false)
+            if (newNoteId) {
+              // Signal parent to navigate to the new note
+              onSave({})
+            }
+          }}
+          onClose={() => setShowVoiceRecorder(false)}
+        />
+      )}
+
+      {/* Security Settings dialog */}
+      {showSecuritySettings && (
+        <SecuritySettingsDialog noteId={note.id} onClose={() => setShowSecuritySettings(false)} />
+      )}
+
+      {/* Audit Log panel */}
+      {showAuditLog && (
+        <AuditLogViewer noteId={note.id} onClose={() => setShowAuditLog(false)} />
+      )}
 
       {/* Cross-module dialog */}
       {dialogType && (
@@ -377,6 +550,17 @@ function NoteEditorPanel({
           noteId={note.id}
           noteTitle={note.title}
           onClose={() => setDialogType(null)}
+        />
+      )}
+
+      {/* ERP Widget Picker */}
+      {showERPPicker && (
+        <ERPWidgetPicker
+          onAdd={(_type, _entityId) => {
+            // Widget picker confirmation: for now just close (widgets render via ERPWidgetCard component)
+            // Full TipTap node extension for embedded widgets is a Phase 2 feature.
+          }}
+          onClose={() => setShowERPPicker(false)}
         />
       )}
     </div>
@@ -450,7 +634,7 @@ function PageListView({
 export default function NotesPage() {
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null)
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null)
-  const [specialView, setSpecialView] = useState<'recent' | 'favorites' | null>(null)
+  const [specialView, setSpecialView] = useState<'recent' | 'favorites' | 'databases' | 'analytics' | null>(null)
 
   const { data: notesData } = useNotes(
     selectedPageId && selectedPageId !== 'recent' && selectedPageId !== 'favorites'
@@ -482,6 +666,12 @@ export default function NotesPage() {
       setSelectedPageId(null)
     } else if (id === 'favorites') {
       setSpecialView('favorites')
+      setSelectedPageId(null)
+    } else if (id === 'databases') {
+      setSpecialView('databases')
+      setSelectedPageId(null)
+    } else if (id === 'analytics') {
+      setSpecialView('analytics')
       setSelectedPageId(null)
     } else {
       setSpecialView(null)
@@ -524,15 +714,20 @@ export default function NotesPage() {
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {specialView ? (
+        {specialView === 'databases' ? (
+          <DatabasesPage />
+        ) : specialView === 'analytics' ? (
+          <NotesAnalyticsDashboard />
+        ) : specialView ? (
           <PageListView
-            mode={specialView}
+            mode={specialView as 'recent' | 'favorites'}
             onSelectPage={(id) => { setSelectedPageId(id); setSpecialView(null) }}
           />
         ) : selectedNote ? (
           <NoteEditorPanel
             key={selectedNote.id}
             note={selectedNote}
+            notebookId={selectedNotebookId ?? undefined}
             onSave={handleSave}
             onDelete={handleDelete}
           />

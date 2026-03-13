@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { sanitizeHTML } from '@/shared/utils/sanitize'
 import {
   useTemplates,
   useCreateTemplate,
@@ -260,7 +261,7 @@ export default function TemplatesPage() {
           <div className="border border-gray-200 dark:border-gray-700 rounded-[10px] p-4 bg-white dark:bg-gray-900">
             <div
               className="prose prose-sm dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHTML(previewHtml) }}
             />
           </div>
           <div className="flex justify-end">

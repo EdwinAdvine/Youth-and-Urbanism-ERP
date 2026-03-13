@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { cn, Button, Spinner, Badge, Card, Modal, Input, toast } from '../../components/ui'
+import { cn, Button, Spinner, Badge, Modal, toast } from '../../components/ui'
 import {
   useChatMessages,
   useCloseChatSession,
@@ -276,7 +276,7 @@ export default function LiveChatWindow() {
                       isAgent ? 'text-white/70' : 'text-gray-500'
                     )}
                   >
-                    {isAgent ? (user?.name || 'Agent') : isBot ? 'Bot' : 'Visitor'}
+                    {isAgent ? (user?.full_name || 'Agent') : isBot ? 'Bot' : 'Visitor'}
                   </span>
                   <span
                     className={cn(

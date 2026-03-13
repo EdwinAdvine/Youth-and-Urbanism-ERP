@@ -1,5 +1,4 @@
 """Manufacturing Equipment & Maintenance — assets, downtime, MWOs, OEE."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, date as date_type

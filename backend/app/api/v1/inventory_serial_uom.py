@@ -1,5 +1,4 @@
 """Inventory Phase 1 — Serial Numbers, Units of Measure, Blanket Orders, Three-Way Match."""
-from __future__ import annotations
 
 import uuid
 from datetime import date

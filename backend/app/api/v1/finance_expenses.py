@@ -1,5 +1,4 @@
 """Finance API — Employee Expense Management."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime

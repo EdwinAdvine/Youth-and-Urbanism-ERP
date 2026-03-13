@@ -1,7 +1,14 @@
+export { default as AIInsightsPanel } from './AIInsightsPanel';
 export { default as BulkActionsToolbar } from './BulkActionsToolbar';
+export { default as DriveAdminPanel } from './DriveAdminPanel';
+export { default as DriveAnalyticsDashboard } from './DriveAnalyticsDashboard';
+export { default as DriveContractPanel } from './DriveContractPanel';
+export { default as DriveRestorePanel } from './DriveRestorePanel';
+export { default as DriveVaultPanel } from './DriveVaultPanel';
 export { default as DrivePage } from './DrivePage';
 export { default as FavoritesView } from './FavoritesView';
 export { default as FilePreviewPanel } from './FilePreviewPanel';
+export { default as FileRequestsPanel } from './FileRequestsPanel';
 export { default as FileVersionsPanel } from './FileVersionsPanel';
 export { default as PublicSharePage } from './PublicSharePage';
 export { default as SearchPage } from './SearchPage';

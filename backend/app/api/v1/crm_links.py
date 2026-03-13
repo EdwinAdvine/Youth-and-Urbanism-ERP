@@ -1,5 +1,4 @@
 """CRM cross-module soft links — Calendar, Meetings, Forms, E-Commerce."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime

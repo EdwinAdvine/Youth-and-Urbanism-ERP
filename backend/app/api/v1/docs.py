@@ -1,10 +1,11 @@
 """Docs API — ONLYOFFICE document management endpoints."""
-from __future__ import annotations
 
 import asyncio
+import io
 import json
 import logging
 import uuid
+import zipfile
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, Response, WebSocket, WebSocketDisconnect, status
@@ -24,6 +25,133 @@ from app.models.notes import Note
 _logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _minimal_document_bytes(ext: str) -> bytes:
+    """Return minimal valid bytes for a new empty document of the given extension.
+
+    ONLYOFFICE requires a valid (non-empty) Office Open XML file to open.
+    Uploading 0 bytes causes a "Download failed" error in the editor.
+    """
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        if ext in ("docx", "doc", "odt"):
+            z.writestr(
+                "[Content_Types].xml",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                '<Default Extension="xml" ContentType="application/xml"/>'
+                '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+                "</Types>",
+            )
+            z.writestr(
+                "_rels/.rels",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+                "</Relationships>",
+            )
+            z.writestr(
+                "word/_rels/document.xml.rels",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>'
+            )
+            z.writestr(
+                "word/document.xml",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                "<w:body><w:p><w:r><w:t/></w:r></w:p><w:sectPr/></w:body>"
+                "</w:document>",
+            )
+        elif ext in ("xlsx", "xls", "ods"):
+            z.writestr(
+                "[Content_Types].xml",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                '<Default Extension="xml" ContentType="application/xml"/>'
+                '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+                '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+                "</Types>",
+            )
+            z.writestr(
+                "_rels/.rels",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+                "</Relationships>",
+            )
+            z.writestr(
+                "xl/_rels/workbook.xml.rels",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+                "</Relationships>",
+            )
+            z.writestr(
+                "xl/workbook.xml",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+                '<sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets>'
+                "</workbook>",
+            )
+            z.writestr(
+                "xl/worksheets/sheet1.xml",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                "<sheetData/></worksheet>",
+            )
+        elif ext in ("pptx", "ppt", "odp"):
+            z.writestr(
+                "[Content_Types].xml",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                '<Default Extension="xml" ContentType="application/xml"/>'
+                '<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>'
+                '<Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>'
+                "</Types>",
+            )
+            z.writestr(
+                "_rels/.rels",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>'
+                "</Relationships>",
+            )
+            z.writestr(
+                "ppt/_rels/presentation.xml.rels",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>'
+                "</Relationships>",
+            )
+            z.writestr(
+                "ppt/presentation.xml",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+                '<p:sldMasterIdLst/><p:sldSz cx="9144000" cy="6858000"/><p:notesSz cx="6858000" cy="9144000"/>'
+                '<p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst>'
+                "</p:presentation>",
+            )
+            z.writestr(
+                "ppt/slides/_rels/slide1.xml.rels",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>',
+            )
+            z.writestr(
+                "ppt/slides/slide1.xml",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">'
+                '<p:cSld><p:spTree/></p:cSld>'
+                "</p:sld>",
+            )
+        else:
+            # Fallback: minimal DOCX
+            return _minimal_document_bytes("docx")
+    return buf.getvalue()
+
 
 # Extensions considered "documents" for this feature
 _DOC_EXTENSIONS = {"docx", "doc", "odt", "xlsx", "xls", "ods", "pptx", "ppt", "odp", "pdf"}
@@ -100,9 +228,27 @@ async def list_documents(
     current_user: CurrentUser,
     db: DBSession,
     doc_type: str | None = Query(None, description="Filter by extension: docx | xlsx | pptx"),
+    view: str = Query("all", description="all | mine | shared | recent"),
 ) -> dict[str, Any]:
-    query = select(DriveFile).where(DriveFile.owner_id == current_user.id)
-    result = await db.execute(query.order_by(DriveFile.created_at.desc()))
+    from sqlalchemy import or_  # noqa: PLC0415
+
+    if view == "shared":
+        # Documents the current user shared publicly, or public docs from others
+        query = select(DriveFile).where(
+            or_(
+                DriveFile.is_public == True,  # noqa: E712
+                DriveFile.owner_id == current_user.id,
+            )
+        ).where(DriveFile.is_public == True)  # noqa: E712
+    else:
+        query = select(DriveFile).where(DriveFile.owner_id == current_user.id)
+
+    if view == "recent":
+        query = query.order_by(DriveFile.updated_at.desc()).limit(20)
+    else:
+        query = query.order_by(DriveFile.updated_at.desc())
+
+    result = await db.execute(query)
     all_files = result.scalars().all()
 
     docs = []
@@ -119,6 +265,8 @@ async def list_documents(
             "content_type": f.content_type,
             "size": f.size,
             "minio_key": f.minio_key,
+            "folder_path": f.folder_path,
+            "is_public": f.is_public,
             "created_at": f.created_at,
             "updated_at": f.updated_at,
         })
@@ -143,10 +291,13 @@ async def create_document(
     ext = _ext(filename)
     content_type = _EXT_CONTENT_TYPE.get(ext, "application/octet-stream")
 
-    # Create an empty placeholder file in MinIO so ONLYOFFICE can fetch it
+    # Create a minimal valid document skeleton in MinIO so ONLYOFFICE can open it.
+    # Uploading 0 bytes causes ONLYOFFICE to show "Download failed" because it
+    # cannot parse an empty ZIP/Office Open XML file.
+    doc_bytes = _minimal_document_bytes(ext)
     try:
         record = minio_client.upload_file(
-            file_data=b"",
+            file_data=doc_bytes,
             filename=filename,
             user_id=str(current_user.id),
             folder_path="documents",
@@ -163,7 +314,7 @@ async def create_document(
         id=uuid.UUID(file_id),
         name=filename,
         content_type=content_type,
-        size=0,
+        size=len(doc_bytes),
         minio_key=record["minio_key"],
         folder_path="/documents",
         owner_id=current_user.id,
@@ -190,6 +341,7 @@ async def get_editor_config(
     current_user: CurrentUser,
     db: DBSession,
     mode: str = Query("edit", description="edit | view"),
+    theme: str = Query("light", description="light | dark"),
 ) -> dict[str, Any]:
     from app.integrations import onlyoffice  # noqa: PLC0415
     from app.integrations import minio_client  # noqa: PLC0415
@@ -208,6 +360,7 @@ async def get_editor_config(
 
     display_name = getattr(current_user, "full_name", None) or getattr(current_user, "email", str(current_user.id))
     callback_url = _callback_url(str(file_id))
+    ui_theme = "theme-dark" if theme == "dark" else "theme-light"
 
     # Auto-detect mobile user-agent and use mobile config
     user_agent = request.headers.get("user-agent", "")
@@ -222,6 +375,7 @@ async def get_editor_config(
             download_url=download_url,
             callback_url=callback_url,
             mode=mode if mode in ("edit", "view") else "edit",
+            ui_theme=ui_theme,
         )
     else:
         config = onlyoffice.get_editor_config(
@@ -232,6 +386,7 @@ async def get_editor_config(
             download_url=download_url,
             callback_url=callback_url,
             mode=mode if mode in ("edit", "view") else "edit",
+            ui_theme=ui_theme,
         )
 
     # Track editing session for co-editing presence
@@ -872,7 +1027,7 @@ td {{ padding: 10px 12px; border-bottom: 1px solid #eee; }}
 </div>
 {f'<p class="meta"><em>{invoice.notes}</em></p>' if invoice.notes else ''}
 <div class="footer">
-    <p>Generated by Urban ERP</p>
+    <p>Generated by Urban Vibes Dynamics</p>
 </div>
 </body></html>"""
 

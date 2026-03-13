@@ -1,5 +1,4 @@
 """Finance API — Fixed Asset Management & Depreciation."""
-from __future__ import annotations
 
 import uuid
 from datetime import date

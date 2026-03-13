@@ -19,7 +19,7 @@ from app.core.config import settings
 # Jitsi JWTs is the same SECRET_KEY used for internal JWTs when a dedicated
 # JITSI_APP_SECRET is not configured.  In production you should set both
 # JITSI_APP_ID and JITSI_APP_SECRET in the environment.
-_JITSI_APP_ID: str = getattr(settings, "JITSI_APP_ID", "urban-erp")
+_JITSI_APP_ID: str = getattr(settings, "JITSI_APP_ID", "urban-vibes-dynamics")
 _JITSI_APP_SECRET: str = getattr(settings, "JITSI_APP_SECRET", settings.SECRET_KEY)
 
 

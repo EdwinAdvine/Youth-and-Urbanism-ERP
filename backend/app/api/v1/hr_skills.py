@@ -1,5 +1,4 @@
 """HR Skills, Succession Plans, Employee Timeline & Document Versions API."""
-from __future__ import annotations
 
 import uuid
 from decimal import Decimal

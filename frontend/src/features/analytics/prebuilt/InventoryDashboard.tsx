@@ -1,4 +1,5 @@
-import { KPICard, BarChart, PieChart, LineChart, GaugeChart } from '../../../components/charts'
+import ChartRenderer from '../../../components/charts/ChartRenderer'
+import { KPICard } from '../../../components/charts'
 import { Spinner } from '../../../components/ui'
 import { useModuleKPIs } from '../../../api/analytics_ext'
 import DashboardHeader from './DashboardHeader'
@@ -76,18 +77,35 @@ export default function InventoryDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Stock by Category</h3>
           <p className="text-xs text-gray-400 mb-4">Units per category</p>
-          <PieChart data={stockByCategory} innerRadius={50} height={260} />
+          <ChartRenderer
+            type="donut"
+            data={stockByCategory}
+            config={{
+              nameKey: 'name',
+              valueKey: 'value',
+              colors: ['#51459d', '#6fd943', '#3ec9d6', '#ffa21d', '#ff3a6e'],
+              showLegend: true,
+            }}
+            height={260}
+          />
         </div>
 
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Inventory Valuation</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly total stock value</p>
-          <LineChart
+          <ChartRenderer
+            type="line"
             data={valuationData}
-            lines={[{ dataKey: 'value', color: '#51459d', name: 'Valuation' }]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['value'],
+              colors: ['#51459d'],
+              showGrid: true,
+              showLegend: false,
+              smooth: true,
+              areaFill: true,
+            }}
             height={260}
-            formatTooltip={(v) => formatKSh(v)}
           />
         </div>
       </div>
@@ -97,24 +115,35 @@ export default function InventoryDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Inventory Turnover</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly turnover ratio</p>
-          <BarChart
+          <ChartRenderer
+            type="bar"
             data={turnoverData}
-            bars={[{ dataKey: 'ratio', color: '#3ec9d6', name: 'Turnover Ratio' }]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['ratio'],
+              colors: ['#3ec9d6'],
+              showGrid: true,
+              showLegend: false,
+            }}
             height={240}
-            formatTooltip={(v) => `${v}x`}
           />
         </div>
 
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Top Items by Value</h3>
           <p className="text-xs text-gray-400 mb-4">Highest value inventory items</p>
-          <BarChart
+          <ChartRenderer
+            type="bar"
             data={topItems}
-            bars={[{ dataKey: 'value', color: '#ffa21d', name: 'Value' }]}
-            xKey="name"
+            config={{
+              xKey: 'name',
+              yKeys: ['value'],
+              colors: ['#ffa21d'],
+              showGrid: true,
+              showLegend: false,
+              horizontal: true,
+            }}
             height={240}
-            formatTooltip={(v) => formatKSh(v)}
           />
         </div>
       </div>
@@ -125,15 +154,16 @@ export default function InventoryDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
           {warehouseData.map((wh) => (
             <div key={wh.name} className="flex flex-col items-center">
-              <GaugeChart
-                value={wh.capacity}
-                label={wh.name}
-                thresholds={[
-                  { value: 60, color: '#6fd943' },
-                  { value: 85, color: '#ffa21d' },
-                  { value: 100, color: '#ff3a6e' },
-                ]}
-                size={160}
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">{wh.name}</p>
+              <ChartRenderer
+                type="gauge"
+                data={[{ name: wh.name, value: wh.capacity }]}
+                config={{
+                  nameKey: 'name',
+                  valueKey: 'value',
+                  colors: ['#6fd943', '#ffa21d', '#ff3a6e'],
+                }}
+                height={160}
               />
             </div>
           ))}

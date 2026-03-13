@@ -1,0 +1,81 @@
+global:
+  # SMTP settings — uses Stalwart mail server (configured via SMTP_HOST/SMTP_PORT env vars)
+  smtp_smarthost: "urban-vibes-dynamics-stalwart:587"
+  smtp_from: "alerts@urban-vibes-dynamics.local"
+  smtp_require_tls: false
+
+  # Silence repeated alerts for 1 hour before re-notifying
+  resolve_timeout: 5m
+
+route:
+  # Default route — send all alerts to admin
+  receiver: admin-email
+  group_by: [alertname, component, severity]
+  group_wait: 30s        # wait 30s to group alerts before sending
+  group_interval: 5m     # wait 5m between grouped notifications
+  repeat_interval: 4h    # re-notify every 4h if alert is still firing
+
+  routes:
+    # Critical alerts: shorter repeat interval
+    - match:
+        severity: critical
+      receiver: admin-email-critical
+      repeat_interval: 1h
+
+    # Backup failures: dedicated receiver
+    - match:
+        component: backup
+        severity: critical
+      receiver: admin-email-critical
+      repeat_interval: 30m
+
+receivers:
+  - name: admin-email
+    email_configs:
+      - to: "admin@urban-vibes-dynamics.local"
+        subject: "[Urban Vibes Dynamics] {{ .GroupLabels.alertname }} — {{ .Status | toUpper }}"
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Severity: {{ .Labels.severity }}
+          Component: {{ .Labels.component }}
+
+          Description: {{ .Annotations.description }}
+
+          Labels:
+          {{ range .Labels.SortedPairs }}  {{ .Name }}: {{ .Value }}
+          {{ end }}
+          ---
+          {{ end }}
+        html: |
+          <h2 style="color: #51459d">Urban Vibes Dynamics Alert</h2>
+          {{ range .Alerts }}
+          <table border="1" cellpadding="8" style="border-collapse:collapse;width:100%">
+            <tr><td><strong>Alert</strong></td><td>{{ .Annotations.summary }}</td></tr>
+            <tr><td><strong>Severity</strong></td><td>{{ .Labels.severity }}</td></tr>
+            <tr><td><strong>Component</strong></td><td>{{ .Labels.component }}</td></tr>
+            <tr><td><strong>Description</strong></td><td>{{ .Annotations.description }}</td></tr>
+          </table><br>
+          {{ end }}
+        send_resolved: true
+
+  - name: admin-email-critical
+    email_configs:
+      - to: "admin@urban-vibes-dynamics.local"
+        subject: "[CRITICAL] Urban Vibes Dynamics — {{ .GroupLabels.alertname }}"
+        body: |
+          CRITICAL ALERT — Immediate action required.
+
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+
+inhibit_rules:
+  # Inhibit lower-severity alerts when a critical alert for the same component is firing
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: [component]

@@ -1,3 +1,18 @@
+/**
+ * Manufacturing Equipment API client — asset registry, maintenance schedules,
+ * downtime events, and spare-parts inventory.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Manufacturing
+ * module's equipment management feature. All requests go through `client.ts`
+ * (Axios instance with auth interceptors). Backend prefix: `/api/v1/manufacturing`.
+ *
+ * Key exports:
+ *   - useAssets() / useAsset() / useCreateAsset() — equipment asset CRUD
+ *   - useMaintenanceSchedules() / useCreateMaintenanceSchedule() — PM/CM scheduling
+ *   - useCompleteMaintenanceSchedule() — mark a maintenance task as done
+ *   - useDowntimeEvents() / useCreateDowntimeEvent() — unplanned downtime logging
+ *   - useSpareParts() / useCreateSparePart() — spare-parts catalogue
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

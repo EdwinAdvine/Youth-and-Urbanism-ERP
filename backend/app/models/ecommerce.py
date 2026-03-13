@@ -18,7 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, OptimisticLockMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 # -- Store --------------------------------------------------------------------
@@ -206,7 +206,7 @@ class CartItem(Base, UUIDPrimaryKeyMixin):
 
 
 # -- EcomOrder ----------------------------------------------------------------
-class EcomOrder(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+class EcomOrder(OptimisticLockMixin, Base, UUIDPrimaryKeyMixin, TimestampMixin):
     """An e-commerce order."""
 
     __tablename__ = "ecom_orders"

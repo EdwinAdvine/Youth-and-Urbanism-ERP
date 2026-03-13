@@ -1,5 +1,4 @@
 """Manufacturing ECO API — Engineering Change Orders & Material Substitutions."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime

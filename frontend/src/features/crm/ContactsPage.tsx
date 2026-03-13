@@ -22,6 +22,8 @@ import {
 import { toast } from '../../components/ui'
 import apiClient from '../../api/client'
 import { ImportFromEcommerceDialog } from './EcommerceSyncDialog'
+import { useIsMobile } from '../../hooks/useMediaQuery'
+import MobileCardView from '../../components/ui/MobileCardView'
 
 const EMPTY_FORM: CreateContactPayload = {
   name: '',
@@ -50,6 +52,7 @@ async function handleExport(endpoint: string, filename: string) {
 
 export default function ContactsPage() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<ContactType | ''>('')
@@ -163,14 +166,14 @@ export default function ContactsPage() {
   ]
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Contacts</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Contacts</h1>
           <p className="text-sm text-gray-500 mt-1">Manage your CRM contacts</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" size="sm" onClick={() => setEcomImportOpen(true)}>
             Import from E-Commerce
           </Button>
@@ -211,17 +214,44 @@ export default function ContactsPage() {
         </div>
       </Card>
 
-      {/* Table */}
-      <Card padding={false}>
-        <Table
-          columns={columns}
-          data={data?.items ?? []}
-          loading={isLoading}
-          emptyText="No contacts found"
-          keyExtractor={(row) => row.id}
-        />
-        <Pagination page={page} pages={totalPages} total={data?.total ?? 0} onChange={setPage} />
-      </Card>
+      {/* Table / Mobile Cards */}
+      {isMobile ? (
+        <>
+          <MobileCardView<Contact>
+            data={data?.items ?? []}
+            primaryField="name"
+            secondaryFields={[
+              { key: 'email', label: 'Email' },
+              { key: 'company', label: 'Company', format: (v) => String(v || '---') },
+              { key: 'phone', label: 'Phone', format: (v) => String(v || '---') },
+              { key: 'contact_type', label: 'Type' },
+            ]}
+            statusField="is_active"
+            statusColorMap={{ true: 'bg-[#6fd943]', false: 'bg-gray-400' }}
+            onRowClick={(row) => navigate(`/crm/contacts/${row.id}`)}
+            actions={[
+              { label: 'Edit', onClick: openEdit, variant: 'outline' },
+              { label: 'Delete', onClick: (row) => handleDelete(row.id), variant: 'danger' },
+            ]}
+            keyExtractor={(row) => row.id}
+            emptyText="No contacts found"
+          />
+          <Pagination page={page} pages={totalPages} total={data?.total ?? 0} onChange={setPage} />
+        </>
+      ) : (
+        <Card padding={false}>
+          <div className="overflow-x-auto">
+            <Table
+              columns={columns}
+              data={data?.items ?? []}
+              loading={isLoading}
+              emptyText="No contacts found"
+              keyExtractor={(row) => row.id}
+            />
+          </div>
+          <Pagination page={page} pages={totalPages} total={data?.total ?? 0} onChange={setPage} />
+        </Card>
+      )}
 
       {/* Create / Edit Modal */}
       <Modal

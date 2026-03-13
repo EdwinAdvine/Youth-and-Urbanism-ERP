@@ -1,5 +1,4 @@
 """Projects API — Task comments with threading, @mentions, and activity feed."""
-from __future__ import annotations
 
 import re
 import uuid

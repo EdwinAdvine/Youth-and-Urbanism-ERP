@@ -1,3 +1,22 @@
+/**
+ * HR LMS API client — learning management system covering courses, modules,
+ * enrolments, progress tracking, quizzes, and certifications.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the HR Learning
+ * Management System. All requests go through `client.ts` (Axios instance with
+ * auth interceptors). Backend prefix: `/api/v1/hr`.
+ *
+ * Key exports:
+ *   - useCourses() / useCourse() — course catalogue (video, document, quiz, SCORM)
+ *   - useCreateCourse() / useUpdateCourse() — course authoring mutations
+ *   - useCourseModules() / useCreateCourseModule() — ordered module management
+ *   - useEnrollInCourse() — self-enrol or admin-enrol an employee
+ *   - useUpdateProgress() — track module completion and quiz answers
+ *   - useCertifications() / useCreateCertification() — external and course-linked certifications
+ *
+ * Note: quiz scoring and pass/fail status are computed server-side on progress
+ * submission. pass_score on the Course model defines the threshold.
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

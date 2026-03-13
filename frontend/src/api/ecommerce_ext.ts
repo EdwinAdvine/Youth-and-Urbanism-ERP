@@ -1,3 +1,19 @@
+/**
+ * E-Commerce Extended API client — cart, coupons, shipping, reviews, wishlists,
+ * sales analytics.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the E-Commerce
+ * module's extended features. All requests go through `client.ts` (Axios
+ * instance with auth interceptors). Backend prefix: `/api/v1/ecommerce`.
+ *
+ * Key exports:
+ *   - useCart() / useAddToCart() / useRemoveCartItem() — shopping cart management
+ *   - useCoupons() / useCreateCoupon() — discount code CRUD
+ *   - useShippingMethods() / useCreateShippingMethod() — shipping configuration
+ *   - useReviews() / useApproveReview() — product review moderation
+ *   - useWishlist() / useAddToWishlist() — customer wishlist management
+ *   - useSalesReport() / useTopProducts() / useConversionFunnel() — analytics
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

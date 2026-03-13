@@ -1,4 +1,19 @@
+/**
+ * Notifications API client — in-app notification feed (bell icon, mark-read, unread count).
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/notifications`.
+ *
+ * Key exports:
+ *   - useNotifications()       — paginated list of notifications with optional read filter
+ *   - useUnreadCount()         — total count of unread notifications (drives bell badge)
+ *   - useMarkNotificationRead() — mark a single notification as read
+ *   - useMarkAllRead()          — mark all current user's notifications as read
+ *   - useDeleteNotification()   — delete a single notification by ID
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { REALTIME_PRESET } from '@/utils/queryDefaults'
 import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -33,6 +48,7 @@ export function useNotifications(params: NotificationsParams = {}) {
       const { data } = await apiClient.get<{ total: number; items: Notification[] }>('/notifications', { params })
       return data.items
     },
+    ...REALTIME_PRESET,
   })
 }
 
@@ -44,6 +60,7 @@ export function useUnreadCount() {
       return data
     },
     refetchInterval: 30_000,
+    ...REALTIME_PRESET,
   })
 }
 

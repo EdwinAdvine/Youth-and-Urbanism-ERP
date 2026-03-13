@@ -7,16 +7,25 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
 from app.core.database import create_all_tables
+from app.core.etag_middleware import ETagMiddleware
 from app.core.events import event_bus
+from app.core.ip_filter import ip_filter_middleware
 from app.core.logging_config import RequestIDMiddleware, setup_logging
 from app.core.rate_limit import limiter
 from app.core.security_headers import SecurityHeadersMiddleware
+from app.core.timing_middleware import TimingMiddleware
+from app.core.audit_listeners import (
+    audit_ip_address,
+    audit_user_id,
+    register_audit_listeners,
+)
 
 setup_logging()
 
@@ -29,6 +38,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Run startup tasks before serving, and cleanup on shutdown."""
     logger.info("Starting %s ...", settings.APP_NAME)
 
+    # Validate that default dev secrets are not used in production
+    from app.core.secrets_validator import validate_production_secrets  # noqa: PLC0415
+    validate_production_secrets()
+
     # Create database tables in dev mode; use Alembic migrations in production
     if settings.DEBUG:
         await create_all_tables()
@@ -40,6 +53,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await _seed_superadmin()
     logger.info("Super-admin seed complete.")
 
+    # Seed permissions and system roles
+    await _seed_permissions()
+    logger.info("Permission seed complete.")
+
     # Start Redis event bus
     _register_event_handlers()
     # Register project automation event handlers
@@ -47,6 +64,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Register cross-module integration handlers (POS→Finance, E-Commerce→Mail, etc.)
     from app.core.integration_handlers import register_integration_handlers  # noqa: PLC0415
     register_integration_handlers()
+    # Register mail → calendar scheduling intent handler
+    from app.services.mail_calendar_scanner import on_mail_received_calendar  # noqa: PLC0415
+    event_bus.on("mail.received")(on_mail_received_calendar)
+    # Register universal audit trail listeners
+    register_audit_listeners()
     await event_bus.start()
     logger.info("Event bus started.")
 
@@ -617,6 +639,17 @@ def _register_event_handlers() -> None:
                 logger.exception("Failed to update calendar event for task.updated")
 
         await _log_activity("updated", f"Task due date changed: {data.get('title')} in {data.get('project_name', 'project')}", "projects", data.get("assignee_id", ""), data)
+
+    @event_bus.on("task.updated")
+    async def on_task_updated_erp_context_sync(data: dict) -> None:
+        """Sync erp_context-linked CalendarEvent blocks when a task is updated.
+
+        Delegates to the calendar_task_sync service which handles the
+        ``erp_context``-based linking introduced by auto_block_task_time.
+        Skips events originating from the sync service itself to prevent loops.
+        """
+        from app.services.calendar_task_sync import on_task_updated_calendar_sync  # noqa: PLC0415
+        await on_task_updated_calendar_sync(data)
 
     @event_bus.on("payslip.approved")
     async def on_payslip_approved(data: dict) -> None:
@@ -1401,6 +1434,78 @@ def _register_event_handlers() -> None:
                 logger.warning("Could not send comment notification email for ticket %s", data.get("ticket_number"))
 
 
+    # ── Support Phase 2 — Automation + Proactive event handlers ─────────
+
+    @event_bus.on("support.ticket.created")
+    async def on_support_ticket_created_automations(data: dict) -> None:
+        """Trigger automations + proactive rules + AI auto-respond for new tickets."""
+        ticket_id = data.get("ticket_id", "")
+        if ticket_id:
+            try:
+                from app.tasks.support_tasks import (  # noqa: PLC0415
+                    support_evaluate_automations,
+                    support_ai_auto_respond,
+                    support_evaluate_proactive_rules,
+                )
+                support_evaluate_automations.delay(ticket_id, "support.ticket.created")
+                support_ai_auto_respond.delay(ticket_id)
+                support_evaluate_proactive_rules.delay("support.ticket.created", data)
+            except Exception:
+                logger.warning("Could not trigger automations for ticket %s", ticket_id)
+
+    @event_bus.on("support.ticket.resolved")
+    async def on_support_ticket_resolved_automations(data: dict) -> None:
+        """Trigger automations on ticket resolution."""
+        ticket_id = data.get("ticket_id", "")
+        if ticket_id:
+            try:
+                from app.tasks.support_tasks import support_evaluate_automations  # noqa: PLC0415
+                support_evaluate_automations.delay(ticket_id, "support.ticket.resolved")
+            except Exception:
+                logger.warning("Could not trigger automations for resolved ticket %s", ticket_id)
+
+    @event_bus.on("support.sla.breached")
+    async def on_support_sla_breached_automations(data: dict) -> None:
+        """Trigger automations on SLA breach."""
+        ticket_id = data.get("ticket_id", "")
+        if ticket_id:
+            try:
+                from app.tasks.support_tasks import support_evaluate_automations  # noqa: PLC0415
+                support_evaluate_automations.delay(ticket_id, "support.sla.breached")
+            except Exception:
+                logger.warning("Could not trigger automations for SLA breach on %s", ticket_id)
+
+    @event_bus.on("support.escalation.triggered")
+    async def on_support_escalation_triggered(data: dict) -> None:
+        """Notify target user when SLA escalation is triggered."""
+        logger.info("Event: support.escalation.triggered — ticket %s level %s",
+                     data.get("ticket_number"), data.get("level"))
+        target_user_id = data.get("target_user_id")
+        if target_user_id:
+            await _create_notification(
+                user_id=target_user_id,
+                title=f"SLA Escalation L{data.get('level', '?')}",
+                message=f"Ticket {data.get('ticket_number', '')} escalated — {data.get('minutes_until_breach', '?')} min until breach",
+                notif_type="warning",
+                module="support",
+                link_url=f"/support/tickets/{data.get('ticket_id', '')}",
+            )
+
+    @event_bus.on("support.proactive.alert")
+    async def on_support_proactive_alert(data: dict) -> None:
+        """Alert agents about proactive rule triggers."""
+        logger.info("Event: support.proactive.alert — rule %s", data.get("rule_name"))
+        admin_ids = await _get_app_admin_ids("support")
+        for uid in admin_ids:
+            await _create_notification(
+                user_id=str(uid),
+                title=f"Proactive Alert: {data.get('rule_name', '')}",
+                message=data.get("message", "Proactive support rule triggered"),
+                notif_type="info",
+                module="support",
+                link_url="/support/proactive/rules",
+            )
+
     # ── Y&U Notes — Auto-create notes from ERP events ─────────────────────
 
     @event_bus.on("meeting.created")
@@ -1542,6 +1647,30 @@ def _register_event_handlers() -> None:
         except Exception:
             logger.exception("Failed to auto-create investigation note")
 
+    @event_bus.on("note.updated")
+    @event_bus.on("note.created")
+    async def on_note_saved_embed(data: dict) -> None:
+        """Trigger pgvector embedding for semantic search after a note is saved."""
+        note_id = data.get("note_id")
+        if not note_id:
+            return
+        try:
+            from app.tasks.notes_tasks import embed_note_task  # noqa: PLC0415
+            embed_note_task.delay(str(note_id))
+            logger.info("Queued embed_note_task for note %s", note_id)
+        except Exception:
+            logger.exception("Failed to queue embed_note_task for note %s", note_id)
+
+
+async def _seed_permissions() -> None:
+    """Seed permissions and system roles idempotently on every startup."""
+    from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+    from app.services.permission_seeder import seed_permissions  # noqa: PLC0415
+
+    async with AsyncSessionLocal() as db:
+        await seed_permissions(db)
+        await db.commit()
+
 
 async def _seed_superadmin() -> None:
     """Create the first super-admin account if it does not exist."""
@@ -1574,12 +1703,21 @@ async def _seed_superadmin() -> None:
 def create_app() -> FastAPI:
     application = FastAPI(
         title=settings.APP_NAME,
-        description="Urban ERP — Phase 3: Full ERP with Inventory, Payroll, Budget, Notifications & Global Search",
+        description="Urban Vibes Dynamics — Phase 3: Full ERP with Inventory, Payroll, Budget, Notifications & Global Search",
         version="0.1.0",
         docs_url="/docs",
         redoc_url="/redoc",
         lifespan=lifespan,
     )
+
+    # ── GZip compression (fallback for direct container access) ──────────────
+    application.add_middleware(GZipMiddleware, minimum_size=500)
+
+    # ── Request timing (perf metrics stored in Redis) ─────────────────────────
+    application.add_middleware(TimingMiddleware, redis_url=settings.REDIS_URL)
+
+    # ── ETag conditional responses (reduces 4G data transfer) ────────────────
+    application.add_middleware(ETagMiddleware)
 
     # ── Security headers ─────────────────────────────────────────────────────
     application.add_middleware(SecurityHeadersMiddleware)
@@ -1592,8 +1730,8 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID", "Accept", "If-None-Match"],
     )
 
     # ── Rate limiting ─────────────────────────────────────────────────────────
@@ -1660,6 +1798,31 @@ def create_app() -> FastAPI:
     from app.core.metrics import instrument_app  # noqa: PLC0415
 
     instrument_app(application)
+
+    @application.middleware("http")
+    async def audit_context_middleware(request, call_next):
+        """Set audit context (user_id, IP) for universal audit trail."""
+        # Extract IP address
+        ip = request.client.host if request.client else None
+        audit_ip_address.set(ip)
+
+        # Try to extract user_id from Authorization header (best-effort)
+        auth_header = request.headers.get("authorization", "")
+        if auth_header.startswith("Bearer "):
+            try:
+                from app.core.security import decode_token  # noqa: PLC0415
+                payload = decode_token(auth_header[7:])
+                audit_user_id.set(payload.get("sub"))
+            except Exception:
+                audit_user_id.set(None)
+        else:
+            audit_user_id.set(None)
+
+        response = await call_next(request)
+        return response
+
+    # ── IP blocklist filter ────────────────────────────────────────────────────
+    application.middleware("http")(ip_filter_middleware)
 
     return application
 

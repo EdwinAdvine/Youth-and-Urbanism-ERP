@@ -1,3 +1,19 @@
+/**
+ * useDocPresence — real-time collaborator presence for ONLYOFFICE document editing.
+ *
+ * Connects to `/api/v1/docs/ws/presence/{fileId}?token={jwt}` and tracks which
+ * users are currently viewing/editing the document. The backend broadcasts
+ * `user_joined` and `user_left` events with the full updated user list, so the
+ * hook always holds an accurate snapshot of active collaborators.
+ *
+ * Also provides `sendCursorPosition()` to broadcast the current user's cursor
+ * location for live cursor overlays in the editor UI.
+ *
+ * A 10-second ping heartbeat keeps the connection alive.
+ * Reconnects every 3 seconds on drop (capped at 10s).
+ *
+ * Usage: Mount per document editor session; pass `fileId = null` to disable.
+ */
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useAuthStore } from '../store/auth'
 

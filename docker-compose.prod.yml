@@ -1,0 +1,391 @@
+# Urban Vibes Dynamics — Production Docker Compose
+# Usage: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
+networks:
+  urban-vibes-dynamics-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  ollama_data:
+  stalwart_data:
+  onlyoffice_data:
+  onlyoffice_logs:
+  jitsi_web_config:
+  jitsi_prosody_config:
+  jitsi_prosody_plugins:
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: urban-vibes-dynamics-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-urban}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-urban_vibes_dynamics}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c pg_stat_statements.max=10000
+      -c log_min_duration_statement=200
+      -c log_statement=none
+      -c log_lock_waits=on
+      -c track_io_timing=on
+      -c max_connections=200
+      -c shared_buffers=512MB
+      -c work_mem=16MB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-urban} -d ${POSTGRES_DB:-urban_vibes_dynamics}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    networks:
+      - urban-vibes-dynamics-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: urban-vibes-dynamics-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - urban-vibes-dynamics-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: urban-vibes-dynamics-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks:
+      - urban-vibes-dynamics-net
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: urban-vibes-dynamics-ollama
+    restart: unless-stopped
+    environment:
+      OLLAMA_NUM_PARALLEL: "2"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_KEEP_ALIVE: "10m"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+    networks:
+      - urban-vibes-dynamics-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: urban-vibes-dynamics-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env.prod
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    networks:
+      - urban-vibes-dynamics-net
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: urban-vibes-dynamics-celery-worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env.prod
+    command: celery -A app.tasks.celery_app worker -l info --concurrency=4
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.tasks.celery_app", "inspect", "ping", "--timeout", "5"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    networks:
+      - urban-vibes-dynamics-net
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: urban-vibes-dynamics-celery-beat
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env.prod
+    command: celery -A app.tasks.celery_app beat -l info
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/celerybeat.pid"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - urban-vibes-dynamics-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: urban-vibes-dynamics-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - urban-vibes-dynamics-net
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: urban-vibes-dynamics-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/ssl:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/nginx-health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - urban-vibes-dynamics-net
+
+  stalwart:
+    image: stalwartlabs/mail-server:latest
+    container_name: urban-vibes-dynamics-stalwart
+    restart: unless-stopped
+    ports:
+      - "25:25"
+      - "587:587"
+      - "993:993"
+    environment:
+      - STALWART_HOSTNAME=${MAIL_DOMAIN}
+    volumes:
+      - stalwart_data:/opt/stalwart-mail
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks:
+      - urban-vibes-dynamics-net
+
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: urban-vibes-dynamics-onlyoffice
+    restart: unless-stopped
+    environment:
+      - JWT_ENABLED=true
+      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET}
+      - JWT_HEADER=Authorization
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_logs:/var/log/onlyoffice
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    networks:
+      - urban-vibes-dynamics-net
+
+  jitsi-web:
+    image: jitsi/web:stable
+    container_name: urban-vibes-dynamics-jitsi-web
+    restart: unless-stopped
+    environment:
+      - PUBLIC_URL=${JITSI_PUBLIC_URL}
+      - XMPP_SERVER=jitsi-prosody
+      - XMPP_BOSH_URL_BASE=http://jitsi-prosody:5280
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_MUC_DOMAIN=muc.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - XMPP_GUEST_DOMAIN=guest.meet.jitsi
+      - JICOFO_AUTH_USER=focus
+      - TZ=UTC
+    volumes:
+      - jitsi_web_config:/config
+    networks:
+      - urban-vibes-dynamics-net
+
+  jitsi-prosody:
+    image: jitsi/prosody:stable
+    container_name: urban-vibes-dynamics-jitsi-prosody
+    restart: unless-stopped
+    expose:
+      - "5222"
+      - "5269"
+      - "5280"
+      - "5347"
+    environment:
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_MUC_DOMAIN=muc.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - XMPP_GUEST_DOMAIN=guest.meet.jitsi
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET}
+      - JICOFO_AUTH_USER=focus
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}
+      - JVB_AUTH_USER=jvb
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD}
+      - TZ=UTC
+    volumes:
+      - jitsi_prosody_config:/config
+      - jitsi_prosody_plugins:/prosody-plugins-custom
+    networks:
+      urban-vibes-dynamics-net:
+        aliases:
+          - meet.jitsi
+          - auth.meet.jitsi
+          - muc.meet.jitsi
+          - internal-muc.meet.jitsi
+          - guest.meet.jitsi
+
+  jitsi-jicofo:
+    image: jitsi/jicofo:stable
+    container_name: urban-vibes-dynamics-jitsi-jicofo
+    restart: unless-stopped
+    environment:
+      - XMPP_SERVER=jitsi-prosody
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET}
+      - JICOFO_AUTH_USER=focus
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}
+      - JVB_BREWERY_MUC=jvbbrewery
+      - TZ=UTC
+    depends_on:
+      - jitsi-prosody
+    networks:
+      - urban-vibes-dynamics-net
+
+  jitsi-jvb:
+    image: jitsi/jvb:stable
+    container_name: urban-vibes-dynamics-jitsi-jvb
+    restart: unless-stopped
+    ports:
+      - "10000:10000/udp"
+    environment:
+      - XMPP_SERVER=jitsi-prosody
+      - XMPP_DOMAIN=meet.jitsi
+      - XMPP_AUTH_DOMAIN=auth.meet.jitsi
+      - XMPP_INTERNAL_MUC_DOMAIN=internal-muc.meet.jitsi
+      - JVB_AUTH_USER=jvb
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD}
+      - JVB_BREWERY_MUC=jvbbrewery
+      - JVB_PORT=10000
+      - JVB_TCP_HARVESTER_DISABLED=true
+      - TZ=UTC
+    depends_on:
+      - jitsi-prosody
+    networks:
+      - urban-vibes-dynamics-net

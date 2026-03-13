@@ -1,4 +1,18 @@
+/**
+ * Notes API client — Tiptap-based rich-text notes with pinning, tags, and sharing.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/notes`.
+ *
+ * Key exports:
+ *   - useNotes() — list notes with optional pinned/tag filters
+ *   - useCreateNote() — create a note (supports notebook/section/parent-page placement)
+ *   - useShareNote() — share a note with specific user IDs
+ *   - useLinkedItems() — fetch cross-module items linked to a note
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { LIST_PRESET, DETAIL_PRESET } from '@/utils/queryDefaults'
 import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -28,6 +42,10 @@ export interface CreateNotePayload {
   content?: string
   tags?: string[]
   is_pinned?: boolean
+  notebook_id?: string
+  section_id?: string
+  parent_page_id?: string
+  content_format?: string
 }
 
 export interface UpdateNotePayload extends Partial<CreateNotePayload> {
@@ -53,6 +71,7 @@ export function useNotes(params?: { pinned?: boolean; tag?: string }) {
       const { data } = await apiClient.get<NotesResponse>('/notes', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -64,6 +83,7 @@ export function useNote(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -117,6 +137,7 @@ export function useSharedNotes() {
       const { data } = await apiClient.get<NotesResponse>('/notes/shared-with-me')
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -137,6 +158,7 @@ export function useLinkedItems(noteId: string) {
       return data.items ?? []
     },
     enabled: !!noteId,
+    ...LIST_PRESET,
   })
 }
 

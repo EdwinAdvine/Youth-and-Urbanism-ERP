@@ -1,4 +1,5 @@
 import { ResponsiveContainer, LineChart as RLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
+import { useIsMobile } from '../../hooks/useMediaQuery'
 
 interface LineChartProps {
   data: Record<string, unknown>[]
@@ -23,19 +24,23 @@ export default function LineChart({
   formatTooltip,
   formatXAxis,
 }: LineChartProps) {
+  const isMobile = useIsMobile()
+  const tickSize = isMobile ? 10 : 11
+  const legendSize = isMobile ? 10 : 12
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RLineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
         {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />}
         <XAxis
           dataKey={xKey}
-          tick={{ fontSize: 11, fill: '#9ca3af' }}
+          tick={{ fontSize: tickSize, fill: '#9ca3af' }}
           axisLine={{ stroke: '#e5e7eb' }}
           tickLine={false}
           tickFormatter={formatXAxis}
         />
         <YAxis
-          tick={{ fontSize: 11, fill: '#9ca3af' }}
+          tick={{ fontSize: tickSize, fill: '#9ca3af' }}
           axisLine={false}
           tickLine={false}
           width={50}
@@ -51,7 +56,7 @@ export default function LineChart({
         />
         {showLegend && (
           <Legend
-            wrapperStyle={{ fontSize: 12 }}
+            wrapperStyle={{ fontSize: legendSize }}
             iconType="circle"
             iconSize={8}
           />

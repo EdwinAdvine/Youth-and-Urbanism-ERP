@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Urban ERP — Initial SSL certificate generation via Certbot (webroot challenge)
+# Urban Vibes Dynamics — Initial SSL certificate generation via Certbot (webroot challenge)
 
 DOMAIN="${1:-}"
 

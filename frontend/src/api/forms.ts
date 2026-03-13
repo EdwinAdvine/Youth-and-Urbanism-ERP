@@ -1,3 +1,19 @@
+/**
+ * Forms API client — drag-and-drop form builder (forms, fields, responses).
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/forms`.
+ *
+ * Key exports:
+ *   - useForms()           — list all forms for the current user
+ *   - useForm()            — fetch a single form with its fields
+ *   - useCreateForm()      — create a new form definition
+ *   - useUpdateForm()      — update form metadata or field schema
+ *   - useDeleteForm()      — permanently delete a form
+ *   - useFormResponses()   — retrieve paginated submissions for a form
+ *   - useSubmitForm()      — public endpoint to submit a form response
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 
@@ -229,6 +245,13 @@ const keys = {
   versions: (id: string) => ['forms', id, 'versions'] as const,
   webhooks: (id: string) => ['forms', id, 'webhooks'] as const,
   auditLog: (id: string) => ['forms', id, 'audit-log'] as const,
+  quizResults: (id: string) => ['forms', id, 'quiz-results'] as const,
+  schedule: (id: string) => ['forms', id, 'schedule'] as const,
+  approvalWorkflow: (id: string) => ['forms', id, 'approval-workflow'] as const,
+  approvalQueue: (id: string) => ['forms', id, 'approval-queue'] as const,
+  translations: (id: string) => ['forms', id, 'translations'] as const,
+  consent: (id: string) => ['forms', id, 'consent'] as const,
+  automations: (id: string) => ['forms', id, 'automations'] as const,
 }
 
 // ─── Hooks ───────────────────────────────────────────────────────────────────
@@ -428,6 +451,229 @@ export function useCreateTaskFromResponse() {
   return useMutation({
     mutationFn: ({ formId, ...data }: { formId: string; response_id: string; project_id: string; title?: string; priority?: string; assignee_id?: string }) =>
       formsApi.createTask(formId, data),
+  })
+}
+
+// ─── Phase 2: Offline Sync ───────────────────────────────────────────────────
+
+export function useSaveDraft() {
+  return useMutation({
+    mutationFn: ({ formId, answers, deviceId, offlineCreatedAt }: { formId: string; answers: Record<string, unknown>; deviceId?: string; offlineCreatedAt?: string }) =>
+      apiClient.post(`/forms/${formId}/responses/draft`, { answers, device_id: deviceId, offline_created_at: offlineCreatedAt }).then((r) => r.data),
+  })
+}
+
+export function useBulkSyncDrafts() {
+  return useMutation({
+    mutationFn: ({ formId, drafts }: { formId: string; drafts: { answers: Record<string, unknown>; device_id?: string; offline_created_at?: string }[] }) =>
+      apiClient.post(`/forms/${formId}/responses/bulk-sync`, { drafts }).then((r) => r.data),
+  })
+}
+
+// ─── Phase 2: Quiz ───────────────────────────────────────────────────────────
+
+export function useQuizResults(formId: string) {
+  return useQuery({
+    queryKey: keys.quizResults(formId),
+    queryFn: () => apiClient.get(`/forms/${formId}/quiz-results`).then((r) => r.data),
+    enabled: !!formId,
+  })
+}
+
+export function useGradeQuizResponse() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ formId, responseId, overrideScore }: { formId: string; responseId: string; overrideScore?: number }) =>
+      apiClient.post(`/forms/${formId}/quiz-results/grade`, { response_id: responseId, override_score: overrideScore }).then((r) => r.data),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: keys.quizResults(vars.formId) }),
+  })
+}
+
+// ─── Phase 2: Schedule ───────────────────────────────────────────────────────
+
+export function useFormSchedule(formId: string) {
+  return useQuery({
+    queryKey: keys.schedule(formId),
+    queryFn: () => apiClient.get(`/forms/${formId}/schedule`).then((r) => r.data),
+    enabled: !!formId,
+  })
+}
+
+export function useCreateSchedule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ formId, ...data }: { formId: string; recurrence_rule?: string; recipients?: string[]; distribution_channel?: string; is_active?: boolean }) =>
+      apiClient.post(`/forms/${formId}/schedule`, data).then((r) => r.data),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: keys.schedule(vars.formId) }),
+  })
+}
+
+export function useDeleteSchedule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (formId: string) => apiClient.delete(`/forms/${formId}/schedule`).then((r) => r.data),
+    onSuccess: (_data, formId) => qc.invalidateQueries({ queryKey: keys.schedule(formId) }),
+  })
+}
+
+// ─── Phase 2: AI Analysis ────────────────────────────────────────────────────
+
+export function useAIAnalyzeResponses() {
+  return useMutation({
+    mutationFn: (formId: string) => apiClient.post(`/forms/${formId}/ai-analyze-responses`).then((r) => r.data),
+  })
+}
+
+// ─── Phase 3: Approval Workflow ──────────────────────────────────────────────
+
+export function useApprovalWorkflow(formId: string) {
+  return useQuery({
+    queryKey: keys.approvalWorkflow(formId),
+    queryFn: () => apiClient.get(`/forms/${formId}/approval-workflow`).then((r) => r.data),
+    enabled: !!formId,
+  })
+}
+
+export function useCreateApprovalWorkflow() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ formId, steps }: { formId: string; steps: Record<string, unknown>[] }) =>
+      apiClient.post(`/forms/${formId}/approval-workflow`, { steps }).then((r) => r.data),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: keys.approvalWorkflow(vars.formId) }),
+  })
+}
+
+export function useApprovalQueue(formId: string) {
+  return useQuery({
+    queryKey: keys.approvalQueue(formId),
+    queryFn: () => apiClient.get(`/forms/${formId}/approval-queue`).then((r) => r.data),
+    enabled: !!formId,
+  })
+}
+
+export function useApproveResponse() {
+  return useMutation({
+    mutationFn: ({ responseId, status, comments }: { responseId: string; status: 'approved' | 'rejected'; comments?: string }) =>
+      apiClient.post(`/forms/responses/${responseId}/approve`, { status, comments }).then((r) => r.data),
+  })
+}
+
+// ─── Phase 3: Translations ───────────────────────────────────────────────────
+
+export function useFormTranslations(formId: string) {
+  return useQuery({
+    queryKey: keys.translations(formId),
+    queryFn: () => apiClient.get(`/forms/${formId}/translations`).then((r) => r.data),
+    enabled: !!formId,
+  })
+}
+
+export function useCreateTranslation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ formId, locale, translations }: { formId: string; locale: string; translations: Record<string, unknown> }) =>
+      apiClient.post(`/forms/${formId}/translations`, { locale, translations }).then((r) => r.data),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: keys.translations(vars.formId) }),
+  })
+}
+
+export function useAIGenerateTranslation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ formId, locale }: { formId: string; locale: string }) =>
+      apiClient.post(`/forms/${formId}/translations/ai-generate?locale=${locale}`).then((r) => r.data),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: keys.translations(vars.formId) }),
+  })
+}
+
+// ─── Phase 3: Consent ────────────────────────────────────────────────────────
+
+export function useFormConsent(formId: string) {
+  return useQuery({
+    queryKey: keys.consent(formId),
+    queryFn: () => apiClient.get(`/forms/${formId}/consent`).then((r) => r.data),
+    enabled: !!formId,
+  })
+}
+
+export function useConfigureConsent() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ formId, ...data }: { formId: string; consent_text?: string; is_required?: boolean; data_retention_days?: number; privacy_policy_url?: string }) =>
+      apiClient.post(`/forms/${formId}/consent`, data).then((r) => r.data),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: keys.consent(vars.formId) }),
+  })
+}
+
+export function useRecordConsent() {
+  return useMutation({
+    mutationFn: ({ formId, responseId }: { formId: string; responseId?: string }) =>
+      apiClient.post(`/forms/${formId}/consent/record`, { response_id: responseId }).then((r) => r.data),
+  })
+}
+
+// ─── Phase 3: Automations ────────────────────────────────────────────────────
+
+export function useFormAutomations(formId: string) {
+  return useQuery({
+    queryKey: keys.automations(formId),
+    queryFn: () => apiClient.get(`/forms/${formId}/automations`).then((r) => r.data),
+    enabled: !!formId,
+  })
+}
+
+export function useCreateAutomation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ formId, ...data }: { formId: string; name: string; trigger: string; trigger_conditions?: Record<string, unknown>; actions?: Record<string, unknown>[]; is_active?: boolean }) =>
+      apiClient.post(`/forms/${formId}/automations`, data).then((r) => r.data),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: keys.automations(vars.formId) }),
+  })
+}
+
+export function useDeleteAutomation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ formId, autoId }: { formId: string; autoId: string }) =>
+      apiClient.delete(`/forms/${formId}/automations/${autoId}`).then((r) => r.data),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: keys.automations(vars.formId) }),
+  })
+}
+
+// AI Suggest Improvements
+export function useAISuggestImprovements() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (formId: string) => apiClient.post(`/forms/${formId}/ai-suggest-improvements`).then(r => r.data),
+  })
+}
+
+// Media Upload
+export function useUploadFormMedia() {
+  return useMutation({
+    mutationFn: ({ formId, file }: { formId: string; file: File }) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      return apiClient.post(`/forms/${formId}/media-upload`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data)
+    },
+  })
+}
+
+// Embed Config
+export function useEmbedConfig(formId: string) {
+  return useQuery({
+    queryKey: ['forms', formId, 'embed-config'],
+    queryFn: () => apiClient.get(`/forms/${formId}/embed-config`).then(r => r.data),
+    enabled: !!formId,
+  })
+}
+
+export function useSaveEmbedConfig() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ formId, config }: { formId: string; config: Record<string, unknown> }) =>
+      apiClient.put(`/forms/${formId}/embed-config`, config).then(r => r.data),
+    onSuccess: (_, { formId }) => qc.invalidateQueries({ queryKey: ['forms', formId, 'embed-config'] }),
   })
 }
 

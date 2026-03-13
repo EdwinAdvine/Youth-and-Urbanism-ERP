@@ -1,5 +1,6 @@
 import { useRevenueStats, useTopProducts } from '../../../api/analytics'
-import { KPICard, BarChart, LineChart, PieChart, DataTable } from '../../../components/charts'
+import ChartRenderer from '../../../components/charts/ChartRenderer'
+import { KPICard } from '../../../components/charts'
 import { Spinner } from '../../../components/ui'
 import DashboardHeader from './DashboardHeader'
 
@@ -47,11 +48,6 @@ export default function ECommerceDashboard() {
   ]
 
   const products = topProducts?.data ?? []
-  const productColumns = [
-    { key: 'name', label: 'Product' },
-    { key: 'units_sold', label: 'Units Sold', align: 'right' as const, format: (v: unknown) => Number(v).toLocaleString() },
-    { key: 'revenue', label: 'Revenue', align: 'right' as const, format: (v: unknown) => formatKSh(Number(v)) },
-  ]
 
   const totalOrders = orderData.reduce((s, d) => s + d.orders, 0)
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
@@ -73,22 +69,35 @@ export default function ECommerceDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Revenue Trend</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly e-commerce revenue</p>
-          <LineChart
+          <ChartRenderer
+            type="line"
             data={revenuePoints.map((r) => ({ month: r.month, Revenue: r.revenue }))}
-            lines={[{ dataKey: 'Revenue', color: '#51459d' }]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['Revenue'],
+              colors: ['#51459d'],
+              showGrid: true,
+              showLegend: false,
+              smooth: true,
+              areaFill: true,
+            }}
             height={240}
-            formatTooltip={(v) => formatKSh(v)}
           />
         </div>
 
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Order Volume</h3>
           <p className="text-xs text-gray-400 mb-4">Monthly order count</p>
-          <BarChart
+          <ChartRenderer
+            type="bar"
             data={orderData}
-            bars={[{ dataKey: 'orders', color: '#6fd943', name: 'Orders' }]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['orders'],
+              colors: ['#6fd943'],
+              showGrid: true,
+              showLegend: false,
+            }}
             height={240}
           />
         </div>
@@ -99,30 +108,59 @@ export default function ECommerceDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Order Status</h3>
           <p className="text-xs text-gray-400 mb-4">Distribution of order statuses</p>
-          <PieChart data={orderStatus} innerRadius={50} height={260} />
+          <ChartRenderer
+            type="donut"
+            data={orderStatus}
+            config={{
+              nameKey: 'name',
+              valueKey: 'value',
+              colors: ['#6fd943', '#3ec9d6', '#51459d', '#ff3a6e', '#ffa21d'],
+              showLegend: true,
+            }}
+            height={260}
+          />
         </div>
 
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Revenue by Channel</h3>
           <p className="text-xs text-gray-400 mb-4">Sales across channels</p>
-          <PieChart
+          <ChartRenderer
+            type="donut"
             data={channelData}
-            innerRadius={50}
+            config={{
+              nameKey: 'name',
+              valueKey: 'value',
+              colors: ['#51459d', '#6fd943', '#3ec9d6', '#ffa21d'],
+              showLegend: true,
+            }}
             height={260}
-            formatTooltip={(v) => formatKSh(v)}
           />
         </div>
       </div>
 
       {/* Top Products Table */}
       {products.length > 0 && (
-        <DataTable
-          columns={productColumns}
-          data={products as unknown as Record<string, unknown>[]}
-          title="Top Products"
-          subtitle="Best selling products by revenue"
-          pageSize={10}
-        />
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Top Products</h3>
+          <p className="text-xs text-gray-400 mb-4">Best selling products by revenue</p>
+          <ChartRenderer
+            type="bar"
+            data={(products as unknown as Record<string, unknown>[]).map((p) => ({
+              name: p.name,
+              revenue: p.revenue,
+              units_sold: p.units_sold,
+            }))}
+            config={{
+              xKey: 'name',
+              yKeys: ['revenue'],
+              colors: ['#51459d'],
+              showGrid: true,
+              showLegend: false,
+              horizontal: true,
+            }}
+            height={320}
+          />
+        </div>
       )}
     </div>
   )

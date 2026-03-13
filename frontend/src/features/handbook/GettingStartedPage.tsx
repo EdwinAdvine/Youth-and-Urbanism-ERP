@@ -30,7 +30,7 @@ export default function GettingStartedPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Getting Started with Urban ERP</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Getting Started with Urban Vibes Dynamics</h1>
         <p className="text-sm text-gray-500 mt-2">
           Follow these guides to get up and running quickly. Complete them in order for the best experience.
         </p>

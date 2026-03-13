@@ -1,7 +1,10 @@
+export { default as AccountSettings } from './AccountSettings';
+export { default as AccountSwitcher } from './AccountSwitcher';
 export { default as ContactPicker } from './ContactPicker';
 export * from './KeyboardShortcuts';
 export { default as LabelsPage } from './LabelsPage';
 export * from './MailCrossModuleActions';
+export { default as MailLoginScreen } from './MailLoginScreen';
 export { default as MailPage } from './MailPage';
 export { default as SearchPage } from './SearchPage';
 export { default as SnoozeDialog } from './SnoozeDialog';

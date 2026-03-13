@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from 'react'
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import type { CalendarEvent } from '../../api/calendar'
 import { useCalendarStore } from '../../store/calendar'
 
@@ -11,11 +11,14 @@ interface TimeGridProps {
   onEventClick: (event: CalendarEvent) => void
   onSlotClick: (date: string, hour: number, minute: number) => void
   onEventDrop?: (event: CalendarEvent, newStart: string, newEnd: string) => void
+  onEventResize?: (eventId: string, newEndTime: string) => void
   onSlotSelect?: (date: string, startHour: number, startMinute: number, endHour: number, endMinute: number) => void
   /** Show current time indicator */
   showNowLine?: boolean
   /** Compact mode for smaller widths */
   compact?: boolean
+  /** Events from overlay (teammate) calendars — rendered as ghost blocks */
+  overlayEvents?: CalendarEvent[]
 }
 
 interface PositionedEvent {
@@ -31,6 +34,7 @@ interface PositionedEvent {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const SLOT_HEIGHT = 48 // px per 30-min slot
+const SLOT_MINUTES = 30 // minutes per slot
 const HOUR_HEIGHT = SLOT_HEIGHT * 2 // 96px per hour
 const MIN_EVENT_HEIGHT = 20
 
@@ -276,10 +280,11 @@ function ERPBadges({ erp_context }: { erp_context: CalendarEvent['erp_context'] 
 
 // ─── Single event chip in the time grid ──────────────────────────────────────
 
-function EventChip({ positioned, onClick, compact }: {
+function EventChip({ positioned, onClick, compact, onResizeStart }: {
   positioned: PositionedEvent
   onClick: (event: CalendarEvent) => void
   compact?: boolean
+  onResizeStart?: (e: React.MouseEvent, event: CalendarEvent) => void
 }) {
   const { event, top, height, left, width } = positioned
   const colors = EVENT_COLORS[event.event_type] || EVENT_COLORS.meeting
@@ -300,7 +305,7 @@ function EventChip({ positioned, onClick, compact }: {
       onClick={(e) => { e.stopPropagation(); onClick(event) }}
       title={`${event.title}\n${formatTimeShort(event.start_time)} - ${formatTimeShort(event.end_time)}`}
     >
-      <div className={`px-1.5 ${isTiny ? 'py-0' : 'py-1'} h-full overflow-hidden`}>
+      <div className={`relative px-1.5 ${isTiny ? 'py-0' : 'py-1'} h-full overflow-hidden`}>
         {isTiny ? (
           <p className="text-[9px] font-semibold truncate leading-tight">{event.title}</p>
         ) : isShort ? (
@@ -331,8 +336,89 @@ function EventChip({ positioned, onClick, compact }: {
             )}
           </>
         )}
+        {/* Resize handle */}
+        {onResizeStart && (
+          <div
+            className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            onMouseDown={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              onResizeStart(e, event)
+            }}
+          >
+            <div className="w-8 h-0.5 bg-white/60 rounded-full" />
+          </div>
+        )}
       </div>
     </button>
+  )
+}
+
+// ─── Ghost block helpers ──────────────────────────────────────────────────────
+
+/** Extract up to 2 initials from a display name or email */
+function getInitials(name: string): string {
+  if (!name) return '?'
+  // If it looks like an email, use the local part before @
+  const local = name.includes('@') ? name.split('@')[0] : name
+  const parts = local.trim().split(/[\s._-]+/).filter(Boolean)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+/** Semi-transparent ghost block representing a teammate's busy time */
+function GhostBlock({
+  event,
+  dayStartHour,
+  dayEndHour,
+}: {
+  event: CalendarEvent
+  dayStartHour: number
+  dayEndHour: number
+}) {
+  const { top, height } = getEventTopAndHeight(event, dayStartHour, dayEndHour)
+
+  // Derive a display name: prefer organizer_id as a name hint, fall back to title
+  // (the parent component should embed the user name somewhere accessible;
+  // for now we surface it from event.title when it contains " – " separator,
+  // or we fall back to organizer_id initials)
+  const displayName = event.title || event.organizer_id || 'Team'
+  const initials = getInitials(displayName)
+
+  return (
+    <div
+      className="absolute pointer-events-none overflow-hidden rounded-lg border border-dashed border-gray-400/40 z-[1]"
+      style={{
+        top: `${top}px`,
+        height: `${Math.max(height, MIN_EVENT_HEIGHT)}px`,
+        left: '2px',
+        right: '2px',
+        // Diagonal stripe pattern via CSS gradient
+        background: `
+          repeating-linear-gradient(
+            -45deg,
+            transparent,
+            transparent 4px,
+            rgba(156,163,175,0.08) 4px,
+            rgba(156,163,175,0.08) 8px
+          ),
+          rgba(156,163,175,0.12)
+        `,
+      }}
+      title={`${displayName}: ${formatTimeShort(event.start_time)} – ${formatTimeShort(event.end_time)}`}
+    >
+      <div className="flex items-start gap-1 px-1.5 py-0.5 h-full overflow-hidden">
+        {/* Initials badge */}
+        <span className="shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-gray-400/30 text-[8px] font-bold text-gray-500 dark:text-gray-400 leading-none mt-0.5">
+          {initials}
+        </span>
+        {height >= 28 && (
+          <span className="text-[9px] text-gray-500 dark:text-gray-400 font-medium truncate leading-tight mt-0.5">
+            {displayName}
+          </span>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -344,9 +430,11 @@ export default function TimeGrid({
   onEventClick,
   onSlotClick,
   onEventDrop,
+  onEventResize,
   onSlotSelect,
   showNowLine = true,
   compact = false,
+  overlayEvents = [],
 }: TimeGridProps) {
   const { dayStartHour, dayEndHour } = useCalendarStore()
   const gridRef = useRef<HTMLDivElement>(null)
@@ -356,6 +444,20 @@ export default function TimeGrid({
     endMinute: number
   } | null>(null)
   const isDragging = useRef(false)
+
+  const [resizingEvent, setResizingEvent] = useState<{
+    eventId: string
+    startY: number
+    originalEndMinutes: number
+    columnDate: string
+  } | null>(null)
+
+  // Global mouseup — cancel resize even if cursor leaves the grid
+  useEffect(() => {
+    const handleMouseUp = () => setResizingEvent(null)
+    window.addEventListener('mouseup', handleMouseUp)
+    return () => window.removeEventListener('mouseup', handleMouseUp)
+  }, [])
 
   const totalHours = dayEndHour - dayStartHour
   const hours = useMemo(
@@ -388,6 +490,19 @@ export default function TimeGrid({
     }
     return map
   }, [eventsByDate, dayStartHour, dayEndHour])
+
+  // Filter overlay (teammate) events per date — timed events only
+  const overlayByDate = useMemo(() => {
+    const map: Record<string, CalendarEvent[]> = {}
+    for (const date of dates) {
+      const dateStr = toDateStr(date)
+      map[dateStr] = overlayEvents.filter((e) => {
+        if (e.all_day) return false
+        return e.start_time.slice(0, 10) === dateStr
+      })
+    }
+    return map
+  }, [dates, overlayEvents])
 
   // Drag-to-create handlers
   const getSlotFromMouseEvent = useCallback((e: React.MouseEvent, dateStr: string) => {
@@ -429,6 +544,48 @@ export default function TimeGrid({
     setDragSelection(null)
   }, [dragSelection, onSlotClick, onSlotSelect])
 
+  const handleResizeStart = useCallback((e: React.MouseEvent, event: CalendarEvent) => {
+    const endTime = new Date(event.end_time)
+    const endMinutes = endTime.getHours() * 60 + endTime.getMinutes()
+    setResizingEvent({
+      eventId: event.id,
+      startY: e.clientY,
+      originalEndMinutes: endMinutes,
+      columnDate: event.start_time.slice(0, 10),
+    })
+  }, [])
+
+  const handleResizeMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!resizingEvent) return
+    // Prevent drag-to-create from interfering
+    e.stopPropagation()
+  }, [resizingEvent])
+
+  const handleResizeMouseUp = useCallback((e: React.MouseEvent) => {
+    if (!resizingEvent) return
+    e.stopPropagation()
+    const minutesPerPx = SLOT_MINUTES / SLOT_HEIGHT // 30/48 = 0.625 min/px
+    const deltaMinutes = Math.round((e.clientY - resizingEvent.startY) * minutesPerPx / 15) * 15
+    if (Math.abs(deltaMinutes) >= 15) {
+      const eventToResize = events.find((ev) => ev.id === resizingEvent.eventId)
+      if (eventToResize && onEventResize) {
+        const newEndMinutes = Math.max(
+          resizingEvent.originalEndMinutes + 30, // enforce minimum 30-min duration
+          resizingEvent.originalEndMinutes + deltaMinutes,
+        )
+        const endTime = new Date(eventToResize.end_time)
+        const minuteDiff = newEndMinutes - (endTime.getHours() * 60 + endTime.getMinutes())
+        endTime.setMinutes(endTime.getMinutes() + minuteDiff)
+        // Clamp to end of day (23:59)
+        const dayEnd = new Date(endTime)
+        dayEnd.setHours(23, 59, 0, 0)
+        if (endTime > dayEnd) endTime.setTime(dayEnd.getTime())
+        onEventResize(resizingEvent.eventId, endTime.toISOString())
+      }
+    }
+    setResizingEvent(null)
+  }, [resizingEvent, events, onEventResize])
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* All-day events */}
@@ -461,7 +618,14 @@ export default function TimeGrid({
       )}
 
       {/* Scrollable time grid */}
-      <div ref={gridRef} className="flex-1 overflow-y-auto overflow-x-hidden" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+      <div
+        ref={gridRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden"
+        style={{ cursor: resizingEvent ? 'ns-resize' : undefined }}
+        onMouseMove={handleResizeMouseMove}
+        onMouseUp={(e) => { handleResizeMouseUp(e); handleMouseUp() }}
+        onMouseLeave={handleMouseUp}
+      >
         <div className="flex relative" style={{ height: `${totalHours * HOUR_HEIGHT}px` }}>
           {/* Time gutter */}
           <div className="w-16 shrink-0 relative">
@@ -544,6 +708,17 @@ export default function TimeGrid({
                       positioned={p}
                       onClick={onEventClick}
                       compact={compact}
+                      onResizeStart={onEventResize ? handleResizeStart : undefined}
+                    />
+                  ))}
+
+                  {/* Ghost blocks — teammate overlay events (z-[1], behind real events) */}
+                  {(overlayByDate[dateStr] ?? []).map((oe) => (
+                    <GhostBlock
+                      key={`ghost-${oe.id}`}
+                      event={oe}
+                      dayStartHour={dayStartHour}
+                      dayEndHour={dayEndHour}
                     />
                   ))}
                 </div>

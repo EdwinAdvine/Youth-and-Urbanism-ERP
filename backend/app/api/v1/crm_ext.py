@@ -1,5 +1,4 @@
 """CRM Extensions — campaigns, quotes, products, reports, contact import/export."""
-from __future__ import annotations
 
 import csv
 import io

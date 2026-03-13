@@ -1,3 +1,21 @@
+/**
+ * CRM AI Agents API client — configurable AI agents that autonomously research
+ * contacts, draft proposals, and take CRM actions with optional human approval.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the CRM AI agents
+ * sub-module. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/crm`.
+ *
+ * Key exports:
+ *   - useAIAgents() / useAIAgent() — list and retrieve agent configurations
+ *   - useCreateAIAgent() / useUpdateAIAgent() / useDeleteAIAgent() — agent config mutations
+ *   - useRunAIAgent() — trigger an agent run manually
+ *   - useAIAgentRuns() / useAIAgentRun() — run history and step-level output
+ *   - useApproveRun() / useRejectRun() — human-in-the-loop approval for flagged actions
+ *
+ * Note: agents with approval_required=true pause at sensitive actions and emit
+ * a needs_approval status until approved or rejected via the approval endpoints.
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

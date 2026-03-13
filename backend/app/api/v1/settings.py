@@ -1,14 +1,26 @@
-"""System settings and user preferences endpoints."""
-from __future__ import annotations
+"""System settings, user preferences, and changelog endpoints.
 
+Provides:
+- System settings CRUD (Super Admin only for writes; public safe keys readable by all)
+- User preferences per authenticated user (theme, language, timezone, notifications)
+- GET /changelog — serves CHANGELOG.md as raw markdown for the in-app changelog page
+
+Router prefix: /settings (registered in api/v1/__init__.py)
+"""
+
+from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel as PydanticBase
 from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DBSession, SuperAdminUser
 from app.models.settings import SystemSettings, UserPreferences
+
+# Path to CHANGELOG.md at project root (3 levels up from this file)
+_CHANGELOG_PATH = Path(__file__).parent.parent.parent.parent.parent / "CHANGELOG.md"
 
 router = APIRouter()
 
@@ -167,3 +179,22 @@ async def update_preferences(
     await db.refresh(prefs)
 
     return PreferencesOut.model_validate(prefs)
+
+
+# ── Changelog endpoint ──────────────────────────────────────────────────────
+@router.get(
+    "/changelog",
+    response_class=PlainTextResponse,
+    summary="Get CHANGELOG.md content",
+    responses={200: {"content": {"text/plain": {}}}},
+)
+async def get_changelog(_current_user: CurrentUser) -> str:
+    """Return the contents of CHANGELOG.md as plain text markdown.
+
+    Used by the in-app Changelog page (Settings → Changelog) to render
+    the full release history without a separate static file server.
+    Any authenticated user can read the changelog.
+    """
+    if not _CHANGELOG_PATH.exists():
+        raise HTTPException(status_code=404, detail="CHANGELOG.md not found")
+    return _CHANGELOG_PATH.read_text(encoding="utf-8")

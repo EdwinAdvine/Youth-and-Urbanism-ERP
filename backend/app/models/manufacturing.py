@@ -19,7 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, OptimisticLockMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 # ── Bill of Materials ────────────────────────────────────────────────────────
@@ -97,7 +97,7 @@ class WorkStation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 
 # ── Work Order ───────────────────────────────────────────────────────────────
-class WorkOrder(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class WorkOrder(OptimisticLockMixin, UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Production work order."""
 
     __tablename__ = "mfg_work_orders"

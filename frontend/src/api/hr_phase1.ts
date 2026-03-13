@@ -1,3 +1,20 @@
+/**
+ * HR Phase 1 API client — skills matrix, succession planning, goal tracking,
+ * activity timeline, and document version history.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the HR Phase 1
+ * feature set. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/hr`.
+ *
+ * Key exports:
+ *   - useEmployeeSkills() / useAddSkill() / useUpdateSkill() — skill proficiency records
+ *   - useSkillsMatrix() — org-wide skill heatmap (skill × avg proficiency)
+ *   - useSkillGaps() — gap analysis vs required proficiency levels
+ *   - useSuccessionPlans() / useCreateSuccessionPlan() — successor designation per role
+ *   - useGoals() / useCreateGoal() / useCheckInGoal() — OKR-style goal tracking
+ *   - useActivityTimeline() — chronological employee activity feed (cross-module)
+ *   - useDocumentVersions() / useUploadDocumentVersion() — versioned HR document storage
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

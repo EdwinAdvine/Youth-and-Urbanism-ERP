@@ -1,6 +1,5 @@
 """Calendar automation rules — CRUD endpoints for auto-accept/decline/schedule rules."""
 
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone

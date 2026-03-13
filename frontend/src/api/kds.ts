@@ -1,3 +1,16 @@
+/**
+ * KDS API client — Kitchen Display System stations, orders, and order-item lifecycle.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/kds`.
+ *
+ * Key exports:
+ *   - useKDSStations() — list kitchen stations filtered by warehouse
+ *   - useCreateKDSStation() / useUpdateKDSStation() — station configuration mutations
+ *   - useKDSOrders() — real-time order queue for a given station
+ *   - useCreateKDSOrder() — push a POS transaction to a kitchen station display
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

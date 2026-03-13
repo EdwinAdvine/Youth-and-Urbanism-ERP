@@ -1,3 +1,18 @@
+/**
+ * Admin Config API client — per-module admin configuration settings (mail, storage, integrations).
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/admin`.
+ *
+ * Key exports:
+ *   - useMailServerConfig()      — read Stalwart SMTP/IMAP server settings
+ *   - useUpdateMailConfig()      — update mail server domain or relay config
+ *   - useStorageConfig()         — read MinIO bucket and storage settings
+ *   - useUpdateStorageConfig()   — update storage endpoint or credentials
+ *   - useIntegrationConfig()     — read third-party integration toggles
+ *   - useUpdateIntegrationConfig() — enable/disable external integrations
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

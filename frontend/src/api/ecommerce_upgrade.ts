@@ -1,6 +1,19 @@
 /**
- * E-Commerce Upgrade API client
- * Covers: B2B, Loyalty, Subscriptions, Blog, Import, AI features
+ * E-Commerce Upgrade API client — B2B companies, loyalty programmes,
+ * subscriptions, blog/content, bulk import, and AI-driven features.
+ *
+ * Exports plain Axios helper objects (no TanStack Query wrappers) for the
+ * E-Commerce module's upgrade tier. Uses the global `/api/v1` base URL with
+ * no shared auth interceptor — callers must supply tokens where required.
+ * Backend prefix: `/api/v1/ecommerce`.
+ *
+ * Key exports:
+ *   - b2bApi — B2B company registration, approval, members, and pricing tiers
+ *   - loyaltyApi — loyalty programme rules, point earn/redeem
+ *   - subscriptionApi — recurring subscription plan and billing management
+ *   - blogApi — storefront blog post CRUD
+ *   - importApi — bulk product/customer CSV import utilities
+ *   - ecomAiApi — AI product description generation and recommendation engine
  */
 import axios from 'axios';
 

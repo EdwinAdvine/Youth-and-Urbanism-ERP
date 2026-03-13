@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useDocuments, useCreateDocument, useEditorConfig, useDocComments, useCreateDocComment, useUpdateDocComment, useDeleteDocComment, useDocVersions, useDownloadVersion, useRestoreVersion, useDocLinks, useCreateDocLink, useDeleteDocLink, useBookmarks, Document } from '../../api/docs'
+import { useThemeStore } from '../../store/theme'
 import { formatFileSize } from '../../api/drive'
 import FilePickerDialog from './FilePickerDialog'
 import PermissionSharingDialog from './PermissionSharingDialog'
@@ -8,6 +10,8 @@ import PrintPreview from './PrintPreview'
 import RibbonToolbar from './RibbonToolbar'
 import ERPTemplateDialog from './ERPTemplateDialog'
 import DocCopilot from './DocCopilot'
+import AgenticCopilot from './AgenticCopilot'
+import SecuritySettingsDialog from './SecuritySettingsDialog'
 
 // ─── File type config ─────────────────────────────────────────────────────────
 
@@ -100,14 +104,16 @@ function LinkedTasksPanel({ fileId }: { fileId: string }) {
   )
 }
 
-function OnlyOfficeEditor({ file, onClose }: { file: Document; onClose: () => void }) {
+function OnlyOfficeEditor({ file, onClose, onOpenFile }: { file: Document; onClose: () => void; onOpenFile?: (doc: Document) => void }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [sidePanel, setSidePanel] = useState<'comments' | 'versions' | 'ai' | 'copilot' | null>(null)
+  const [sidePanel, setSidePanel] = useState<'comments' | 'versions' | 'ai' | 'copilot' | 'agent' | null>(null)
   const [showShare, setShowShare] = useState(false)
   const [showPrint, setShowPrint] = useState(false)
-  const { data: editorData, isError: configError } = useEditorConfig(file.id)
+  const [showSecurity, setShowSecurity] = useState(false)
+  const resolvedTheme = useThemeStore((s) => s.resolvedTheme())
+  const { data: editorData, isError: configError } = useEditorConfig(file.id, 'edit', resolvedTheme)
 
   useEffect(() => {
     if (configError) {
@@ -168,10 +174,13 @@ function OnlyOfficeEditor({ file, onClose }: { file: Document; onClose: () => vo
         onToggleVersions={() => setSidePanel(sidePanel === 'versions' ? null : 'versions')}
         onToggleAI={() => setSidePanel(sidePanel === 'ai' ? null : 'ai')}
         onToggleCopilot={() => setSidePanel(sidePanel === 'copilot' ? null : 'copilot')}
+        onToggleAgent={() => setSidePanel(sidePanel === 'agent' ? null : 'agent')}
+        onToggleSecurity={() => setShowSecurity(true)}
         commentsActive={sidePanel === 'comments'}
         versionsActive={sidePanel === 'versions'}
         aiActive={sidePanel === 'ai'}
         copilotActive={sidePanel === 'copilot'}
+        agentActive={sidePanel === 'agent'}
       />
 
       {/* Linked Tasks */}
@@ -183,17 +192,41 @@ function OnlyOfficeEditor({ file, onClose }: { file: Document; onClose: () => vo
         {sidePanel === 'versions' && <VersionPanel fileId={file.id} onClose={() => setSidePanel(null)} />}
         {sidePanel === 'ai' && <AIGenerationPanel fileId={file.id} onClose={() => setSidePanel(null)} />}
         {sidePanel === 'copilot' && <DocCopilot fileId={file.id} onClose={() => setSidePanel(null)} />}
+        {sidePanel === 'agent' && (
+          <div className="absolute right-0 top-0 bottom-0 w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg z-20 flex flex-col">
+            <AgenticCopilot
+              onClose={() => setSidePanel(null)}
+              onGenerated={(result) => {
+                setSidePanel(null)
+                onOpenFile?.({
+                  id: result.file_id,
+                  name: result.filename,
+                  extension: result.filename.split('.').pop() ?? 'docx',
+                  content_type: result.filename.endsWith('.xlsx')
+                    ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                  size: 0,
+                  minio_key: '',
+                  folder_path: '/documents/erp-generated',
+                  is_public: false,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                })
+              }}
+            />
+          </div>
+        )}
         {loading && !error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 z-10">
             <svg className="animate-spin h-6 w-6 text-[#51459d] mb-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-            <p className="text-sm text-gray-500">Loading ONLYOFFICE editor...</p>
+            <p className="text-sm text-gray-500">Loading Y&U Docs editor...</p>
           </div>
         )}
         {error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 z-10">
             <div className="text-center max-w-sm">
               <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center text-2xl mx-auto mb-3">📄</div>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">ONLYOFFICE not available</h3>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Y&U Docs not available</h3>
               <p className="text-sm text-gray-500 mb-4">The document server is not reachable. Check your configuration in Settings.</p>
             </div>
           </div>
@@ -209,6 +242,12 @@ function OnlyOfficeEditor({ file, onClose }: { file: Document; onClose: () => vo
       />
 
       {showPrint && <PrintPreview file={file} onClose={() => setShowPrint(false)} />}
+
+      <SecuritySettingsDialog
+        open={showSecurity}
+        fileId={file.id}
+        onClose={() => setShowSecurity(false)}
+      />
     </div>
   )
 }
@@ -404,6 +443,23 @@ function CreateFileModal({ onClose, onCreate }: { onClose: () => void; onCreate:
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function DocsPage() {
+  const location = useLocation()
+  const path = location.pathname
+
+  // Derive API view from URL path
+  const apiView: 'all' | 'mine' | 'shared' | 'recent' =
+    path.endsWith('/mine') ? 'mine' :
+    path.endsWith('/shared') ? 'shared' :
+    path.endsWith('/recent') ? 'recent' :
+    'all'
+
+  const VIEW_LABELS: Record<string, string> = {
+    all: 'All Docs',
+    mine: 'My Docs',
+    shared: 'Shared',
+    recent: 'Recent',
+  }
+
   const [openFile, setOpenFile] = useState<Document | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showCreate, setShowCreate] = useState(false)
@@ -412,7 +468,7 @@ export default function DocsPage() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'bookmarked'>('all')
 
-  const { data, isError } = useDocuments()
+  const { data, isError } = useDocuments(undefined, apiView)
   const { data: bookmarksData } = useBookmarks()
   const bookmarkedIds = new Set((bookmarksData?.bookmarks ?? []).map((b) => b.file_id))
 
@@ -435,7 +491,7 @@ export default function DocsPage() {
   }
 
   if (openFile) {
-    return <OnlyOfficeEditor file={openFile} onClose={() => setOpenFile(null)} />
+    return <OnlyOfficeEditor file={openFile} onClose={() => setOpenFile(null)} onOpenFile={setOpenFile} />
   }
 
   return (
@@ -449,7 +505,7 @@ export default function DocsPage() {
 
       {/* Toolbar */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800 px-3 sm:px-5 py-3 flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
-        <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">Documents</h1>
+        <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">{VIEW_LABELS[apiView]}</h1>
         <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-[8px] overflow-hidden ml-3">
           <button
             onClick={() => setFilter('all')}
@@ -560,7 +616,7 @@ export default function DocsPage() {
         )}
 
         {viewMode === 'grid' && documents.length > 0 && (
-          <p className="text-[10px] text-gray-400 text-center mt-4">Double-click a file to open in ONLYOFFICE editor</p>
+          <p className="text-[10px] text-gray-400 text-center mt-4">Double-click a file to open in Y&U Docs editor</p>
         )}
       </div>
 

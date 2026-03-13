@@ -6,7 +6,6 @@ Provides soft links between Projects and other modules:
   3. Projects -> CRM: link projects to deals
   4. Projects -> Finance: cost tracking (time * rate + linked expenses)
 """
-from __future__ import annotations
 
 import uuid
 from decimal import Decimal

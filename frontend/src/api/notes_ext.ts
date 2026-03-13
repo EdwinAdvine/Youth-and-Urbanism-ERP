@@ -1,3 +1,16 @@
+/**
+ * Notes Extended API client — folders, tags, templates, and per-note sharing management.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/notes`.
+ *
+ * Key exports:
+ *   - useNoteFolders() — hierarchical folder tree for note organisation
+ *   - useNoteTags() — list and manage tags across the notes workspace
+ *   - useShareNoteExt() / useUnshareNote() — granular note sharing permissions
+ *   - useNoteTemplates() — predefined note templates by category
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 import type { Note } from './notes'

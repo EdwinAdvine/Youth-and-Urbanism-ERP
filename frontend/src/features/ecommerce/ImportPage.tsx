@@ -218,7 +218,7 @@ export default function ImportPage() {
       {step === 3 && (
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Map fields</h2>
-          <p className="text-sm text-gray-500">Match your file's columns to Urban ERP fields.</p>
+          <p className="text-sm text-gray-500">Match your file's columns to Urban Vibes Dynamics fields.</p>
           <Card padding={false}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

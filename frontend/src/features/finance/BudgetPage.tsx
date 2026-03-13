@@ -315,12 +315,14 @@ function BudgetVsActualTable({ fiscalYear }: { fiscalYear: number }) {
 
   return (
     <Card padding={false}>
-      <Table<BudgetVsActualRow>
-        columns={columns}
-        data={data}
-        emptyText="No data"
-        keyExtractor={(row) => `${row.budget_id}-${row.account_id}`}
-      />
+      <div className="overflow-x-auto">
+        <Table<BudgetVsActualRow>
+          columns={columns}
+          data={data}
+          emptyText="No data"
+          keyExtractor={(row) => `${row.budget_id}-${row.account_id}`}
+        />
+      </div>
     </Card>
   )
 }
@@ -427,14 +429,14 @@ export default function BudgetPage() {
   ]
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Budgets</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Budgets</h1>
           <p className="text-sm text-gray-500 mt-1">Manage budgets and track spending by account</p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="w-full sm:w-auto">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>

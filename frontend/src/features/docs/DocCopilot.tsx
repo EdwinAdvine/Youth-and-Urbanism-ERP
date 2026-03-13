@@ -162,7 +162,7 @@ export default function DocCopilot({ fileId, onClose, onInsert }: DocCopilotProp
           </button>
         </div>
         <p className="text-[9px] text-gray-400 text-center mt-1.5">
-          Powered by Urban ERP AI
+          Powered by Urban Vibes Dynamics AI
         </p>
       </div>
     </div>

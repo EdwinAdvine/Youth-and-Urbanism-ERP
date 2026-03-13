@@ -1,5 +1,4 @@
 """Support Agent Presence API — Redis-backed online status, typing indicators, collision detection."""
-from __future__ import annotations
 
 import json
 import uuid

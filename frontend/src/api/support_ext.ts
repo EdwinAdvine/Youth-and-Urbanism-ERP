@@ -1,3 +1,18 @@
+/**
+ * Support Extended API client — SLA management, canned responses, CSAT reporting.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Support
+ * module's extended features. All requests go through `client.ts` (Axios
+ * instance with auth interceptors). Backend prefix: `/api/v1/support`.
+ *
+ * Key exports:
+ *   - useSLAPolicies() / useCreateSLAPolicy() — SLA policy CRUD
+ *   - useTicketSLAStatus() — per-ticket SLA breach status
+ *   - useCannedResponses() / useCreateCannedResponse() — canned reply management
+ *   - useCSATReport() — customer satisfaction report
+ *   - useResponseTimesReport() — SLA response/resolution time metrics
+ *   - useSupportKPIs() — full agent-performance KPI dashboard
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

@@ -1,4 +1,6 @@
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
+import { useIsMobile } from '../../hooks/useMediaQuery'
+import MobileCardView from '../ui/MobileCardView'
 
 interface Column {
   key: string
@@ -6,6 +8,19 @@ interface Column {
   align?: 'left' | 'right' | 'center'
   format?: (value: unknown) => string
   sortable?: boolean
+}
+
+interface MobileCardConfig {
+  /** Field shown as card title */
+  primaryField: string
+  /** Key-value rows */
+  secondaryFields: Array<{ key: string; label: string; format?: (value: unknown, row: Record<string, unknown>) => React.ReactNode }>
+  /** Status field for top color bar */
+  statusField?: string
+  /** Maps status values to Tailwind bg classes */
+  statusColorMap?: Record<string, string>
+  /** Click handler for the whole card */
+  onRowClick?: (row: Record<string, unknown>) => void
 }
 
 interface DataTableProps {
@@ -16,6 +31,8 @@ interface DataTableProps {
   subtitle?: string
   maxHeight?: number
   onExport?: () => void
+  /** When provided, shows MobileCardView on mobile instead of table */
+  mobileCardConfig?: MobileCardConfig
 }
 
 export default function DataTable({
@@ -26,7 +43,9 @@ export default function DataTable({
   subtitle,
   maxHeight,
   onExport,
+  mobileCardConfig,
 }: DataTableProps) {
+  const isMobile = useIsMobile()
   const [page, setPage] = useState(0)
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -69,21 +88,83 @@ export default function DataTable({
     }
   }
 
+  // Mobile card view
+  if (isMobile && mobileCardConfig) {
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-[10px] shadow-sm overflow-hidden">
+        {(title || onExport) && (
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+            <div>
+              {title && <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h3>}
+              {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
+            </div>
+            {onExport && (
+              <button onClick={onExport} className="text-xs text-[#51459d] hover:text-[#51459d]/80 font-medium min-h-[44px]">
+                Export
+              </button>
+            )}
+          </div>
+        )}
+        <div className="px-3 py-3">
+          <input
+            type="text"
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(0) }}
+            className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-[8px] px-3 py-2 min-h-[44px] bg-transparent focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 mb-2"
+          />
+          <MobileCardView
+            data={paged}
+            primaryField={mobileCardConfig.primaryField}
+            secondaryFields={mobileCardConfig.secondaryFields}
+            statusField={mobileCardConfig.statusField}
+            statusColorMap={mobileCardConfig.statusColorMap}
+            onRowClick={mobileCardConfig.onRowClick}
+            keyExtractor={(row) => String(row[mobileCardConfig.primaryField] ?? Math.random())}
+            emptyText="No data available"
+          />
+        </div>
+        {totalPages > 1 && (
+          <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs text-gray-500">
+            <span>{sorted.length} rows</span>
+            <div className="flex items-center gap-2">
+              <button
+                className="min-h-[44px] px-3 rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 active:bg-gray-200"
+                disabled={page === 0}
+                onClick={() => setPage(page - 1)}
+              >
+                Prev
+              </button>
+              <span>{page + 1} / {totalPages}</span>
+              <button
+                className="min-h-[44px] px-3 rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 active:bg-gray-200"
+                disabled={page >= totalPages - 1}
+                onClick={() => setPage(page + 1)}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-[10px] shadow-sm overflow-hidden">
       {(title || onExport) && (
-        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div>
             {title && <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h3>}
             {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <input
               type="text"
               placeholder="Search..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(0) }}
-              className="text-xs border border-gray-200 dark:border-gray-600 rounded-[8px] px-3 py-1.5 bg-transparent focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 w-40"
+              className="text-xs border border-gray-200 dark:border-gray-600 rounded-[8px] px-3 py-1.5 min-h-[44px] sm:min-h-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-[#51459d]/40 w-full sm:w-40"
             />
             {onExport && (
               <button
@@ -155,7 +236,7 @@ export default function DataTable({
           <span>{sorted.length} rows</span>
           <div className="flex items-center gap-1">
             <button
-              className="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
+              className="px-3 py-1.5 min-h-[44px] rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 disabled:opacity-40"
               disabled={page === 0}
               onClick={() => setPage(page - 1)}
             >
@@ -163,7 +244,7 @@ export default function DataTable({
             </button>
             <span className="px-2">{page + 1} / {totalPages}</span>
             <button
-              className="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
+              className="px-3 py-1.5 min-h-[44px] rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 disabled:opacity-40"
               disabled={page >= totalPages - 1}
               onClick={() => setPage(page + 1)}
             >

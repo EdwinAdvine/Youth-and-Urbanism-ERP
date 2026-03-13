@@ -218,7 +218,7 @@ async def parse_natural_language_event(
     now_iso = datetime.now(timezone.utc).isoformat()
 
     system_prompt = (
-        "You are a calendar assistant for Urban ERP.  "
+        "You are a calendar assistant for Urban Vibes Dynamics.  "
         "Extract structured event details from the user's natural language input.  "
         "Return ONLY valid JSON with these fields:\n"
         '  "title": string,\n'

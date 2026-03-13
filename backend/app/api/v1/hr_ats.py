@@ -1,5 +1,4 @@
 """HR ATS API — Applicant Tracking System: requisitions, candidates, applications, interviews."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone

@@ -35,8 +35,9 @@ import {
   MarkPointComponent,
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import { useCallback, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import type { EChartsOption } from 'echarts'
+import { useBreakpoint } from '../../hooks/useMediaQuery'
 
 // Register all required ECharts components
 echarts.use([
@@ -87,6 +88,7 @@ export interface ChartConfig {
   formatValue?: (v: number) => string
   conditionalFormatting?: ConditionalRule[]
   drillThrough?: DrillThroughConfig
+  showAnomalyOverlay?: boolean
 }
 
 export interface ConditionalRule {
@@ -108,33 +110,86 @@ interface ChartRendererProps {
   data: Record<string, unknown>[]
   config?: ChartConfig
   height?: number | string
+  /** When true, height auto-adjusts: 200px mobile, 300px tablet, 400px desktop */
+  responsive?: boolean
   loading?: boolean
   onDataClick?: (params: { name: string; value: unknown; dataIndex: number; data: Record<string, unknown> }) => void
   className?: string
 }
 
+// ── Conditional formatting helpers ──────────────────────────────────────────
+
+function evalRule(value: number, rule: ConditionalRule): boolean {
+  const rv = rule.value
+  switch (rule.operator) {
+    case 'gt': return value > (rv as number)
+    case 'lt': return value < (rv as number)
+    case 'gte': return value >= (rv as number)
+    case 'lte': return value <= (rv as number)
+    case 'eq': return value === (rv as number)
+    case 'between': return value >= (rv as [number, number])[0] && value <= (rv as [number, number])[1]
+    default: return false
+  }
+}
+
+/**
+ * Apply conditional formatting rules to a data value, returning an item style.
+ * Returns undefined if no rule matches.
+ */
+function applyConditionalColor(
+  value: number,
+  fieldKey: string,
+  rules: ConditionalRule[] | undefined,
+): string | undefined {
+  if (!rules?.length) return undefined
+  for (const rule of rules) {
+    if (rule.field === fieldKey && evalRule(value, rule)) {
+      return rule.color
+    }
+  }
+  return undefined
+}
+
+/** Builds a responsive legend — scroll type + compact on mobile (fontSize ≤ 10) */
+function buildLegend(config: ChartConfig, fontSize: number) {
+  if (config.showLegend === false) return undefined
+  return {
+    bottom: 0,
+    type: fontSize <= 10 ? ('scroll' as const) : ('plain' as const),
+    orient: 'horizontal' as const,
+    textStyle: { fontFamily: THEME.fontFamily, fontSize },
+  }
+}
+
 // ── Option builders ─────────────────────────────────────────────────────────
 
-function buildBarOptions(data: Record<string, unknown>[], config: ChartConfig): EChartsOption {
+function buildBarOptions(data: Record<string, unknown>[], config: ChartConfig, fontSize = 11): EChartsOption {
   const xKey = config.xKey || 'name'
   const yKeys = config.yKeys || Object.keys(data[0] || {}).filter(k => k !== xKey)
   const colors = config.colors || COLORS
+  const rules = config.conditionalFormatting
 
   return {
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    legend: config.showLegend !== false ? { bottom: 0, textStyle: { fontFamily: THEME.fontFamily, fontSize: 11 } } : undefined,
+    legend: buildLegend(config, fontSize),
     grid: { left: '3%', right: '4%', bottom: config.showLegend !== false ? '15%' : '3%', top: '10%', containLabel: true },
     xAxis: config.horizontal
-      ? { type: 'value', axisLabel: { fontSize: 11 } }
-      : { type: 'category', data: data.map(d => String(d[xKey])), axisLabel: { fontSize: 11, rotate: data.length > 8 ? 30 : 0 } },
+      ? { type: 'value', axisLabel: { fontSize } }
+      : { type: 'category', data: data.map(d => String(d[xKey])), axisLabel: { fontSize, rotate: data.length > 8 ? 30 : 0 } },
     yAxis: config.horizontal
-      ? { type: 'category', data: data.map(d => String(d[xKey])), axisLabel: { fontSize: 11 } }
-      : { type: 'value', axisLabel: { fontSize: 11 } },
+      ? { type: 'category', data: data.map(d => String(d[xKey])), axisLabel: { fontSize } }
+      : { type: 'value', axisLabel: { fontSize } },
     color: colors,
-    series: yKeys.map((key, i) => ({
+    series: yKeys.map((key) => ({
       name: key,
       type: 'bar' as const,
-      data: data.map(d => Number(d[key]) || 0),
+      data: data.map(d => {
+        const v = Number(d[key]) || 0
+        const conditionalColor = applyConditionalColor(v, key, rules)
+        return conditionalColor
+          ? { value: v, itemStyle: { color: conditionalColor } }
+          : v
+      }),
       stack: config.stacked ? 'total' : undefined,
       barMaxWidth: 40,
       itemStyle: { borderRadius: [4, 4, 0, 0] },
@@ -142,37 +197,78 @@ function buildBarOptions(data: Record<string, unknown>[], config: ChartConfig): 
   }
 }
 
-function buildLineOptions(data: Record<string, unknown>[], config: ChartConfig): EChartsOption {
+function detectInlineAnomalies(
+  data: Record<string, unknown>[],
+  valueKey: string,
+  threshold = 2.0
+): Array<{ index: number; value: number; zScore: number }> {
+  const values = data.map(d => Number(d[valueKey]) || 0)
+  if (values.length < 3) return []
+  const mean = values.reduce((a, b) => a + b, 0) / values.length
+  const variance = values.map(v => (v - mean) ** 2).reduce((a, b) => a + b, 0) / values.length
+  const std = Math.sqrt(variance)
+  if (std === 0) return []
+  return values
+    .map((v, i) => ({ index: i, value: v, zScore: Math.abs((v - mean) / std) }))
+    .filter(p => p.zScore > threshold)
+}
+
+function buildLineOptions(data: Record<string, unknown>[], config: ChartConfig, fontSize = 11): EChartsOption {
   const xKey = config.xKey || 'name'
   const yKeys = config.yKeys || Object.keys(data[0] || {}).filter(k => k !== xKey)
   const colors = config.colors || COLORS
   const isArea = config.areaFill
 
+  let series: Record<string, unknown>[] = yKeys.map((key) => ({
+    name: key,
+    type: 'line' as const,
+    data: data.map(d => Number(d[key]) || 0),
+    smooth: config.smooth !== false,
+    areaStyle: isArea ? { opacity: 0.15 } : undefined,
+    symbolSize: 6,
+  }))
+
+  // Add anomaly overlay if enabled
+  if (config.showAnomalyOverlay && data.length > 0) {
+    series = series.map((s: Record<string, unknown>, idx: number) => {
+      const key = yKeys[idx]
+      const anomalies = detectInlineAnomalies(data, key)
+      if (!anomalies.length) return s
+      return {
+        ...s,
+        markPoint: {
+          data: anomalies.map(p => ({
+            coord: [p.index, p.value],
+            itemStyle: { color: '#ff3a6e' },
+            symbol: 'circle',
+            symbolSize: 8,
+            label: { show: false },
+          })),
+          silent: false,
+          tooltip: { formatter: (params: Record<string, unknown>) => { const d = params.data as { coord?: unknown[] } | undefined; return `Anomaly: ${d?.coord?.[1] ?? ''}` } },
+        },
+      }
+    })
+  }
+
   return {
     tooltip: { trigger: 'axis' },
-    legend: config.showLegend !== false ? { bottom: 0, textStyle: { fontFamily: THEME.fontFamily, fontSize: 11 } } : undefined,
+    legend: buildLegend(config, fontSize),
     grid: { left: '3%', right: '4%', bottom: config.showLegend !== false ? '15%' : '3%', top: '10%', containLabel: true },
-    xAxis: { type: 'category', data: data.map(d => String(d[xKey])), axisLabel: { fontSize: 11 }, boundaryGap: false },
-    yAxis: { type: 'value', axisLabel: { fontSize: 11 } },
+    xAxis: { type: 'category', data: data.map(d => String(d[xKey])), axisLabel: { fontSize }, boundaryGap: false },
+    yAxis: { type: 'value', axisLabel: { fontSize } },
     color: colors,
-    series: yKeys.map((key) => ({
-      name: key,
-      type: 'line' as const,
-      data: data.map(d => Number(d[key]) || 0),
-      smooth: config.smooth !== false,
-      areaStyle: isArea ? { opacity: 0.15 } : undefined,
-      symbolSize: 6,
-    })),
+    series,
   }
 }
 
-function buildPieOptions(data: Record<string, unknown>[], config: ChartConfig, isDonut = false): EChartsOption {
+function buildPieOptions(data: Record<string, unknown>[], config: ChartConfig, isDonut = false, fontSize = 11): EChartsOption {
   const nameKey = config.nameKey || config.xKey || 'name'
   const valueKey = config.valueKey || config.yKeys?.[0] || 'value'
 
   return {
     tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-    legend: config.showLegend !== false ? { bottom: 0, textStyle: { fontSize: 11, fontFamily: THEME.fontFamily } } : undefined,
+    legend: buildLegend(config, fontSize),
     color: config.colors || COLORS,
     series: [{
       type: 'pie',
@@ -182,20 +278,20 @@ function buildPieOptions(data: Record<string, unknown>[], config: ChartConfig, i
         name: String(d[nameKey]),
         value: Number(d[valueKey]) || 0,
       })),
-      label: { fontSize: 11 },
+      label: { fontSize },
       emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' } },
     }],
   }
 }
 
-function buildScatterOptions(data: Record<string, unknown>[], config: ChartConfig): EChartsOption {
+function buildScatterOptions(data: Record<string, unknown>[], config: ChartConfig, fontSize = 11): EChartsOption {
   const xKey = config.xKey || 'x'
   const yKey = config.yKeys?.[0] || 'y'
 
   return {
     tooltip: { trigger: 'item' },
-    xAxis: { type: 'value', axisLabel: { fontSize: 11 }, name: xKey },
-    yAxis: { type: 'value', axisLabel: { fontSize: 11 }, name: yKey },
+    xAxis: { type: 'value', axisLabel: { fontSize }, name: xKey },
+    yAxis: { type: 'value', axisLabel: { fontSize }, name: yKey },
     grid: { left: '10%', right: '5%', bottom: '10%', top: '10%' },
     series: [{
       type: 'scatter',
@@ -206,13 +302,13 @@ function buildScatterOptions(data: Record<string, unknown>[], config: ChartConfi
   }
 }
 
-function buildRadarOptions(data: Record<string, unknown>[], config: ChartConfig): EChartsOption {
+function buildRadarOptions(data: Record<string, unknown>[], config: ChartConfig, fontSize = 11): EChartsOption {
   const keys = config.yKeys || Object.keys(data[0] || {}).filter(k => k !== (config.xKey || 'name'))
   const maxValues = keys.map(k => Math.max(...data.map(d => Number(d[k]) || 0)) * 1.2)
 
   return {
     tooltip: {},
-    legend: { bottom: 0, textStyle: { fontSize: 11 } },
+    legend: { bottom: 0, type: fontSize <= 10 ? 'scroll' as const : 'plain' as const, orient: 'horizontal' as const, textStyle: { fontSize } },
     color: config.colors || COLORS,
     radar: {
       indicator: keys.map((k, i) => ({ name: k, max: maxValues[i] })),
@@ -227,13 +323,13 @@ function buildRadarOptions(data: Record<string, unknown>[], config: ChartConfig)
   }
 }
 
-function buildFunnelOptions(data: Record<string, unknown>[], config: ChartConfig): EChartsOption {
+function buildFunnelOptions(data: Record<string, unknown>[], config: ChartConfig, fontSize = 11): EChartsOption {
   const nameKey = config.nameKey || config.xKey || 'name'
   const valueKey = config.valueKey || config.yKeys?.[0] || 'value'
 
   return {
     tooltip: { trigger: 'item', formatter: '{b}: {c}' },
-    legend: config.showLegend !== false ? { bottom: 0, textStyle: { fontSize: 11 } } : undefined,
+    legend: buildLegend(config, fontSize),
     color: config.colors || COLORS,
     series: [{
       type: 'funnel',
@@ -243,7 +339,7 @@ function buildFunnelOptions(data: Record<string, unknown>[], config: ChartConfig
       width: '80%',
       sort: 'descending',
       gap: 2,
-      label: { show: true, position: 'inside', fontSize: 11 },
+      label: { show: true, position: 'inside', fontSize },
       data: data.map(d => ({
         name: String(d[nameKey]),
         value: Number(d[valueKey]) || 0,
@@ -283,7 +379,7 @@ function buildGaugeOptions(data: Record<string, unknown>[], config: ChartConfig)
   }
 }
 
-function buildTreemapOptions(data: Record<string, unknown>[], config: ChartConfig): EChartsOption {
+function buildTreemapOptions(data: Record<string, unknown>[], config: ChartConfig, fontSize = 11): EChartsOption {
   const nameKey = config.nameKey || config.xKey || 'name'
   const valueKey = config.valueKey || config.yKeys?.[0] || 'value'
 
@@ -296,13 +392,13 @@ function buildTreemapOptions(data: Record<string, unknown>[], config: ChartConfi
         name: String(d[nameKey]),
         value: Number(d[valueKey]) || 0,
       })),
-      label: { fontSize: 11 },
+      label: { fontSize },
       breadcrumb: { show: false },
     }],
   }
 }
 
-function buildSankeyOptions(data: Record<string, unknown>[], config: ChartConfig): EChartsOption {
+function buildSankeyOptions(data: Record<string, unknown>[], config: ChartConfig, fontSize = 11): EChartsOption {
   // Expects data with {source, target, value} format
   const nodes = new Set<string>()
   const links = data.map(d => {
@@ -320,13 +416,13 @@ function buildSankeyOptions(data: Record<string, unknown>[], config: ChartConfig
       type: 'sankey',
       data: Array.from(nodes).map(name => ({ name })),
       links,
-      label: { fontSize: 11 },
+      label: { fontSize },
       lineStyle: { color: 'gradient', curveness: 0.5 },
     }],
   }
 }
 
-function buildHeatmapOptions(data: Record<string, unknown>[], config: ChartConfig): EChartsOption {
+function buildHeatmapOptions(data: Record<string, unknown>[], config: ChartConfig, fontSize = 11): EChartsOption {
   const xKey = config.xKey || 'x'
   const yKey = config.yKeys?.[0] || 'y'
   const valueKey = config.valueKey || 'value'
@@ -343,18 +439,18 @@ function buildHeatmapOptions(data: Record<string, unknown>[], config: ChartConfi
   return {
     tooltip: { position: 'top' },
     grid: { left: '15%', right: '5%', bottom: '15%', top: '5%' },
-    xAxis: { type: 'category', data: xCategories, axisLabel: { fontSize: 10 } },
-    yAxis: { type: 'category', data: yCategories, axisLabel: { fontSize: 10 } },
+    xAxis: { type: 'category', data: xCategories, axisLabel: { fontSize } },
+    yAxis: { type: 'category', data: yCategories, axisLabel: { fontSize } },
     visualMap: { min: 0, max: maxVal, calculable: true, orient: 'horizontal', left: 'center', bottom: 0, inRange: { color: ['#e0e7ff', '#51459d'] } },
     series: [{
       type: 'heatmap',
       data: values,
-      label: { show: true, fontSize: 10 },
+      label: { show: true, fontSize },
     }],
   }
 }
 
-function buildWaterfallOptions(data: Record<string, unknown>[], config: ChartConfig): EChartsOption {
+function buildWaterfallOptions(data: Record<string, unknown>[], config: ChartConfig, fontSize = 11): EChartsOption {
   const xKey = config.xKey || 'name'
   const valueKey = config.valueKey || config.yKeys?.[0] || 'value'
 
@@ -377,31 +473,31 @@ function buildWaterfallOptions(data: Record<string, unknown>[], config: ChartCon
   return {
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
-    xAxis: { type: 'category', data: data.map(d => String(d[xKey])), axisLabel: { fontSize: 11 } },
-    yAxis: { type: 'value', axisLabel: { fontSize: 11 } },
+    xAxis: { type: 'category', data: data.map(d => String(d[xKey])), axisLabel: { fontSize } },
+    yAxis: { type: 'value', axisLabel: { fontSize } },
     series: [
       { type: 'bar', stack: 'total', itemStyle: { borderColor: 'transparent', color: 'transparent' }, data: bases },
       {
         type: 'bar', stack: 'total', data: values,
         itemStyle: { color: (params: { dataIndex: number }) => (Number(data[params.dataIndex]?.[valueKey]) || 0) >= 0 ? '#6fd943' : '#ff3a6e' },
-        label: { show: true, position: 'top', fontSize: 10 },
+        label: { show: true, position: 'top', fontSize },
       },
     ],
   }
 }
 
-function buildComboOptions(data: Record<string, unknown>[], config: ChartConfig): EChartsOption {
+function buildComboOptions(data: Record<string, unknown>[], config: ChartConfig, fontSize = 11): EChartsOption {
   const xKey = config.xKey || 'name'
   const yKeys = config.yKeys || []
 
   return {
     tooltip: { trigger: 'axis' },
-    legend: { bottom: 0, textStyle: { fontSize: 11 } },
+    legend: { bottom: 0, type: fontSize <= 10 ? 'scroll' as const : 'plain' as const, orient: 'horizontal' as const, textStyle: { fontSize } },
     grid: { left: '3%', right: '8%', bottom: '15%', top: '10%', containLabel: true },
-    xAxis: { type: 'category', data: data.map(d => String(d[xKey])), axisLabel: { fontSize: 11 } },
+    xAxis: { type: 'category', data: data.map(d => String(d[xKey])), axisLabel: { fontSize } },
     yAxis: [
-      { type: 'value', axisLabel: { fontSize: 11 } },
-      { type: 'value', axisLabel: { fontSize: 11 } },
+      { type: 'value', axisLabel: { fontSize } },
+      { type: 'value', axisLabel: { fontSize } },
     ],
     color: config.colors || COLORS,
     series: yKeys.map((key, i) => ({
@@ -415,14 +511,14 @@ function buildComboOptions(data: Record<string, unknown>[], config: ChartConfig)
   }
 }
 
-function buildBoxplotOptions(data: Record<string, unknown>[], config: ChartConfig): EChartsOption {
+function buildBoxplotOptions(data: Record<string, unknown>[], config: ChartConfig, fontSize = 11): EChartsOption {
   const xKey = config.xKey || 'name'
 
   return {
     tooltip: { trigger: 'item' },
     grid: { left: '10%', right: '10%', bottom: '10%', top: '10%' },
-    xAxis: { type: 'category', data: data.map(d => String(d[xKey])), axisLabel: { fontSize: 11 } },
-    yAxis: { type: 'value', axisLabel: { fontSize: 11 } },
+    xAxis: { type: 'category', data: data.map(d => String(d[xKey])), axisLabel: { fontSize } },
+    yAxis: { type: 'value', axisLabel: { fontSize } },
     series: [{
       type: 'boxplot',
       data: data.map(d => {
@@ -435,9 +531,9 @@ function buildBoxplotOptions(data: Record<string, unknown>[], config: ChartConfi
 }
 
 // ── Option builder registry ─────────────────────────────────────────────────
-function buildOptions(type: ChartType, data: Record<string, unknown>[], config: ChartConfig): EChartsOption {
+function buildOptions(type: ChartType, data: Record<string, unknown>[], config: ChartConfig, fontSize = 11): EChartsOption {
   const baseOptions: Partial<EChartsOption> = {
-    textStyle: { fontFamily: THEME.fontFamily },
+    textStyle: { fontFamily: THEME.fontFamily, fontSize },
     toolbox: config.showToolbox ? {
       feature: { saveAsImage: { title: 'Save' }, dataView: { title: 'Data', readOnly: true }, restore: { title: 'Reset' } },
       right: 10,
@@ -449,25 +545,25 @@ function buildOptions(type: ChartType, data: Record<string, unknown>[], config: 
 
   let specific: EChartsOption
   switch (type) {
-    case 'bar': specific = buildBarOptions(data, config); break
-    case 'line': specific = buildLineOptions(data, config); break
-    case 'area': specific = buildLineOptions(data, { ...config, areaFill: true }); break
-    case 'pie': specific = buildPieOptions(data, config); break
-    case 'donut': specific = buildPieOptions(data, config, true); break
-    case 'scatter': specific = buildScatterOptions(data, config); break
-    case 'radar': specific = buildRadarOptions(data, config); break
-    case 'funnel': specific = buildFunnelOptions(data, config); break
+    case 'bar': specific = buildBarOptions(data, config, fontSize); break
+    case 'line': specific = buildLineOptions(data, config, fontSize); break
+    case 'area': specific = buildLineOptions(data, { ...config, areaFill: true }, fontSize); break
+    case 'pie': specific = buildPieOptions(data, config, false, fontSize); break
+    case 'donut': specific = buildPieOptions(data, config, true, fontSize); break
+    case 'scatter': specific = buildScatterOptions(data, config, fontSize); break
+    case 'radar': specific = buildRadarOptions(data, config, fontSize); break
+    case 'funnel': specific = buildFunnelOptions(data, config, fontSize); break
     case 'gauge': specific = buildGaugeOptions(data, config); break
-    case 'treemap': specific = buildTreemapOptions(data, config); break
-    case 'sankey': specific = buildSankeyOptions(data, config); break
-    case 'heatmap': specific = buildHeatmapOptions(data, config); break
-    case 'waterfall': specific = buildWaterfallOptions(data, config); break
-    case 'combo': specific = buildComboOptions(data, config); break
-    case 'boxplot': specific = buildBoxplotOptions(data, config); break
-    case 'histogram': specific = buildBarOptions(data, config); break // Histogram uses bar internally
-    case 'sparkline': specific = buildLineOptions(data, { ...config, showLegend: false, showGrid: false, smooth: true }); break
-    case 'bullet': specific = buildBarOptions(data, { ...config, horizontal: true }); break
-    default: specific = buildBarOptions(data, config)
+    case 'treemap': specific = buildTreemapOptions(data, config, fontSize); break
+    case 'sankey': specific = buildSankeyOptions(data, config, fontSize); break
+    case 'heatmap': specific = buildHeatmapOptions(data, config, fontSize); break
+    case 'waterfall': specific = buildWaterfallOptions(data, config, fontSize); break
+    case 'combo': specific = buildComboOptions(data, config, fontSize); break
+    case 'boxplot': specific = buildBoxplotOptions(data, config, fontSize); break
+    case 'histogram': specific = buildBarOptions(data, config, fontSize); break // Histogram uses bar internally
+    case 'sparkline': specific = buildLineOptions(data, { ...config, showLegend: false, showGrid: false, smooth: true }, fontSize); break
+    case 'bullet': specific = buildBarOptions(data, { ...config, horizontal: true }, fontSize); break
+    default: specific = buildBarOptions(data, config, fontSize)
   }
 
   return { ...baseOptions, ...specific }
@@ -479,13 +575,16 @@ export default function ChartRenderer({
   data,
   config = {},
   height = 300,
+  responsive = false,
   loading = false,
   onDataClick,
   className = '',
 }: ChartRendererProps) {
   const chartRef = useRef<ReactEChartsCore>(null)
+  const breakpoint = useBreakpoint()
 
-  const options = useMemo(() => buildOptions(type, data, config), [type, data, config])
+  const fontSize = breakpoint === 'mobile' ? 10 : breakpoint === 'tablet' ? 11 : 12
+  const options = useMemo(() => buildOptions(type, data, config, fontSize), [type, data, config, fontSize])
 
   const onEvents = useMemo(() => {
     if (!onDataClick) return undefined
@@ -501,10 +600,13 @@ export default function ChartRenderer({
     }
   }, [onDataClick, data])
 
+  const responsiveHeight = breakpoint === 'mobile' ? 200 : breakpoint === 'tablet' ? 300 : 400
   const style = useMemo(() => ({
-    height: typeof height === 'number' ? `${height}px` : height,
+    height: responsive
+      ? `${responsiveHeight}px`
+      : typeof height === 'number' ? `${height}px` : height,
     width: '100%',
-  }), [height])
+  }), [height, responsive, responsiveHeight])
 
   if (type === 'kpi' || type === 'table') {
     return null // KPI cards and tables are handled by separate components

@@ -1,12 +1,75 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    cluster: urban-vibes-dynamics
+
+rule_files:
+  - /etc/prometheus/alert_rules.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - urban-vibes-dynamics-alertmanager:9093
 
 scrape_configs:
-  - job_name: urban-erp
+  # ── FastAPI backend ────────────────────────────────────────────────────────
+  - job_name: urban-vibes-dynamics-backend
     metrics_path: /metrics
     static_configs:
       - targets:
-          - backend:8000
+          - urban-vibes-dynamics-backend:8000
         labels:
-          service: urban-erp-backend
+          service: backend
+
+  # ── PostgreSQL Exporter (single-node dev mode) ────────────────────────────
+  - job_name: urban-vibes-dynamics-postgres
+    static_configs:
+      - targets:
+          - urban-vibes-dynamics-pg-exporter:9187
+        labels:
+          service: postgres
+
+  # ── Patroni nodes (HA mode) ───────────────────────────────────────────────
+  # Patroni exposes Prometheus metrics on the REST API port (/metrics).
+  - job_name: urban-vibes-dynamics-patroni
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - urban-vibes-dynamics-patroni1:8008
+          - urban-vibes-dynamics-patroni2:8008
+          - urban-vibes-dynamics-patroni3:8008
+        labels:
+          service: patroni
+
+  # ── PgBouncer Exporter (HA mode) ──────────────────────────────────────────
+  - job_name: urban-vibes-dynamics-pgbouncer
+    static_configs:
+      - targets:
+          - urban-vibes-dynamics-pgbouncer-exporter:9127
+        labels:
+          service: pgbouncer
+
+  # ── HAProxy (HA mode) ─────────────────────────────────────────────────────
+  - job_name: urban-vibes-dynamics-haproxy
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - urban-vibes-dynamics-haproxy:9101
+        labels:
+          service: haproxy
+
+  # ── Redis Exporter ────────────────────────────────────────────────────────
+  - job_name: urban-vibes-dynamics-redis
+    static_configs:
+      - targets:
+          - urban-vibes-dynamics-redis:6379
+        labels:
+          service: redis
+
+  # ── Prometheus self-monitoring ────────────────────────────────────────────
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:9090

@@ -1,0 +1,47 @@
+FROM pgvector/pgvector:pg16
+
+# ── System dependencies ───────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    wget \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    libpq-dev \
+    gcc \
+    # pgBackRest dependencies
+    libssl-dev \
+    libz-dev \
+    libxml2-dev \
+    pgbackrest \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Patroni ───────────────────────────────────────────────────────────────────
+# Install in a venv to avoid PEP 668 issues on Debian 12 / Ubuntu 24.04
+RUN python3 -m venv /opt/patroni && \
+    /opt/patroni/bin/pip install --no-cache-dir \
+        patroni[etcd3]==3.3.2 \
+        psycopg2-binary \
+        python-etcd \
+        requests
+
+ENV PATH="/opt/patroni/bin:${PATH}"
+
+# ── pgBackRest config dir ─────────────────────────────────────────────────────
+RUN mkdir -p /etc/pgbackrest /var/log/pgbackrest /var/spool/pgbackrest && \
+    chown -R postgres:postgres /etc/pgbackrest /var/log/pgbackrest /var/spool/pgbackrest
+
+# ── Patroni config dir ────────────────────────────────────────────────────────
+RUN mkdir -p /etc/patroni
+COPY patroni.yml /etc/patroni/patroni.yml
+
+# ── pgBackRest config ─────────────────────────────────────────────────────────
+COPY pgbackrest.conf /etc/pgbackrest/pgbackrest.conf
+
+# ── Entrypoint ────────────────────────────────────────────────────────────────
+# Patroni manages pg_ctl internally — we just start it.
+USER postgres
+EXPOSE 5432 8008
+
+ENTRYPOINT ["/opt/patroni/bin/patroni", "/etc/patroni/patroni.yml"]

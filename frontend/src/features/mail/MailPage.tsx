@@ -17,6 +17,10 @@ import {
   useSmartFolders,
 } from '../../api/mail'
 import type { MailFolder, MailMessageSummary, MailMessageFull, MailAttachment } from '../../api/mail'
+import { useMailAccounts } from '../../api/mailAccounts'
+import { useMailAccountsStore } from '../../store/mailAccounts'
+import MailLoginScreen from './MailLoginScreen'
+import AccountSwitcher from './AccountSwitcher'
 import SnoozeDialog from './SnoozeDialog'
 import ContactPicker from './ContactPicker'
 import { useMailKeyboardShortcuts, KeyboardShortcutsHelp } from './KeyboardShortcuts'
@@ -42,11 +46,19 @@ interface PendingAttachment {
   error?: string
 }
 
-function ComposeModal({ onClose, replyTo, forwardFrom }: {
+function ComposeModal({ onClose, replyTo, forwardFrom, accountId }: {
   onClose: () => void
   replyTo?: { messageId: string; subject: string; from: string; body: string; replyAll?: boolean }
   forwardFrom?: { messageId: string; subject: string; body: string }
+  accountId?: string
 }) {
+  const { data: allAccounts = [] } = useMailAccounts()
+  // Local from-account selection — defaults to the passed accountId or first account
+  const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(
+    accountId ?? allAccounts[0]?.id
+  )
+  const showFromSelector = allAccounts.length > 1
+
   const [to, setTo] = useState(replyTo?.from ?? '')
   const [cc, setCc] = useState('')
   const [subject, setSubject] = useState(
@@ -116,6 +128,7 @@ function ComposeModal({ onClose, replyTo, forwardFrom }: {
         html_body: htmlBody || undefined,
         attachments: uploadedAtts.length > 0 ? uploadedAtts : undefined,
         in_reply_to: replyTo?.messageId,
+        account_id: selectedAccountId,
       },
       { onSuccess: () => onClose() },
     )
@@ -138,6 +151,25 @@ function ComposeModal({ onClose, replyTo, forwardFrom }: {
 
         {/* Fields */}
         <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
+          {/* From selector — shown when multiple accounts exist */}
+          {showFromSelector && (
+            <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400 w-12 shrink-0">From</span>
+                <select
+                  value={selectedAccountId ?? ''}
+                  onChange={(e) => setSelectedAccountId(e.target.value || undefined)}
+                  className="flex-1 text-sm text-gray-900 dark:text-gray-100 bg-transparent focus:outline-none cursor-pointer"
+                >
+                  {allAccounts.map((acct) => (
+                    <option key={acct.id} value={acct.id}>
+                      {acct.display_name} &lt;{acct.email}&gt;
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
           <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-2 shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-400 w-12 shrink-0">To</span>
@@ -391,6 +423,22 @@ function SwipeableMailItem({ msg, isSelected, onSelect, onArchive, onDelete, onS
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function MailPage() {
+  // ─── Multi-account gate ────────────────────────────────────────────────────
+  const { data: mailAccounts, isLoading: accountsLoading } = useMailAccounts()
+  const activeAccountId = useMailAccountsStore((s) => s.activeAccountId)
+
+  // Show login screen if no accounts configured
+  if (!accountsLoading && (!mailAccounts || mailAccounts.length === 0)) {
+    return <MailLoginScreen />
+  }
+
+  return <MailPageInner />
+}
+
+function MailPageInner() {
+  const { data: mailAccounts = [] } = useMailAccounts()
+  const { activeAccountId } = useMailAccountsStore()
+
   const [selectedFolder, setSelectedFolder] = useState('inbox')
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null)
   const [composeOpen, setComposeOpen] = useState(false)
@@ -409,13 +457,21 @@ export default function MailPage() {
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [showScheduleSend, setShowScheduleSend] = useState(false)
 
+  // Determine the default (or active) account for sending
+  const defaultAccount = mailAccounts.find((a) => a.id === activeAccountId)
+    ?? mailAccounts.find((a) => a.is_default)
+    ?? mailAccounts[0]
+
   // ─── API hooks ──────────────────────────────────────────────────────────────
 
   const { data: foldersData, isError: foldersError } = useMailFolders()
   const folders: MailFolder[] = foldersData ?? []
   const serverDown = foldersError
 
-  const { data: messagesData, isLoading: messagesLoading } = useMailMessages({ folder: selectedFolder })
+  const { data: messagesData, isLoading: messagesLoading } = useMailMessages({
+    folder: selectedFolder,
+    account_id: activeAccountId,  // null = all accounts, string = filter to specific account
+  })
   const defaultMessages: MailMessageSummary[] = messagesData?.messages ?? []
 
   const { data: detailData, isLoading: detailLoading } = useMailMessage(selectedMessage ?? '')
@@ -518,6 +574,7 @@ export default function MailPage() {
         {/* Left: Folder sidebar - hidden on mobile */}
         <aside className="hidden md:flex w-52 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex-col">
           <div className="p-3 border-b border-gray-100 dark:border-gray-800">
+            <AccountSwitcher />
             <button
               onClick={() => setComposeOpen(true)}
               className="w-full flex items-center justify-center gap-2 bg-[#51459d] hover:bg-[#3d3480] text-white text-sm font-medium rounded-[8px] px-4 py-2.5 transition-colors shadow-sm"
@@ -892,17 +949,19 @@ export default function MailPage() {
         </div>
       </div>
 
-      {composeOpen && <ComposeModal onClose={() => setComposeOpen(false)} />}
+      {composeOpen && <ComposeModal onClose={() => setComposeOpen(false)} accountId={defaultAccount?.id} />}
       {replyContext && (
         <ComposeModal
           replyTo={replyContext}
           onClose={() => setReplyContext(null)}
+          accountId={defaultAccount?.id}
         />
       )}
       {forwardContext && (
         <ComposeModal
           forwardFrom={forwardContext}
           onClose={() => setForwardContext(null)}
+          accountId={defaultAccount?.id}
         />
       )}
       {snoozeMessageId && <SnoozeDialog messageId={snoozeMessageId} onClose={() => setSnoozeMessageId(null)} />}

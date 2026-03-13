@@ -1,3 +1,22 @@
+/**
+ * Finance Extended API client — budgets, currencies, bank reconciliation, tax,
+ * fixed assets, expense claims, and recurring transactions.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for extended Finance
+ * features. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/finance`.
+ *
+ * Key exports:
+ *   - useCurrencies() / useCreateCurrency() — multi-currency management
+ *   - useExchangeRates() / useCreateExchangeRate() — exchange rate tracking
+ *   - useBankStatements() / useUploadBankStatement() — statement import
+ *   - useBankStatementLines() / useMatchStatementLine() — reconciliation workflow
+ *   - useBudgets() / useCreateBudget() — budget planning and tracking
+ *   - useTaxRates() / useCreateTaxRate() — configurable tax rates
+ *   - useFixedAssets() / useCreateFixedAsset() — asset register
+ *   - useExpenseClaims() / useCreateExpenseClaim() — employee expense claims
+ *   - useRecurringTransactions() — scheduled recurring entries
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

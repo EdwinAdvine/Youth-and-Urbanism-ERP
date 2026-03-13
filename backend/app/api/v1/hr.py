@@ -1,5 +1,4 @@
 """HR & Payroll API — CRUD for departments, employees, leave requests, and attendance."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, time, timezone
@@ -349,6 +348,7 @@ async def create_employee(
     db.add(employee)
     await db.commit()
     await db.refresh(employee, attribute_names=["department"])
+    await event_bus.publish_data_change("employee", str(employee.id), "created")
     return _employee_to_dict(employee)
 
 
@@ -391,6 +391,7 @@ async def update_employee(
 
     await db.commit()
     await db.refresh(employee, attribute_names=["department"])
+    await event_bus.publish_data_change("employee", str(employee.id), "updated")
     return _employee_to_dict(employee)
 
 

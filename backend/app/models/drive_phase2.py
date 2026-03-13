@@ -143,10 +143,10 @@ class DriveApiKey(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 # ── Phase 3: Document Templates ──────────────────────────────────────────────
 
 
-class DocumentTemplate(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """Reusable document template stored in MinIO."""
+class DriveTemplate(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Reusable document template stored in MinIO (Drive module)."""
 
-    __tablename__ = "document_templates"
+    __tablename__ = "drive_templates"
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)

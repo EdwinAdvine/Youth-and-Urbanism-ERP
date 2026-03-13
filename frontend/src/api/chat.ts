@@ -1,3 +1,16 @@
+/**
+ * Chat API client — team channels, messages, members, and channel tabs.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/chat`.
+ *
+ * Key exports:
+ *   - useChannels() — list public/private/DM channels with optional team filter
+ *   - useCreateChannel() — create a new channel (public, private, DM, or group)
+ *   - useJoinChannel() — add the current user to a channel
+ *   - useDiscoverChannels() — browse joinable public channels
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 import type { Channel, ChatMessage } from '@/store/chat'

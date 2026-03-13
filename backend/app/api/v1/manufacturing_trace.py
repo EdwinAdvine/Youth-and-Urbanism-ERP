@@ -1,5 +1,4 @@
 """Manufacturing Traceability API — Lot/Serial Tracking, Genealogy, Batch Records."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime

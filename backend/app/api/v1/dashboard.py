@@ -1,5 +1,4 @@
 """Dashboard API — aggregated stats and activity feed across all modules."""
-from __future__ import annotations
 
 import logging
 from datetime import date, datetime, timedelta, timezone

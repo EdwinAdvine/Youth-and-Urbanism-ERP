@@ -1,5 +1,4 @@
 """CRM Custom Fields — CRUD for user-defined field definitions."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

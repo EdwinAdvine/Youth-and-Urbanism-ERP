@@ -1,5 +1,4 @@
 """Support Live Chat API — sessions, messages, and WebSocket real-time messaging."""
-from __future__ import annotations
 
 import json
 import uuid

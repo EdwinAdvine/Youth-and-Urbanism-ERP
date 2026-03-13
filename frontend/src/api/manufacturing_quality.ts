@@ -1,3 +1,18 @@
+/**
+ * Manufacturing Quality API client — inspection plans, measurement results,
+ * non-conformance reports (NCR), corrective actions (CAPA), and SPC charts.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Manufacturing
+ * module's quality management system. All requests go through `client.ts`
+ * (Axios instance with auth interceptors). Backend prefix: `/api/v1/manufacturing`.
+ *
+ * Key exports:
+ *   - useInspectionPlans() / useCreateInspectionPlan() — quality plan CRUD
+ *   - useInspectionResults() / useRecordMeasurement() — measurement result capture
+ *   - useNCRs() / useCreateNCR() — non-conformance report management
+ *   - useCAPAs() / useCreateCAPA() — corrective and preventive action tracking
+ *   - useSPCChart() — Statistical Process Control control-chart data
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

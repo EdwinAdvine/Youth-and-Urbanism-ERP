@@ -60,7 +60,7 @@ export default function POSReceiptView() {
 
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 font-mono text-sm">
         <div className="text-center mb-4">
-          <h2 className="text-lg font-bold">Urban ERP</h2>
+          <h2 className="text-lg font-bold">Urban Vibes Dynamics</h2>
           <p className="text-gray-500 text-xs">Point of Sale Receipt</p>
         </div>
 

@@ -77,6 +77,20 @@ TOOL_APPROVAL_TIERS: dict[str, str] = {
     "ai_detect_intent": "auto_approve",
     "ai_auto_classify_ticket": "auto_approve",
     "ai_draft_response": "auto_approve",
+    # Support Phase 2 — AI Copilot
+    "ai_auto_triage": "auto_approve",
+    "ai_customer_360": "auto_approve",
+    "ai_escalation_predictor": "auto_approve",
+    "ai_response_quality_scorer": "auto_approve",
+    "ai_generate_macro": "auto_approve",
+    "ai_translate_message": "auto_approve",
+    # Support Phase 3 — Advanced AI
+    "ai_ticket_volume_forecast": "auto_approve",
+    "ai_agent_performance_insights": "auto_approve",
+    "ai_customer_health_summary": "auto_approve",
+    "ai_proactive_risk_scan": "auto_approve",
+    "ai_voice_sentiment_analyze": "auto_approve",
+    "ai_skill_gap_analyzer": "auto_approve",
     "score_lead": "auto_approve",
     "estimate_task": "auto_approve",
     "demand_forecast": "auto_approve",
@@ -109,6 +123,14 @@ TOOL_APPROVAL_TIERS: dict[str, str] = {
     "search_handbook": "auto_approve",
     "get_handbook_article": "auto_approve",
     "list_handbook_guides": "auto_approve",
+    # ── Supply Chain Phase 2 — Logistics & MRP AI ────────────────────────────
+    "auto_replan_disruption": "warn",
+    "reroute_shipment": "auto_approve",
+    "predict_delivery_eta": "auto_approve",
+    "run_mrp_analysis": "warn",
+    "detect_supply_risk": "auto_approve",
+    "optimize_route": "auto_approve",
+    "auto_generate_po_from_forecast": "warn",
     # ── Supply Chain Planning & Ops ──────────────────────────────────────────
     "get_demand_forecast": "auto_approve",
     "get_sc_kpis": "auto_approve",
@@ -157,8 +179,18 @@ TOOL_APPROVAL_TIERS: dict[str, str] = {
     "generate_note_from_erp": "warn",
     "convert_note_to_task": "warn",
     "convert_note_to_ticket": "warn",
-    "convert_note_to_invoice": "warn",
+    "convert_note_to_invoice": "require_approval",
     "convert_note_to_event": "warn",
+    "convert_note_to_deal": "warn",
+    "get_note_summary": "auto_approve",
+    "create_project_notebook": "warn",
+    "link_note_to_entity": "auto_approve",
+    "get_notebook_qa": "auto_approve",
+    # ── Y&U Docs Editor Tools ────────────────────────────────────────────────
+    "insert_text_at_cursor": "warn",
+    "replace_selection": "warn",
+    "format_as_table": "auto_approve",
+    "insert_erp_data": "warn",
 }
 
 
@@ -722,6 +754,177 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    # ── Support Phase 2 — AI Copilot Tools ──────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_auto_triage",
+            "description": "Auto-triage a ticket: assign priority, category, team, and suggested assignee based on content analysis",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ticket_id": {"type": "string", "description": "UUID of the ticket to triage"},
+                },
+                "required": ["ticket_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_customer_360",
+            "description": "Generate a 360-degree customer profile: CRM data, ticket history, sentiment trends, lifetime value, risk score",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "customer_email": {"type": "string", "description": "Customer email to look up"},
+                },
+                "required": ["customer_email"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_escalation_predictor",
+            "description": "Predict likelihood that a ticket will escalate based on sentiment, response times, and historical patterns",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ticket_id": {"type": "string", "description": "UUID of the ticket"},
+                },
+                "required": ["ticket_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_response_quality_scorer",
+            "description": "Score a draft response for quality: tone, completeness, accuracy, empathy, and actionability",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "response_text": {"type": "string", "description": "The draft response text to evaluate"},
+                    "ticket_id": {"type": "string", "description": "UUID of the ticket for context"},
+                },
+                "required": ["response_text", "ticket_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_generate_macro",
+            "description": "Generate a reusable response macro/template from a successful ticket resolution",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ticket_id": {"type": "string", "description": "UUID of the resolved ticket to learn from"},
+                    "macro_name": {"type": "string", "description": "Name for the new macro"},
+                },
+                "required": ["ticket_id", "macro_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_translate_message",
+            "description": "Translate a support message to/from a target language while preserving tone",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "Text to translate"},
+                    "target_language": {"type": "string", "description": "Target language (e.g. 'Spanish', 'French', 'Japanese')"},
+                    "preserve_tone": {"type": "string", "description": "Tone to maintain: professional, friendly, empathetic", "default": "professional"},
+                },
+                "required": ["text", "target_language"],
+            },
+        },
+    },
+    # ── Support Phase 3 — Advanced AI Tools ─────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_ticket_volume_forecast",
+            "description": "Forecast ticket volume for the next 7 days based on historical trends",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "lookback_days": {"type": "integer", "description": "Days of history to analyze (default 30)", "default": 30},
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_agent_performance_insights",
+            "description": "Analyze agent performance and provide coaching recommendations",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {"type": "string", "description": "UUID of the agent (optional — all agents if omitted)"},
+                    "days": {"type": "integer", "description": "Analysis window in days (default 30)", "default": 30},
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_customer_health_summary",
+            "description": "Generate an executive summary of customer health across the support org",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_proactive_risk_scan",
+            "description": "Scan for at-risk customers who may need proactive outreach",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "risk_threshold": {"type": "string", "description": "Minimum risk level: at_risk or critical", "default": "at_risk"},
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_voice_sentiment_analyze",
+            "description": "Analyze sentiment from a voice call transcript",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "call_id": {"type": "string", "description": "UUID of the voice call record"},
+                },
+                "required": ["call_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ai_skill_gap_analyzer",
+            "description": "Identify skill gaps in the support team based on ticket categories and agent expertise",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
+    },
     # ── AI Meeting Summarization (enhanced) ──────────────────────────────
     {
         "type": "function",
@@ -1207,7 +1410,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "search_handbook",
-            "description": "Search the Urban ERP handbook for guides, how-tos, and help articles",
+            "description": "Search the Urban Vibes Dynamics handbook for guides, how-tos, and help articles",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -1400,6 +1603,113 @@ TOOL_DEFINITIONS = [
                     "response_id": {"type": "string", "description": "Winning response ID"},
                 },
                 "required": ["rfx_id", "response_id"],
+            },
+        },
+    },
+    # ── Supply Chain Phase 2 — Logistics & MRP AI ────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "auto_replan_disruption",
+            "description": "Analyze open transport orders and production schedules affected by a disruption (supplier or route) and return a re-plan recommendation with rescheduling options, alternative carriers, and lead time adjustments.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "supplier_id": {"type": "string", "description": "Affected supplier UUID (optional)"},
+                    "route_id": {"type": "string", "description": "Affected route UUID (optional)"},
+                    "disruption_reason": {"type": "string", "description": "Short description of the disruption"},
+                },
+                "required": ["disruption_reason"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "reroute_shipment",
+            "description": "Suggest top 3 alternative routes from the route master for a transport order that covers the same origin→destination, sorted by transit days.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "transport_order_id": {"type": "string", "description": "Transport order UUID"},
+                    "reason": {"type": "string", "description": "Reason for rerouting (e.g. carrier delay, customs hold)"},
+                },
+                "required": ["transport_order_id", "reason"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "predict_delivery_eta",
+            "description": "Estimate actual delivery date for a transport order based on tracking events and historical delay patterns. Falls back to estimated_delivery if no events are available.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "transport_order_id": {"type": "string", "description": "Transport order UUID"},
+                },
+                "required": ["transport_order_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "run_mrp_analysis",
+            "description": "Create and execute an MRP run — queries inventory, generates MRPLine records, and returns the mrp_run_id with summary stats.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "planning_horizon_days": {"type": "integer", "description": "Planning horizon in days (default 90)"},
+                    "product_ids": {"type": "array", "items": {"type": "string"}, "description": "Optional list of product UUIDs to scope the run (empty = all products)"},
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "detect_supply_risk",
+            "description": "Scan for open high/critical supply chain risk assessments and products with zero stock. Returns a risk summary with mitigation plan status.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "include_zero_stock": {"type": "boolean", "description": "Include products with zero on-hand stock (default true)"},
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "optimize_route",
+            "description": "Find the optimal shipping route from the route master given origin, destination, and constraints. Scores routes using 0.4*(1-normalized_cost) + 0.6*(1-normalized_transit_days).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "origin": {"type": "string", "description": "Origin location name or city"},
+                    "destination": {"type": "string", "description": "Destination location name or city"},
+                    "max_transit_days": {"type": "integer", "description": "Maximum acceptable transit days"},
+                    "max_cost": {"type": "number", "description": "Maximum acceptable base cost"},
+                    "carrier_type": {"type": "string", "enum": ["road", "air", "sea", "rail", "courier"], "description": "Preferred transport mode"},
+                },
+                "required": ["origin", "destination"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "auto_generate_po_from_forecast",
+            "description": "Read MRPLines with action_type='new_po' from an MRP run, group by product, and return a list of draft purchase order suggestions with recommended supplier and estimated cost.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "mrp_run_id": {"type": "string", "description": "MRP run UUID to source PO suggestions from"},
+                },
+                "required": ["mrp_run_id"],
             },
         },
     },
@@ -1620,6 +1930,340 @@ TOOL_DEFINITIONS = [
                     "description": {"type": "string", "description": "Optional channel description"},
                 },
                 "required": ["name", "team_id"],
+            },
+        },
+    },
+    # ── Y&U Docs Editor Tools ────────────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "insert_text_at_cursor",
+            "description": "Insert text at the current cursor position in the active document",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "The text to insert"},
+                    "file_id": {"type": "string", "description": "ID of the document file"},
+                    "format": {
+                        "type": "string",
+                        "enum": ["plain", "heading1", "heading2", "bullet", "numbered"],
+                        "default": "plain",
+                        "description": "Text formatting style",
+                    },
+                },
+                "required": ["text", "file_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "replace_selection",
+            "description": "Replace the currently selected text in the document with new text",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "replacement_text": {"type": "string", "description": "The replacement text"},
+                    "file_id": {"type": "string", "description": "ID of the document file"},
+                },
+                "required": ["replacement_text", "file_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "format_as_table",
+            "description": "Format a list of data as a table and insert into the document",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "headers": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Column header names",
+                    },
+                    "rows": {
+                        "type": "array",
+                        "items": {"type": "array", "items": {"type": "string"}},
+                        "description": "Table rows — each row is a list of cell values",
+                    },
+                    "file_id": {"type": "string", "description": "ID of the document file"},
+                },
+                "required": ["headers", "rows", "file_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "insert_erp_data",
+            "description": "Query live ERP data and insert it into the document at the cursor position",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "module": {
+                        "type": "string",
+                        "enum": ["finance", "hr", "crm", "inventory", "projects", "support", "pos"],
+                        "description": "ERP module to pull data from",
+                    },
+                    "query_type": {
+                        "type": "string",
+                        "description": "Data type to fetch (e.g. revenue, headcount, pipeline_value, stock_level)",
+                    },
+                    "file_id": {"type": "string", "description": "ID of the document file"},
+                    "format": {
+                        "type": "string",
+                        "enum": ["inline", "table", "chart_placeholder"],
+                        "default": "inline",
+                        "description": "How to format the inserted ERP data",
+                    },
+                },
+                "required": ["module", "query_type", "file_id"],
+            },
+        },
+    },
+    # ── Y&U Notes AI Tools (Mega-Upgrade) ────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_note_from_erp",
+            "description": "Generate a new note pre-populated with live ERP data (e.g. a meeting prep note with CRM deal info)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "Desired note title"},
+                    "module": {
+                        "type": "string",
+                        "enum": ["crm", "finance", "projects", "hr", "support", "meetings"],
+                        "description": "ERP module to pull context data from",
+                    },
+                    "entity_id": {
+                        "type": "string",
+                        "description": "UUID of the specific ERP entity (deal, invoice, project, etc.)",
+                    },
+                    "template": {
+                        "type": "string",
+                        "description": "Optional template name to apply (e.g. 'meeting_prep', 'deal_summary')",
+                    },
+                },
+                "required": ["title", "module"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_notes_semantic",
+            "description": "Search notes using semantic (AI-powered) similarity matching across all notebooks",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Natural language search query"},
+                    "notebook_id": {
+                        "type": "string",
+                        "description": "Optional notebook UUID to scope the search",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Maximum number of results to return",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "extract_note_actions",
+            "description": "Extract action items, TODOs, and follow-ups from a note's content",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "note_id": {"type": "string", "description": "UUID of the note to analyse"},
+                },
+                "required": ["note_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "transform_note_text",
+            "description": "Transform selected text in a note (summarise, expand, rewrite, translate, improve grammar, etc.)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "The text to transform"},
+                    "operation": {
+                        "type": "string",
+                        "enum": ["summarise", "expand", "rewrite", "translate", "fix_grammar", "bullet_points", "formal", "casual"],
+                        "description": "The transformation to apply",
+                    },
+                    "target_language": {
+                        "type": "string",
+                        "description": "Target language code for translation (e.g. 'fr', 'es'). Only used with 'translate'.",
+                    },
+                },
+                "required": ["text", "operation"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "convert_note_to_task",
+            "description": "Convert a note (or selected action items from it) into one or more project tasks",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "note_id": {"type": "string", "description": "UUID of the source note"},
+                    "project_name": {"type": "string", "description": "Target project name or UUID"},
+                    "task_titles": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional explicit list of task titles to create (defaults to AI-extracted actions)",
+                    },
+                },
+                "required": ["note_id", "project_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "convert_note_to_ticket",
+            "description": "Create a support ticket from a note's content",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "note_id": {"type": "string", "description": "UUID of the source note"},
+                    "subject": {"type": "string", "description": "Ticket subject (defaults to note title)"},
+                    "priority": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high", "urgent"],
+                        "default": "medium",
+                    },
+                },
+                "required": ["note_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "convert_note_to_invoice",
+            "description": "Generate a draft invoice from a note (requires approval before creation)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "note_id": {"type": "string", "description": "UUID of the source note"},
+                    "customer_name": {"type": "string", "description": "Customer name for the invoice"},
+                    "customer_email": {"type": "string", "description": "Customer email address"},
+                    "due_days": {
+                        "type": "integer",
+                        "default": 30,
+                        "description": "Days until invoice is due",
+                    },
+                },
+                "required": ["note_id", "customer_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "convert_note_to_deal",
+            "description": "Create a CRM deal from a note (e.g. a meeting note becomes a deal)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "note_id": {"type": "string", "description": "UUID of the source note"},
+                    "deal_title": {"type": "string", "description": "Deal title (defaults to note title)"},
+                    "contact_name": {"type": "string", "description": "Primary contact name"},
+                    "estimated_value": {"type": "number", "description": "Estimated deal value"},
+                },
+                "required": ["note_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_note_summary",
+            "description": "Get a concise AI-generated summary of a note",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "note_id": {"type": "string", "description": "UUID of the note to summarise"},
+                    "max_sentences": {
+                        "type": "integer",
+                        "default": 3,
+                        "description": "Maximum number of sentences in the summary",
+                    },
+                },
+                "required": ["note_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_project_notebook",
+            "description": "Create a new notebook pre-configured for a project (with standard sections: Notes, Meetings, Research, Decisions)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "project_name": {"type": "string", "description": "Name of the project"},
+                    "project_id": {
+                        "type": "string",
+                        "description": "Optional UUID of an existing project to link the notebook to",
+                    },
+                },
+                "required": ["project_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "link_note_to_entity",
+            "description": "Link a note to any ERP entity (contact, deal, invoice, task, ticket, employee, meeting)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "note_id": {"type": "string", "description": "UUID of the note"},
+                    "entity_type": {
+                        "type": "string",
+                        "enum": ["contact", "deal", "invoice", "project", "task", "ticket", "employee", "meeting", "file", "lead"],
+                        "description": "Type of ERP entity to link to",
+                    },
+                    "entity_id": {"type": "string", "description": "UUID of the ERP entity"},
+                    "link_type": {
+                        "type": "string",
+                        "enum": ["references", "created_from", "related_to", "action_item"],
+                        "default": "references",
+                        "description": "The nature of the link",
+                    },
+                },
+                "required": ["note_id", "entity_type", "entity_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_notebook_qa",
+            "description": "Ask a question and get an answer grounded in the content of a notebook (RAG over all note pages)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "notebook_id": {"type": "string", "description": "UUID of the notebook to search"},
+                    "question": {"type": "string", "description": "The question to answer using notebook content"},
+                },
+                "required": ["notebook_id", "question"],
             },
         },
     },
@@ -4846,7 +5490,39 @@ class ToolExecutor:
         query: str,
         format: str = "summary",
     ) -> dict[str, Any]:
-        """Generate an analytics report from a natural language query."""
+        """Generate an analytics report using LLM-powered NL-to-SQL Copilot."""
+        from app.services.analytics_copilot import copilot_query  # noqa: PLC0415
+
+        try:
+            result = await copilot_query(question=query, db=self.db)
+            return {
+                "query": query,
+                "format": format,
+                "sql": result.get("sql", ""),
+                "data": result.get("data", []),
+                "columns": result.get("columns", []),
+                "total_rows": result.get("total_rows", 0),
+                "narrative": result.get("narrative", ""),
+                "suggested_visuals": result.get("suggested_visuals", []),
+                "result": result.get("narrative") or f"Report for '{query}': {result.get('total_rows', 0)} rows returned.",
+            }
+        except Exception as e:
+            logger.error("generate_report copilot failed: %s", e)
+            return {
+                "query": query,
+                "format": format,
+                "error": str(e),
+                "result": f"Report generation failed: {e}",
+            }
+
+    # ── AI Analytics: Query Data (DEPRECATED SHIM — kept for compatibility) ──
+
+    async def _exec_generate_report_legacy(
+        self,
+        query: str,
+        format: str = "summary",
+    ) -> dict[str, Any]:
+        """Legacy keyword-based report generation — kept for internal reference."""
         from app.models.finance import Invoice, Payment  # noqa: PLC0415
         from app.models.crm import Lead, Opportunity  # noqa: PLC0415
         from app.models.hr import Employee  # noqa: PLC0415
@@ -4926,58 +5602,28 @@ class ToolExecutor:
     # ── AI Analytics: Query Data ─────────────────────────────────────────
 
     async def _exec_query_data(self, question: str) -> dict[str, Any]:
-        """Convert natural language to SQL and execute read-only queries."""
-        from sqlalchemy import text  # noqa: PLC0415
-
-        # Map common questions to safe, pre-defined queries
-        question_lower = question.lower()
-
-        query_map: dict[str, str] = {
-            "invoice": "SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total FROM invoices WHERE issue_date >= date_trunc('month', CURRENT_DATE)",
-            "payment": "SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as total FROM payments WHERE status = 'completed' AND payment_date >= date_trunc('month', CURRENT_DATE)",
-            "employee": "SELECT COUNT(*) as count FROM employees WHERE is_active = true",
-            "lead": "SELECT status, COUNT(*) as count FROM crm_leads GROUP BY status",
-            "ticket": "SELECT status, COUNT(*) as count FROM tickets GROUP BY status",
-            "order": "SELECT status, COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total FROM ecommerce_orders GROUP BY status",
-            "item": "SELECT COUNT(*) as count FROM inventory_items WHERE is_active = true",
-            "project": "SELECT status, COUNT(*) as count FROM projects GROUP BY status",
-            "user": "SELECT COUNT(*) as active_users FROM users WHERE is_active = true",
-        }
-
-        # Find matching query
-        sql = None
-        for keyword, q in query_map.items():
-            if keyword in question_lower:
-                sql = q
-                break
-
-        if not sql:
-            return {
-                "error": "Could not map question to a safe query. Try asking about invoices, payments, employees, leads, tickets, orders, inventory items, projects, or users.",
-            }
+        """Convert natural language to SQL and execute read-only queries using LLM Copilot."""
+        from app.services.analytics_copilot import copilot_query  # noqa: PLC0415
 
         try:
-            result = await self.db.execute(text(sql))
-            rows = result.mappings().all()
-            data = [dict(row) for row in rows]
-
-            # Convert Decimal/datetime to serializable types
-            for row in data:
-                for k, v in row.items():
-                    if hasattr(v, "__float__"):
-                        row[k] = float(v)
-                    elif hasattr(v, "isoformat"):
-                        row[k] = v.isoformat()
-
+            result = await copilot_query(question=question, db=self.db)
+            data = result.get("data", [])
             return {
                 "question": question,
-                "sql": sql,
+                "sql": result.get("sql", ""),
                 "data": data,
-                "row_count": len(data),
-                "result": f"Query result ({len(data)} rows):\n" + "\n".join(str(r) for r in data[:10]),
+                "columns": result.get("columns", []),
+                "row_count": result.get("total_rows", 0),
+                "narrative": result.get("narrative", ""),
+                "suggested_visuals": result.get("suggested_visuals", []),
+                "result": (
+                    result.get("narrative")
+                    or f"Query result ({len(data)} rows):\n" + "\n".join(str(r) for r in data[:10])
+                ),
             }
         except Exception as e:
-            return {"error": f"Query failed: {e}"}
+            logger.error("query_data copilot failed: %s", e)
+            return {"question": question, "error": str(e), "result": f"Query failed: {e}"}
 
     # ── AI CRM: Next Best Action ─────────────────────────────────────────
 
@@ -7687,4 +8333,1240 @@ class ToolExecutor:
             "past_ticket_count": len(past_tickets),
             "has_crm_context": bool(crm_context),
             "result": f"Draft response for {ticket.ticket_number} (tone: {tone}):\n\n{draft}",
+        }
+
+    # ── Support Phase 2 — AI Copilot Executors ────────────────────────────────
+
+    async def _exec_ai_auto_triage(self, args: dict) -> dict:
+        """Auto-triage: assign priority, category, team, and suggested assignee."""
+        ticket_id = args.get("ticket_id", "")
+        from sqlalchemy import select
+        from app.models.support import Ticket, TicketCategory
+
+        ticket = (await self.db.execute(
+            select(Ticket).where(Ticket.id == ticket_id)
+        )).scalar_one_or_none()
+        if not ticket:
+            return {"error": "Ticket not found"}
+
+        # Get categories for context
+        categories = (await self.db.execute(
+            select(TicketCategory).where(TicketCategory.is_active == True)  # noqa: E712
+        )).scalars().all()
+        cat_list = ", ".join(c.name for c in categories) if categories else "General"
+
+        # Get available agents
+        from app.models.user import User
+        agents = (await self.db.execute(
+            select(User).where(User.is_active == True).limit(20)  # noqa: E712
+        )).scalars().all()
+        agent_list = "\n".join(f"- {a.full_name} ({a.email})" for a in agents[:10])
+
+        prompt = (
+            f"You are an AI support triage system. Analyze this ticket and return a JSON object:\n"
+            f'{{"priority": "low|medium|high|urgent", "category": "best matching from: {cat_list}", '
+            f'"suggested_assignee_email": "email of best agent", "reasoning": "1-2 sentence explanation"}}\n\n'
+            f"Subject: {ticket.subject}\n"
+            f"Description: {(ticket.description or '')[:1500]}\n"
+            f"Channel: {ticket.channel or 'web'}\n\n"
+            f"Available agents:\n{agent_list}\n\n"
+            f"Return ONLY the JSON object."
+        )
+
+        triage_result = await self._summarize_via_llm(prompt, "triage result")
+
+        import json
+        try:
+            triage = json.loads(triage_result)
+        except (json.JSONDecodeError, ValueError):
+            triage = {"priority": "medium", "category": "General", "reasoning": "Could not parse AI response"}
+
+        # Apply triage
+        if triage.get("priority") in ("low", "medium", "high", "urgent"):
+            ticket.priority = triage["priority"]
+
+        # Match category
+        for cat in categories:
+            if cat.name.lower() == triage.get("category", "").lower():
+                ticket.category_id = cat.id
+                break
+
+        # Match assignee
+        suggested_email = triage.get("suggested_assignee_email", "")
+        for agent in agents:
+            if agent.email == suggested_email:
+                ticket.assigned_to = agent.id
+                break
+
+        await self.db.commit()
+
+        return {
+            "ticket_id": ticket_id,
+            "ticket_number": ticket.ticket_number,
+            "triage": triage,
+            "result": f"Triaged {ticket.ticket_number}: priority={triage.get('priority')}, "
+                      f"category={triage.get('category')}, reason={triage.get('reasoning')}",
+        }
+
+    async def _exec_ai_customer_360(self, args: dict) -> dict:
+        """Generate a 360-degree customer profile."""
+        customer_email = args.get("customer_email", "")
+        from sqlalchemy import func, select
+        from app.models.support import CustomerSatisfaction, Ticket
+
+        # Ticket history
+        tickets = (await self.db.execute(
+            select(Ticket).where(Ticket.customer_email.ilike(customer_email)).order_by(Ticket.created_at.desc()).limit(50)
+        )).scalars().all()
+
+        total_tickets = len(tickets)
+        open_tickets = sum(1 for t in tickets if t.status in ("open", "in_progress"))
+        avg_sentiment = sum(t.sentiment_score or 0 for t in tickets) / max(total_tickets, 1)
+
+        # CSAT scores
+        csat_scores = []
+        for t in tickets:
+            csat = (await self.db.execute(
+                select(CustomerSatisfaction).where(CustomerSatisfaction.ticket_id == t.id)
+            )).scalar_one_or_none()
+            if csat and csat.score is not None:
+                csat_scores.append(csat.score)
+        avg_csat = sum(csat_scores) / max(len(csat_scores), 1) if csat_scores else None
+
+        # CRM contact
+        crm_context = None
+        try:
+            from app.models.crm import Contact
+            contact = (await self.db.execute(
+                select(Contact).where(Contact.email.ilike(customer_email))
+            )).scalar_one_or_none()
+            if contact:
+                crm_context = {
+                    "name": f"{contact.first_name} {contact.last_name}",
+                    "company": contact.company or "N/A",
+                    "lifecycle_stage": getattr(contact, "lifecycle_stage", "unknown"),
+                }
+        except Exception:
+            pass
+
+        # Priority distribution
+        priority_dist = {}
+        for t in tickets:
+            priority_dist[t.priority] = priority_dist.get(t.priority, 0) + 1
+
+        # Risk assessment
+        risk_score = "low"
+        if avg_sentiment < -0.3 or open_tickets > 3:
+            risk_score = "high"
+        elif avg_sentiment < 0 or open_tickets > 1:
+            risk_score = "medium"
+
+        profile = {
+            "customer_email": customer_email,
+            "total_tickets": total_tickets,
+            "open_tickets": open_tickets,
+            "avg_sentiment": round(avg_sentiment, 2),
+            "avg_csat": round(avg_csat, 1) if avg_csat else None,
+            "priority_distribution": priority_dist,
+            "crm_contact": crm_context,
+            "risk_score": risk_score,
+            "recent_tickets": [
+                {"number": t.ticket_number, "subject": t.subject, "status": t.status, "priority": t.priority}
+                for t in tickets[:5]
+            ],
+        }
+
+        return {
+            **profile,
+            "result": (
+                f"Customer 360 for {customer_email}: {total_tickets} tickets, "
+                f"{open_tickets} open, sentiment={round(avg_sentiment, 2)}, "
+                f"risk={risk_score}, CSAT={avg_csat or 'N/A'}"
+            ),
+        }
+
+    async def _exec_ai_escalation_predictor(self, args: dict) -> dict:
+        """Predict escalation likelihood for a ticket."""
+        ticket_id = args.get("ticket_id", "")
+        from datetime import datetime, timezone
+        from sqlalchemy import func, select
+        from app.models.support import Ticket, TicketComment
+
+        ticket = (await self.db.execute(
+            select(Ticket).where(Ticket.id == ticket_id)
+        )).scalar_one_or_none()
+        if not ticket:
+            return {"error": "Ticket not found"}
+
+        # Factors
+        factors = []
+        score = 0.0
+
+        # Sentiment
+        if ticket.sentiment_score is not None and ticket.sentiment_score < -0.5:
+            factors.append("Very negative sentiment")
+            score += 0.3
+        elif ticket.sentiment_score is not None and ticket.sentiment_score < 0:
+            factors.append("Negative sentiment")
+            score += 0.15
+
+        # Priority
+        if ticket.priority == "urgent":
+            factors.append("Urgent priority")
+            score += 0.2
+        elif ticket.priority == "high":
+            factors.append("High priority")
+            score += 0.1
+
+        # Response time
+        if ticket.first_response_at is None:
+            now = datetime.now(timezone.utc)
+            wait_hours = (now - ticket.created_at).total_seconds() / 3600
+            if wait_hours > 4:
+                factors.append(f"No response after {wait_hours:.0f}h")
+                score += 0.2
+            elif wait_hours > 1:
+                factors.append(f"Waiting {wait_hours:.1f}h for response")
+                score += 0.1
+
+        # SLA
+        if ticket.sla_response_breached or ticket.sla_resolution_breached:
+            factors.append("SLA already breached")
+            score += 0.25
+
+        # Multiple reopens (check audit log)
+        comment_count = (await self.db.execute(
+            select(func.count(TicketComment.id)).where(TicketComment.ticket_id == ticket.id)
+        )).scalar() or 0
+        if comment_count > 10:
+            factors.append(f"High interaction count ({comment_count} comments)")
+            score += 0.15
+
+        # Customer history
+        past_escalated = (await self.db.execute(
+            select(func.count(Ticket.id)).where(
+                Ticket.customer_email == ticket.customer_email,
+                Ticket.priority == "urgent",
+                Ticket.id != ticket.id,
+            )
+        )).scalar() or 0
+        if past_escalated > 0:
+            factors.append(f"Customer has {past_escalated} past urgent tickets")
+            score += 0.1
+
+        risk_level = "low"
+        if score >= 0.6:
+            risk_level = "high"
+        elif score >= 0.3:
+            risk_level = "medium"
+
+        return {
+            "ticket_id": ticket_id,
+            "ticket_number": ticket.ticket_number,
+            "escalation_probability": min(round(score, 2), 1.0),
+            "risk_level": risk_level,
+            "factors": factors,
+            "result": (
+                f"Escalation prediction for {ticket.ticket_number}: "
+                f"{risk_level} risk ({min(round(score * 100), 100)}%). "
+                f"Factors: {', '.join(factors) or 'none identified'}"
+            ),
+        }
+
+    async def _exec_ai_response_quality_scorer(self, args: dict) -> dict:
+        """Score a draft response for quality."""
+        response_text = args.get("response_text", "")
+        ticket_id = args.get("ticket_id", "")
+        from sqlalchemy import select
+        from app.models.support import Ticket
+
+        ticket = (await self.db.execute(
+            select(Ticket).where(Ticket.id == ticket_id)
+        )).scalar_one_or_none()
+
+        ticket_context = ""
+        if ticket:
+            ticket_context = f"Subject: {ticket.subject}\nDescription: {(ticket.description or '')[:500]}"
+
+        prompt = (
+            "Score this support response on a 1-10 scale for each dimension. "
+            "Return ONLY a JSON object:\n"
+            '{"tone": N, "completeness": N, "accuracy": N, "empathy": N, "actionability": N, '
+            '"overall": N, "suggestions": ["improvement1", "improvement2"]}\n\n'
+            f"Ticket context:\n{ticket_context}\n\n"
+            f"Response to score:\n{response_text[:2000]}"
+        )
+
+        score_result = await self._summarize_via_llm(prompt, "quality scores")
+
+        import json
+        try:
+            scores = json.loads(score_result)
+        except (json.JSONDecodeError, ValueError):
+            scores = {
+                "tone": 7, "completeness": 7, "accuracy": 7,
+                "empathy": 7, "actionability": 7, "overall": 7,
+                "suggestions": ["Could not parse AI scoring response"],
+            }
+
+        return {
+            "ticket_id": ticket_id,
+            "scores": scores,
+            "result": (
+                f"Response quality: overall={scores.get('overall', 'N/A')}/10, "
+                f"tone={scores.get('tone')}, empathy={scores.get('empathy')}, "
+                f"completeness={scores.get('completeness')}. "
+                f"Suggestions: {', '.join(scores.get('suggestions', []))}"
+            ),
+        }
+
+    async def _exec_ai_generate_macro(self, args: dict) -> dict:
+        """Generate a reusable macro from a resolved ticket."""
+        ticket_id = args.get("ticket_id", "")
+        macro_name = args.get("macro_name", "New Macro")
+        from sqlalchemy import select
+        from app.models.support import Ticket, TicketComment
+
+        ticket = (await self.db.execute(
+            select(Ticket).where(Ticket.id == ticket_id)
+        )).scalar_one_or_none()
+        if not ticket:
+            return {"error": "Ticket not found"}
+
+        comments = (await self.db.execute(
+            select(TicketComment)
+            .where(TicketComment.ticket_id == ticket.id, TicketComment.is_internal == False)  # noqa: E712
+            .order_by(TicketComment.created_at)
+        )).scalars().all()
+
+        thread = f"Subject: {ticket.subject}\n"
+        for c in comments:
+            thread += f"---\n{c.content[:500]}\n"
+
+        prompt = (
+            "Based on this resolved support ticket thread, generate a reusable response template (macro). "
+            "Replace specific details with placeholders like {{customer_name}}, {{ticket_number}}, {{product}}, etc. "
+            "Return ONLY the template text, no explanations.\n\n"
+            f"{thread[:3000]}"
+        )
+
+        macro_content = await self._summarize_via_llm(prompt, "macro template")
+
+        # Save as template
+        try:
+            from app.models.support_phase1 import TicketTemplate
+            template = TicketTemplate(
+                name=macro_name,
+                description=f"Auto-generated from ticket {ticket.ticket_number}",
+                subject_template=ticket.subject,
+                body_template=macro_content,
+                category_id=ticket.category_id,
+                priority=ticket.priority,
+                tags=ticket.tags or [],
+                created_by=self.user.id,
+            )
+            self.db.add(template)
+            await self.db.commit()
+            await self.db.refresh(template)
+            template_id = str(template.id)
+        except Exception:
+            template_id = None
+
+        return {
+            "macro_name": macro_name,
+            "macro_content": macro_content,
+            "source_ticket": ticket.ticket_number,
+            "template_id": template_id,
+            "result": f"Generated macro '{macro_name}' from {ticket.ticket_number}:\n\n{macro_content[:500]}",
+        }
+
+    async def _exec_ai_translate_message(self, args: dict) -> dict:
+        """Translate a support message while preserving tone."""
+        text = args.get("text", "")
+        target_language = args.get("target_language", "English")
+        preserve_tone = args.get("preserve_tone", "professional")
+
+        prompt = (
+            f"Translate the following support message to {target_language}. "
+            f"Preserve a {preserve_tone} tone. Return ONLY the translated text.\n\n"
+            f"{text[:3000]}"
+        )
+
+        translated = await self._summarize_via_llm(prompt, "translated message")
+
+        return {
+            "original": text[:500],
+            "translated": translated,
+            "target_language": target_language,
+            "tone": preserve_tone,
+            "result": f"Translated to {target_language} ({preserve_tone} tone):\n\n{translated}",
+        }
+
+    # ── Support Phase 3 — Advanced AI Executors ───────────────────────────────
+
+    async def _exec_ai_ticket_volume_forecast(self, args: dict) -> dict:
+        """Forecast ticket volume for the next 7 days."""
+        lookback_days = args.get("lookback_days", 30)
+        from datetime import datetime, timedelta, timezone
+        from sqlalchemy import func, select
+        from app.models.support import Ticket
+
+        now = datetime.now(timezone.utc)
+        start = now - timedelta(days=lookback_days)
+
+        # Get daily ticket counts
+        daily_q = select(
+            func.date_trunc("day", Ticket.created_at).label("day"),
+            func.count(Ticket.id),
+        ).where(Ticket.created_at >= start).group_by("day").order_by("day")
+        rows = (await self.db.execute(daily_q)).all()
+
+        if len(rows) < 7:
+            return {"result": f"Not enough data for forecast (only {len(rows)} days)", "forecast": []}
+
+        daily_counts = [r[1] for r in rows]
+        avg = sum(daily_counts) / len(daily_counts)
+
+        # Simple linear trend
+        n = len(daily_counts)
+        x_mean = (n - 1) / 2
+        y_mean = avg
+        numerator = sum((i - x_mean) * (daily_counts[i] - y_mean) for i in range(n))
+        denominator = sum((i - x_mean) ** 2 for i in range(n))
+        slope = numerator / max(denominator, 1)
+
+        forecast = []
+        for day_offset in range(1, 8):
+            predicted = max(0, round(y_mean + slope * (n + day_offset - 1 - x_mean)))
+            forecast_date = (now + timedelta(days=day_offset)).strftime("%Y-%m-%d")
+            forecast.append({"date": forecast_date, "predicted_tickets": predicted})
+
+        trend_direction = "increasing" if slope > 0.5 else "decreasing" if slope < -0.5 else "stable"
+
+        return {
+            "lookback_days": lookback_days,
+            "avg_daily_tickets": round(avg, 1),
+            "trend": trend_direction,
+            "trend_slope": round(slope, 2),
+            "forecast": forecast,
+            "result": (
+                f"7-day forecast (based on {lookback_days}-day history): "
+                f"avg={round(avg, 1)}/day, trend={trend_direction}. "
+                f"Predicted: {', '.join(f'{f['date']}: {f['predicted_tickets']}' for f in forecast)}"
+            ),
+        }
+
+    async def _exec_ai_agent_performance_insights(self, args: dict) -> dict:
+        """Analyze agent performance with coaching recommendations."""
+        agent_id = args.get("agent_id")
+        days = args.get("days", 30)
+        from datetime import datetime, timedelta, timezone
+        from sqlalchemy import func, select
+        from app.models.support import CustomerSatisfaction, Ticket, TicketComment
+        from app.models.user import User
+
+        now = datetime.now(timezone.utc)
+        start = now - timedelta(days=days)
+
+        if agent_id:
+            agents = [(await self.db.get(User, agent_id))]
+            agents = [a for a in agents if a]
+        else:
+            agents = (await self.db.execute(
+                select(User).where(User.is_active == True).limit(50)  # noqa: E712
+            )).scalars().all()
+
+        insights = []
+        for agent in agents:
+            tickets = (await self.db.execute(
+                select(Ticket).where(
+                    Ticket.assigned_to == agent.id,
+                    Ticket.created_at >= start,
+                )
+            )).scalars().all()
+
+            if not tickets:
+                continue
+
+            resolved = [t for t in tickets if t.resolved_at]
+            response_times = []
+            for t in tickets:
+                if t.first_response_at and t.created_at:
+                    resp_min = (t.first_response_at - t.created_at).total_seconds() / 60
+                    response_times.append(resp_min)
+
+            avg_resp = round(sum(response_times) / max(len(response_times), 1), 1)
+            resolution_rate = round(len(resolved) / max(len(tickets), 1) * 100, 1)
+
+            insights.append({
+                "agent_id": str(agent.id),
+                "agent_name": agent.full_name,
+                "total_assigned": len(tickets),
+                "resolved": len(resolved),
+                "resolution_rate_pct": resolution_rate,
+                "avg_response_minutes": avg_resp,
+            })
+
+        # Sort by resolution rate desc
+        insights.sort(key=lambda x: x["resolution_rate_pct"], reverse=True)
+
+        prompt = (
+            "Based on these agent performance metrics, provide 3-5 coaching recommendations.\n"
+            f"Metrics ({days} days):\n"
+            + "\n".join(
+                f"- {i['agent_name']}: {i['total_assigned']} tickets, "
+                f"{i['resolution_rate_pct']}% resolved, {i['avg_response_minutes']}min avg response"
+                for i in insights[:10]
+            )
+        )
+        recommendations = await self._summarize_via_llm(prompt, "coaching recommendations")
+
+        return {
+            "period_days": days,
+            "agent_insights": insights[:10],
+            "recommendations": recommendations,
+            "result": (
+                f"Agent performance ({days}d): {len(insights)} agents analyzed. "
+                f"Recommendations:\n{recommendations}"
+            ),
+        }
+
+    async def _exec_ai_customer_health_summary(self, args: dict) -> dict:
+        """Executive summary of customer health."""
+        from sqlalchemy import func, select
+        from app.models.support_phase3 import CustomerHealthScore
+
+        total = (await self.db.execute(
+            select(func.count(CustomerHealthScore.id))
+        )).scalar() or 0
+
+        by_risk = {}
+        for risk in ("healthy", "at_risk", "critical"):
+            count = (await self.db.execute(
+                select(func.count(CustomerHealthScore.id)).where(
+                    CustomerHealthScore.risk_level == risk
+                )
+            )).scalar() or 0
+            by_risk[risk] = count
+
+        avg_score = (await self.db.execute(
+            select(func.avg(CustomerHealthScore.overall_score))
+        )).scalar()
+
+        avg_churn = (await self.db.execute(
+            select(func.avg(CustomerHealthScore.churn_probability))
+        )).scalar()
+
+        critical_customers = (await self.db.execute(
+            select(CustomerHealthScore)
+            .where(CustomerHealthScore.risk_level == "critical")
+            .order_by(CustomerHealthScore.overall_score)
+            .limit(5)
+        )).scalars().all()
+
+        critical_list = [
+            {"email": c.customer_email, "score": c.overall_score, "churn_prob": c.churn_probability}
+            for c in critical_customers
+        ]
+
+        return {
+            "total_scored": total,
+            "by_risk_level": by_risk,
+            "avg_health_score": round(avg_score, 1) if avg_score else None,
+            "avg_churn_probability": round(avg_churn, 2) if avg_churn else None,
+            "critical_customers": critical_list,
+            "result": (
+                f"Customer Health Summary: {total} scored. "
+                f"Healthy: {by_risk.get('healthy', 0)}, "
+                f"At Risk: {by_risk.get('at_risk', 0)}, "
+                f"Critical: {by_risk.get('critical', 0)}. "
+                f"Avg score: {round(avg_score, 1) if avg_score else 'N/A'}, "
+                f"Avg churn prob: {round(avg_churn * 100, 1) if avg_churn else 'N/A'}%"
+            ),
+        }
+
+    async def _exec_ai_proactive_risk_scan(self, args: dict) -> dict:
+        """Scan for at-risk customers needing proactive outreach."""
+        risk_threshold = args.get("risk_threshold", "at_risk")
+        from sqlalchemy import select
+        from app.models.support_phase3 import CustomerHealthScore
+
+        risk_levels = ["critical"] if risk_threshold == "critical" else ["at_risk", "critical"]
+
+        customers = (await self.db.execute(
+            select(CustomerHealthScore)
+            .where(CustomerHealthScore.risk_level.in_(risk_levels))
+            .order_by(CustomerHealthScore.overall_score)
+            .limit(20)
+        )).scalars().all()
+
+        results = [
+            {
+                "email": c.customer_email,
+                "overall_score": c.overall_score,
+                "risk_level": c.risk_level,
+                "churn_probability": c.churn_probability,
+                "total_tickets": c.total_tickets,
+                "avg_sentiment": c.avg_sentiment,
+                "factors": c.score_factors or [],
+            }
+            for c in customers
+        ]
+
+        return {
+            "risk_threshold": risk_threshold,
+            "customers_found": len(results),
+            "customers": results,
+            "result": (
+                f"Proactive risk scan ({risk_threshold}+): {len(results)} customers found. "
+                + (
+                    "Top concerns: " + ", ".join(
+                        f"{r['email']} (score={r['overall_score']}, churn={r['churn_probability']})"
+                        for r in results[:5]
+                    )
+                    if results else "No at-risk customers."
+                )
+            ),
+        }
+
+    async def _exec_ai_voice_sentiment_analyze(self, args: dict) -> dict:
+        """Analyze sentiment from a voice call transcript."""
+        call_id = args.get("call_id", "")
+        from sqlalchemy import select
+        from app.models.support_phase3 import VoiceCallRecord
+
+        call = (await self.db.execute(
+            select(VoiceCallRecord).where(VoiceCallRecord.id == call_id)
+        )).scalar_one_or_none()
+        if not call:
+            return {"error": "Call not found"}
+
+        if not call.transcript:
+            return {"error": "No transcript available for this call", "call_id": call_id}
+
+        prompt = (
+            "Analyze the sentiment of this voice call transcript. "
+            "Return ONLY a JSON object with: "
+            '{"score": float(-1.0 to 1.0), "label": "frustrated|angry|confused|neutral|satisfied|happy", '
+            '"key_moments": ["moment1", "moment2"], "summary": "1-sentence summary"}\n\n'
+            f"Transcript:\n{call.transcript[:3000]}"
+        )
+
+        result = await self._summarize_via_llm(prompt, "voice sentiment")
+        import json
+        try:
+            sentiment = json.loads(result)
+        except (json.JSONDecodeError, ValueError):
+            sentiment = {"score": 0, "label": "neutral", "summary": "Could not analyze"}
+
+        call.sentiment_score = sentiment.get("score", 0)
+        await self.db.commit()
+
+        return {
+            "call_id": call_id,
+            "sentiment": sentiment,
+            "result": (
+                f"Voice sentiment for call {call_id}: "
+                f"score={sentiment.get('score')}, label={sentiment.get('label')}. "
+                f"{sentiment.get('summary', '')}"
+            ),
+        }
+
+    async def _exec_ai_skill_gap_analyzer(self, args: dict) -> dict:
+        """Identify skill gaps in the support team."""
+        from datetime import datetime, timedelta, timezone
+        from sqlalchemy import func, select
+        from app.models.support import Ticket, TicketCategory
+        from app.models.support_phase3 import AgentSkill
+
+        now = datetime.now(timezone.utc)
+        month_ago = now - timedelta(days=30)
+
+        # Get ticket categories with volume
+        cat_q = select(
+            TicketCategory.name, func.count(Ticket.id).label("count")
+        ).outerjoin(Ticket, Ticket.category_id == TicketCategory.id).where(
+            Ticket.created_at >= month_ago
+        ).group_by(TicketCategory.name).order_by(func.count(Ticket.id).desc())
+        categories = {row[0]: row[1] for row in (await self.db.execute(cat_q)).all()}
+
+        # Get agent skills
+        skills = (await self.db.execute(
+            select(AgentSkill)
+        )).scalars().all()
+
+        skill_coverage = {}
+        for s in skills:
+            if s.skill_name not in skill_coverage:
+                skill_coverage[s.skill_name] = {"agents": 0, "avg_proficiency": 0, "total_prof": 0}
+            skill_coverage[s.skill_name]["agents"] += 1
+            skill_coverage[s.skill_name]["total_prof"] += s.proficiency
+
+        for name, data in skill_coverage.items():
+            data["avg_proficiency"] = round(data["total_prof"] / max(data["agents"], 1), 1)
+
+        # Identify gaps
+        gaps = []
+        for cat_name, volume in categories.items():
+            if cat_name not in skill_coverage:
+                gaps.append({
+                    "category": cat_name,
+                    "ticket_volume": volume,
+                    "agents_with_skill": 0,
+                    "gap_type": "no_coverage",
+                })
+            elif skill_coverage[cat_name]["agents"] < 2:
+                gaps.append({
+                    "category": cat_name,
+                    "ticket_volume": volume,
+                    "agents_with_skill": skill_coverage[cat_name]["agents"],
+                    "gap_type": "low_coverage",
+                })
+
+        return {
+            "categories_analyzed": len(categories),
+            "skills_mapped": len(skill_coverage),
+            "gaps": gaps,
+            "skill_coverage": skill_coverage,
+            "result": (
+                f"Skill gap analysis: {len(categories)} categories, {len(skill_coverage)} skills mapped. "
+                f"{len(gaps)} gaps found: "
+                + ", ".join(f"{g['category']} ({g['gap_type']}, {g['ticket_volume']} tickets)" for g in gaps[:5])
+                if gaps else "No significant gaps found."
+            ),
+        }
+
+    # ── Supply Chain Phase 2 — Logistics & MRP AI ────────────────────────────
+
+    async def _exec_auto_replan_disruption(
+        self,
+        disruption_reason: str,
+        supplier_id: str | None = None,
+        route_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Analyse open transport orders and production schedules impacted by a disruption."""
+        from sqlalchemy import text  # noqa: PLC0415
+        from app.models.supplychain_logistics import TransportOrder  # noqa: PLC0415
+        from app.models.supplychain_advanced import RiskAssessment  # noqa: PLC0415
+
+        # Fetch affected open transport orders
+        to_query = select(TransportOrder).where(
+            TransportOrder.status.in_(["draft", "confirmed", "picked_up", "in_transit"])
+        )
+        if supplier_id:
+            supplier_uuid = uuid.UUID(supplier_id)
+            to_query = to_query.where(TransportOrder.carrier_id == supplier_uuid)
+        if route_id:
+            route_uuid = uuid.UUID(route_id)
+            to_query = to_query.where(TransportOrder.route_id == route_uuid)
+
+        to_result = await self.db.execute(to_query.limit(50))
+        orders = to_result.scalars().all()
+
+        # Fetch open risk assessments for context
+        risk_query = select(RiskAssessment).where(
+            RiskAssessment.status == "open",
+            RiskAssessment.risk_level.in_(["high", "critical"]),
+        )
+        if supplier_id:
+            risk_query = risk_query.where(
+                RiskAssessment.affected_supplier_id == uuid.UUID(supplier_id)
+            )
+        risk_result = await self.db.execute(risk_query.limit(10))
+        risks = risk_result.scalars().all()
+
+        # Build re-plan recommendations
+        reschedule_suggestions = []
+        for order in orders:
+            delay_days = 3 if order.status in ("draft", "confirmed") else 7
+            reschedule_suggestions.append({
+                "transport_order_id": str(order.id),
+                "reference": order.reference,
+                "current_status": order.status,
+                "suggested_action": "reschedule",
+                "recommended_delay_days": delay_days,
+                "notes": f"Affected by: {disruption_reason}",
+            })
+
+        risk_summary = [
+            {"risk_id": str(r.id), "title": r.title, "level": r.risk_level, "category": r.risk_category}
+            for r in risks
+        ]
+
+        return {
+            "disruption_reason": disruption_reason,
+            "affected_transport_orders": len(orders),
+            "reschedule_suggestions": reschedule_suggestions[:10],
+            "related_open_risks": risk_summary,
+            "alternative_carriers_note": "Use reroute_shipment tool per order for alternative carrier options.",
+            "result": (
+                f"Disruption analysis complete. {len(orders)} open transport orders affected by '{disruption_reason}'. "
+                f"{len(risks)} open high/critical risk assessments linked. "
+                f"Recommended action: reschedule {len(orders)} orders with 3–7 day buffer."
+            ),
+        }
+
+    async def _exec_reroute_shipment(
+        self,
+        transport_order_id: str,
+        reason: str,
+    ) -> dict[str, Any]:
+        """Suggest top 3 alternative routes for a transport order's origin→destination."""
+        from app.models.supplychain_logistics import TransportOrder, Route, Carrier  # noqa: PLC0415
+
+        order_result = await self.db.execute(
+            select(TransportOrder).where(TransportOrder.id == uuid.UUID(transport_order_id))
+        )
+        order = order_result.scalar_one_or_none()
+        if not order:
+            return {"error": "Transport order not found", "result": f"No transport order with ID {transport_order_id}."}
+
+        # Derive origin/destination from shipper/consignee address or linked route
+        origin_hint = ""
+        destination_hint = ""
+        if order.shipper_address:
+            origin_hint = order.shipper_address.get("city", "") or order.shipper_address.get("country", "")
+        if order.consignee_address:
+            destination_hint = order.consignee_address.get("city", "") or order.consignee_address.get("country", "")
+
+        # Query active alternative routes (exclude current route)
+        route_query = select(Route).where(Route.is_active.is_(True))
+        if order.route_id:
+            route_query = route_query.where(Route.id != order.route_id)
+        if origin_hint:
+            route_query = route_query.where(Route.origin_location.ilike(f"%{origin_hint}%"))
+        if destination_hint:
+            route_query = route_query.where(Route.destination_location.ilike(f"%{destination_hint}%"))
+
+        routes_result = await self.db.execute(route_query.order_by(Route.transit_days.asc()).limit(3))
+        routes = routes_result.scalars().all()
+
+        alternatives = []
+        for r in routes:
+            alternatives.append({
+                "route_id": str(r.id),
+                "name": r.name,
+                "origin": r.origin_location,
+                "destination": r.destination_location,
+                "transport_mode": r.transport_mode,
+                "transit_days": r.transit_days,
+                "base_cost": float(r.base_cost) if r.base_cost else None,
+                "carrier_id": str(r.carrier_id) if r.carrier_id else None,
+            })
+
+        return {
+            "transport_order_id": transport_order_id,
+            "reference": order.reference,
+            "reroute_reason": reason,
+            "alternative_routes": alternatives,
+            "result": (
+                f"Found {len(alternatives)} alternative route(s) for order {order.reference}. "
+                + (f"Best option: {alternatives[0]['name']} ({alternatives[0]['transit_days']} days)." if alternatives else "No alternatives found in route master.")
+            ),
+        }
+
+    async def _exec_predict_delivery_eta(
+        self,
+        transport_order_id: str,
+    ) -> dict[str, Any]:
+        """Estimate actual delivery ETA based on tracking events and historical delay."""
+        from app.models.supplychain_logistics import TransportOrder  # noqa: PLC0415
+
+        result = await self.db.execute(
+            select(TransportOrder).where(TransportOrder.id == uuid.UUID(transport_order_id))
+        )
+        order = result.scalar_one_or_none()
+        if not order:
+            return {"error": "Transport order not found", "result": f"No transport order with ID {transport_order_id}."}
+
+        tracking_events = order.tracking_events or []
+
+        # Calculate average delay from events if available
+        estimated_eta = order.estimated_delivery
+        delay_days = 0
+        confidence = "low"
+
+        if tracking_events and order.pickup_date and order.estimated_delivery:
+            # Count events after original estimated delivery (late events = delay indicators)
+            late_events = [
+                e for e in tracking_events
+                if e.get("timestamp") and e["timestamp"] > order.estimated_delivery.isoformat()
+            ]
+            if late_events:
+                delay_days = len(late_events) * 1  # rough heuristic: each late check-in ≈ 1 day delay
+                estimated_eta = order.estimated_delivery + timedelta(days=delay_days)
+                confidence = "medium"
+            else:
+                confidence = "high"
+
+        return {
+            "transport_order_id": transport_order_id,
+            "reference": order.reference,
+            "status": order.status,
+            "original_estimated_delivery": order.estimated_delivery.isoformat() if order.estimated_delivery else None,
+            "predicted_eta": estimated_eta.isoformat() if estimated_eta else None,
+            "delay_days": delay_days,
+            "confidence": confidence,
+            "tracking_events_count": len(tracking_events),
+            "result": (
+                f"ETA prediction for {order.reference}: "
+                + (f"estimated delivery {estimated_eta.date()} (delay: {delay_days} day(s), confidence: {confidence})." if estimated_eta else "No delivery date available.")
+            ),
+        }
+
+    async def _exec_run_mrp_analysis(
+        self,
+        planning_horizon_days: int = 90,
+        product_ids: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Create an MRPRun record and generate MRPLine entries from current inventory."""
+        from app.models.supplychain_advanced import MRPRun, MRPLine  # noqa: PLC0415
+        from app.models.inventory import InventoryItem, StockLevel  # noqa: PLC0415
+        from sqlalchemy.orm import selectinload as si  # noqa: PLC0415
+
+        now = datetime.now(timezone.utc)
+        run = MRPRun(
+            name=f"AI MRP Run {now.strftime('%Y-%m-%d %H:%M')}",
+            run_type="regenerative",
+            planning_horizon_days=planning_horizon_days,
+            bucket_size="week",
+            product_ids=[str(p) for p in product_ids] if product_ids else None,
+            status="running",
+            started_at=now,
+            created_by=self.user_id,
+        )
+        self.db.add(run)
+        await self.db.flush()  # get run.id
+
+        # Fetch inventory items
+        item_query = select(InventoryItem).options(si(InventoryItem.stock_levels))
+        if product_ids:
+            item_query = item_query.where(InventoryItem.id.in_([uuid.UUID(p) for p in product_ids]))
+        items_result = await self.db.execute(item_query.limit(200))
+        items = items_result.scalars().all()
+
+        lines_created = 0
+        planned_orders = 0
+        horizon_end = now + timedelta(days=planning_horizon_days)
+        week_buckets = planning_horizon_days // 7 or 1
+
+        for item in items:
+            on_hand = sum(
+                float(sl.quantity_on_hand) for sl in item.stock_levels
+            ) if hasattr(item, "stock_levels") and item.stock_levels else 0
+
+            reorder_point = float(getattr(item, "reorder_point", 0) or 0)
+            reorder_qty = float(getattr(item, "reorder_quantity", 0) or max(reorder_point, 10))
+
+            net_demand = max(reorder_point - on_hand, 0)
+            action = "new_po" if net_demand > 0 else "none"
+            if action == "new_po":
+                planned_orders += 1
+
+            period_start = now
+            period_end = now + timedelta(weeks=1)
+
+            line = MRPLine(
+                mrp_run_id=run.id,
+                product_id=item.id,
+                product_sku=getattr(item, "sku", None),
+                product_name=getattr(item, "name", None),
+                period_start=period_start,
+                period_end=period_end,
+                gross_demand=reorder_point,
+                scheduled_receipts=0,
+                projected_inventory=on_hand,
+                net_demand=net_demand,
+                planned_order_qty=reorder_qty if net_demand > 0 else 0,
+                demand_source_type="safety_stock",
+                action_type=action,
+                action_details={"suggested_qty": reorder_qty} if action == "new_po" else None,
+            )
+            self.db.add(line)
+            lines_created += 1
+
+        run.status = "completed"
+        run.completed_at = datetime.now(timezone.utc)
+        run.total_demand_lines = lines_created
+        run.planned_orders_count = planned_orders
+        await self.db.commit()
+
+        return {
+            "mrp_run_id": str(run.id),
+            "planning_horizon_days": planning_horizon_days,
+            "items_analyzed": lines_created,
+            "planned_orders_count": planned_orders,
+            "status": "completed",
+            "result": (
+                f"MRP analysis complete. Analyzed {lines_created} items over {planning_horizon_days}-day horizon. "
+                f"{planned_orders} items flagged for new purchase orders. Run ID: {run.id}."
+            ),
+        }
+
+    async def _exec_detect_supply_risk(
+        self,
+        include_zero_stock: bool = True,
+    ) -> dict[str, Any]:
+        """Scan for open high/critical risk assessments and zero-stock products."""
+        from app.models.supplychain_advanced import RiskAssessment, MitigationPlan  # noqa: PLC0415
+        from app.models.inventory import InventoryItem, StockLevel  # noqa: PLC0415
+
+        # High/critical open risks
+        risk_result = await self.db.execute(
+            select(RiskAssessment).where(
+                RiskAssessment.status == "open",
+                RiskAssessment.risk_level.in_(["high", "critical"]),
+            ).order_by(RiskAssessment.risk_score.desc().nullslast()).limit(20)
+        )
+        risks = risk_result.scalars().all()
+
+        risk_summaries = []
+        for r in risks:
+            # Check for mitigation plan
+            mit_result = await self.db.execute(
+                select(MitigationPlan).where(
+                    MitigationPlan.risk_id == r.id,
+                    MitigationPlan.status.in_(["planned", "in_progress"]),
+                ).limit(1)
+            )
+            mitigation = mit_result.scalar_one_or_none()
+            risk_summaries.append({
+                "risk_id": str(r.id),
+                "title": r.title,
+                "level": r.risk_level,
+                "category": r.risk_category,
+                "risk_score": r.risk_score,
+                "mitigation_status": mitigation.status if mitigation else "none",
+                "mitigation_strategy": mitigation.strategy if mitigation else None,
+            })
+
+        zero_stock_items: list[dict] = []
+        if include_zero_stock:
+            zero_query = (
+                select(InventoryItem)
+                .outerjoin(StockLevel, StockLevel.item_id == InventoryItem.id)
+                .where(
+                    (StockLevel.quantity_on_hand == 0) | (StockLevel.id.is_(None))
+                )
+                .limit(20)
+            )
+            zero_result = await self.db.execute(zero_query)
+            zero_items = zero_result.scalars().all()
+            zero_stock_items = [
+                {"item_id": str(i.id), "sku": getattr(i, "sku", None), "name": getattr(i, "name", None)}
+                for i in zero_items
+            ]
+
+        return {
+            "open_high_critical_risks": len(risk_summaries),
+            "risks": risk_summaries,
+            "zero_stock_products": len(zero_stock_items),
+            "zero_stock_items": zero_stock_items,
+            "result": (
+                f"Supply risk scan: {len(risk_summaries)} open high/critical risks, "
+                f"{len(zero_stock_items)} products with zero stock. "
+                + ("Immediate action required on: " + ", ".join(r["title"] for r in risk_summaries[:3]) + "." if risk_summaries else "No critical risks found.")
+            ),
+        }
+
+    async def _exec_optimize_route(
+        self,
+        origin: str,
+        destination: str,
+        max_transit_days: int | None = None,
+        max_cost: float | None = None,
+        carrier_type: str | None = None,
+    ) -> dict[str, Any]:
+        """Find the optimal shipping route using weighted scoring."""
+        from app.models.supplychain_logistics import Route, Carrier  # noqa: PLC0415
+        from sqlalchemy.orm import selectinload as si  # noqa: PLC0415
+
+        route_query = (
+            select(Route)
+            .options(si(Route.carrier_id))
+            .where(
+                Route.is_active.is_(True),
+                Route.origin_location.ilike(f"%{origin}%"),
+                Route.destination_location.ilike(f"%{destination}%"),
+            )
+        )
+        if max_transit_days is not None:
+            route_query = route_query.where(
+                (Route.transit_days <= max_transit_days) | Route.transit_days.is_(None)
+            )
+        if max_cost is not None:
+            route_query = route_query.where(
+                (Route.base_cost <= max_cost) | Route.base_cost.is_(None)
+            )
+
+        routes_result = await self.db.execute(route_query.limit(30))
+        routes = routes_result.scalars().all()
+
+        if carrier_type:
+            routes = [r for r in routes if r.transport_mode == carrier_type]
+
+        if not routes:
+            return {"result": f"No active routes found from '{origin}' to '{destination}' matching constraints.", "optimal_route": None}
+
+        # Normalise and score
+        costs = [float(r.base_cost) for r in routes if r.base_cost]
+        days_list = [float(r.transit_days) for r in routes if r.transit_days]
+        max_c = max(costs) if costs else 1
+        min_c = min(costs) if costs else 0
+        max_d = max(days_list) if days_list else 1
+        min_d = min(days_list) if days_list else 0
+
+        scored = []
+        for r in routes:
+            cost_val = float(r.base_cost) if r.base_cost else (max_c or 1)
+            days_val = float(r.transit_days) if r.transit_days else (max_d or 1)
+            norm_cost = (cost_val - min_c) / max(max_c - min_c, 1)
+            norm_days = (days_val - min_d) / max(max_d - min_d, 1)
+            score = 0.4 * (1 - norm_cost) + 0.6 * (1 - norm_days)
+            scored.append((score, r))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        top_score, top_route = scored[0]
+
+        # Fetch carrier name if linked
+        carrier_name = None
+        if top_route.carrier_id:
+            c_result = await self.db.execute(select(Carrier).where(Carrier.id == top_route.carrier_id))
+            carrier = c_result.scalar_one_or_none()
+            carrier_name = carrier.name if carrier else None
+
+        top_dict = {
+            "route_id": str(top_route.id),
+            "name": top_route.name,
+            "origin": top_route.origin_location,
+            "destination": top_route.destination_location,
+            "transport_mode": top_route.transport_mode,
+            "transit_days": top_route.transit_days,
+            "base_cost": float(top_route.base_cost) if top_route.base_cost else None,
+            "carrier_name": carrier_name,
+            "optimization_score": round(top_score, 4),
+        }
+
+        return {
+            "routes_evaluated": len(routes),
+            "optimal_route": top_dict,
+            "all_scored": [
+                {"route_id": str(r.id), "name": r.name, "score": round(s, 4), "transit_days": r.transit_days, "base_cost": float(r.base_cost) if r.base_cost else None}
+                for s, r in scored[:5]
+            ],
+            "result": (
+                f"Optimal route from {origin} to {destination}: '{top_dict['name']}' "
+                f"({top_dict['transport_mode']}, {top_dict['transit_days']} days, cost {top_dict['base_cost']}, score {top_dict['optimization_score']})."
+            ),
+        }
+
+    async def _exec_auto_generate_po_from_forecast(
+        self,
+        mrp_run_id: str,
+    ) -> dict[str, Any]:
+        """Read MRPLines with action_type='new_po' and return draft PO suggestions."""
+        from sqlalchemy import text  # noqa: PLC0415
+        from app.models.supplychain_advanced import MRPRun, MRPLine  # noqa: PLC0415
+
+        run_result = await self.db.execute(
+            select(MRPRun).where(MRPRun.id == uuid.UUID(mrp_run_id))
+        )
+        run = run_result.scalar_one_or_none()
+        if not run:
+            return {"error": "MRP run not found", "result": f"No MRP run with ID {mrp_run_id}."}
+
+        lines_result = await self.db.execute(
+            select(MRPLine).where(
+                MRPLine.mrp_run_id == uuid.UUID(mrp_run_id),
+                MRPLine.action_type == "new_po",
+            )
+        )
+        lines = lines_result.scalars().all()
+
+        if not lines:
+            return {
+                "mrp_run_id": mrp_run_id,
+                "po_suggestions": [],
+                "result": "No MRP lines with action_type='new_po' found for this run.",
+            }
+
+        # Group by product and aggregate qty
+        grouped: dict[str, dict] = {}
+        for line in lines:
+            key = str(line.product_id) if line.product_id else (line.product_sku or "unknown")
+            if key not in grouped:
+                grouped[key] = {
+                    "product_id": str(line.product_id) if line.product_id else None,
+                    "product_sku": line.product_sku,
+                    "product_name": line.product_name,
+                    "qty_needed": 0.0,
+                    "suggested_supplier": None,
+                    "estimated_cost": None,
+                }
+            grouped[key]["qty_needed"] += float(line.planned_order_qty or 0)
+
+        # Attempt to look up suggested supplier from supplychain vendor data
+        po_suggestions = []
+        for key, po in grouped.items():
+            suggested_supplier = None
+            estimated_cost = None
+            if po["product_id"]:
+                try:
+                    sup_result = await self.db.execute(
+                        text(
+                            "SELECT s.id, s.name FROM suppliers s "
+                            "JOIN supplier_items si ON si.supplier_id = s.id "
+                            "WHERE si.item_id = :pid LIMIT 1"
+                        ),
+                        {"pid": po["product_id"]},
+                    )
+                    row = sup_result.fetchone()
+                    if row:
+                        suggested_supplier = {"id": str(row[0]), "name": row[1]}
+                except Exception:
+                    pass  # table may not exist or join differs — gracefully skip
+
+            po_suggestions.append({
+                "product_id": po["product_id"],
+                "product_sku": po["product_sku"],
+                "product_name": po["product_name"],
+                "qty_needed": po["qty_needed"],
+                "suggested_supplier": suggested_supplier,
+                "estimated_cost": estimated_cost,
+                "status": "suggestion",
+            })
+
+        # Attempt to create draft POs in purchase_orders table if it exists
+        created_pos: list[str] = []
+        for suggestion in po_suggestions:
+            try:
+                insert_result = await self.db.execute(
+                    text(
+                        "INSERT INTO purchase_orders (id, status, notes, created_by) "
+                        "VALUES (:id, 'draft', :notes, :user_id) RETURNING id"
+                    ),
+                    {
+                        "id": str(uuid.uuid4()),
+                        "notes": f"Auto-generated from MRP run {mrp_run_id} for {suggestion['product_sku'] or suggestion['product_id']}",
+                        "user_id": str(self.user_id),
+                    },
+                )
+                row = insert_result.fetchone()
+                if row:
+                    created_pos.append(str(row[0]))
+            except Exception:
+                pass  # table schema may differ; return suggestions only
+
+        await self.db.commit()
+
+        return {
+            "mrp_run_id": mrp_run_id,
+            "lines_processed": len(lines),
+            "products_grouped": len(po_suggestions),
+            "draft_pos_created": len(created_pos),
+            "po_suggestions": po_suggestions,
+            "result": (
+                f"Generated {len(po_suggestions)} PO suggestion(s) from MRP run {mrp_run_id}. "
+                + (f"{len(created_pos)} draft purchase order(s) inserted." if created_pos else "Suggestions returned; draft POs not persisted (schema mismatch).")
+            ),
         }

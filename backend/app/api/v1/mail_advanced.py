@@ -1,5 +1,4 @@
 """Era Mail Advanced — AI triage, focused inbox, smart folders, FTS, calendar, cross-module routing."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
@@ -471,7 +470,7 @@ async def list_smart_folders(
     result = await db.execute(
         select(SmartFolder)
         .where(SmartFolder.user_id == current_user.id)
-        .order_by(SmartFolder.order)
+        .order_by(SmartFolder.created_at)
     )
     folders = result.scalars().all()
 
@@ -538,7 +537,7 @@ async def list_search_folders(
     result = await db.execute(
         select(SearchFolder)
         .where(SearchFolder.user_id == current_user.id)
-        .order_by(SearchFolder.order)
+        .order_by(SearchFolder.created_at)
     )
     folders = result.scalars().all()
 
@@ -753,7 +752,7 @@ async def list_quick_steps(
     result = await db.execute(
         select(MailQuickStep)
         .where(MailQuickStep.user_id == current_user.id)
-        .order_by(MailQuickStep.order)
+        .order_by(MailQuickStep.created_at)
     )
     steps = result.scalars().all()
     return {

@@ -5,7 +5,7 @@
  * Supports collapsible nodes, quick-add buttons, and context menus.
  */
 import { useState } from 'react'
-import { useNotebooks, useNotebookTree, useCreateNotebook, useCreateSection } from '../../api/notebooks'
+import { useNotebooks, useNotebookTree, useCreateNotebook } from '../../api/notebooks'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -269,6 +269,22 @@ export default function NotebookNav({
           >
             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" /></svg>
             Favorites
+          </button>
+          <button
+            type="button"
+            className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-[13px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-[6px] transition-colors"
+            onClick={() => onSelectPage('databases')}
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12" /><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" /></svg>
+            Databases
+          </button>
+          <button
+            type="button"
+            className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-[13px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-[6px] transition-colors"
+            onClick={() => onSelectPage('analytics')}
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
+            Analytics
           </button>
         </div>
 

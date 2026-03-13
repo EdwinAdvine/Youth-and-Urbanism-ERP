@@ -1,4 +1,18 @@
+/**
+ * Settings API client — global system settings and per-user preferences.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/settings`.
+ *
+ * Key exports:
+ *   - useSystemSettings()       — list all key/value system settings by category
+ *   - useUpdateSystemSettings() — batch-update one or more system setting values
+ *   - useUserPreferences()      — fetch the current user's UI/notification preferences
+ *   - useUpdateUserPreferences() — save theme, language, timezone, and notification flags
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { SCHEMA_PRESET } from '@/utils/queryDefaults'
 import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -31,6 +45,7 @@ export function useSystemSettings() {
       const { data } = await apiClient.get<SystemSetting[]>('/settings')
       return data
     },
+    ...SCHEMA_PRESET,
   })
 }
 
@@ -54,6 +69,7 @@ export function useUserPreferences() {
       const { data } = await apiClient.get<UserPreferences>('/settings/preferences')
       return data
     },
+    ...SCHEMA_PRESET,
   })
 }
 

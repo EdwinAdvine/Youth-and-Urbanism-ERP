@@ -109,13 +109,13 @@ export default function BlogAdminPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Blog Posts</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Blog Posts</h1>
           <p className="text-sm text-gray-500 mt-1">Manage your storefront blog content</p>
         </div>
-        <Button onClick={() => navigate('/ecommerce/blog/new')}>+ New Post</Button>
+        <Button onClick={() => navigate('/ecommerce/blog/new')} className="w-full sm:w-auto">+ New Post</Button>
       </div>
 
       {/* Filters */}

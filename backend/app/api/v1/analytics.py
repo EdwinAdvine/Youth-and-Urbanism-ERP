@@ -1,9 +1,10 @@
 """Analytics API — aggregated stats endpoints (replaces Superset).
 
 All analytics are now served directly from our PostgreSQL database.
-No external analytics service dependency.
+Materialized views (mv_monthly_revenue, mv_monthly_users, mv_support_metrics,
+mv_module_counts) are used for fast reads; live queries serve as fallback
+before the views are populated, and for data not covered by views.
 """
-from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
@@ -26,10 +27,27 @@ async def revenue_stats(
     db: DBSession,
     months: int = Query(12, ge=1, le=36, description="Number of past months to return"),
 ) -> dict[str, Any]:
-    """Return monthly revenue totals from the invoices table."""
-    try:
-        from sqlalchemy import text  # noqa: PLC0415
+    """Return monthly revenue totals — materialized view first, live query fallback."""
+    from sqlalchemy import text  # noqa: PLC0415
 
+    # Fast path: materialized view
+    try:
+        sql = text("""
+            SELECT TO_CHAR(month, 'YYYY-MM') AS month, revenue
+            FROM mv_monthly_revenue
+            WHERE month >= NOW() - make_interval(months => :months)
+            ORDER BY month ASC
+        """)
+        result = await db.execute(sql, {"months": months})
+        rows = result.fetchall()
+        data = [{"month": row[0], "revenue": float(row[1])} for row in rows]
+        if data:
+            return {"service_available": True, "data": data}
+    except Exception:
+        pass  # View not yet created — fall through
+
+    # Live query fallback
+    try:
         sql = text("""
             SELECT
                 TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS month,
@@ -66,10 +84,27 @@ async def user_growth_stats(
     db: DBSession,
     months: int = Query(12, ge=1, le=36),
 ) -> dict[str, Any]:
-    """Return monthly new-user counts."""
-    try:
-        from sqlalchemy import text  # noqa: PLC0415
+    """Return monthly new-user counts — materialized view first, live query fallback."""
+    from sqlalchemy import text  # noqa: PLC0415
 
+    # Fast path: materialized view
+    try:
+        sql = text("""
+            SELECT TO_CHAR(month, 'YYYY-MM') AS month, new_users
+            FROM mv_monthly_users
+            WHERE month >= NOW() - make_interval(months => :months)
+            ORDER BY month ASC
+        """)
+        result = await db.execute(sql, {"months": months})
+        rows = result.fetchall()
+        data = [{"month": row[0], "new_users": int(row[1])} for row in rows]
+        if data:
+            return {"service_available": True, "data": data}
+    except Exception:
+        pass  # Fall through
+
+    # Live query fallback
+    try:
         sql = text("""
             SELECT
                 TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS month,
@@ -103,9 +138,21 @@ async def module_usage_stats(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
-    """Return record counts per ERP module for a usage overview card."""
-    counts: dict[str, int] = {}
+    """Return record counts per ERP module — materialized view first, live fallback."""
+    from sqlalchemy import text  # noqa: PLC0415
 
+    # Fast path: materialized view
+    try:
+        result = await db.execute(text("SELECT module, count FROM mv_module_counts"))
+        rows = result.fetchall()
+        if rows:
+            modules = [{"module": row[0], "count": int(row[1])} for row in rows]
+            return {"service_available": True, "modules": modules}
+    except Exception:
+        pass  # Fall through
+
+    # Live query fallback
+    counts: dict[str, int] = {}
     table_map = {
         "finance_invoices": "Finance",
         "hr_employees": "HR",
@@ -118,8 +165,6 @@ async def module_usage_stats(
         "ai_chat_history": "AI Assistant",
         "users": "Users",
     }
-
-    from sqlalchemy import text  # noqa: PLC0415
 
     for table, label in table_map.items():
         try:
@@ -205,10 +250,31 @@ async def support_metrics(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
-    """Return support ticket stats (open, resolved, avg resolution time)."""
-    try:
-        from sqlalchemy import text  # noqa: PLC0415
+    """Return support ticket stats — materialized view first, live fallback."""
+    from sqlalchemy import text  # noqa: PLC0415
 
+    # Fast path: materialized view
+    try:
+        result = await db.execute(text(
+            "SELECT open_tickets, resolved_tickets, closed_tickets, total_tickets "
+            "FROM mv_support_metrics"
+        ))
+        row = result.fetchone()
+        if row:
+            return {
+                "service_available": True,
+                "data": {
+                    "open": int(row[0]),
+                    "resolved": int(row[1]),
+                    "closed": int(row[2]),
+                    "total": int(row[3]),
+                },
+            }
+    except Exception:
+        pass  # Fall through
+
+    # Live query fallback
+    try:
         result = await db.execute(text("""
             SELECT
                 COUNT(*) FILTER (WHERE status = 'open') AS open_tickets,

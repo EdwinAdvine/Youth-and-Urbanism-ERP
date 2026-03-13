@@ -111,7 +111,7 @@ async def _send_system_email(to: list[str], subject: str, body: str) -> None:
         from app.integrations.smtp_client import send_email  # noqa: PLC0415
         from app.core.config import settings  # noqa: PLC0415
 
-        from_addr = getattr(settings, "SYSTEM_EMAIL", "noreply@urban-erp.local")
+        from_addr = getattr(settings, "SYSTEM_EMAIL", "noreply@urban-vibes-dynamics.local")
         await send_email(from_addr=from_addr, to_addrs=to, subject=subject, body_text=body)
         logger.info("System email sent to %s: %s", to, subject)
     except Exception:
@@ -334,7 +334,7 @@ async def _send_ecommerce_order_confirmation(data: dict) -> None:
                 f"Order Total: {order.total}\n"
                 f"Status: {order.status}\n\n"
                 f"We will notify you when your order ships.\n\n"
-                f"Best regards,\nUrban ERP Store"
+                f"Best regards,\nUrban Vibes Dynamics Store"
             )
             await _send_system_email(
                 to=[order.customer.email],
@@ -377,7 +377,7 @@ async def on_ecommerce_order_shipped(data: dict) -> None:
                 f"Great news! Your order ({order.order_number}) has been shipped.\n"
                 f"Tracking Number: {tracking}\n\n"
                 f"You can track your package using the tracking number above.\n\n"
-                f"Best regards,\nUrban ERP Store"
+                f"Best regards,\nUrban Vibes Dynamics Store"
             )
             await _send_system_email(
                 to=[order.customer.email],
@@ -711,7 +711,7 @@ async def on_support_ticket_created(data: dict) -> None:
             f"Subject: {data.get('subject', '')}\n"
             f"Priority: {data.get('priority', 'medium')}\n\n"
             f"Our support team will review your request and respond as soon as possible.\n\n"
-            f"Best regards,\nUrban ERP Support"
+            f"Best regards,\nUrban Vibes Dynamics Support"
         )
         await _send_system_email(to=[customer_email], subject=subject, body=body)
 
@@ -803,8 +803,8 @@ async def on_opportunity_stage_changed(data: dict) -> None:
                         f"An opportunity you own has changed stage:\n"
                         f"  From: {old_stage}\n"
                         f"  To: {new_stage}\n\n"
-                        f"Log in to Urban ERP to review the pipeline.\n\n"
-                        f"Best regards,\nUrban ERP CRM"
+                        f"Log in to Urban Vibes Dynamics to review the pipeline.\n\n"
+                        f"Best regards,\nUrban Vibes Dynamics CRM"
                     )
                     await _send_system_email(to=[user.email], subject=subject, body=body)
         except Exception:
@@ -1135,8 +1135,8 @@ async def on_task_assigned(data: dict) -> None:
                     f"You have been assigned a new task:\n\n"
                     f"  Task: {task_title}\n"
                     f"  Project: {project_name}\n\n"
-                    f"Log in to Urban ERP to view the task details.\n\n"
-                    f"Best regards,\nUrban ERP Projects"
+                    f"Log in to Urban Vibes Dynamics to view the task details.\n\n"
+                    f"Best regards,\nUrban Vibes Dynamics Projects"
                 )
                 await _send_system_email(to=[user.email], subject=subject, body=body)
     except Exception:
@@ -1197,8 +1197,8 @@ async def on_task_status_changed(data: dict) -> None:
                         f"  Task: {task_title}\n"
                         f"  Project: {project_name}\n"
                         f"  Status: {old_status} → {new_status}\n\n"
-                        f"Log in to Urban ERP to review.\n\n"
-                        f"Best regards,\nUrban ERP Projects"
+                        f"Log in to Urban Vibes Dynamics to review.\n\n"
+                        f"Best regards,\nUrban Vibes Dynamics Projects"
                     )
                     await _send_system_email(to=[user.email], subject=subject, body=body)
         except Exception:
@@ -1440,7 +1440,7 @@ async def on_leave_approved_email(data: dict) -> None:
                 f"Your leave request has been approved.\n\n"
                 f"Type: {data.get('leave_type', 'N/A')}\n"
                 f"Period: {data.get('start_date', '')} to {data.get('end_date', '')}\n\n"
-                f"Regards,\nUrban ERP HR"
+                f"Regards,\nUrban Vibes Dynamics HR"
             )
             await _send_system_email(to=[user.email], subject=subject, body=body)
     except Exception:
@@ -1479,7 +1479,7 @@ async def on_leave_rejected_email(data: dict) -> None:
                 f"Type: {data.get('leave_type', 'N/A')}\n"
                 f"Period: {data.get('start_date', '')} to {data.get('end_date', '')}\n\n"
                 f"Please contact your HR administrator for further details.\n\n"
-                f"Regards,\nUrban ERP HR"
+                f"Regards,\nUrban Vibes Dynamics HR"
             )
             await _send_system_email(to=[user.email], subject=subject, body=body)
     except Exception:
@@ -1549,7 +1549,7 @@ async def on_calendar_event_created_email(data: dict) -> None:
             description = data.get("description")
             if description:
                 body += f"\nDetails: {description}\n"
-            body += "\nRegards,\nUrban ERP Calendar"
+            body += "\nRegards,\nUrban Vibes Dynamics Calendar"
 
             await _send_system_email(to=attendee_emails, subject=subject, body=body)
     except Exception:
@@ -1713,7 +1713,7 @@ async def on_form_submitted_email_owner(data: dict) -> None:
             )
             if answers_summary:
                 body += f"\nAnswers:\n{answers_summary}\n"
-            body += "\nView all responses in Urban ERP."
+            body += "\nView all responses in Urban Vibes Dynamics."
 
             await _send_system_email(
                 to=[owner.email],
@@ -2924,6 +2924,354 @@ async def on_deal_stage_calendar(data: dict) -> None:
         logger.exception("CRM→Calendar: Failed to create follow-up event")
 
 
+# ── E-Commerce → Calendar Handlers ───────────────────────────────────────────
+
+
+@event_bus.on("ecommerce.flash_sale.scheduled")
+async def on_flash_sale_calendar(data: dict) -> None:
+    """Auto-create a high-priority calendar reminder when a flash sale is scheduled."""
+    logger.info(
+        "Integration: ecommerce.flash_sale.scheduled → Calendar (sale: %s)",
+        data.get("sale_name"),
+    )
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.calendar import CalendarEvent  # noqa: PLC0415
+
+        sale_id = data.get("sale_id")
+        sale_name = data.get("sale_name", "Flash Sale")
+        discount_pct = data.get("discount_pct", 0)
+        owner_id = data.get("owner_id")
+        if not owner_id:
+            return
+
+        start_str = data.get("start_datetime")
+        end_str = data.get("end_datetime")
+        if not start_str or not end_str:
+            return
+
+        start_dt = datetime.fromisoformat(start_str)
+        end_dt = datetime.fromisoformat(end_str)
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.replace(tzinfo=timezone.utc)
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.replace(tzinfo=timezone.utc)
+
+        async with AsyncSessionLocal() as db:
+            cal_event = CalendarEvent(
+                title=f"Flash Sale: {sale_name} ({discount_pct}% off)",
+                description=(
+                    f"Flash sale '{sale_name}' with {discount_pct}% discount is live "
+                    f"from {start_dt.strftime('%Y-%m-%d %H:%M')} to {end_dt.strftime('%Y-%m-%d %H:%M')} UTC."
+                ),
+                start_time=start_dt,
+                end_time=end_dt,
+                event_type="reminder",
+                priority="high",
+                organizer_id=owner_id,
+                color="#ffa21d",
+                erp_context={"sale_id": str(sale_id) if sale_id else None},
+            )
+            db.add(cal_event)
+            await db.commit()
+            logger.info(
+                "E-Commerce→Calendar: Flash sale event created for '%s' starting %s",
+                sale_name,
+                start_dt,
+            )
+    except Exception:
+        logger.exception("E-Commerce→Calendar: Failed to create flash sale calendar event")
+
+
+@event_bus.on("inventory.restock_needed")
+async def on_inventory_restock_calendar(data: dict) -> None:
+    """Auto-create a calendar reminder 2 days before a product's reorder date."""
+    logger.info(
+        "Integration: inventory.restock_needed → Calendar (product: %s)",
+        data.get("product_name"),
+    )
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.calendar import CalendarEvent  # noqa: PLC0415
+
+        product_id = data.get("product_id")
+        product_name = data.get("product_name", "Product")
+        warehouse_id = data.get("warehouse_id")
+        owner_id = data.get("owner_id")
+        reorder_date_str = data.get("reorder_date")
+
+        if not owner_id or not reorder_date_str:
+            return
+
+        reorder_dt = datetime.fromisoformat(reorder_date_str)
+        if reorder_dt.tzinfo is None:
+            reorder_dt = reorder_dt.replace(tzinfo=timezone.utc)
+
+        # Remind 2 days before the reorder date at 9am
+        reminder_dt = (reorder_dt - timedelta(days=2)).replace(
+            hour=9, minute=0, second=0, microsecond=0
+        )
+
+        async with AsyncSessionLocal() as db:
+            cal_event = CalendarEvent(
+                title=f"Restock Reminder: {product_name}",
+                description=(
+                    f"Inventory restock needed for '{product_name}'. "
+                    f"Reorder date: {reorder_dt.strftime('%Y-%m-%d')}."
+                    + (f" Warehouse ID: {warehouse_id}." if warehouse_id else "")
+                ),
+                start_time=reminder_dt,
+                end_time=reminder_dt + timedelta(hours=1),
+                event_type="reminder",
+                priority="normal",
+                organizer_id=owner_id,
+                color="#3ec9d6",
+                erp_context={
+                    "product_id": str(product_id) if product_id else None,
+                    "warehouse_id": str(warehouse_id) if warehouse_id else None,
+                },
+            )
+            db.add(cal_event)
+            await db.commit()
+            logger.info(
+                "Inventory→Calendar: Restock reminder created for '%s' on %s",
+                product_name,
+                reminder_dt,
+            )
+    except Exception:
+        logger.exception("Inventory→Calendar: Failed to create restock reminder event")
+
+
+# ── Supply Chain → Calendar Handlers ─────────────────────────────────────────
+
+
+@event_bus.on("supplychain.delivery.scheduled")
+async def on_delivery_scheduled_calendar(data: dict) -> None:
+    """Auto-create an all-day calendar reminder when a supplier delivery is scheduled."""
+    logger.info(
+        "Integration: supplychain.delivery.scheduled → Calendar (delivery: %s)",
+        data.get("delivery_id"),
+    )
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.calendar import CalendarEvent  # noqa: PLC0415
+
+        delivery_id = data.get("delivery_id")
+        delivery_date_str = data.get("delivery_date")
+        supplier_name = data.get("supplier_name", "Supplier")
+        items_count = data.get("items_count", 0)
+        owner_id = data.get("owner_id")
+
+        if not owner_id or not delivery_date_str:
+            return
+
+        delivery_dt = datetime.fromisoformat(delivery_date_str)
+        if delivery_dt.tzinfo is None:
+            delivery_dt = delivery_dt.replace(tzinfo=timezone.utc)
+
+        # Use 08:00–09:00 on the delivery date to represent an all-day delivery slot
+        start_dt = delivery_dt.replace(hour=8, minute=0, second=0, microsecond=0)
+        end_dt = start_dt + timedelta(hours=1)
+
+        async with AsyncSessionLocal() as db:
+            cal_event = CalendarEvent(
+                title=f"Delivery: {items_count} items from {supplier_name}",
+                description=(
+                    f"Scheduled delivery of {items_count} item(s) from {supplier_name} "
+                    f"on {delivery_dt.strftime('%Y-%m-%d')}."
+                ),
+                start_time=start_dt,
+                end_time=end_dt,
+                event_type="reminder",
+                priority="normal",
+                organizer_id=owner_id,
+                color="#3ec9d6",
+                erp_context={"delivery_id": str(delivery_id) if delivery_id else None},
+            )
+            db.add(cal_event)
+            await db.commit()
+            logger.info(
+                "SupplyChain→Calendar: Delivery event created for %s items from '%s' on %s",
+                items_count,
+                supplier_name,
+                delivery_dt.date(),
+            )
+    except Exception:
+        logger.exception("SupplyChain→Calendar: Failed to create delivery calendar event")
+
+
+@event_bus.on("supplychain.po.review_needed")
+async def on_procurement_review_calendar(data: dict) -> None:
+    """Auto-create a calendar meeting 1 day before a purchase order review is due."""
+    logger.info(
+        "Integration: supplychain.po.review_needed → Calendar (PO: %s)",
+        data.get("po_number"),
+    )
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.calendar import CalendarEvent  # noqa: PLC0415
+
+        po_id = data.get("po_id")
+        po_number = data.get("po_number", "PO")
+        vendor_name = data.get("vendor_name", "Vendor")
+        total_amount = data.get("total_amount", 0)
+        owner_id = data.get("owner_id")
+        due_date_str = data.get("due_date")
+
+        if not owner_id or not due_date_str:
+            return
+
+        due_dt = datetime.fromisoformat(due_date_str)
+        if due_dt.tzinfo is None:
+            due_dt = due_dt.replace(tzinfo=timezone.utc)
+
+        # Schedule review meeting 1 day before due date at 10am
+        review_dt = (due_dt - timedelta(days=1)).replace(
+            hour=10, minute=0, second=0, microsecond=0
+        )
+
+        async with AsyncSessionLocal() as db:
+            cal_event = CalendarEvent(
+                title=f"PO Review: {po_number} — {vendor_name} (${total_amount})",
+                description=(
+                    f"Review purchase order {po_number} from {vendor_name} "
+                    f"for ${total_amount}. Due date: {due_dt.strftime('%Y-%m-%d')}."
+                ),
+                start_time=review_dt,
+                end_time=review_dt + timedelta(hours=1),
+                event_type="meeting",
+                priority="high",
+                organizer_id=owner_id,
+                color="#51459d",
+                erp_context={"po_id": str(po_id) if po_id else None},
+            )
+            db.add(cal_event)
+            await db.commit()
+            logger.info(
+                "SupplyChain→Calendar: PO review meeting created for %s on %s",
+                po_number,
+                review_dt,
+            )
+    except Exception:
+        logger.exception("SupplyChain→Calendar: Failed to create PO review calendar event")
+
+
+# ── Manufacturing → Calendar Handlers ────────────────────────────────────────
+
+
+@event_bus.on("manufacturing.production.scheduled")
+async def on_production_run_calendar(data: dict) -> None:
+    """Auto-create a blocked booking calendar event when a production run is scheduled."""
+    logger.info(
+        "Integration: manufacturing.production.scheduled → Calendar (production: %s)",
+        data.get("production_id"),
+    )
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.calendar import CalendarEvent  # noqa: PLC0415
+
+        production_id = data.get("production_id")
+        product_name = data.get("product_name", "Product")
+        quantity = data.get("quantity", 0)
+        owner_id = data.get("owner_id")
+        start_str = data.get("start_datetime")
+        end_str = data.get("end_datetime")
+
+        if not owner_id or not start_str or not end_str:
+            return
+
+        start_dt = datetime.fromisoformat(start_str)
+        end_dt = datetime.fromisoformat(end_str)
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.replace(tzinfo=timezone.utc)
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.replace(tzinfo=timezone.utc)
+
+        async with AsyncSessionLocal() as db:
+            cal_event = CalendarEvent(
+                title=f"Production Run: {quantity}x {product_name}",
+                description=(
+                    f"Manufacturing production run for {quantity} unit(s) of '{product_name}'. "
+                    f"Scheduled from {start_dt.strftime('%Y-%m-%d %H:%M')} "
+                    f"to {end_dt.strftime('%Y-%m-%d %H:%M')} UTC."
+                ),
+                start_time=start_dt,
+                end_time=end_dt,
+                event_type="booking",
+                priority="normal",
+                organizer_id=owner_id,
+                color="#6fd943",
+                erp_context={"production_id": str(production_id) if production_id else None},
+            )
+            db.add(cal_event)
+            await db.commit()
+            logger.info(
+                "Manufacturing→Calendar: Production run event created for %dx '%s' starting %s",
+                quantity,
+                product_name,
+                start_dt,
+            )
+    except Exception:
+        logger.exception("Manufacturing→Calendar: Failed to create production run calendar event")
+
+
+@event_bus.on("manufacturing.maintenance.scheduled")
+async def on_maintenance_window_calendar(data: dict) -> None:
+    """Auto-create a blocked focus calendar event when equipment maintenance is scheduled."""
+    logger.info(
+        "Integration: manufacturing.maintenance.scheduled → Calendar (equipment: %s)",
+        data.get("equipment_name"),
+    )
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.calendar import CalendarEvent  # noqa: PLC0415
+
+        equipment_id = data.get("equipment_id")
+        equipment_name = data.get("equipment_name", "Equipment")
+        maintenance_type = data.get("maintenance_type", "General")
+        owner_id = data.get("owner_id")
+        scheduled_at_str = data.get("scheduled_at")
+        duration_hours = data.get("duration_hours", 1)
+
+        if not owner_id or not scheduled_at_str:
+            return
+
+        start_dt = datetime.fromisoformat(scheduled_at_str)
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.replace(tzinfo=timezone.utc)
+        end_dt = start_dt + timedelta(hours=float(duration_hours))
+
+        async with AsyncSessionLocal() as db:
+            cal_event = CalendarEvent(
+                title=f"Maintenance: {equipment_name} ({maintenance_type})",
+                description=(
+                    f"Scheduled {maintenance_type} maintenance for '{equipment_name}'. "
+                    f"Duration: {duration_hours} hour(s). "
+                    f"Scheduled at: {start_dt.strftime('%Y-%m-%d %H:%M')} UTC."
+                ),
+                start_time=start_dt,
+                end_time=end_dt,
+                event_type="focus",
+                priority="high",
+                organizer_id=owner_id,
+                color="#ff3a6e",
+                erp_context={
+                    "equipment_id": str(equipment_id) if equipment_id else None,
+                    "maintenance_type": maintenance_type,
+                },
+            )
+            db.add(cal_event)
+            await db.commit()
+            logger.info(
+                "Manufacturing→Calendar: Maintenance window created for '%s' (%s) at %s",
+                equipment_name,
+                maintenance_type,
+                start_dt,
+            )
+    except Exception:
+        logger.exception("Manufacturing→Calendar: Failed to create maintenance calendar event")
+
+
 def register_integration_handlers() -> None:
     """No-op function — importing this module registers the @event_bus.on decorators.
 
@@ -2954,5 +3302,210 @@ def register_integration_handlers() -> None:
         "opportunity.stage_changed (→ deal channel), task.status_changed (→ project channel), "
         "invoice.sent (→ Calendar due-date), recurring_invoice.generated (→ Calendar), "
         "support.sla.warning (→ Calendar SLA event), support.sla.breached (→ Calendar escalation), "
-        "task.created (→ Calendar task due-date), opportunity.stage_changed (→ Calendar follow-up)"
+        "task.created (→ Calendar task due-date), opportunity.stage_changed (→ Calendar follow-up), "
+        "ecommerce.flash_sale.scheduled (→ Calendar), inventory.restock_needed (→ Calendar), "
+        "supplychain.delivery.scheduled (→ Calendar), supplychain.po.review_needed (→ Calendar), "
+        "manufacturing.production.scheduled (→ Calendar), manufacturing.maintenance.scheduled (→ Calendar), "
+        "calendar.invite.received (→ Rule-based auto-accept/decline), "
+        "finance.cashflow_alert (→ Reschedule non-critical meetings)"
     )
+
+
+# ── Rule-Based Auto-Accept / Auto-Decline ─────────────────────────────────────
+
+@event_bus.on("calendar.invite.received")
+async def on_calendar_invite_received(payload: dict) -> None:
+    """
+    When a meeting invite is received, evaluate the user's CalendarRules
+    and auto-accept, auto-decline, or mark as tentative based on matching rules.
+
+    Payload keys:
+      - event_id (str): The CalendarEvent that was just created as an attendee entry
+      - organizer_id (int): User who sent the invite
+      - attendee_id (int): User receiving the invite
+      - daily_meeting_count (int, optional): pre-computed count for the day
+    """
+    from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+    from sqlalchemy import select, func  # noqa: PLC0415
+    from app.models.calendar import CalendarEvent, CalendarRule  # noqa: PLC0415
+
+    attendee_id: int | None = payload.get("attendee_id")
+    event_id: str | None = payload.get("event_id")
+    organizer_id: int | None = payload.get("organizer_id")
+    if not attendee_id or not event_id:
+        return
+
+    async with AsyncSessionLocal() as db:
+        # Load the event
+        event_res = await db.execute(
+            select(CalendarEvent).where(CalendarEvent.id == event_id)
+        )
+        event = event_res.scalar_one_or_none()
+        if not event:
+            return
+
+        # Load active rules for this attendee, ordered by priority (most specific first)
+        rules_res = await db.execute(
+            select(CalendarRule).where(
+                CalendarRule.user_id == attendee_id,
+                CalendarRule.is_active == True,  # noqa: E712
+                CalendarRule.rule_type.in_(["auto_accept", "auto_decline", "auto_tentative"]),
+            )
+        )
+        rules = rules_res.scalars().all()
+        if not rules:
+            return
+
+        # Count meetings already scheduled that day
+        event_date = event.start_time.date() if event.start_time else None
+        daily_count = 0
+        if event_date:
+            count_res = await db.execute(
+                select(func.count()).select_from(CalendarEvent).where(
+                    CalendarEvent.organizer_id == attendee_id,
+                    func.date(CalendarEvent.start_time) == event_date,
+                    CalendarEvent.status == "confirmed",
+                )
+            )
+            daily_count = count_res.scalar_one() or 0
+
+        # Evaluate each rule in order — first match wins
+        for rule in rules:
+            conditions: dict = rule.conditions or {}
+            matched = True
+
+            # Condition: max daily meetings
+            max_daily = conditions.get("max_daily_meetings")
+            if max_daily is not None and daily_count < int(max_daily):
+                pass  # under limit — condition does NOT block accept
+            elif max_daily is not None and daily_count >= int(max_daily):
+                if rule.rule_type == "auto_decline":
+                    matched = True
+                else:
+                    matched = False
+
+            # Condition: from_vip (organizer must be in user's VIP contact list)
+            if conditions.get("from_vip"):
+                from app.models.crm import Contact  # noqa: PLC0415
+                vip_res = await db.execute(
+                    select(Contact).where(
+                        Contact.user_id == attendee_id,
+                        Contact.linked_user_id == organizer_id,
+                        Contact.is_vip == True,  # noqa: E712
+                    )
+                )
+                if not vip_res.scalar_one_or_none():
+                    matched = False
+
+            # Condition: during_focus — check if event overlaps a FocusTimeBlock
+            if conditions.get("during_focus") is not None:
+                from app.models.calendar import FocusTimeBlock  # noqa: PLC0415
+                focus_res = await db.execute(
+                    select(FocusTimeBlock).where(
+                        FocusTimeBlock.user_id == attendee_id,
+                        FocusTimeBlock.is_active == True,  # noqa: E712
+                    )
+                )
+                focus_blocks = focus_res.scalars().all()
+                overlaps_focus = any(
+                    fb.start_time <= event.start_time and fb.end_time >= event.end_time
+                    for fb in focus_blocks
+                    if fb.start_time and fb.end_time and event.start_time and event.end_time
+                )
+                if conditions["during_focus"] and not overlaps_focus:
+                    matched = False
+                elif not conditions["during_focus"] and overlaps_focus:
+                    matched = False
+
+            if not matched:
+                continue
+
+            # Apply the rule action
+            actions: dict = rule.actions or {}
+            if rule.rule_type == "auto_accept":
+                event.status = "confirmed"
+                await db.commit()
+                logger.info("Rule '%s' auto-accepted event %s for user %s", rule.name, event_id, attendee_id)
+            elif rule.rule_type == "auto_decline":
+                event.status = "declined"
+                await db.commit()
+                logger.info("Rule '%s' auto-declined event %s for user %s", rule.name, event_id, attendee_id)
+            elif rule.rule_type == "auto_tentative":
+                event.status = "tentative"
+                await db.commit()
+                logger.info("Rule '%s' marked event %s tentative for user %s", rule.name, event_id, attendee_id)
+            break  # First matching rule wins
+
+
+# ── Cash-Flow Aware Rescheduling ─────────────────────────────────────────────
+
+@event_bus.on("finance.cashflow_alert")
+async def on_cashflow_alert_reschedule(payload: dict) -> None:
+    """
+    When Finance detects a cash-flow alert, auto-reschedule non-critical
+    internal meetings in the next 7 days to free up bandwidth for
+    revenue-critical client calls.
+
+    Payload keys:
+      - severity (str): 'warning' | 'critical'
+      - affected_user_ids (list[int]): users whose calendars to reschedule
+      - message (str): human-readable description of the alert
+    """
+    from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+    from sqlalchemy import select  # noqa: PLC0415
+    from app.models.calendar import CalendarEvent  # noqa: PLC0415
+
+    severity: str = payload.get("severity", "warning")
+    affected_user_ids: list[int] = payload.get("affected_user_ids", [])
+    alert_message: str = payload.get("message", "Cash-flow alert")
+
+    if not affected_user_ids:
+        logger.info("cashflow_alert received but no affected_user_ids — skipping")
+        return
+
+    # Only act on critical alerts to avoid over-rescheduling
+    if severity not in ("critical", "warning"):
+        return
+
+    now = datetime.now(timezone.utc)
+    window_end = now + timedelta(days=7)
+
+    async with AsyncSessionLocal() as db:
+        for user_id in affected_user_ids:
+            # Find non-critical internal meetings in the next 7 days
+            # "Internal" = no erp_context with client_id/deal_id, low priority
+            res = await db.execute(
+                select(CalendarEvent).where(
+                    CalendarEvent.organizer_id == user_id,
+                    CalendarEvent.start_time >= now,
+                    CalendarEvent.start_time <= window_end,
+                    CalendarEvent.status == "confirmed",
+                    CalendarEvent.event_type == "meeting",
+                    CalendarEvent.priority.in_(["low", "normal"]),  # type: ignore[arg-type]
+                ).limit(5)
+            )
+            meetings = res.scalars().all()
+
+            rescheduled = 0
+            for meeting in meetings:
+                # Skip meetings that have CRM/Finance context (revenue-linked)
+                ctx = meeting.erp_context or {}
+                if any(k in ctx for k in ("client_id", "deal_id", "invoice_id", "contact_id")):
+                    continue
+
+                # Mark as tentative + add note about cash-flow reschedule
+                meeting.status = "tentative"
+                existing_desc = meeting.description or ""
+                meeting.description = (
+                    f"{existing_desc}\n\n"
+                    f"[Auto-rescheduled] Cash-flow alert: {alert_message}. "
+                    f"This meeting was marked tentative to prioritise revenue-critical activities."
+                ).strip()
+                rescheduled += 1
+
+            if rescheduled:
+                await db.commit()
+                logger.info(
+                    "cashflow_alert: marked %d non-critical meetings tentative for user %d (severity=%s)",
+                    rescheduled, user_id, severity,
+                )

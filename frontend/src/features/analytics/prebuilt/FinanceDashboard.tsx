@@ -1,5 +1,6 @@
 import { useRevenueStats, useExpenseStats, useDashboardStats } from '../../../api/analytics'
-import { LineChart, BarChart, KPICard, PieChart } from '../../../components/charts'
+import ChartRenderer from '../../../components/charts/ChartRenderer'
+import { KPICard } from '../../../components/charts'
 import { Spinner } from '../../../components/ui'
 import DashboardHeader from './DashboardHeader'
 
@@ -23,7 +24,6 @@ export default function FinanceDashboard() {
   const s = stats ?? { revenue_mtd: 0, revenue_prev: 0, open_invoices: 0, active_employees: 0, active_projects: 0, deals_pipeline: 0 }
   const revChange = s.revenue_prev ? Math.round(((s.revenue_mtd - s.revenue_prev) / s.revenue_prev) * 100) : 0
 
-  // P&L trend data
   const revenuePoints = revenueData?.data ?? []
   const expensePoints = expenseData?.data ?? []
 
@@ -37,14 +37,12 @@ export default function FinanceDashboard() {
     }
   })
 
-  // Cash flow (simulated from revenue - expenses)
   let cumulativeCash = 0
   const cashFlowData = pnlData.map((d) => {
     cumulativeCash += d.Profit
     return { month: d.month, 'Cash Flow': cumulativeCash }
   })
 
-  // Expense distribution
   const totalExpenses = expensePoints.reduce((sum, e) => sum + e.expenses, 0)
   const expenseDistribution = [
     { name: 'Salaries', value: totalExpenses * 0.45 },
@@ -62,11 +60,7 @@ export default function FinanceDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard label="Revenue MTD" value={formatKSh(s.revenue_mtd)} change={revChange} color="#51459d" />
         <KPICard label="Open Invoices" value={s.open_invoices} color="#ffa21d" />
-        <KPICard
-          label="Total Expenses"
-          value={formatKSh(totalExpenses)}
-          color="#ff3a6e"
-        />
+        <KPICard label="Total Expenses" value={formatKSh(totalExpenses)} color="#ff3a6e" />
         <KPICard
           label="Net Profit"
           value={formatKSh(s.revenue_mtd - totalExpenses / (revenuePoints.length || 1))}
@@ -74,33 +68,41 @@ export default function FinanceDashboard() {
         />
       </div>
 
-      {/* Revenue & Expense Trend */}
+      {/* Revenue vs Expenses — grouped bar */}
       <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Revenue vs Expenses</h3>
         <p className="text-xs text-gray-400 mb-4">Monthly P&L trend</p>
-        <BarChart
+        <ChartRenderer
+          type="bar"
           data={pnlData}
-          bars={[
-            { dataKey: 'Revenue', color: '#51459d', name: 'Revenue' },
-            { dataKey: 'Expenses', color: '#ff3a6e', name: 'Expenses' },
-          ]}
-          xKey="month"
+          config={{
+            xKey: 'month',
+            yKeys: ['Revenue', 'Expenses'],
+            colors: ['#51459d', '#ff3a6e'],
+            showGrid: true,
+            showLegend: true,
+          }}
           height={280}
-          formatTooltip={(v) => formatKSh(v)}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* P&L Trend Line */}
+        {/* Profit Trend */}
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Profit Trend</h3>
           <p className="text-xs text-gray-400 mb-4">Net profit over time</p>
-          <LineChart
+          <ChartRenderer
+            type="area"
             data={pnlData}
-            lines={[{ dataKey: 'Profit', color: '#6fd943', name: 'Net Profit' }]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['Profit'],
+              colors: ['#6fd943'],
+              smooth: true,
+              areaFill: true,
+              showGrid: true,
+            }}
             height={240}
-            formatTooltip={(v) => formatKSh(v)}
           />
         </div>
 
@@ -108,25 +110,34 @@ export default function FinanceDashboard() {
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Cash Flow</h3>
           <p className="text-xs text-gray-400 mb-4">Cumulative cash position</p>
-          <LineChart
+          <ChartRenderer
+            type="area"
             data={cashFlowData}
-            lines={[{ dataKey: 'Cash Flow', color: '#3ec9d6', name: 'Cash Flow' }]}
-            xKey="month"
+            config={{
+              xKey: 'month',
+              yKeys: ['Cash Flow'],
+              colors: ['#3ec9d6'],
+              smooth: true,
+              areaFill: true,
+            }}
             height={240}
-            formatTooltip={(v) => formatKSh(v)}
           />
         </div>
       </div>
 
-      {/* Expense Distribution */}
+      {/* Expense Distribution — donut */}
       <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-[10px] p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Expense Distribution</h3>
         <p className="text-xs text-gray-400 mb-4">Breakdown by category</p>
-        <PieChart
+        <ChartRenderer
+          type="donut"
           data={expenseDistribution}
-          innerRadius={60}
+          config={{
+            nameKey: 'name',
+            valueKey: 'value',
+            showLegend: true,
+          }}
           height={280}
-          formatTooltip={(v) => formatKSh(v)}
         />
       </div>
     </div>

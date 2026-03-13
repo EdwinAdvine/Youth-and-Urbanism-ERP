@@ -8,7 +8,7 @@ from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Te
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, OptimisticLockMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class TicketCategory(Base, UUIDPrimaryKeyMixin, TimestampMixin):
@@ -30,7 +30,7 @@ class TicketCategory(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         return f"<TicketCategory id={self.id} name={self.name!r}>"
 
 
-class Ticket(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+class Ticket(OptimisticLockMixin, Base, UUIDPrimaryKeyMixin, TimestampMixin):
     """A customer support ticket."""
 
     __tablename__ = "tickets"

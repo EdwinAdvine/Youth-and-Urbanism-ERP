@@ -1,5 +1,4 @@
 """E-Commerce Extended API — cart, checkout, coupons, shipping, reviews, wishlist, reports."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone

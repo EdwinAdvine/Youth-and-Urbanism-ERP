@@ -1,5 +1,4 @@
 """HR Employee Engagement API — Surveys (eNPS / pulse / exit) + Recognition."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone

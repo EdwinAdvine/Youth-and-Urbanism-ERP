@@ -1,5 +1,4 @@
 """Projects API — Custom field definitions and task field values."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime

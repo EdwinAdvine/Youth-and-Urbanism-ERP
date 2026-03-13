@@ -1,5 +1,4 @@
 """E-Commerce Import API — upload import files and track background import jobs."""
-from __future__ import annotations
 
 import io
 import uuid

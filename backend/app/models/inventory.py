@@ -21,7 +21,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, OptimisticLockMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 # ── Phase 1 forward declarations (avoid circular) ─────────────────────────────
 # SerialNumber, UnitOfMeasure, UoMConversion, BlanketOrder added below
@@ -47,7 +47,7 @@ class Warehouse(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 
 # ── InventoryItem ─────────────────────────────────────────────────────────────
-class InventoryItem(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class InventoryItem(OptimisticLockMixin, UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Stockable item / product."""
 
     __tablename__ = "inventory_items"
@@ -95,7 +95,7 @@ class InventoryItem(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 
 # ── StockLevel ────────────────────────────────────────────────────────────────
-class StockLevel(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class StockLevel(OptimisticLockMixin, UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Current quantity of an item in a specific warehouse."""
 
     __tablename__ = "inventory_stock_levels"
@@ -157,7 +157,7 @@ class StockMovement(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 
 # ── PurchaseOrder ─────────────────────────────────────────────────────────────
-class PurchaseOrder(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class PurchaseOrder(OptimisticLockMixin, UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Purchase order header."""
 
     __tablename__ = "inventory_purchase_orders"

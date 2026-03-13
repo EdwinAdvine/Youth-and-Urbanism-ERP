@@ -18,11 +18,11 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, OptimisticLockMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 # ── POS Session ──────────────────────────────────────────────────────────────
-class POSSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class POSSession(OptimisticLockMixin, UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """A cashier shift / register session."""
 
     __tablename__ = "pos_sessions"

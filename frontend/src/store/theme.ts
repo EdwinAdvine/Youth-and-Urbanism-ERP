@@ -35,13 +35,13 @@ export const useThemeStore = create<ThemeState>()(
         return theme === 'system' ? getSystemTheme() : theme
       },
     }),
-    { name: 'urban-erp-theme' }
+    { name: 'urban-vibes-dynamics-theme' }
   )
 )
 
 // Apply theme on store hydration
 export function initTheme() {
-  const stored = localStorage.getItem('urban-erp-theme')
+  const stored = localStorage.getItem('urban-vibes-dynamics-theme')
   const theme: Theme = stored ? (JSON.parse(stored)?.state?.theme ?? 'light') : 'light'
   applyTheme(theme)
   // Watch for system preference changes when in 'system' mode

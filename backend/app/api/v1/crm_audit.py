@@ -1,5 +1,4 @@
 """CRM Audit Log — endpoints for viewing and recording CRM entity audit trails."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timedelta, timezone

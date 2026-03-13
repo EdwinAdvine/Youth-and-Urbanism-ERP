@@ -1,3 +1,20 @@
+/**
+ * CRM Custom Objects API client — user-defined entity types and their records.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the CRM custom
+ * objects feature. All requests go through `client.ts` (Axios instance with
+ * auth interceptors). Backend prefix: `/api/v1/crm`.
+ *
+ * Key exports:
+ *   - useCustomObjects() — list all custom object definitions
+ *   - useCreateCustomObject() / useUpdateCustomObject() / useDeleteCustomObject() — definition mutations
+ *   - useCustomObjectRecords() — list records for a given definition
+ *   - useCreateCustomObjectRecord() / useUpdateCustomObjectRecord() — record mutations
+ *   - useCustomObjectRelationships() / useCreateRelationship() — link records to CRM entities
+ *
+ * Note: field schema (CustomObjectField[]) is stored as JSON on each definition.
+ * Records hold arbitrary key/value data conforming to that schema.
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

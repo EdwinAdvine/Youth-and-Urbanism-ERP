@@ -1,5 +1,4 @@
 """Supply Chain API — Suppliers, Requisitions, GRNs, Returns, Dashboard."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime

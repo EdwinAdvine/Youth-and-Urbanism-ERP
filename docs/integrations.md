@@ -1,6 +1,6 @@
 # Integration Guide
 
-Urban ERP integrates five open-source services, all running internally within the Docker Compose stack. No external API calls are made — every service communicates over the internal Docker network.
+Urban Vibes Dynamics integrates five open-source services, all running internally within the Docker Compose stack. No external API calls are made — every service communicates over the internal Docker network.
 
 ---
 
@@ -55,7 +55,7 @@ Our FastAPI backend acts as a proxy and synchronizer:
 - JMAP used for efficient mailbox operations
 
 **Calendar (CalDAV):**
-- Calendar events created in Urban ERP are pushed to Stalwart via CalDAV
+- Calendar events created in Urban Vibes Dynamics are pushed to Stalwart via CalDAV
 - Stalwart acts as the CalDAV backend for external calendar app sync (Apple Calendar, Thunderbird, etc.)
 - Bi-directional sync via Celery beat schedule
 
@@ -107,7 +107,7 @@ Full Microsoft Office-compatible document editing with real-time collaboration. 
 ### How We Integrate
 
 **Document Flow:**
-1. User creates/opens document via Urban ERP frontend
+1. User creates/opens document via Urban Vibes Dynamics frontend
 2. Backend generates a JWT-signed editing URL
 3. Frontend embeds ONLYOFFICE editor via JS SDK (internal URL)
 4. Documents stored in MinIO, referenced by `DocLink` model
@@ -156,7 +156,7 @@ Video conferencing with screen sharing, recording, and chat — a self-hosted Mi
 ### How We Integrate
 
 **Meeting Lifecycle:**
-1. User creates meeting via Urban ERP
+1. User creates meeting via Urban Vibes Dynamics
 2. Backend generates unique Jitsi room name + JWT token
 3. `meeting.created` event fires → calendar event auto-created
 4. Meeting link emailed to attendees via Stalwart
@@ -212,7 +212,7 @@ jitsi-jvb:
 
 ### What It Does
 
-S3-compatible object storage for all file operations. Every file in Urban ERP ultimately lives in MinIO.
+S3-compatible object storage for all file operations. Every file in Urban Vibes Dynamics ultimately lives in MinIO.
 
 ### How We Integrate
 
@@ -236,7 +236,7 @@ S3-compatible object storage for all file operations. Every file in Urban ERP ul
 MINIO_ENDPOINT=minio:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
-MINIO_BUCKET=urban-erp
+MINIO_BUCKET=urban-vibes-dynamics
 ```
 
 ### Docker Setup
@@ -279,7 +279,7 @@ Adds SharePoint-level sharing capabilities beyond what MinIO provides:
 - `ShareAuditLog` — every share action logged
 
 **Flow:**
-1. User creates share in Urban ERP UI (ShareDialog component)
+1. User creates share in Urban Vibes Dynamics UI (ShareDialog component)
 2. Backend creates share record in PostgreSQL
 3. Backend calls Nextcloud OCS API to create matching share
 4. Recipients access via share link → routed through our backend for audit
@@ -325,7 +325,7 @@ Business intelligence platform providing interactive dashboards and SQL-based an
 ### How We Integrate
 
 **Direct Database Access:**
-Superset connects directly to Urban ERP's PostgreSQL database — no API layer needed. This provides real-time access to all module data.
+Superset connects directly to Urban Vibes Dynamics's PostgreSQL database — no API layer needed. This provides real-time access to all module data.
 
 **Embedded Dashboards:**
 The frontend analytics page embeds Superset dashboards in an iframe (internal URL only).

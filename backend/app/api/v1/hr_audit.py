@@ -1,5 +1,4 @@
 """HR Audit API — field-level change tracking and sensitive access logs."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime

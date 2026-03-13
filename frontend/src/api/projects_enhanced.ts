@@ -1,3 +1,17 @@
+/**
+ * Projects Enhanced API client — subtasks, checklists, task reparenting, and
+ * nested hierarchy management.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Projects
+ * module's enhanced task features. All requests go through `client.ts` (Axios
+ * instance with auth interceptors). Backend prefix: `/api/v1/projects`.
+ *
+ * Key exports:
+ *   - useSubtasks() / useCreateSubtask() — nested subtask management
+ *   - useReparentTask() — move a task under a different parent
+ *   - useChecklists() / useCreateChecklistItem() — task checklist with progress
+ *   - useUpdateChecklistItem() / useDeleteChecklistItem() — checklist item CRUD
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

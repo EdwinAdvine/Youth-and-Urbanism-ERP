@@ -1,16 +1,16 @@
-from __future__ import annotations
 
 import json
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Query, Request, WebSocket, WebSocketDisconnect
 from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import CurrentUser
+from app.core.rate_limit import limiter
 from app.core.security import decode_token
 from app.models.ai import AIChatHistory
 from app.models.user import User
@@ -26,7 +26,9 @@ router = APIRouter()
 
 # ── REST chat ─────────────────────────────────────────────────────────────────
 @router.post("/chat", response_model=ChatResponse, summary="Send a chat message to the AI")
+@limiter.limit("30/minute")
 async def chat(
+    request: Request,
     payload: ChatMessage,
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),

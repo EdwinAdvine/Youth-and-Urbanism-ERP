@@ -1,4 +1,28 @@
+/**
+ * Inventory API client — warehouses, inventory items, stock levels, movements,
+ * purchase orders, and reorder alerts.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Inventory
+ * module. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/inventory`.
+ *
+ * Key exports:
+ *   - useWarehouses() / useCreateWarehouse() — warehouse CRUD
+ *   - useInventoryItems() / useInventoryItem() / useCreateItem() — item catalogue
+ *   - useStockLevels() — per-warehouse quantity-on-hand and availability
+ *   - useStockMovements() — inbound/outbound movement history
+ *   - usePurchaseOrders() / useCreatePurchaseOrder() — PO lifecycle management
+ *   - useReorderAlerts() — items below reorder threshold
+ *   - useInventoryStats() — dashboard totals (value, low-stock count, pending POs)
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  REFERENCE_PRESET,
+  LIST_PRESET,
+  DETAIL_PRESET,
+  DASHBOARD_PRESET,
+} from '@/utils/queryDefaults'
+import { optimisticListUpdate, optimisticDelete } from '@/utils/optimisticMutation'
 import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -190,6 +214,7 @@ export function useWarehouses() {
       const { data } = await apiClient.get<Warehouse[]>('/inventory/warehouses')
       return data
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -234,6 +259,7 @@ export function useInventoryItems(params: { search?: string; category?: string; 
       const { data } = await apiClient.get<PaginatedResponse<InventoryItem>>('/inventory/items', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -245,6 +271,7 @@ export function useInventoryItem(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -266,7 +293,12 @@ export function useUpdateItem() {
       const { data } = await apiClient.put<InventoryItem>(`/inventory/items/${id}`, payload)
       return data
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'items'] }),
+    ...optimisticListUpdate(
+      qc,
+      ['inventory', 'items'],
+      (list: InventoryItem[], updated: UpdateItemPayload) =>
+        list.map(item => item.id === updated.id ? { ...item, ...updated } : item),
+    ),
   })
 }
 
@@ -276,7 +308,7 @@ export function useDeleteItem() {
     mutationFn: async (id: string) => {
       await apiClient.delete(`/inventory/items/${id}`)
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', 'items'] }),
+    ...optimisticDelete<InventoryItem[], InventoryItem>(qc, ['inventory', 'items'], item => item.id),
   })
 }
 
@@ -289,6 +321,7 @@ export function useStockLevels(params: { item_id?: string; warehouse_id?: string
       const { data } = await apiClient.get<{ total: number; stock_levels: StockLevel[] }>('/inventory/stock-levels', { params })
       return data.stock_levels
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -301,6 +334,7 @@ export function useStockMovements(params: { movement_type?: string; search?: str
       const { data } = await apiClient.get<{ total: number; stock_movements: StockMovement[] }>('/inventory/stock-movements', { params })
       return { total: data.total, items: data.stock_movements } as PaginatedResponse<StockMovement>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -328,6 +362,7 @@ export function usePurchaseOrders(params: { status?: string } = {}) {
       const { data } = await apiClient.get<{ total: number; purchase_orders: PurchaseOrder[] }>('/inventory/purchase-orders', { params })
       return { total: data.total, items: data.purchase_orders } as PaginatedResponse<PurchaseOrder>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -339,6 +374,7 @@ export function usePurchaseOrderDetail(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -405,6 +441,7 @@ export function useReorderAlerts() {
       const { data } = await apiClient.get<ReorderAlert[]>('/inventory/reorder-alerts')
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -417,6 +454,7 @@ export function useInventoryStats() {
       const { data } = await apiClient.get<InventoryStats>('/inventory/dashboard/stats')
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -458,6 +496,7 @@ export function useSuppliers(params: { search?: string; is_active?: boolean } = 
       const { data } = await apiClient.get<{ suppliers: Supplier[] }>('/inventory/suppliers', { params })
       return data.suppliers
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -530,6 +569,7 @@ export function useStockAdjustments(params: { item_id?: string; warehouse_id?: s
       const { data } = await apiClient.get<{ total: number; stock_adjustments: StockAdjustment[] }>('/inventory/stock-adjustments', { params })
       return data.stock_adjustments
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -558,6 +598,7 @@ export function useItemHistory(itemId: string) {
       return data.movements
     },
     enabled: !!itemId,
+    ...LIST_PRESET,
   })
 }
 
@@ -586,6 +627,7 @@ export function useInventoryValuation(params: { warehouse_id?: string } = {}) {
       const { data } = await apiClient.get<{ warehouses: InventoryValuation[]; grand_total: number }>('/inventory/valuation', { params })
       return data.warehouses
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -637,6 +679,7 @@ export function useInventoryCounts(params: { warehouse_id?: string; status?: Cou
       const { data } = await apiClient.get<{ counts: InventoryCount[] }>('/inventory/counts', { params })
       return data.counts
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -699,6 +742,7 @@ export function useTurnoverReport(params: { period_start?: string; period_end?: 
       const { data } = await apiClient.get<TurnoverReport>('/inventory/reports/turnover', { params })
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -709,6 +753,7 @@ export function useAgingReport() {
       const { data } = await apiClient.get<AgingReport>('/inventory/reports/aging')
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -751,6 +796,7 @@ export function useItemVariants(itemId: string) {
       return data.variants
     },
     enabled: !!itemId,
+    ...LIST_PRESET,
   })
 }
 
@@ -818,6 +864,7 @@ export function useItemBatches(params: { item_id?: string; warehouse_id?: string
       const { data } = await apiClient.get<{ total: number; batches: BatchNumber[] }>('/inventory/batches', { params })
       return data.batches
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -919,6 +966,7 @@ export function useUoM() {
       const { data } = await apiClient.get<UnitOfMeasure[]>('/inventory/uom')
       return data
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -940,6 +988,7 @@ export function useUoMConversions(itemId?: string) {
       const { data } = await apiClient.get<UoMConversion[]>('/inventory/uom/conversions', { params: itemId ? { item_id: itemId } : {} })
       return data
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -950,6 +999,7 @@ export function useSerialNumbers(params: { item_id?: string; status?: string; wa
       const { data } = await apiClient.get<SerialNumber[]>('/inventory/serials', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -982,6 +1032,7 @@ export function useBlanketOrders(status?: string) {
       const { data } = await apiClient.get<BlanketOrder[]>('/inventory/blanket-orders', { params: status ? { status } : {} })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1084,6 +1135,7 @@ export function useWarehouseZones(warehouseId: string) {
       return data
     },
     enabled: !!warehouseId,
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -1106,6 +1158,7 @@ export function useWarehouseBins(zoneId: string) {
       return data
     },
     enabled: !!zoneId,
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -1128,6 +1181,7 @@ export function useBinContents(binId: string) {
       return data
     },
     enabled: !!binId,
+    ...LIST_PRESET,
   })
 }
 
@@ -1138,6 +1192,7 @@ export function usePutawayRules(warehouseId?: string) {
       const { data } = await apiClient.get<PutawayRule[]>('/inventory/putaway-rules', { params: warehouseId ? { warehouse_id: warehouseId } : {} })
       return data
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -1159,6 +1214,7 @@ export function usePickLists(params: { warehouse_id?: string; status?: string } 
       const { data } = await apiClient.get<PickList[]>('/inventory/pick-lists', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1221,6 +1277,7 @@ export function usePurchaseSuggestions(status = 'pending') {
       const { data } = await apiClient.get<PurchaseSuggestion[]>('/inventory/purchase-suggestions', { params: { status } })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1264,6 +1321,7 @@ export function useABCAnalysis(warehouseId?: string) {
       const { data } = await apiClient.get<ItemClassification[]>('/inventory/abc-analysis', { params: warehouseId ? { warehouse_id: warehouseId } : {} })
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -1285,6 +1343,7 @@ export function useOverstockAlerts() {
       const { data } = await apiClient.get<{ item_id: string; item_name: string; sku: string; quantity_on_hand: number; max_stock_level: number; excess: number }[]>('/inventory/overstock-alerts')
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1350,6 +1409,7 @@ export function useKits() {
       const { data } = await apiClient.get<Kit[]>('/inventory/kits')
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1371,6 +1431,7 @@ export function useSupplierPrices(params: { item_id?: string; supplier_id?: stri
       const { data } = await apiClient.get<SupplierPrice[]>('/inventory/supplier-prices', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1392,6 +1453,7 @@ export function useLandedCosts() {
       const { data } = await apiClient.get<LandedCostVoucher[]>('/inventory/landed-costs')
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1460,6 +1522,7 @@ export function useCostingConfigs() {
       const { data } = await apiClient.get<CostingConfig[]>('/inventory/costing-config')
       return data
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -1481,6 +1544,7 @@ export function useCostLayers(params: { item_id?: string; warehouse_id?: string 
       const { data } = await apiClient.get<CostLayer[]>('/inventory/cost-layers', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1491,6 +1555,7 @@ export function useProfitabilityReport() {
       const { data } = await apiClient.get<{ item_id: string; sku: string; name: string; cost_price: number; selling_price: number; margin: number; margin_pct: number }[]>('/inventory/profitability')
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -1501,6 +1566,7 @@ export function useInventoryAuditTrail(params: { entity_type?: string; entity_id
       const { data } = await apiClient.get<InventoryAuditEntry[]>('/inventory/audit-trail', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1527,6 +1593,7 @@ export function useAutomationRules() {
       const { data } = await apiClient.get<InventoryAutomationRule[]>('/inventory/automation-rules')
       return data
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -1569,6 +1636,7 @@ export function useInventoryInsights() {
       const { data } = await apiClient.get<{ generated_at: string; summary: Record<string, number>; insights: { type: string; message: string }[] }>('/inventory/forecast/insights')
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -1580,5 +1648,6 @@ export function useDemandForecast(itemId: string, periods = 3) {
       return data
     },
     enabled: !!itemId,
+    ...DASHBOARD_PRESET,
   })
 }

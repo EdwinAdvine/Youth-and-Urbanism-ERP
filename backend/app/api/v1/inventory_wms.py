@@ -1,5 +1,4 @@
 """Inventory Phase 2 — Warehouse Management System (zones, bins, putaway, pick-pack-ship)."""
-from __future__ import annotations
 
 import uuid
 import secrets

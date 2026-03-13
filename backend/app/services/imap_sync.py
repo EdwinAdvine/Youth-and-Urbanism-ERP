@@ -268,10 +268,11 @@ async def sync_account(db: AsyncSession, account_id: uuid.UUID) -> dict[str, Any
     port = account.imap_port
     email_addr = account.email
 
-    # Decrypt password / extract from OAuth tokens
+    # Decrypt password from encrypted storage
     password = ""
-    if account.oauth_tokens and isinstance(account.oauth_tokens, dict):
-        password = account.oauth_tokens.get("password", "")
+    if account.password_encrypted:
+        from app.core.security import decrypt_field
+        password = decrypt_field(account.password_encrypted)
 
     if not host or not password:
         return {"synced": 0, "errors": 0, "error": "Missing IMAP credentials"}

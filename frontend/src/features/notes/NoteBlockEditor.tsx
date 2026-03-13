@@ -13,7 +13,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
-import { BubbleMenu } from '@tiptap/react/menus'
+
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import Link from '@tiptap/extension-link'
@@ -35,7 +35,6 @@ import Focus from '@tiptap/extension-focus'
 import Typography from '@tiptap/extension-typography'
 import Superscript from '@tiptap/extension-superscript'
 import Subscript from '@tiptap/extension-subscript'
-import Mention from '@tiptap/extension-mention'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -243,7 +242,7 @@ function ToolbarSep() {
 
 export default function NoteBlockEditor({
   content = '',
-  contentFormat = 'html',
+  contentFormat: _contentFormat = 'html',
   onChange,
   onWordCountChange,
   placeholder = 'Start writing, or press / for commands...',
@@ -472,36 +471,6 @@ export default function NoteBlockEditor({
             </ToolbarBtn>
           </div>
         </div>
-      )}
-
-      {/* Bubble Menu (appears on text selection) */}
-      {editor && editable && (
-        <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
-          <div className="flex items-center gap-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[8px] shadow-lg px-1 py-0.5">
-            <ToolbarBtn active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} title="Bold">
-              <span className="text-xs font-bold">B</span>
-            </ToolbarBtn>
-            <ToolbarBtn active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} title="Italic">
-              <span className="text-xs italic font-serif">I</span>
-            </ToolbarBtn>
-            <ToolbarBtn active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()} title="Underline">
-              <span className="text-xs underline">U</span>
-            </ToolbarBtn>
-            <ToolbarBtn active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()} title="Strikethrough">
-              <span className="text-xs line-through">S</span>
-            </ToolbarBtn>
-            <ToolbarSep />
-            <ToolbarBtn active={editor.isActive('code')} onClick={() => editor.chain().focus().toggleCode().run()} title="Inline code">
-              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="16,18 22,12 16,6" /><polyline points="8,6 2,12 8,18" /></svg>
-            </ToolbarBtn>
-            <ToolbarBtn active={editor.isActive('link')} onClick={setLink} title="Link">
-              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>
-            </ToolbarBtn>
-            <ToolbarBtn active={editor.isActive('highlight')} onClick={() => editor.chain().focus().toggleHighlight({ color: '#fef08a' }).run()} title="Highlight">
-              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
-            </ToolbarBtn>
-          </div>
-        </BubbleMenu>
       )}
 
       {/* Editor Content */}

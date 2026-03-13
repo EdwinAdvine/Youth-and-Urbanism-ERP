@@ -1,3 +1,18 @@
+/**
+ * Cross-Module Links API client — relationship endpoints that span multiple ERP modules.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefixes: `/api/v1/crm`, `/api/v1/pos`, `/api/v1/ecommerce`, `/api/v1/supply-chain`.
+ *
+ * Key exports:
+ *   - useCRMContactByEmail()     — look up a CRM contact from any module via email
+ *   - usePurchaseHistory()       — CRM contact's POS transaction history
+ *   - useSendEmailReceipt()      — trigger a receipt email from POS via the mail module
+ *   - useCreateProcurementOrder() — create a supply-chain PO from an e-commerce low-stock event
+ *   - useLinkedProjects()        — list projects linked to a CRM deal or contact
+ *   - useLinkedDriveFolder()     — resolve the Drive folder attached to a project or deal
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

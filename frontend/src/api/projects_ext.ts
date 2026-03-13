@@ -1,3 +1,20 @@
+/**
+ * Projects Extended API client — task dependencies, milestones, attachments,
+ * templates, Gantt data, project reports, and cross-module integrations
+ * (CRM deals, Finance expenses, Drive folders, Docs, Mail).
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Projects
+ * module's extended features. All requests go through `client.ts` (Axios
+ * instance with auth interceptors). Backend prefix: `/api/v1/projects`.
+ *
+ * Key exports:
+ *   - useTaskDependencies() / useCreateDependency() — finish-to-start and other dependency types
+ *   - useMilestones() / useCreateMilestone() — extended milestone management
+ *   - useTaskAttachments() / useUploadAttachment() — file attachments via MinIO
+ *   - useProjectTemplates() / useApplyTemplate() — project template application
+ *   - useGanttData() — Gantt chart task timeline data
+ *   - useProjectReport() — burndown, workload, and completion metrics
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

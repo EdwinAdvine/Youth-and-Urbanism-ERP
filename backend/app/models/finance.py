@@ -1,4 +1,26 @@
-"""Finance models — double-entry accounting, invoicing, payments."""
+"""Finance models — double-entry accounting, invoicing, and payments.
+
+Implements the core data layer for the Finance module. All financial activity
+creates Journal Entries with balanced debit/credit lines.
+
+Key accounting relationships:
+    Invoice → InvoiceLineItem (one-to-many)
+    Invoice → Payment (one-to-many via invoice_id)
+    Payment → JournalEntry (one-to-one — payment posts a journal entry)
+    JournalEntry → JournalLine (one-to-many, must balance: sum(debit)==sum(credit))
+    Account → JournalLine (one-to-many — each account accumulates transactions)
+
+Account types:
+    asset      — things the business owns (bank, receivables, inventory)
+    liability  — things the business owes (payables, loans, tax due)
+    equity     — owner's interest (retained earnings, paid-in capital)
+    revenue    — income from operations (sales, service fees)
+    expense    — costs of running the business (COGS, rent, salaries)
+
+Tables: finance_accounts, finance_journal_entries, finance_journal_lines,
+        finance_invoices, finance_invoice_items, finance_payments,
+        finance_tax_rates, finance_budgets, finance_budget_lines
+"""
 from __future__ import annotations
 
 import uuid
@@ -19,7 +41,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, OptimisticLockMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class Account(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -44,7 +66,7 @@ class Account(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     journal_lines = relationship("JournalLine", back_populates="account")
 
 
-class JournalEntry(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class JournalEntry(OptimisticLockMixin, UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Double-entry journal entry (header)."""
 
     __tablename__ = "finance_journal_entries"
@@ -82,7 +104,7 @@ class JournalLine(UUIDPrimaryKeyMixin, Base):
     account = relationship("Account", back_populates="journal_lines")
 
 
-class Invoice(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class Invoice(OptimisticLockMixin, UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Sales or purchase invoice."""
 
     __tablename__ = "finance_invoices"
@@ -133,7 +155,7 @@ class Payment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
 
-class Budget(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class Budget(OptimisticLockMixin, UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Budget allocation for a fiscal year."""
     __tablename__ = "finance_budgets"
 
@@ -230,7 +252,7 @@ class Expense(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     mileage_rate: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True)
 
 
-class VendorBill(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class VendorBill(OptimisticLockMixin, UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Bill from a vendor / supplier."""
     __tablename__ = "finance_vendor_bills"
 

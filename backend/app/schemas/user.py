@@ -40,10 +40,12 @@ class UserResponse(BaseModel):
 
 
 class UserMeResponse(UserResponse):
-    """Extended response for /auth/me with computed role and app-admin scopes."""
+    """Extended response for /auth/me with computed role, app-admin scopes, app access and permissions."""
 
     role: str  # "superadmin" | "admin" | "user"
     app_admin_scopes: list[str] = []  # e.g. ["finance", "hr"]
+    app_access: list[str] = []        # apps the user has explicit access to
+    permissions: list[str] = []       # all resolved permission names via roles
 
 
 # ── Role ─────────────────────────────────────────────────────────────────────
@@ -141,3 +143,40 @@ class TeamResponse(BaseModel):
 class AddTeamMemberRequest(BaseModel):
     user_id: uuid.UUID
     role_in_team: str | None = None
+
+
+# ── App Access ────────────────────────────────────────────────────────────────
+class AppAccessEntry(BaseModel):
+    app_name: str
+    granted: bool
+
+    model_config = {"from_attributes": True}
+
+
+class AppAccessBulkUpdate(BaseModel):
+    app_grants: dict[str, bool]  # {"finance": True, "hr": False}
+
+
+# ── Audit Log ─────────────────────────────────────────────────────────────────
+class AuditLogResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID | None
+    user_email: str | None
+    action: str
+    resource_type: str | None
+    resource_id: str | None
+    metadata_: dict | None = None
+    ip_address: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True, "populate_by_name": True}
+
+
+# ── Role + Permissions ────────────────────────────────────────────────────────
+class RoleWithPermissionsResponse(RoleResponse):
+    permissions: list[PermissionResponse] = []
+
+
+class BulkPermissionAssign(BaseModel):
+    permission_ids: list[uuid.UUID]
+    replace: bool = False

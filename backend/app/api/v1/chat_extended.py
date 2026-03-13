@@ -3,7 +3,6 @@
 Calling, webhooks, slash commands, channel templates, shared channels,
 transcription, whiteboards, compliance, live events, decisions, analytics.
 """
-from __future__ import annotations
 
 import secrets
 import uuid

@@ -32,6 +32,10 @@ async def send_email(
     in_reply_to: str | None = None,
     references: str | None = None,
     from_name: str | None = None,
+    smtp_host: str | None = None,
+    smtp_port: int | None = None,
+    smtp_user: str | None = None,
+    smtp_password: str | None = None,
 ) -> dict[str, Any]:
     """Send an email via the configured SMTP server.
 
@@ -120,15 +124,21 @@ async def send_email(
         if bcc:
             all_recipients.extend(bcc)
 
+        # Resolve SMTP credentials (per-account overrides global settings)
+        _host = smtp_host or settings.SMTP_HOST
+        _port = smtp_port or settings.SMTP_PORT
+        _user = smtp_user or settings.SMTP_USER or None
+        _pass = smtp_password or settings.SMTP_PASSWORD or None
+
         # Send via SMTP
         await aiosmtplib.send(
             msg,
-            hostname=settings.SMTP_HOST,
-            port=settings.SMTP_PORT,
-            username=settings.SMTP_USER or None,
-            password=settings.SMTP_PASSWORD or None,
+            hostname=_host,
+            port=_port,
+            username=_user,
+            password=_pass,
             use_tls=settings.SMTP_USE_TLS,
-            start_tls=not settings.SMTP_USE_TLS and settings.SMTP_PORT in (587,),
+            start_tls=not settings.SMTP_USE_TLS and _port in (587,),
             recipients=all_recipients,
         )
 

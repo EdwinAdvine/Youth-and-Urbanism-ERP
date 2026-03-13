@@ -19,7 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, OptimisticLockMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 # ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ class Lead(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     opportunities = relationship("Opportunity", back_populates="lead")
 
 
-class Opportunity(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class Opportunity(OptimisticLockMixin, UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Sales opportunity — qualified lead progressing through a pipeline."""
 
     __tablename__ = "crm_opportunities"
@@ -142,7 +142,7 @@ class Opportunity(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     pipeline = relationship("Pipeline", back_populates="opportunities")
 
 
-class Deal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class Deal(OptimisticLockMixin, UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Closed deal — won opportunity."""
 
     __tablename__ = "crm_deals"
@@ -223,7 +223,7 @@ class CRMProduct(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class Quote(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class Quote(OptimisticLockMixin, UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Sales quote tied to a deal/contact."""
 
     __tablename__ = "crm_quotes"

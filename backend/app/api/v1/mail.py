@@ -5,7 +5,6 @@ Messages are stored in the ``mailbox_messages`` table and sent via the
 
 Enhanced with: inbox rules, signatures, read receipts, AI reply suggestions.
 """
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
@@ -37,6 +36,7 @@ class SendMessagePayload(BaseModel):
     signature_id: str | None = None
     request_read_receipt: bool = False
     attachments: list[dict] | None = None
+    account_id: str | None = None  # Send from a specific mail account
 
 
 class RuleCreate(BaseModel):
@@ -195,6 +195,7 @@ async def list_messages(
     folder: str = Query("INBOX", description="Folder name"),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
+    account_id: str | None = Query(None, description="Filter to a specific mail account"),
 ) -> dict[str, Any]:
     from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
 
@@ -206,6 +207,10 @@ async def list_messages(
         MailboxMessage.folder == folder_filter,
         MailboxMessage.is_deleted.is_(False),
     )
+
+    # Filter by specific account if requested
+    if account_id:
+        base_q = base_q.where(MailboxMessage.account_id == uuid.UUID(account_id))
 
     # Total count
     count_result = await db.execute(
@@ -255,7 +260,35 @@ async def send_email(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
-    from_email = _user_email(current_user)
+    from app.integrations.smtp_client import send_email as smtp_send  # noqa: PLC0415
+    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
+
+    # Resolve per-account SMTP credentials if account_id provided
+    account_smtp_kwargs: dict[str, Any] = {}
+    resolved_account_id = None
+    if payload.account_id:
+        from app.core.security import decrypt_field  # noqa: PLC0415
+        from app.models.mail_advanced import MailAccount  # noqa: PLC0415
+
+        acct_result = await db.execute(
+            select(MailAccount).where(
+                MailAccount.id == uuid.UUID(payload.account_id),
+                MailAccount.user_id == current_user.id,
+            )
+        )
+        acct = acct_result.scalar_one_or_none()
+        if not acct:
+            raise HTTPException(status_code=404, detail="Mail account not found")
+        from_email = acct.email
+        account_smtp_kwargs = {
+            "smtp_host": acct.smtp_host,
+            "smtp_port": acct.smtp_port,
+            "smtp_user": acct.email,
+            "smtp_password": decrypt_field(acct.password_encrypted) if acct.password_encrypted else None,
+        }
+        resolved_account_id = acct.id
+    else:
+        from_email = _user_email(current_user)
 
     # Append signature
     body, html_body = await _append_signature(
@@ -263,9 +296,6 @@ async def send_email(
     )
 
     # Built-in SMTP sending
-    from app.integrations.smtp_client import send_email as smtp_send  # noqa: PLC0415
-    from app.models.mail_storage import MailboxMessage  # noqa: PLC0415
-
     result = await smtp_send(
         from_addr=from_email,
         to_addrs=[str(addr) for addr in payload.to],
@@ -277,6 +307,7 @@ async def send_email(
         in_reply_to=payload.in_reply_to,
         references=payload.references,
         from_name=getattr(current_user, "full_name", None),
+        **account_smtp_kwargs,
     )
 
     if not result.get("success"):
@@ -288,6 +319,7 @@ async def send_email(
     # Store in Sent folder
     sent_msg = MailboxMessage(
         user_id=current_user.id,
+        account_id=resolved_account_id,
         folder="Sent",
         from_addr=from_email,
         from_name=getattr(current_user, "full_name", "") or "",

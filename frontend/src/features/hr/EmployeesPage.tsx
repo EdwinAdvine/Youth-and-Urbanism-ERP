@@ -1,7 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, Button, Table, Modal, Input, Select, Badge, Pagination } from '../../components/ui'
 import { toast } from '../../components/ui'
 import apiClient from '../../api/client'
+import { useIsMobile } from '../../hooks/useMediaQuery'
+import MobileCardView from '../../components/ui/MobileCardView'
 import {
   useEmployees,
   useDepartments,
@@ -43,6 +46,8 @@ async function handleExport(endpoint: string, filename: string) {
 }
 
 export default function EmployeesPage() {
+  const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [deptFilter, setDeptFilter] = useState('')
@@ -137,14 +142,14 @@ export default function EmployeesPage() {
   ]
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Employees</h1>
           <p className="text-sm text-gray-500 mt-1">{employees?.total ?? 0} total employees</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" size="sm" onClick={() => handleExport('/hr/employees/export', 'employees.csv')}>
             Export CSV
           </Button>
@@ -153,8 +158,8 @@ export default function EmployeesPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="flex-1 max-w-sm">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="flex-1 sm:max-w-sm">
           <Input
             placeholder="Search by name, email, or ID..."
             value={search}
@@ -174,23 +179,41 @@ export default function EmployeesPage() {
         />
       </div>
 
-      {/* Table */}
-      <Card padding={false}>
-        <Table
-          columns={columns}
-          data={filtered}
-          loading={isLoading}
-          keyExtractor={(e) => e.id}
-          emptyText="No employees found"
-        />
-        <Pagination page={page} pages={totalPages} total={employees?.total ?? 0} onChange={setPage} />
-      </Card>
-
-      {/* Row click handled via wrapping — navigate on row click */}
-      {!isLoading && filtered.length > 0 && (
-        <div className="text-xs text-gray-400 text-center">
-          Click an employee row to view details (navigate to /hr/employees/:id)
-        </div>
+      {/* Table / Mobile Cards */}
+      {isMobile ? (
+        <>
+          <MobileCardView<Employee>
+            data={filtered}
+            primaryField="first_name"
+            primaryFormat={(_v, row) => `${row.first_name} ${row.last_name}`}
+            secondaryFields={[
+              { key: 'employee_number', label: 'ID' },
+              { key: 'job_title', label: 'Title' },
+              { key: 'department_name', label: 'Dept', format: (v) => String(v || 'Unassigned') },
+              { key: 'employment_type', label: 'Type' },
+              { key: 'hire_date', label: 'Hired', format: (v) => new Date(String(v)).toLocaleDateString() },
+            ]}
+            statusField="is_active"
+            statusColorMap={{ true: 'bg-[#6fd943]', false: 'bg-[#ff3a6e]' }}
+            onRowClick={(row) => navigate(`/hr/employees/${row.id}`)}
+            keyExtractor={(row) => row.id}
+            emptyText="No employees found"
+          />
+          <Pagination page={page} pages={totalPages} total={employees?.total ?? 0} onChange={setPage} />
+        </>
+      ) : (
+        <Card padding={false}>
+          <div className="overflow-x-auto">
+            <Table
+              columns={columns}
+              data={filtered}
+              loading={isLoading}
+              keyExtractor={(e) => e.id}
+              emptyText="No employees found"
+            />
+          </div>
+          <Pagination page={page} pages={totalPages} total={employees?.total ?? 0} onChange={setPage} />
+        </Card>
       )}
 
       {/* ─── Create Employee Modal ───────────────────────────────────────────── */}

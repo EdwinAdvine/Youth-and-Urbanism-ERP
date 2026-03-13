@@ -1,5 +1,4 @@
 """Supply Chain Ops API — Control Tower, RFx, Risks, Replenishment, Workflows, Compliance, ESG, Analytics."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime

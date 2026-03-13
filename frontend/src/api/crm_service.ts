@@ -1,3 +1,22 @@
+/**
+ * CRM Service API client — omni-channel conversations, knowledge base articles,
+ * SLA policies, and CSAT surveys.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the CRM service
+ * desk sub-module. All requests go through `client.ts` (Axios instance with
+ * auth interceptors). Backend prefix: `/api/v1/crm`.
+ *
+ * Key exports:
+ *   - useConversations() / useConversation() — multi-channel conversation threads
+ *   - useCreateConversation() / useSendMessage() — conversation and message mutations
+ *   - useKBArticles() / useCreateKBArticle() — knowledge base content management
+ *   - useSLAPolicies() / useCreateSLAPolicy() — SLA rule configuration
+ *   - useCSATSurveys() / useSubmitCSAT() — customer satisfaction surveys
+ *
+ * Note: conversations support multiple channels (email, chat, phone). Messages
+ * can include file attachments (stored via MinIO). SLA breach events are
+ * emitted on the event bus for cross-module notification.
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

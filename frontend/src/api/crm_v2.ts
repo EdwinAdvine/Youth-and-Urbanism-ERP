@@ -1,3 +1,19 @@
+/**
+ * CRM v2 API client — enhanced contact management with 360-degree view,
+ * contact notes, custom fields, pipeline boards, and sales activity tracking.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the enhanced CRM
+ * v2 feature set. All requests go through `client.ts` (Axios instance with
+ * auth interceptors). Backend prefix: `/api/v1/crm`.
+ *
+ * Key exports:
+ *   - useContact360() — full contact profile: leads, deals, quotes, activities, campaigns
+ *   - useContactNotes() / useCreateContactNote() / useUpdateContactNote() — pinnable notes per contact
+ *   - useCustomFieldValues() / useUpsertCustomFieldValues() — per-entity custom field values
+ *   - usePipelineBoard() — kanban board view with swimlane grouping
+ *   - usePipelineForecast() — weighted revenue forecast by stage
+ *   - useSalesActivities() / useCreateSalesActivity() — call/meeting/task activity log
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

@@ -1,3 +1,18 @@
+/**
+ * Manufacturing AI API client — AI-powered production intelligence: bottleneck
+ * detection, SPC risk scoring, and QC failure prediction.
+ *
+ * Exports TanStack Query hooks for the Manufacturing module's AI analytics
+ * features. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/manufacturing`.
+ *
+ * Key exports:
+ *   - useBottleneckAnalysis() — identifies critical workstation bottlenecks
+ *     and utilisation scores over a configurable look-back window
+ *   - useSPCRisk() — Statistical Process Control out-of-control rate per
+ *     inspection plan item
+ *   - useQCRisk() — per-workstation quality pass-rate and defect-risk ranking
+ */
 import { useQuery } from '@tanstack/react-query'
 import apiClient from './client'
 

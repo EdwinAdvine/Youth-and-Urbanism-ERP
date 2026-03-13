@@ -352,8 +352,10 @@ export default function AISidebar() {
 
       <div
         className={cn(
-          'w-[360px] lg:w-[400px] bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 flex flex-col shrink-0 transition-all duration-300 ease-in-out',
-          'max-md:fixed max-md:top-0 max-md:right-0 max-md:h-screen max-md:z-40 max-md:shadow-2xl',
+          'bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 flex flex-col shrink-0 transition-all duration-300 ease-in-out',
+          // Full-screen on mobile, fixed sidebar on desktop
+          'max-md:fixed max-md:inset-0 max-md:w-full max-md:h-full max-md:z-40 max-md:border-l-0',
+          'md:w-[360px] lg:w-[400px] md:max-md:fixed md:max-md:top-0 md:max-md:right-0 md:max-md:h-screen md:max-md:z-40 md:max-md:shadow-2xl',
           isOpen
             ? 'max-md:translate-x-0'
             : 'w-0 lg:w-0 overflow-hidden border-l-0 max-md:translate-x-full',
@@ -414,7 +416,7 @@ export default function AISidebar() {
             <button
               type="button"
               onClick={close}
-              className="p-1.5 rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-[8px] hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
               <X className="h-4 w-4" />
             </button>

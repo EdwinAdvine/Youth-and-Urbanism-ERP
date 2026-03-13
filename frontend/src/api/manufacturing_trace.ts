@@ -1,3 +1,17 @@
+/**
+ * Manufacturing Traceability API client — lot/serial number tracking, genealogy
+ * trees, and end-to-end production traceability for items and work orders.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Manufacturing
+ * module's traceability feature. All requests go through `client.ts` (Axios
+ * instance with auth interceptors). Backend prefix: `/api/v1/manufacturing`.
+ *
+ * Key exports:
+ *   - useLotSerials() / useLotSerial() / useCreateLotSerial() — lot/serial CRUD
+ *   - useUpdateLotSerialStatus() — status transitions (active → quarantine → consumed)
+ *   - useLotGenealogyTree() — parent-child tracking hierarchy for a lot/serial
+ *   - useTraceByWorkOrder() — all lots/serials consumed or produced by a WO
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

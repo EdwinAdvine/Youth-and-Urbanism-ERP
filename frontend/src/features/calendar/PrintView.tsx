@@ -80,7 +80,7 @@ export default function PrintView({ year, month, onClose }: PrintViewProps) {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100" style={{ fontFamily: 'Open Sans, sans-serif' }}>
             {MONTHS[month]} {year}
           </h1>
-          <p className="text-xs text-gray-400 mt-1">Urban ERP Calendar</p>
+          <p className="text-xs text-gray-400 mt-1">Urban Vibes Dynamics Calendar</p>
         </div>
 
         {/* Calendar grid */}

@@ -10,7 +10,6 @@ Features:
 - Tax optimizer suggestions
 - Smart dunning engine
 """
-from __future__ import annotations
 
 import json
 import uuid

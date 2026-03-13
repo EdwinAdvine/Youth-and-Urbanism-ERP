@@ -5,6 +5,8 @@ export interface User {
   is_superadmin: boolean
   role: 'superadmin' | 'admin' | 'user'
   app_admin_scopes: string[]
+  app_access: string[]       // apps this user has explicit access to (empty = no restrictions)
+  permissions: string[]      // all resolved permission names via assigned roles
   is_active: boolean
   avatar_url?: string
   created_at: string
@@ -28,6 +30,49 @@ export interface AuditLog {
   details?: Record<string, unknown>
   ip_address?: string
   created_at: string
+}
+
+// General admin audit log (new)
+export interface GeneralAuditLog {
+  id: string
+  user_id: string | null
+  user_email: string | null
+  action: string
+  resource_type: string | null
+  resource_id: string | null
+  metadata_: Record<string, unknown> | null
+  ip_address: string | null
+  created_at: string
+}
+
+export interface Role {
+  id: string
+  name: string
+  description: string | null
+  app_scope: string | null
+  is_system: boolean
+  created_at: string
+}
+
+export interface Permission {
+  id: string
+  name: string
+  description: string | null
+  app_scope: string | null
+  created_at: string
+}
+
+export interface AppAccessEntry {
+  app_name: string
+  granted: boolean
+}
+
+export interface AppAdmin {
+  id: string
+  user_id: string
+  app_name: string
+  granted_by: string | null
+  granted_at: string
 }
 
 export interface AIConfig {

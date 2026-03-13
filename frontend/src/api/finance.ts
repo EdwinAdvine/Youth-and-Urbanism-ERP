@@ -1,4 +1,30 @@
+/**
+ * Finance API client — chart of accounts, invoices, payments, and journal entries.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Finance
+ * module. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/finance`.
+ *
+ * Key exports:
+ *   - useAccounts() / useAccount() — list and retrieve chart-of-accounts entries
+ *   - useCreateAccount() / useUpdateAccount() / useDeleteAccount() — account mutations
+ *   - useInvoices() / useInvoice() — list and retrieve sales/purchase invoices
+ *   - useCreateInvoice() / useUpdateInvoice() — invoice mutations
+ *   - usePayments() / useCreatePayment() — payment recording
+ *   - useJournalEntries() / useCreateJournalEntry() — double-entry journal
+ *   - useFinancialReport() — profit & loss, balance sheet, trial balance reports
+ *
+ * Note: financial report queries are cached under ['finance', 'reports']. Most
+ * mutations invalidate their respective list query key on success.
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  REFERENCE_PRESET,
+  LIST_PRESET,
+  DETAIL_PRESET,
+  DASHBOARD_PRESET,
+} from '@/utils/queryDefaults'
+import { optimisticListUpdate } from '@/utils/optimisticMutation'
 import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -174,6 +200,7 @@ export function useAccounts(type?: AccountType) {
       const { data } = await apiClient.get<{ total: number; accounts: Account[] }>('/finance/accounts', { params })
       return data.accounts
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -218,6 +245,7 @@ export function useInvoices(params: { page?: number; limit?: number; status?: st
       const { data } = await apiClient.get<any>('/finance/invoices', { params })
       return { total: data.total ?? 0, items: data.invoices ?? data.items ?? [] } as PaginatedResponse<Invoice>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -229,6 +257,7 @@ export function useInvoice(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -250,9 +279,12 @@ export function useUpdateInvoice() {
       const { data } = await apiClient.put<Invoice>(`/finance/invoices/${id}`, payload)
       return data
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['finance', 'invoices'] })
-    },
+    ...optimisticListUpdate(
+      qc,
+      ['finance', 'invoices'],
+      (list: Invoice[], updated: UpdateInvoicePayload) =>
+        list.map(inv => inv.id === updated.id ? { ...inv, ...updated } : inv),
+    ),
   })
 }
 
@@ -290,6 +322,7 @@ export function usePayments(params: { page?: number; limit?: number } = {}) {
       const { data } = await apiClient.get<any>('/finance/payments', { params })
       return { total: data.total ?? 0, items: data.payments ?? data.items ?? [] } as PaginatedResponse<Payment>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -316,6 +349,7 @@ export function useJournalEntries(params: { page?: number; limit?: number; statu
       const { data } = await apiClient.get<any>('/finance/journal-entries', { params })
       return { total: data.total ?? 0, items: data.journal_entries ?? data.items ?? [] } as PaginatedResponse<JournalEntry>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -350,6 +384,7 @@ export function useTrialBalance() {
       const { data } = await apiClient.get<TrialBalanceRow[]>('/finance/reports/trial-balance')
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -362,6 +397,7 @@ export function useFinanceStats() {
       const { data } = await apiClient.get<FinanceStats>('/finance/dashboard/stats')
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -446,6 +482,7 @@ export function useBudgets(fiscal_year?: number) {
       const { data } = await apiClient.get<Budget[]>('/finance/budgets', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -491,6 +528,7 @@ export function useBudgetVsActual(fiscal_year: number) {
       return data
     },
     enabled: !!fiscal_year,
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -503,6 +541,7 @@ export function useTaxRates() {
       const { data } = await apiClient.get<TaxRate[]>('/finance/tax-rates')
       return data
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -572,6 +611,7 @@ export function useCurrencies() {
       const { data } = await apiClient.get<{ currencies: Currency[] }>('/finance/currencies')
       return data.currencies
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -614,6 +654,7 @@ export function useExchangeRates() {
       const { data } = await apiClient.get<{ exchange_rates: ExchangeRateEntry[] }>('/finance/exchange-rates')
       return data.exchange_rates
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -671,6 +712,7 @@ export function useBankStatements(accountId?: string) {
       const { data } = await apiClient.get<{ statements: BankStatementSummary[] }>('/finance/bank-statements', { params })
       return data.statements
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -682,6 +724,7 @@ export function useBankStatement(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -756,6 +799,7 @@ export function usePnLReport(from: string, to: string) {
       return data
     },
     enabled: !!from && !!to,
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -779,6 +823,7 @@ export function useCashFlowReport(from: string, to: string) {
       return data
     },
     enabled: !!from && !!to,
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -790,6 +835,7 @@ export function useBalanceSheet(asOf: string) {
       return data
     },
     enabled: !!asOf,
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -839,6 +885,7 @@ export function useRecurringInvoices(params: { page?: number; limit?: number; is
       const { data } = await apiClient.get<any>('/finance/recurring-invoices', { params })
       return { total: data.total ?? 0, items: data.recurring_invoices ?? data.items ?? [] } as PaginatedResponse<RecurringInvoice>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -932,6 +979,7 @@ export function useExpenses(params: { page?: number; limit?: number; status?: st
       const { data } = await apiClient.get<any>('/finance/expenses', { params })
       return { total: data.total ?? 0, items: data.expenses ?? data.items ?? [] } as PaginatedResponse<Expense>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1072,6 +1120,7 @@ export function useVendorBills(params: { page?: number; limit?: number; status?:
       const { data } = await apiClient.get<any>('/finance/vendor-bills', { params })
       return { total: data.total ?? 0, items: data.vendor_bills ?? data.items ?? [] } as PaginatedResponse<VendorBill>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1180,6 +1229,7 @@ export function useFixedAssets(params: { page?: number; limit?: number; status?:
       const { data } = await apiClient.get<any>('/finance/fixed-assets', { params })
       return { total: data.total ?? 0, items: data.fixed_assets ?? data.items ?? [] } as PaginatedResponse<FixedAsset>
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -1262,6 +1312,7 @@ export function useAgedReceivables(asOf?: string) {
       const { data } = await apiClient.get<AgedReport>('/finance/reports/aged-receivables', { params })
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -1273,6 +1324,7 @@ export function useAgedPayables(asOf?: string) {
       const { data } = await apiClient.get<AgedReport>('/finance/reports/aged-payables', { params })
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }
 
@@ -1309,5 +1361,6 @@ export function useFinanceKPIs(from?: string, to?: string) {
       const { data } = await apiClient.get<FinanceKPIs>('/finance/reports/kpis', { params })
       return data
     },
+    ...DASHBOARD_PRESET,
   })
 }

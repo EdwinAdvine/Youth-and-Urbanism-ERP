@@ -85,9 +85,9 @@ export default function AuditLogsPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5 max-w-7xl mx-auto">
+    <div className="p-3 sm:p-6 space-y-5 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Audit Logs</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Audit Logs</h1>
         <p className="text-gray-500 text-sm mt-0.5">Full history of system activity and changes</p>
       </div>
 

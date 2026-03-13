@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useNavigate } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '../../api/admin'
@@ -37,6 +38,7 @@ function roleVariant(role: string): 'primary' | 'info' | 'warning' | 'danger' | 
 }
 
 export default function UsersPage() {
+  const navigate = useNavigate()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
@@ -135,6 +137,9 @@ export default function UsersPage() {
       label: '',
       render: (user: User) => (
         <div className="flex items-center gap-1 justify-end">
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/users/${user.id}/access`)}>
+            Access
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => openEdit(user)}>Edit</Button>
           <Button variant="ghost" size="sm" className="text-danger hover:bg-red-50" onClick={() => setDeleteUser(user)}>
             Delete

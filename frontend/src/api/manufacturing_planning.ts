@@ -1,3 +1,19 @@
+/**
+ * Manufacturing Planning API client — capacity slots, workstation capacity,
+ * rough-cut capacity planning (RCCP), Gantt scheduling, and production scenarios.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Manufacturing
+ * module's production planning feature. All requests go through `client.ts`
+ * (Axios instance with auth interceptors). Backend prefix: `/api/v1/manufacturing`.
+ *
+ * Key exports:
+ *   - useCapacitySlots() / useCreateCapacitySlot() — shift-level capacity slot management
+ *   - useWorkstationCapacity() — utilisation and allocated-vs-total minutes per workstation
+ *   - useRoughCutCapacity() — RCCP overload detection across all workstations
+ *   - useGanttData() — schedule entries for Gantt chart visualisation
+ *   - useProductionScenarios() / useCreateScenario() — what-if planning scenarios
+ *   - useAutoSchedule() — trigger automatic work-order scheduling algorithm
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

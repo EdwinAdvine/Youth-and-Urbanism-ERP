@@ -221,7 +221,7 @@ class AIService:
         relevant document chunks as additional system context.
         """
         system_prompt = (
-            "You are Urban Board AI, the intelligent assistant for Urban ERP. "
+            "You are Urban Board AI, the intelligent assistant for Urban Vibes Dynamics. "
             "You can help users manage calendar events, send emails, create notes, "
             "search files, generate documents, summarize content, and manage project "
             "tasks using the available tools."
@@ -636,6 +636,7 @@ class AIService:
                         "messages": conversation,
                         "stream": False,
                         "tools": ollama_tools,
+                        "options": {"num_ctx": 2048},
                     },
                 )
                 resp.raise_for_status()
@@ -664,7 +665,7 @@ class AIService:
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(
                 url,
-                json={"model": model, "messages": conversation, "stream": False},
+                json={"model": model, "messages": conversation, "stream": False, "options": {"num_ctx": 2048}},
             )
             resp.raise_for_status()
             return resp.json()["message"]["content"]
@@ -677,7 +678,7 @@ class AIService:
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(
                 url,
-                json={"model": model, "messages": messages, "stream": False},
+                json={"model": model, "messages": messages, "stream": False, "options": {"num_ctx": 2048}},
             )
             resp.raise_for_status()
             data = resp.json()
@@ -694,7 +695,7 @@ class AIService:
         if provider == "ollama":
             url = f"{base_url.rstrip('/')}/api/chat"
             headers: dict[str, str] = {}
-            body = {"model": model, "messages": messages, "stream": True}
+            body = {"model": model, "messages": messages, "stream": True, "options": {"num_ctx": 2048}}
         else:
             # OpenAI-compatible streaming (openai / grok)
             url = f"{base_url.rstrip('/')}/chat/completions"

@@ -38,7 +38,7 @@ CATEGORIES: list[dict] = [
     {
         "name": "Getting Started",
         "slug": "getting-started",
-        "description": "Quick-start guides and onboarding for Urban ERP.",
+        "description": "Quick-start guides and onboarding for Urban Vibes Dynamics.",
         "icon": "🚀",
         "sort_order": 0,
         "module": None,
@@ -62,7 +62,7 @@ CATEGORIES: list[dict] = [
     {
         "name": "Integrations",
         "slug": "integrations",
-        "description": "How Urban ERP integrates with open-source services.",
+        "description": "How Urban Vibes Dynamics integrates with open-source services.",
         "icon": "🔌",
         "sort_order": 3,
         "module": None,
@@ -188,22 +188,22 @@ CATEGORIES: list[dict] = [
 ARTICLES: list[dict] = [
     # ── Getting Started ──────────────────────────────────────────────
     {
-        "title": "Welcome to Urban ERP",
-        "slug": "welcome-to-urban-erp",
+        "title": "Welcome to Urban Vibes Dynamics",
+        "slug": "welcome-to-urban-vibes-dynamics",
         "category_slug": "getting-started",
         "article_type": "quickstart",
         "module": None,
         "tags": ["onboarding", "overview"],
         "sort_order": 0,
         "is_pinned": True,
-        "excerpt": "A complete overview of Urban ERP — what it is, what it replaces, and how to get started.",
-        "content_markdown": """# Welcome to Urban ERP
+        "excerpt": "A complete overview of Urban Vibes Dynamics — what it is, what it replaces, and how to get started.",
+        "content_markdown": """# Welcome to Urban Vibes Dynamics
 
-Urban ERP is a **fully self-hosted ERP platform** that consolidates Microsoft 365 + Google Workspace + traditional ERP into a single Docker Compose stack. Zero external API dependencies for core functionality. 100% code ownership.
+Urban Vibes Dynamics is a **fully self-hosted ERP platform** that consolidates Microsoft 365 + Google Workspace + traditional ERP into a single Docker Compose stack. Zero external API dependencies for core functionality. 100% code ownership.
 
-## What Urban ERP Replaces
+## What Urban Vibes Dynamics Replaces
 
-| Traditional Tool | Urban ERP Equivalent |
+| Traditional Tool | Urban Vibes Dynamics Equivalent |
 |-----------------|---------------------|
 | Microsoft Outlook / Gmail | Y&U Mails (Stalwart) |
 | Microsoft Word / Google Docs | Y&U Docs (ONLYOFFICE) |
@@ -259,7 +259,7 @@ Use the **left sidebar** to navigate between modules. The **app launcher** (grid
 - Use the **AI Assistant** (Cmd+Shift+A) to ask questions or perform actions
 - Check the Getting Started category for step-by-step quickstart guides
 """,
-        "ai_shortcut_prompt": "What modules are available in Urban ERP and what does each one do?",
+        "ai_shortcut_prompt": "What modules are available in Urban Vibes Dynamics and what does each one do?",
     },
     {
         "title": "Your First 10 Minutes",
@@ -271,7 +271,7 @@ Use the **left sidebar** to navigate between modules. The **app launcher** (grid
         "sort_order": 1,
         "is_pinned": True,
         "excerpt": "A quick walkthrough of essential tasks to complete when you first log in.",
-        "content_markdown": """# Your First 10 Minutes in Urban ERP
+        "content_markdown": """# Your First 10 Minutes in Urban Vibes Dynamics
 
 Follow these steps to set up your workspace after your first login.
 
@@ -327,7 +327,7 @@ Go to **Settings > Notifications** to configure which events trigger alerts. You
 
 > **Pro Tip:** Use Cmd+K to quickly search and navigate to any page, contact, invoice, or project across the entire system.
 """,
-        "ai_shortcut_prompt": "Help me set up my Urban ERP workspace. What should I configure first?",
+        "ai_shortcut_prompt": "Help me set up my Urban Vibes Dynamics workspace. What should I configure first?",
     },
 
     # ── Architecture ─────────────────────────────────────────────────
@@ -339,7 +339,7 @@ Go to **Settings > Notifications** to configure which events trigger alerts. You
         "module": None,
         "tags": ["architecture", "technical", "design"],
         "sort_order": 0,
-        "excerpt": "Understand the system design principles, service topology, and technical architecture of Urban ERP.",
+        "excerpt": "Understand the system design principles, service topology, and technical architecture of Urban Vibes Dynamics.",
         "content_markdown": """# System Architecture Overview
 
 ## Design Principles
@@ -421,10 +421,10 @@ Three-tier access control:
         "module": None,
         "tags": ["ai", "architecture", "tools"],
         "sort_order": 1,
-        "excerpt": "How Urban ERP's AI system works -- local LLM, tool calling, RAG, and the multi-agent orchestrator.",
+        "excerpt": "How Urban Vibes Dynamics's AI system works -- local LLM, tool calling, RAG, and the multi-agent orchestrator.",
         "content_markdown": """# AI System & Tools
 
-Urban ERP includes a powerful AI system that can understand your data and take actions across all modules.
+Urban Vibes Dynamics includes a powerful AI system that can understand your data and take actions across all modules.
 
 ## AI Providers
 
@@ -867,7 +867,7 @@ The system can also trigger a `stock.low` event that:
 
 ## Y&U Mails
 
-Urban ERP includes a full email client powered by **Stalwart**, a modern Rust-based mail server.
+Urban Vibes Dynamics includes a full email client powered by **Stalwart**, a modern Rust-based mail server.
 
 ### Features
 - Inbox, sent, drafts, trash, and custom folders
@@ -931,10 +931,10 @@ Video conferencing powered by **Jitsi Meet**.
         "module": None,
         "tags": ["integrations", "stalwart", "jitsi", "onlyoffice", "minio", "ollama"],
         "sort_order": 0,
-        "excerpt": "How Urban ERP integrates with Stalwart (mail), ONLYOFFICE (docs), Jitsi (video), MinIO (files), and Ollama (AI).",
+        "excerpt": "How Urban Vibes Dynamics integrates with Stalwart (mail), ONLYOFFICE (docs), Jitsi (video), MinIO (files), and Ollama (AI).",
         "content_markdown": """# Integrated Services
 
-Urban ERP integrates five open-source services, all running internally within the Docker stack. No external API calls are made.
+Urban Vibes Dynamics integrates five open-source services, all running internally within the Docker stack. No external API calls are made.
 
 ## Stalwart (Mail Server)
 
@@ -1007,7 +1007,7 @@ Services communicate through the backend event bus:
         "module": None,
         "tags": ["deployment", "docker", "production", "backup"],
         "sort_order": 0,
-        "excerpt": "Deploy Urban ERP for development or production with Docker Compose.",
+        "excerpt": "Deploy Urban Vibes Dynamics for development or production with Docker Compose.",
         "content_markdown": """# Deployment Guide
 
 ## Development Setup
@@ -1058,12 +1058,12 @@ docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
 
 ### Create Backup
 ```
-docker compose exec postgres pg_dump -U urban urban_erp > backup.sql
+docker compose exec postgres pg_dump -U urban urban_vibes_dynamics > backup.sql
 ```
 
 ### Restore
 ```
-docker compose exec -T postgres psql -U urban urban_erp < backup.sql
+docker compose exec -T postgres psql -U urban urban_vibes_dynamics < backup.sql
 ```
 
 ### API-Based Backups
@@ -1193,7 +1193,7 @@ cd frontend && npx eslint src/
         "module": None,
         "tags": ["api", "reference", "endpoints", "rest"],
         "sort_order": 0,
-        "excerpt": "REST API endpoint reference for all Urban ERP modules.",
+        "excerpt": "REST API endpoint reference for all Urban Vibes Dynamics modules.",
         "content_markdown": """# API Reference
 
 Base URL: `http://localhost:8010/api/v1`
@@ -1572,7 +1572,7 @@ Admins can assign tickets to agents. Assigned agents receive notifications and c
         "module": None,
         "tags": ["shortcuts", "productivity", "tips"],
         "sort_order": 10,
-        "excerpt": "Master Urban ERP with keyboard shortcuts and productivity tips.",
+        "excerpt": "Master Urban Vibes Dynamics with keyboard shortcuts and productivity tips.",
         "content_markdown": """# Keyboard Shortcuts & Power Tips
 
 ## Global Shortcuts
@@ -1631,7 +1631,7 @@ Most list pages support CSV export. Look for the export button in the toolbar.
         "excerpt": "Understand the three-tier RBAC system: Super Admin, App Admin, and User roles.",
         "content_markdown": """# User Roles & Permissions
 
-Urban ERP uses a three-tier role-based access control (RBAC) system.
+Urban Vibes Dynamics uses a three-tier role-based access control (RBAC) system.
 
 ## Role Tiers
 

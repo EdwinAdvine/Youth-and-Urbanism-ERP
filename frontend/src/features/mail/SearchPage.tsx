@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { sanitizeHTML } from '@/shared/utils/sanitize'
 import { Card, Button, Input, Spinner, Badge } from '../../components/ui'
 import { useMailSearch, type MailSearchParams, type MailThreadMessage } from '../../api/mail_ext'
 
@@ -125,7 +126,7 @@ function SearchResultItem({ message }: { message: MailThreadMessage }) {
             To: {message.to.map((t) => t.name || t.email).join(', ')}
           </div>
           {message.html_body ? (
-            <div className="text-sm text-gray-600 dark:text-gray-400 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: message.html_body }} />
+            <div className="text-sm text-gray-600 dark:text-gray-400 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHTML(message.html_body) }} />
           ) : (
             <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap line-clamp-6">{message.text_body}</p>
           )}

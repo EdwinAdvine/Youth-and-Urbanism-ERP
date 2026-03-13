@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import QRCode from 'qrcode'
 
 interface FormSharingDialogProps {
   formId: string
@@ -15,6 +16,8 @@ export default function FormSharingDialog({
 }: FormSharingDialogProps) {
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [embedSize, setEmbedSize] = useState<'small' | 'medium' | 'large'>('medium')
+  const [qrDataUrl, setQrDataUrl] = useState<string>('')
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null)
 
   const formUrl = `${window.location.origin}/forms/${formId}/submit`
   const embedSizes = {
@@ -25,8 +28,12 @@ export default function FormSharingDialog({
   const { width, height } = embedSizes[embedSize]
   const embedCode = `<iframe src="${formUrl}" width="${width}" height="${height}" frameborder="0" style="border:none;border-radius:10px;" title="${formTitle}"></iframe>`
 
-  // Generate a simple QR code as an SVG data URL using a free API
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(formUrl)}`
+  // Generate QR code locally using qrcode npm package (no external API)
+  useEffect(() => {
+    QRCode.toDataURL(formUrl, { width: 200, margin: 1, color: { dark: '#1f2937', light: '#ffffff' } })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(''))
+  }, [formUrl])
 
   const handleCopy = (text: string, field: string) => {
     navigator.clipboard.writeText(text)
@@ -129,14 +136,18 @@ export default function FormSharingDialog({
               <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">QR Code</h3>
               <div className="flex items-start gap-4">
                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[10px] p-3">
-                  <img
-                    src={qrUrl}
-                    alt="QR Code for form"
-                    className="w-32 h-32"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none'
-                    }}
-                  />
+                  {qrDataUrl ? (
+                    <img
+                      src={qrDataUrl}
+                      alt="QR Code for form"
+                      className="w-32 h-32"
+                    />
+                  ) : (
+                    <div className="w-32 h-32 flex items-center justify-center text-[10px] text-gray-400">
+                      Generating...
+                    </div>
+                  )}
+                  <canvas ref={qrCanvasRef} className="hidden" />
                 </div>
                 <div className="flex-1 space-y-2">
                   <p className="text-xs text-gray-600 dark:text-gray-400">
@@ -144,8 +155,9 @@ export default function FormSharingDialog({
                   </p>
                   <button
                     onClick={() => {
+                      if (!qrDataUrl) return
                       const a = document.createElement('a')
-                      a.href = qrUrl
+                      a.href = qrDataUrl
                       a.download = `${formTitle}-qr.png`
                       a.click()
                     }}

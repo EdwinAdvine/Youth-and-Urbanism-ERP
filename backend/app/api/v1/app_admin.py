@@ -5,11 +5,10 @@ application modules (mail, forms, projects, drive, calendar, notes, etc.).
 Access requires either Super Admin privileges or an AppAdmin record for
 the requested app.
 """
-from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,6 +40,15 @@ SUPPORTED_APPS = {
     "crm",
     "finance",
     "inventory",
+    "supply-chain",
+    "manufacturing",
+    "pos",
+    "ecommerce",
+    "support",
+    "kds",
+    "loyalty",
+    "handbook",
+    "settings",
 }
 
 # Default configuration per app (mutable through PUT)
@@ -96,11 +104,8 @@ DEFAULT_APP_CONFIGS: dict[str, dict[str, Any]] = {
     "inventory": {"enable_barcode_scanning": True, "low_stock_threshold": 10},
 }
 
-# In-memory config store — in production this would be a DB table or Redis.
-# Deep-copy defaults so mutations don't affect the template.
-import copy  # noqa: E402
-
-_app_configs: dict[str, dict[str, Any]] = copy.deepcopy(DEFAULT_APP_CONFIGS)
+from app.core.audit import log_audit  # noqa: E402
+from app.services.user import UserService  # noqa: E402
 
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────
@@ -288,7 +293,9 @@ async def get_app_config(
     _validate_app(app_name)
     await _require_app_or_super(app_name, db, current_user)
 
-    config = _app_configs.get(app_name, {})
+    # Read from DB; fall back to hardcoded defaults if no rows exist yet
+    db_config = await UserService(db).get_app_config(app_name)
+    config = {**DEFAULT_APP_CONFIGS.get(app_name, {}), **db_config}
     return AppConfig(app_name=app_name, config=config)
 
 
@@ -298,6 +305,7 @@ async def get_app_config(
     summary="Update configuration for an application module",
 )
 async def update_app_config(
+    request: Request,
     body: AppConfigUpdate,
     app_name: str = Path(..., description="Application module name"),
     db: AsyncSession = Depends(get_db),
@@ -306,9 +314,15 @@ async def update_app_config(
     _validate_app(app_name)
     await _require_app_or_super(app_name, db, current_user)
 
-    # Merge supplied keys into existing config (partial update)
-    existing = _app_configs.get(app_name, {})
+    # Merge with defaults, then persist to DB
+    existing = {**DEFAULT_APP_CONFIGS.get(app_name, {})}
+    db_config = await UserService(db).get_app_config(app_name)
+    existing.update(db_config)
     existing.update(body.config)
-    _app_configs[app_name] = existing
 
-    return AppConfig(app_name=app_name, config=existing)
+    saved = await UserService(db).set_app_config(app_name, existing, current_user.id)
+    await log_audit(db, current_user, "app_config.updated",
+                    resource_type="app_config", resource_id=app_name,
+                    metadata={"keys": list(body.config.keys())},
+                    request=request)
+    return AppConfig(app_name=app_name, config=saved)

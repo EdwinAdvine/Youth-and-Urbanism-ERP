@@ -1,5 +1,4 @@
 """Loyalty Program API — Programs, Tiers, Members, Points, Rewards."""
-from __future__ import annotations
 
 import secrets
 import uuid

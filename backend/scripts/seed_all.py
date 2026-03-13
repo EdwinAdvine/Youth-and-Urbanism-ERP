@@ -200,7 +200,7 @@ async def seed():
             # password hash for 'demo1234' using bcrypt
             await db.execute(text("""
                 INSERT INTO users (id, email, full_name, hashed_password, is_active, is_superadmin, created_at, updated_at)
-                VALUES (:id, :email, :name, '$2b$12$LJ3m4ys3Sz8XEj5Yfr.cqOKCjICVbMoDBfnqBaFbRJBFGZ1GjELi.', true, false, now(), now())
+                VALUES (:id, :email, :name, '$2b$12$qGyqokwDc6b08NHdIbuS1.u3M66VnFqVN6S6IYiSVcL6rw/PGBPa2', true, false, now(), now())
             """), {"id": u_id, "email": email, "name": full_name})
 
         # Departments — DB cols: id, name, description, head_id, parent_id, is_active, created_at, updated_at
@@ -462,7 +462,7 @@ async def seed():
         for title, slug, content in [
             ("How to Reset Your Password", "how-to-reset-password", "Go to Settings > Security > Change Password. Click 'Forgot Password' if locked out."),
             ("Invoice Payment Methods", "invoice-payment-methods", "We accept bank transfer, credit card, and mobile money. Payment terms are Net 30."),
-            ("Getting Started Guide", "getting-started-guide", "Welcome to Urban ERP! This guide covers your first steps: login, dashboard navigation, and module access."),
+            ("Getting Started Guide", "getting-started-guide", "Welcome to Urban Vibes Dynamics! This guide covers your first steps: login, dashboard navigation, and module access."),
         ]:
             await db.execute(text("""
                 INSERT INTO kb_articles (id, title, slug, content, category_id, status, author_id, view_count, helpful_count, created_at, updated_at)

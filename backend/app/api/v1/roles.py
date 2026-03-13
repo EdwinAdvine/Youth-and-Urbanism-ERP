@@ -1,14 +1,15 @@
-from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.audit import log_audit
 from app.core.database import get_db
 from app.core.deps import SuperAdminUser
 from app.schemas.user import (
     AssignRoleRequest,
+    BulkPermissionAssign,
     PermissionCreate,
     PermissionResponse,
     RoleCreate,
@@ -108,11 +109,16 @@ async def remove_permission(
 # ── User-Role assignments ─────────────────────────────────────────────────────
 @router.post("/assign", status_code=status.HTTP_200_OK, summary="Assign role to user")
 async def assign_role(
+    request: Request,
     payload: AssignRoleRequest,
     current_user: SuperAdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> None:
     await UserService(db).assign_role_to_user(payload, current_user.id)
+    await log_audit(db, current_user, "role.assigned",
+                    resource_type="user", resource_id=str(payload.user_id),
+                    metadata={"role_id": str(payload.role_id)},
+                    request=request)
 
 
 @router.delete(
@@ -121,9 +127,51 @@ async def assign_role(
     summary="Revoke role from user",
 )
 async def revoke_role(
+    request: Request,
     user_id: uuid.UUID,
     role_id: uuid.UUID,
-    _: SuperAdminUser,
+    current_user: SuperAdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> None:
     await UserService(db).revoke_role_from_user(user_id, role_id)
+    await log_audit(db, current_user, "role.revoked",
+                    resource_type="user", resource_id=str(user_id),
+                    metadata={"role_id": str(role_id)},
+                    request=request)
+
+
+# ── Per-role permission queries ───────────────────────────────────────────────
+@router.get(
+    "/{role_id}/permissions",
+    response_model=list[PermissionResponse],
+    summary="Get permissions for a role",
+)
+async def get_role_permissions(
+    role_id: uuid.UUID,
+    _: SuperAdminUser,
+    db: AsyncSession = Depends(get_db),
+) -> list[PermissionResponse]:
+    perms = await UserService(db).get_role_permissions(role_id)
+    return [PermissionResponse.model_validate(p) for p in perms]
+
+
+@router.post(
+    "/{role_id}/permissions/bulk",
+    status_code=status.HTTP_200_OK,
+    summary="Bulk assign/replace permissions for a role",
+)
+async def bulk_assign_permissions(
+    request: Request,
+    role_id: uuid.UUID,
+    payload: BulkPermissionAssign,
+    current_user: SuperAdminUser,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int]:
+    result = await UserService(db).bulk_assign_permissions(
+        role_id, payload.permission_ids, replace=payload.replace
+    )
+    await log_audit(db, current_user, "role.permissions_updated",
+                    resource_type="role", resource_id=str(role_id),
+                    metadata=result,
+                    request=request)
+    return result

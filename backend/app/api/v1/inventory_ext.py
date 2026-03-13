@@ -1,5 +1,4 @@
 """Inventory Extensions API — Suppliers, Adjustments, Variants, Batches, Counts, Reports."""
-from __future__ import annotations
 
 import csv
 import io

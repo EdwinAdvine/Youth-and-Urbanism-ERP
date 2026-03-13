@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { useIsMobile } from '../../hooks/useMediaQuery'
 
 export function cn(...inputs: Parameters<typeof clsx>) {
   return twMerge(clsx(inputs))
@@ -25,9 +26,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       outline: 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-gray-200',
     }
     const sizes = {
-      sm: 'px-3 py-1.5 text-xs',
-      md: 'px-4 py-2 text-sm',
-      lg: 'px-6 py-3 text-base',
+      sm: 'px-3 py-1.5 text-xs min-h-[36px] md:min-h-0',
+      md: 'px-4 py-2 text-sm min-h-[44px]',
+      lg: 'px-6 py-3 text-base min-h-[44px]',
     }
     return (
       <button
@@ -77,7 +78,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-2 text-sm text-gray-900 dark:text-gray-100 transition-colors',
+              'w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-2 min-h-[44px] text-sm text-gray-900 dark:text-gray-100 transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary',
               'placeholder:text-gray-400 dark:placeholder:text-gray-600',
               leftIcon ? 'pl-10 pr-3' : 'px-3',
@@ -116,7 +117,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={selectId}
           className={cn(
-            'w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 transition-colors',
+            'w-full rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 min-h-[44px] text-sm text-gray-900 dark:text-gray-100 transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary',
             error && 'border-danger',
             className
@@ -212,6 +213,8 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
+  const isMobile = useIsMobile()
+
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden'
     else document.body.style.overflow = ''
@@ -228,12 +231,23 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className={`fixed inset-0 z-50 flex ${isMobile ? 'items-end' : 'items-center justify-center'}`}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={cn('relative bg-white dark:bg-gray-800 rounded-[10px] shadow-xl w-full mx-4', sizes[size])}>
+      <div className={cn(
+        'relative bg-white dark:bg-gray-800 shadow-xl w-full',
+        isMobile
+          ? 'rounded-t-[20px] rounded-b-none max-h-[90vh] overflow-y-auto'
+          : cn('rounded-[10px] mx-4', sizes[size])
+      )}>
+        {/* Mobile drag pill */}
+        {isMobile && (
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+          </div>
+        )}
         <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+          <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 active:text-gray-800 transition-colors">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -380,7 +394,7 @@ export function Pagination({ page, pages, total, onChange }: PaginationProps) {
       <span>{total} total</span>
       <div className="flex items-center gap-1">
         <button
-          className="px-3 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:pointer-events-none"
+          className="px-3 py-1.5 min-h-[44px] rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 disabled:opacity-40 disabled:pointer-events-none"
           disabled={page === 1}
           onClick={() => onChange(page - 1)}
         >
@@ -392,8 +406,8 @@ export function Pagination({ page, pages, total, onChange }: PaginationProps) {
             <button
               key={p}
               className={cn(
-                'w-8 h-8 rounded-md text-xs font-medium transition-colors',
-                page === p ? 'bg-primary text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                'min-w-[44px] min-h-[44px] rounded-md text-xs font-medium transition-colors',
+                page === p ? 'bg-primary text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700'
               )}
               onClick={() => onChange(p)}
             >
@@ -402,7 +416,7 @@ export function Pagination({ page, pages, total, onChange }: PaginationProps) {
           )
         })}
         <button
-          className="px-3 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:pointer-events-none"
+          className="px-3 py-1.5 min-h-[44px] rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 disabled:opacity-40 disabled:pointer-events-none"
           disabled={page === pages}
           onClick={() => onChange(page + 1)}
         >

@@ -1,5 +1,4 @@
 """CRM Service Hub — conversations, knowledge base, and SLA management."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone

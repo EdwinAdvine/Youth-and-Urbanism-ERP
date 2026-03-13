@@ -1,5 +1,4 @@
 """Support Saved Views API — user-scoped saved ticket filters."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

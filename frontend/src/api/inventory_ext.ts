@@ -1,3 +1,20 @@
+/**
+ * Inventory Extended API client — suppliers, stock adjustments, item variants,
+ * batch/expiry tracking, cycle counts, valuation reports, and turnover analysis.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Inventory
+ * module's extended features. All requests go through `client.ts` (Axios
+ * instance with auth interceptors). Backend prefix: `/api/v1/inventory`.
+ *
+ * Key exports:
+ *   - useSuppliers() / useCreateSupplier() — supplier directory management
+ *   - useStockAdjustments() / useCreateStockAdjustment() — manual stock corrections
+ *   - useItemVariants() / useCreateVariant() — SKU variant management
+ *   - useBatchNumbers() / useCreateBatch() — batch/lot tracking with expiry dates
+ *   - useInventoryCounts() / useCreateCount() — physical cycle count sessions
+ *   - useValuationReport() — COGS and retail value by warehouse
+ *   - useTurnoverReport() — inventory turnover ratios per item
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

@@ -1,3 +1,20 @@
+/**
+ * CRM Extended API client — campaigns, quotes, products, custom fields,
+ * scoring rules, and bulk import.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for extended CRM
+ * features. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/crm`.
+ *
+ * Key exports:
+ *   - useCampaigns() / useCreateCampaign() — marketing campaign management
+ *   - useQuotes() / useCreateQuote() — sales quotes linked to deals
+ *   - useCRMProducts() / useCreateCRMProduct() — product/service catalog
+ *   - useCustomFieldDefinitions() / useCreateCustomFieldDefinition() — per-entity custom fields
+ *   - useScoringRules() / useCreateScoringRule() — lead/deal scoring configuration
+ *   - useContactImport() — bulk CSV contact import with error reporting
+ *   - useCampaignStats() — campaign performance metrics (open/click rates, ROI)
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

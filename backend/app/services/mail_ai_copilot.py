@@ -356,7 +356,7 @@ async def context_aware_draft(
             context_used.append("Support")
             context_block += f"\n## Support Context\n{json.dumps(support_ctx, indent=2)}\n"
 
-        prompt = f"""You are an AI email assistant for Urban ERP (Era Mail).
+        prompt = f"""You are an AI email assistant for Urban Vibes Dynamics (Era Mail).
 Draft a reply to the following email using a {tone} tone.
 
 ## Original Email
@@ -465,7 +465,7 @@ async def summarize_thread(
         if crm_context_parts:
             crm_block = "\n## Participant CRM Context\n" + "\n".join(crm_context_parts)
 
-        prompt = f"""You are an AI email assistant for Urban ERP.
+        prompt = f"""You are an AI email assistant for Urban Vibes Dynamics.
 Analyse the following email thread and produce a structured summary.
 
 ## Email Thread ({len(messages)} messages)
@@ -528,7 +528,7 @@ async def check_tone(
     dict with keys: tone, confidence, suggestions, emoji_summary
     """
     try:
-        prompt = f"""You are an AI tone analyser for Urban ERP's email system.
+        prompt = f"""You are an AI tone analyser for Urban Vibes Dynamics's email system.
 Analyse the following email text and determine its tone.
 
 ## Text
@@ -833,7 +833,7 @@ async def generate_meeting_prep(
         # Build AI prompt
         attendee_block = json.dumps(attendee_details, indent=2, default=str)
 
-        prompt = f"""You are an AI meeting-preparation assistant for Urban ERP.
+        prompt = f"""You are an AI meeting-preparation assistant for Urban Vibes Dynamics.
 Based on the following attendee data gathered from CRM, Finance, Projects,
 Support, and recent emails, produce a concise briefing that a meeting
 organiser can review before the meeting.

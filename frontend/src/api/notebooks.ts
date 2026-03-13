@@ -311,3 +311,118 @@ export function useResolveComment() {
     onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ['note-comments', vars.noteId] }),
   })
 }
+
+// ── Notes AI ───────────────────────────────────────────────────────────────
+
+export interface ActionItem {
+  type: string
+  title: string
+  assignee?: string
+  due_date?: string
+  priority: string
+  erp_action?: string
+}
+
+export interface SuggestedLink {
+  entity_type: string
+  reference_text: string
+  confidence: number
+}
+
+export interface AskResult {
+  answer: string
+  sources: Array<{ note_id: string; note_title: string; excerpt: string; score: number }>
+}
+
+export function useGenerateNoteContent() {
+  return useMutation({
+    mutationFn: async (payload: { prompt: string; include_erp_context?: boolean }): Promise<{ content: string }> => {
+      const { data } = await api.post('/notes/ai/generate', { include_erp_context: true, ...payload })
+      return data
+    },
+  })
+}
+
+export function useSummarizeContent() {
+  return useMutation({
+    mutationFn: async (payload: { content: string; style?: string }): Promise<{ content: string }> => {
+      const { data } = await api.post('/notes/ai/summarize', { style: 'concise', ...payload })
+      return data
+    },
+  })
+}
+
+export function useSummarizeNote() {
+  return useMutation({
+    mutationFn: async ({ noteId, style = 'concise' }: { noteId: string; style?: string }): Promise<{ content: string }> => {
+      const { data } = await api.post(`/notes/ai/${noteId}/summarize`, null, { params: { style } })
+      return data
+    },
+  })
+}
+
+export function useExtractActions() {
+  return useMutation({
+    mutationFn: async (payload: { content: string }): Promise<ActionItem[]> => {
+      const { data } = await api.post('/notes/ai/extract-actions', payload)
+      return data
+    },
+  })
+}
+
+export function useExtractNoteActions() {
+  return useMutation({
+    mutationFn: async (noteId: string): Promise<ActionItem[]> => {
+      const { data } = await api.post(`/notes/ai/${noteId}/extract-actions`)
+      return data
+    },
+  })
+}
+
+export function useTransformText() {
+  return useMutation({
+    mutationFn: async (payload: {
+      text: string
+      action: string
+      tone?: string
+      target_language?: string
+    }): Promise<{ content: string }> => {
+      const { data } = await api.post('/notes/ai/transform', payload)
+      return data
+    },
+  })
+}
+
+export function useAskNotes() {
+  return useMutation({
+    mutationFn: async (payload: { question: string; notebook_id?: string }): Promise<AskResult> => {
+      const { data } = await api.post('/notes/ai/ask', payload)
+      return data
+    },
+  })
+}
+
+export function useSuggestLinks() {
+  return useMutation({
+    mutationFn: async (payload: { content: string }): Promise<SuggestedLink[]> => {
+      const { data } = await api.post('/notes/ai/suggest-links', payload)
+      return data
+    },
+  })
+}
+
+// ── ERP Widgets ────────────────────────────────────────────────────────────
+
+export type ERPWidgetType = 'invoice' | 'project' | 'deal' | 'employee' | 'ticket'
+
+export function useERPWidget(type: ERPWidgetType, entityId: string) {
+  return useQuery({
+    queryKey: ['erp-widget', type, entityId],
+    queryFn: async () => {
+      const { data } = await api.get(`/notes/widgets/${type}/${entityId}`)
+      return data
+    },
+    enabled: !!entityId,
+    staleTime: 60_000, // 1 min — widget data changes less frequently
+  })
+}

@@ -5,7 +5,6 @@ Revenue Recognition: IFRS 15 / ASC 606 deferred revenue schedule management.
 Custom Fields: define and list custom fields per entity type.
 Dimensions: class/location/segment management.
 """
-from __future__ import annotations
 
 import csv
 import io

@@ -1,5 +1,4 @@
 """CRM reports, dashboards, and gamification endpoints."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timedelta

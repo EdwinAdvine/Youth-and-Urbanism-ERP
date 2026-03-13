@@ -1,9 +1,8 @@
 """API router for Y&U Notes AI — generate, summarize, extract, transform, Q&A."""
-from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -198,3 +197,137 @@ async def suggest_links(
     svc = NotesAIService(db, user)
     suggestions = await svc.suggest_links(content=body.content, user_id=user.id)
     return suggestions
+
+
+# ── Voice Transcription ───────────────────────────────────────────────────────
+
+@router.post("/transcribe", summary="Transcribe audio to a structured note")
+async def transcribe_audio(
+    audio: UploadFile,
+    db: AsyncSession = Depends(DBSession),
+    user=Depends(CurrentUser),
+    notebook_id: str | None = Query(None),
+) -> dict:
+    """Upload audio → Whisper (via Ollama) → create structured note.
+
+    Accepts: mp3, mp4, wav, m4a, ogg, webm (max 25 MB)
+    Returns: created note id + transcript
+    """
+    import tempfile, os, uuid as uuid_mod  # noqa: PLC0415
+    from app.models.notes import Note  # noqa: PLC0415
+    import httpx  # noqa: PLC0415
+    from app.core.config import settings  # noqa: PLC0415
+
+    MAX_SIZE = 25 * 1024 * 1024
+    content = await audio.read(MAX_SIZE + 1)
+    if len(content) > MAX_SIZE:
+        raise HTTPException(status_code=413, detail="Audio file exceeds 25 MB limit")
+
+    # Save to temp file
+    suffix = os.path.splitext(audio.filename or "audio.webm")[1] or ".webm"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+        f.write(content)
+        tmp_path = f.name
+
+    transcript = ""
+    try:
+        # Call Ollama Whisper endpoint
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            with open(tmp_path, "rb") as af:
+                resp = await client.post(
+                    f"{settings.OLLAMA_URL}/api/transcribe",
+                    files={"audio": af},
+                    data={"model": "whisper"},
+                )
+            if resp.status_code == 200:
+                transcript = resp.json().get("text", "")
+            else:
+                # Fallback: create note with placeholder
+                transcript = "[Audio transcription pending — Whisper model not available]"
+    except Exception:
+        transcript = "[Audio transcription failed — check Ollama Whisper model]"
+    finally:
+        os.unlink(tmp_path)
+
+    # Structure transcript with AI
+    if transcript and not transcript.startswith('['):
+        try:
+            svc = NotesAIService(db, user)
+            structure_prompt = (
+                f"Structure this transcription into a clean meeting notes format with HTML. "
+                f"Add headings, extract key points, action items. Transcript:\n\n{transcript}"
+            )
+            structured = await svc.generate_content(structure_prompt, user.id)
+            note_content = structured
+        except Exception:
+            note_content = f"<p><strong>Transcript:</strong></p><p>{transcript}</p>"
+    else:
+        note_content = f"<p>{transcript}</p>"
+
+    # Create the note
+    note = Note(
+        title=f"Audio Note — {audio.filename or 'Recording'}",
+        content=note_content,
+        owner_id=user.id,
+        tags=["audio", "transcription"],
+        source_type="voice",
+        notebook_id=uuid_mod.UUID(str(notebook_id)) if notebook_id else None,
+    )
+    db.add(note)
+    await db.commit()
+    await db.refresh(note)
+
+    return {"note_id": str(note.id), "transcript": transcript, "title": note.title}
+
+
+# ── Mind Map ──────────────────────────────────────────────────────────────────
+
+@router.post("/{note_id}/mindmap", summary="Generate a mind map graph from note content")
+async def generate_mindmap(
+    note_id: str,
+    db: AsyncSession = Depends(DBSession),
+    user=Depends(CurrentUser),
+) -> dict:
+    """Analyze note content and return a mind map as a JSON graph.
+
+    Returns nodes and edges compatible with ReactFlow.
+    """
+    import uuid  # noqa: PLC0415
+    import json  # noqa: PLC0415
+    import re  # noqa: PLC0415
+    from app.models.notes import Note  # noqa: PLC0415
+
+    note = await db.get(Note, uuid.UUID(str(note_id)))
+    if not note or str(note.owner_id) != str(user.id):
+        raise HTTPException(status_code=404, detail="Note not found")
+
+    text = re.sub(r"<[^>]+>", "", note.content or "")[:3000]
+
+    svc = NotesAIService(db, user)
+    prompt = (
+        f"Analyze this note and return a mind map as JSON. "
+        f"Return ONLY valid JSON with this structure:\n"
+        f'{{"nodes": [{{"id": "1", "label": "Central Topic", "type": "central"}}, '
+        f'{{"id": "2", "label": "Sub-topic", "type": "branch"}}], '
+        f'"edges": [{{"id": "e1-2", "source": "1", "target": "2"}}]}}\n\n'
+        f"The central node should be the main theme. Add 4-8 branch nodes for key concepts. "
+        f"Note content:\n\n{text}"
+    )
+
+    try:
+        raw = await svc.generate_content(prompt, user.id, include_erp_context=False)
+        start = raw.find('{')
+        end = raw.rfind('}') + 1
+        graph = json.loads(raw[start:end]) if start >= 0 else {"nodes": [], "edges": []}
+    except Exception:
+        # Fallback: create simple graph from headings
+        headings = re.findall(r'<h[123][^>]*>(.*?)</h[123]>', note.content or '')
+        if not headings:
+            headings = text.split('.')[:5]
+        graph = {
+            "nodes": [{"id": "0", "label": note.title, "type": "central"}]
+            + [{"id": str(i + 1), "label": h[:50], "type": "branch"} for i, h in enumerate(headings[:7])],
+            "edges": [{"id": f"e0-{i + 1}", "source": "0", "target": str(i + 1)} for i in range(min(7, len(headings)))]
+        }
+
+    return {"note_id": str(note_id), "title": note.title, "graph": graph}

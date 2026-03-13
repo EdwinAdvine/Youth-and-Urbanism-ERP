@@ -1,3 +1,20 @@
+/**
+ * HR Extended API client — employee documents, training records, performance
+ * reviews, benefits, org chart, and workforce capacity planning.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for extended HR
+ * features. All requests go through `client.ts` (Axios instance with auth
+ * interceptors). Backend prefix: `/api/v1/hr`.
+ *
+ * Key exports:
+ *   - useEmployeeDocuments() / useUploadEmployeeDocument() — document vault per employee
+ *   - useTrainings() / useCreateTraining() — corporate training session management
+ *   - useTrainingAttendees() / useAddTrainingAttendee() — attendee enrolment
+ *   - usePerformanceReviews() / useCreatePerformanceReview() — periodic review records
+ *   - useEmployeeBenefits() / useAssignBenefit() — benefits administration
+ *   - useOrgChart() — hierarchical org chart data
+ *   - useWorkforceCapacity() — utilisation and capacity planning metrics
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

@@ -1,3 +1,17 @@
+/**
+ * useSwipeGesture — touch swipe detection hook for mobile layouts.
+ *
+ * Returns touch event handlers (`onTouchStart`, `onTouchMove`, `onTouchEnd`)
+ * to spread onto any element. Fires directional callbacks when the swipe
+ * distance exceeds the configurable threshold (default: 50px).
+ *
+ * Supports four directions (left, right, up, down) plus a `onSwiping` callback
+ * for live drag feedback (e.g. animating the mobile drawer) and `onSwipeCancel`
+ * when the gesture falls below threshold.
+ *
+ * Used by the mobile drawer (`MobileDrawer.tsx`) to swipe-close the sidebar,
+ * and by the mobile bottom tab bar for gesture navigation.
+ */
 import { useRef, useCallback } from 'react'
 
 export interface SwipeHandlers {

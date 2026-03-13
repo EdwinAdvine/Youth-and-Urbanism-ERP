@@ -261,10 +261,10 @@ export default function GoalsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Goals & OKR</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Goals & OKR</h1>
           <p className="text-sm text-gray-500 mt-1">Set and track organizational, team, and individual goals</p>
         </div>
         <div className="flex items-center gap-3">

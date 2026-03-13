@@ -4,6 +4,8 @@ import { Button, Spinner, Badge, Card, Table, Select, Pagination } from '../../c
 import { toast } from '../../components/ui'
 import { useInvoices, type Invoice } from '../../api/finance'
 import apiClient from '../../api/client'
+import { useIsMobile } from '../../hooks/useMediaQuery'
+import MobileCardView from '../../components/ui/MobileCardView'
 
 const STATUS_BADGE: Record<string, 'default' | 'info' | 'success' | 'danger' | 'warning'> = {
   draft: 'default',
@@ -50,6 +52,7 @@ async function handleExport(endpoint: string, filename: string) {
 
 export default function InvoicesPage() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [searchParams] = useSearchParams()
 
   const [page, setPage] = useState(1)
@@ -129,14 +132,14 @@ export default function InvoicesPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Invoices</h1>
           <p className="text-sm text-gray-500 mt-1">Manage sales and purchase invoices</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" size="sm" onClick={() => handleExport('/finance/invoices/export', 'invoices.csv')}>
             Export CSV
           </Button>
@@ -168,24 +171,45 @@ export default function InvoicesPage() {
         <span className="text-sm text-gray-500">{data?.total ?? 0} invoices</span>
       </div>
 
-      {/* Table */}
-      <Card padding={false}>
-        <div className="overflow-x-auto">
-          <Table<Invoice>
-            columns={columns}
+      {/* Table / Mobile Cards */}
+      {isMobile ? (
+        <>
+          <MobileCardView<Invoice>
             data={data?.items ?? []}
-            loading={isLoading}
-            emptyText="No invoices found"
+            primaryField="invoice_number"
+            secondaryFields={[
+              { key: 'customer_name', label: 'Customer' },
+              { key: 'invoice_type', label: 'Type' },
+              { key: 'total', label: 'Amount', format: (v) => formatCurrency(Number(v)) },
+              { key: 'due_date', label: 'Due', format: (v) => new Date(String(v)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) },
+            ]}
+            statusField="status"
+            statusColorMap={{ draft: 'bg-gray-400', sent: 'bg-[#3ec9d6]', paid: 'bg-[#6fd943]', overdue: 'bg-[#ff3a6e]', cancelled: 'bg-[#ffa21d]' }}
+            onRowClick={(row) => navigate(`/finance/invoices/${row.id}`)}
             keyExtractor={(row) => row.id}
+            emptyText="No invoices found"
           />
-        </div>
-        <Pagination
-          page={page}
-          pages={totalPages}
-          total={data?.total ?? 0}
-          onChange={setPage}
-        />
-      </Card>
+          <Pagination page={page} pages={totalPages} total={data?.total ?? 0} onChange={setPage} />
+        </>
+      ) : (
+        <Card padding={false}>
+          <div className="overflow-x-auto">
+            <Table<Invoice>
+              columns={columns}
+              data={data?.items ?? []}
+              loading={isLoading}
+              emptyText="No invoices found"
+              keyExtractor={(row) => row.id}
+            />
+          </div>
+          <Pagination
+            page={page}
+            pages={totalPages}
+            total={data?.total ?? 0}
+            onChange={setPage}
+          />
+        </Card>
+      )}
     </div>
   )
 }

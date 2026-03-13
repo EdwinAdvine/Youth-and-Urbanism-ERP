@@ -1,5 +1,4 @@
 """Mail Filters API — CRUD for server-side Sieve-compatible mail filters."""
-from __future__ import annotations
 
 import uuid
 from typing import Any

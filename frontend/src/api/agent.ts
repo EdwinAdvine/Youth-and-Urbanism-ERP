@@ -1,3 +1,20 @@
+/**
+ * Agent API client — Urban Bad AI multi-agent system (run history, steps, approvals).
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/agent`.
+ *
+ * Real-time interaction uses the WebSocket at `/api/v1/agent/ws/{session_id}`.
+ * These REST hooks cover persistence and human-in-the-loop approval flows.
+ *
+ * Key exports:
+ *   - useAgentRuns()          — paginated history of agent run sessions
+ *   - useAgentRun()           — fetch a single run with its full step log
+ *   - useAgentRunSteps()      — list all steps (Orchestrator/Researcher/Executor) for a run
+ *   - useApproveStep()        — approve or reject a pending tool-call step
+ *   - useCancelRun()          — abort an in-progress agent run
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

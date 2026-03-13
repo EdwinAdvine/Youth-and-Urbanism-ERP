@@ -1,5 +1,4 @@
 """HR Compensation API — bands, merit increases, bonuses, equity grants."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone

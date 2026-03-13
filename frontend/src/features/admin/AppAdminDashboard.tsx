@@ -91,6 +91,60 @@ const APP_META: Record<string, AppMeta> = {
     gradient: 'from-stone-400 to-stone-600',
     description: 'Inventory tracking and management',
   },
+  'supply-chain': {
+    label: 'Supply Chain',
+    icon: '\ud83d\ude9b',
+    gradient: 'from-lime-400 to-lime-600',
+    description: 'Suppliers, purchase orders & requisitions',
+  },
+  manufacturing: {
+    label: 'Manufacturing',
+    icon: '\ud83c\udfed',
+    gradient: 'from-slate-400 to-slate-600',
+    description: 'Bills of materials & work orders',
+  },
+  pos: {
+    label: 'POS',
+    icon: '\ud83d\uddb5\ufe0f',
+    gradient: 'from-rose-400 to-rose-600',
+    description: 'Point of sale terminals & transactions',
+  },
+  ecommerce: {
+    label: 'E-Commerce',
+    icon: '\ud83d\uded2',
+    gradient: 'from-fuchsia-400 to-fuchsia-600',
+    description: 'Online store, products & orders',
+  },
+  support: {
+    label: 'Support',
+    icon: '\ud83c\udfa7',
+    gradient: 'from-amber-400 to-amber-600',
+    description: 'Help desk tickets & SLA management',
+  },
+  kds: {
+    label: 'KDS',
+    icon: '\ud83c\udf73',
+    gradient: 'from-orange-400 to-orange-600',
+    description: 'Kitchen display system for food service',
+  },
+  loyalty: {
+    label: 'Loyalty',
+    icon: '\u2b50',
+    gradient: 'from-yellow-400 to-yellow-600',
+    description: 'Customer loyalty points & rewards',
+  },
+  handbook: {
+    label: 'Handbook',
+    icon: '\ud83d\udcd6',
+    gradient: 'from-sky-400 to-sky-600',
+    description: 'Company policies & knowledge base',
+  },
+  settings: {
+    label: 'Settings',
+    icon: '\u2699\ufe0f',
+    gradient: 'from-gray-400 to-gray-600',
+    description: 'System configuration & preferences',
+  },
 }
 
 // ── Stat display helpers ─────────────────────────────────────────────────────
@@ -348,6 +402,24 @@ export default function AppAdminDashboard() {
             <span className="text-xl">{'\ud83d\udccb'}</span>
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-[#51459d] transition-colors">
               Audit Logs
+            </span>
+          </button>
+          <button
+            onClick={() => navigate('/admin/permission-matrix')}
+            className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 dark:border-gray-800 hover:border-[#51459d]/30 hover:bg-[#51459d]/5 transition-colors text-left group"
+          >
+            <span className="text-xl">{'\ud83d\uddc2\ufe0f'}</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-[#51459d] transition-colors">
+              Permission Matrix
+            </span>
+          </button>
+          <button
+            onClick={() => navigate('/admin/users')}
+            className="flex items-center gap-3 p-3 rounded-[10px] border border-gray-100 dark:border-gray-800 hover:border-[#51459d]/30 hover:bg-[#51459d]/5 transition-colors text-left group"
+          >
+            <span className="text-xl">{'\ud83d\udd11'}</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-[#51459d] transition-colors">
+              User Access
             </span>
           </button>
         </div>

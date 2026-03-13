@@ -141,16 +141,16 @@ export default function LicensePage() {
     licenseStatus.days_remaining <= 0
 
   return (
-    <div className="p-6 space-y-5 max-w-4xl mx-auto">
+    <div className="p-3 sm:p-6 space-y-5 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">License Management</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">License Management</h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            View and manage your Urban ERP license and subscription
+            View and manage your Urban Vibes Dynamics license and subscription
           </p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
+        <Button onClick={() => setShowForm(!showForm)} className="w-full sm:w-auto">
           {showForm ? 'Cancel' : license ? 'Change License' : 'Activate License'}
         </Button>
       </div>

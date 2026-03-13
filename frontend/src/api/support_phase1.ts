@@ -1,3 +1,20 @@
+/**
+ * Support Phase 1 API client — live chat, audit logs, time tracking, saved views.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the Support
+ * module's Phase 1 features. All requests go through `client.ts` (Axios
+ * instance with auth interceptors). Backend prefix: `/api/v1/support`.
+ *
+ * Key exports:
+ *   - useLiveChatSessions() / useStartLiveChat() — omnichannel live chat
+ *   - useLiveChatMessages() / useSendChatMessage() — chat message management
+ *   - useAuditLog() — immutable ticket audit trail
+ *   - useTimeEntries() / useCreateTimeEntry() — agent time tracking
+ *   - useSavedViews() / useCreateSavedView() — personalised ticket view filters
+ *   - useTicketTemplates() — ticket creation templates
+ *   - useAgentPresence() — real-time agent presence/typing indicators
+ *   - useInboundEmailRules() — email-to-ticket routing rules
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

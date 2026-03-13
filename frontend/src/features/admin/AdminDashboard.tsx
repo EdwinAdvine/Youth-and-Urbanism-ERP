@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useAdminStats } from '../../api/admin'
 import { Card, Spinner } from '../../components/ui'
+import DatabaseHealthWidget from './DatabaseHealthWidget'
 
 interface StatCard {
   label: string
@@ -25,6 +26,7 @@ export default function AdminDashboard() {
     { label: 'Create User', icon: '➕', href: '/admin/users' },
     { label: 'Configure AI', icon: '🤖', href: '/admin/ai-config' },
     { label: 'View Audit Logs', icon: '📋', href: '/admin/audit-logs' },
+    { label: 'Performance', icon: '⚡', href: '/admin/performance' },
     { label: 'Manage Roles', icon: '🔑', href: '/admin/roles' },
   ]
 
@@ -102,6 +104,12 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
+      {/* Database Health Widget */}
+      <div>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Database Health</h2>
+        <DatabaseHealthWidget />
+      </div>
+
       {/* Admin navigation cards */}
       <div>
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Administration</h2>
@@ -112,6 +120,7 @@ export default function AdminDashboard() {
             { label: 'App Admins', desc: 'Module-level administrators', icon: '🛡️', href: '/admin/app-admins', color: 'from-emerald-400 to-emerald-600' },
             { label: 'AI Configuration', desc: 'LLM provider and model settings', icon: '🤖', href: '/admin/ai-config', color: 'from-pink-400 to-pink-600' },
             { label: 'Audit Logs', desc: 'System activity and changes', icon: '📋', href: '/admin/audit-logs', color: 'from-orange-400 to-orange-600' },
+            { label: 'Performance', desc: 'DB, cache, API, and Web Vitals', icon: '⚡', href: '/admin/performance', color: 'from-cyan-400 to-cyan-600' },
           ].map((item) => (
             <button
               key={item.label}

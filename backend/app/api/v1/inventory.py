@@ -1,5 +1,4 @@
 """Inventory API — Items, Warehouses, Stock Levels, Movements, Purchase Orders."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
@@ -11,7 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import selectinload
 
-from app.core.deps import CurrentUser, DBSession, require_app_admin
+from app.core.deps import CurrentUser, DBSession, SparseFields, apply_sparse_fields, require_app_admin
 from app.core.events import event_bus
 from app.models.inventory import (
     InventoryItem,
@@ -272,6 +271,7 @@ async def list_items(
     category: str | None = Query(None, description="Filter by category"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=1000),
+    fields: SparseFields = None,
 ) -> dict[str, Any]:
     query = select(InventoryItem).where(InventoryItem.is_active == True)  # noqa: E712
 
@@ -290,9 +290,12 @@ async def list_items(
     query = query.order_by(InventoryItem.name.asc()).offset(skip).limit(limit)
     result = await db.execute(query)
     items = result.scalars().all()
+    item_data = [ItemOut.model_validate(i) for i in items]
+    if fields:
+        item_data = [apply_sparse_fields(i, fields) for i in item_data]
     return {
         "total": total,
-        "items": [ItemOut.model_validate(i) for i in items],
+        "items": item_data,
     }
 
 
@@ -333,6 +336,7 @@ async def create_item(
     db.add(item)
     await db.commit()
     await db.refresh(item)
+    await event_bus.publish_data_change("product", str(item.id), "created")
     return ItemOut.model_validate(item).model_dump()
 
 
@@ -407,6 +411,7 @@ async def update_item(
 
     await db.commit()
     await db.refresh(item)
+    await event_bus.publish_data_change("product", str(item.id), "updated")
     return ItemOut.model_validate(item).model_dump()
 
 
@@ -427,6 +432,7 @@ async def delete_item(
 
     item.is_active = False
     await db.commit()
+    await event_bus.publish_data_change("product", str(item.id), "deleted")
     return Response(status_code=status.HTTP_200_OK)
 
 

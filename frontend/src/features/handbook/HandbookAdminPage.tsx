@@ -27,13 +27,13 @@ export default function HandbookAdminPage() {
     : articles
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Handbook Admin</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Handbook Admin</h1>
           <p className="text-sm text-gray-500 mt-1">Manage articles, categories, and analytics.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link to="/handbook/admin/categories">
             <Button variant="outline" size="sm">Manage Categories</Button>
           </Link>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { sanitizeHTML } from '@/shared/utils/sanitize'
 import { Card, Button, Spinner, Badge } from '../../components/ui'
 import { useMailThreads, type MailThread, type MailThreadMessage } from '../../api/mail_ext'
 
@@ -169,7 +170,7 @@ function MessageItem({ message, isLast }: { message: MailThreadMessage; isLast: 
           {message.html_body ? (
             <div
               className="text-sm text-gray-600 dark:text-gray-400 prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: message.html_body }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHTML(message.html_body) }}
             />
           ) : (
             <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{message.text_body}</p>

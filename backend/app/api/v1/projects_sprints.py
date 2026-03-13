@@ -1,5 +1,4 @@
 """Projects API — Sprints, backlog, calendar view, and bulk operations."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime

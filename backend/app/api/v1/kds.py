@@ -1,5 +1,4 @@
 """KDS API — Kitchen Display System: stations, orders, order items, real-time WebSocket."""
-from __future__ import annotations
 
 import asyncio
 import uuid
@@ -517,13 +516,28 @@ async def kds_websocket(
     websocket: WebSocket,
     station_id: uuid.UUID,
     db: DBSession,
+    token: str = Query(...),
 ):
     """Real-time order feed for a KDS station.
 
     On connect: sends all active orders.
     On order changes: broadcasts updates to all connected clients for the station.
     Client can send JSON pings; server ignores them to keep the connection alive.
+    Requires JWT token via query parameter for authentication.
     """
+    # Authenticate via JWT token
+    from app.core.security import decode_token  # noqa: PLC0415
+    from jose import JWTError  # noqa: PLC0415
+
+    try:
+        payload = decode_token(token)
+        if not payload.get("sub") or payload.get("type") != "access":
+            await websocket.close(code=4001, reason="Invalid token")
+            return
+    except JWTError:
+        await websocket.close(code=4001, reason="Authentication required")
+        return
+
     # Validate station exists
     station = await db.get(KDSStation, station_id)
     if not station:

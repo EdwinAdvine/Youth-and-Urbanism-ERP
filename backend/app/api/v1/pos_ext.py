@@ -1,5 +1,4 @@
 """POS Extensions — Terminals, Discounts, Receipts, Cash Movements, Reports, Offline Sync."""
-from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone
@@ -26,6 +25,7 @@ from app.models.pos import (
     POSReceipt,
     POSSession,
     POSTerminal,
+    POSTipPool,
     POSTransaction,
     POSTransactionLine,
 )
@@ -1732,3 +1732,106 @@ async def profitability_report(
             "overall_margin_percentage": str(round((total_margin / total_revenue * 100) if total_revenue > 0 else Decimal("0"), 2)),
         },
     }
+
+
+# ── Tips Pooling ──────────────────────────────────────────────────────────────
+
+
+class TipPoolCreate(BaseModel):
+    session_date: date
+    warehouse_id: uuid.UUID
+    total_tips: Decimal
+    distribution_method: str = "equal"  # equal | hours_worked | sales_volume
+
+
+class TipPoolOut(BaseModel):
+    id: uuid.UUID
+    session_date: date
+    warehouse_id: uuid.UUID
+    total_tips: Decimal
+    distribution_method: str
+    status: str
+    distributions: dict | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class TipDistributeRequest(BaseModel):
+    """Distribute pooled tips to staff.
+
+    ``staff`` maps user_id → hours_worked (for hours_worked method) or
+    sales_volume (for sales_volume method). For equal distribution the
+    values are ignored — only the keys (staff members) matter.
+    """
+    staff: dict[str, float]
+
+
+@router.post(
+    "/tips/pool",
+    response_model=TipPoolOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a tip pool for a location/date",
+)
+async def create_tip_pool(
+    body: TipPoolCreate,
+    db: DBSession,
+    current_user: CurrentUser,
+) -> TipPoolOut:
+    pool = POSTipPool(
+        session_date=body.session_date,
+        warehouse_id=body.warehouse_id,
+        total_tips=body.total_tips,
+        distribution_method=body.distribution_method,
+        status="pending",
+    )
+    db.add(pool)
+    await db.commit()
+    await db.refresh(pool)
+    return TipPoolOut.model_validate(pool)
+
+
+@router.post(
+    "/tips/{pool_id}/distribute",
+    response_model=TipPoolOut,
+    summary="Distribute a tip pool among staff",
+)
+async def distribute_tip_pool(
+    pool_id: uuid.UUID,
+    body: TipDistributeRequest,
+    db: DBSession,
+    current_user: CurrentUser,
+) -> TipPoolOut:
+    pool = await db.get(POSTipPool, pool_id)
+    if not pool:
+        raise HTTPException(status_code=404, detail="Tip pool not found")
+    if pool.status == "distributed":
+        raise HTTPException(status_code=409, detail="Tips already distributed for this pool")
+    if not body.staff:
+        raise HTTPException(status_code=422, detail="At least one staff member required")
+
+    total = pool.total_tips
+    n = len(body.staff)
+    distributions: dict[str, str] = {}
+
+    if pool.distribution_method == "equal":
+        share = total / n
+        distributions = {uid: str(round(share, 2)) for uid in body.staff}
+
+    elif pool.distribution_method in ("hours_worked", "sales_volume"):
+        weight_total = sum(body.staff.values())
+        if weight_total <= 0:
+            raise HTTPException(status_code=422, detail="Staff weights must be positive")
+        distributions = {
+            uid: str(round(total * Decimal(str(weight / weight_total)), 2))
+            for uid, weight in body.staff.items()
+        }
+
+    else:
+        raise HTTPException(status_code=422, detail=f"Unknown distribution method: {pool.distribution_method}")
+
+    pool.distributions = distributions
+    pool.status = "distributed"
+    await db.commit()
+    await db.refresh(pool)
+    return TipPoolOut.model_validate(pool)

@@ -105,9 +105,9 @@ export default function AIConfigPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-5">
+    <div className="p-3 sm:p-6 max-w-2xl mx-auto space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">AI Configuration</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">AI Configuration</h1>
         <p className="text-gray-500 text-sm mt-1">Configure the AI provider powering Urban AI assistant</p>
       </div>
 

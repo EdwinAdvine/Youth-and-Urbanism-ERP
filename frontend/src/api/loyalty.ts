@@ -1,3 +1,19 @@
+/**
+ * Loyalty API client — loyalty programs, tiers, members, rewards, and point transactions.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/loyalty`.
+ *
+ * Key exports:
+ *   - useLoyaltyPrograms()      — list all loyalty programs with tiers and rewards
+ *   - useCreateProgram()        — create a new points-based loyalty program
+ *   - useLoyaltyMembers()       — list enrolled members with current point balances
+ *   - useEnrollMember()         — enroll a CRM customer into a loyalty program
+ *   - useAwardPoints()          — manually award points to a member
+ *   - useRedeemReward()         — redeem a reward using a member's accumulated points
+ *   - useLoyaltyTransactions()  — paginated point transaction history for a member
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 

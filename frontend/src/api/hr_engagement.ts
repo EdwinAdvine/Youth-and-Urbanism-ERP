@@ -1,3 +1,21 @@
+/**
+ * HR Engagement API client — employee surveys (eNPS, pulse, engagement, exit),
+ * survey responses, sentiment analysis, and recognition.
+ *
+ * Exports TanStack Query hooks and Axios helper functions for the HR Employee
+ * Engagement module. All requests go through `client.ts` (Axios instance with
+ * auth interceptors). Backend prefix: `/api/v1/hr`.
+ *
+ * Key exports:
+ *   - useSurveys() / useSurvey() — survey management with type filtering
+ *   - useCreateSurvey() / useUpdateSurvey() / useDeleteSurvey() — survey CRUD
+ *   - useSubmitSurveyResponse() — anonymous or attributed response submission
+ *   - useSurveyResults() — aggregated results with per-question breakdowns
+ *   - useRecognitions() / useCreateRecognition() — peer-to-peer recognition feed
+ *
+ * Note: survey responses may be anonymous (respondent_id = null). Sentiment
+ * scores are computed server-side via AI on open-text answers.
+ */
 import api from "@/api/client"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 

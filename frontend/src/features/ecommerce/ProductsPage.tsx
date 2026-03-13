@@ -123,13 +123,13 @@ export default function ProductsPage() {
   ]
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-3 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Products</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Products</h1>
           <p className="text-sm text-gray-500 mt-1">{data?.total ?? 0} products total</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={handleExportCSV}>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -146,11 +146,11 @@ export default function ProductsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-4 sm:mb-6">
         <input
           type="text"
           placeholder="Search products..."
-          className="border border-gray-200 rounded-[10px] px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="border border-gray-200 rounded-[10px] px-3 py-2 text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-primary/40"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1) }}
         />
@@ -171,13 +171,15 @@ export default function ProductsPage() {
 
       {/* Products Table */}
       <Card padding={false}>
-        <Table<EcomProduct>
-          columns={columns}
-          data={data?.products ?? []}
-          loading={isLoading}
-          emptyText="No products found"
-          keyExtractor={(row) => row.id}
-        />
+        <div className="overflow-x-auto">
+          <Table<EcomProduct>
+            columns={columns}
+            data={data?.products ?? []}
+            loading={isLoading}
+            emptyText="No products found"
+            keyExtractor={(row) => row.id}
+          />
+        </div>
       </Card>
 
       {/* Pagination */}

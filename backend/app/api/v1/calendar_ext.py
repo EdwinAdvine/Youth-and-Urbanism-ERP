@@ -1,5 +1,4 @@
 """Calendar Extensions API — Recurring expansion, RSVP, Availability, Subscriptions, Categories, Utilities."""
-from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta
@@ -480,7 +479,7 @@ async def export_events_ical(
     lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
-        "PRODID:-//Urban ERP//Calendar//EN",
+        "PRODID:-//Urban Vibes Dynamics//Calendar//EN",
         "CALSCALE:GREGORIAN",
         "METHOD:PUBLISH",
     ]
@@ -492,7 +491,7 @@ async def export_events_ical(
 
         lines.extend([
             "BEGIN:VEVENT",
-            f"UID:{evt.id}@urban-erp",
+            f"UID:{evt.id}@urban-vibes-dynamics",
             f"DTSTART:{dtstart}",
             f"DTEND:{dtend}",
             f"DTSTAMP:{created}",

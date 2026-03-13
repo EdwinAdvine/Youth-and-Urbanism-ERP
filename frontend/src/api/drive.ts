@@ -1,4 +1,18 @@
+/**
+ * Drive API client — MinIO-backed file storage, folders, and sharing.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/drive`.
+ *
+ * Key exports:
+ *   - useDriveFiles() — list files in a folder with optional type filter
+ *   - useUploadFile() — upload a file to MinIO storage
+ *   - useDriveFolders() — list folders by parent ID
+ *   - useShareFile() — create a share link or user permission for a file
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { REFERENCE_PRESET, LIST_PRESET, DETAIL_PRESET } from '@/utils/queryDefaults'
 import apiClient from './client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -170,6 +184,7 @@ export function useDriveFiles(params?: { folder_id?: string; file_type?: string 
       const { data } = await apiClient.get<FilesResponse>('/drive/files', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -181,6 +196,7 @@ export function useDriveFile(id: string) {
       return data
     },
     enabled: !!id,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -243,6 +259,7 @@ export function useDriveFolders(parentId?: string) {
       const { data } = await apiClient.get<FoldersResponse>('/drive/folders', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -289,6 +306,7 @@ export function useFileShares(fileId: string) {
       return data
     },
     enabled: !!fileId,
+    ...LIST_PRESET,
   })
 }
 
@@ -320,6 +338,7 @@ export function useSharedWithMe() {
       const { data } = await apiClient.get<FilesResponse>('/drive/shared-with-me')
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -330,6 +349,7 @@ export function useSharedFolders() {
       const { data } = await apiClient.get<FoldersResponse>('/drive/shared-folders')
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -341,6 +361,7 @@ export function useSharedLink(link: string) {
       return data
     },
     enabled: !!link,
+    ...DETAIL_PRESET,
   })
 }
 
@@ -353,6 +374,7 @@ export function useTeamFolders() {
       const { data } = await apiClient.get<TeamFoldersResponse>('/drive/team-folders')
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -375,6 +397,7 @@ export function useTeamMembers(teamId: string) {
       return data
     },
     enabled: !!teamId,
+    ...LIST_PRESET,
   })
 }
 
@@ -434,6 +457,7 @@ export function useFileVersions(fileId: string) {
       return data
     },
     enabled: !!fileId,
+    ...LIST_PRESET,
   })
 }
 
@@ -468,6 +492,7 @@ export function useFavoriteFiles() {
       const { data } = await apiClient.get<FilesResponse>('/drive/favorites')
       return data
     },
+    ...LIST_PRESET,
   })
 }
 
@@ -511,6 +536,7 @@ export function useSharingPolicies() {
       const { data } = await apiClient.get<SharingPolicies>('/drive/sharing-policies')
       return data
     },
+    ...REFERENCE_PRESET,
   })
 }
 
@@ -547,6 +573,7 @@ export function useShareAudit(shareId?: string) {
       const { data } = await apiClient.get<AuditResponse>('/drive/share-audit', { params })
       return data
     },
+    ...LIST_PRESET,
   })
 }
 

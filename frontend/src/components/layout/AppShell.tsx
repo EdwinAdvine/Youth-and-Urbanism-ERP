@@ -1,10 +1,33 @@
-import { useEffect, useState } from 'react'
+/**
+ * AppShell — top-level authenticated layout wrapper for Urban Vibes Dynamics.
+ *
+ * Renders the persistent chrome that surrounds all authenticated pages:
+ *   - Left app-rail (icon strip) for switching between modules
+ *   - Secondary Sidebar with per-module sub-navigation
+ *   - Right AI Sidebar (Urban Bad AI, toggle with Cmd+Shift+A)
+ *   - Mobile Bottom Tab Bar + swipe-open Drawer (≤ 767px)
+ *   - Global modals: Search (Cmd+K), Notifications
+ *
+ * Also mounts the `useDataPush` SSE hook so all modules receive real-time
+ * cache invalidations without each page needing its own SSE connection.
+ *
+ * Reads `useNavigationStore` to persist sidebar state across navigations,
+ * and `useThemeStore` to apply the current colour theme to `<html>`.
+ *
+ * All page content renders via `<Outlet />` (React Router v6).
+ */
+import { useCallback, useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
 import { useAISidebarStore } from '../../store/aiSidebar'
+import { useNavigationStore } from '../../store/navigation'
 import { useThemeStore } from '../../store/theme'
 import { useLogout } from '../../api/auth'
+import { useDataPush } from '../../hooks/useDataPush'
+import { useAppUpdate } from '../../hooks/useAppUpdate'
 import Sidebar from './Sidebar'
+import MobileBottomTabBar from './MobileBottomTabBar'
+import MobileDrawer from './MobileDrawer'
 import { NotificationsDropdown } from './NotificationsDropdown'
 import SearchModal from './SearchModal'
 import AISidebar from '../ai/AISidebar'
@@ -41,9 +64,26 @@ const BASE_MODULES = [
   { id: 'admin', label: 'Admin', href: '/admin', icon: <AdminIcon />, roles: ['superadmin', 'admin'] },
 ]
 
+// Modules always visible regardless of app_access grants
+const ALWAYS_VISIBLE = new Set(['home', 'settings', 'admin', 'profile', 'notifications'])
+
 function getVisibleModules(user: ReturnType<typeof useAuthStore.getState>['user']) {
   return BASE_MODULES.filter((mod) => {
+    // Core system modules always shown
+    if (ALWAYS_VISIBLE.has(mod.id)) {
+      // Admin icon only for superadmin or admin role users
+      if (mod.id === 'admin') return user && (user.role === 'superadmin' || user.role === 'admin')
+      return true
+    }
+    // Role-gated modules
     if (mod.roles) return user && mod.roles.includes(user.role)
+    // Super admin sees everything
+    if (user?.is_superadmin) return true
+    // App access filtering: if user has explicit access grants, filter by them
+    // An empty app_access list means "no restrictions yet" → show all (backward-compat)
+    if (user?.app_access && user.app_access.length > 0) {
+      return user.app_access.includes(mod.id)
+    }
     return true
   }).map((mod) => {
     if (mod.id === 'admin' && user) {
@@ -64,12 +104,20 @@ function getActiveApp(pathname: string): string {
 
 export default function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const toggleSidebar = useCallback(() => setSidebarOpen(v => !v), [])
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
 
+  // Real-time data push via SSE — invalidates TanStack Query caches on changes
+  useDataPush()
+
+  // PWA update detection — shows banner when a new service worker is waiting
+  const { updateAvailable, applyUpdate } = useAppUpdate()
+
   const aiSidebarIsOpen = useAISidebarStore((s) => s.isOpen)
   const aiSidebarToggle = useAISidebarStore((s) => s.toggle)
+  const openDrawer = useNavigationStore((s) => s.openDrawer)
   const setTheme = useThemeStore((s) => s.setTheme)
   const resolvedTheme = useThemeStore((s) => s.resolvedTheme)
 
@@ -113,8 +161,8 @@ export default function AppShell() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
-      {/* ── Primary rail ─────────────────────────────────────────── */}
-      <div className="w-14 bg-[#51459d] flex flex-col items-center py-3 gap-0.5 z-30 shrink-0 overflow-y-auto overflow-x-hidden scrollbar-none">
+      {/* ── Primary rail (hidden on mobile/tablet, visible lg+) ── */}
+      <div className="w-14 bg-[#51459d] hidden lg:flex flex-col items-center py-3 gap-0.5 z-30 shrink-0 overflow-y-auto overflow-x-hidden scrollbar-none">
         {/* Logo */}
         <button
           onClick={() => navigate('/')}
@@ -155,31 +203,43 @@ export default function AppShell() {
       </div>
 
       {/* ── Secondary contextual sidebar ─────────────────────────── */}
-      <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+      <Sidebar open={sidebarOpen} onToggle={toggleSidebar} />
 
       {/* ── Main area ────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Top bar */}
-        <header className="h-14 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center px-4 gap-3 shrink-0 z-20">
+        {/* Top bar — compact on mobile (h-12), full on desktop (h-14) */}
+        <header className="h-12 md:h-14 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center px-3 md:px-4 gap-2 md:gap-3 shrink-0 z-20 safe-top">
+          {/* Hamburger menu (mobile/tablet only) */}
+          <button
+            onClick={openDrawer}
+            className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-[8px] text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800 transition-colors"
+            aria-label="Open navigation menu"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
           {/* Global search */}
           <div className="flex-1 max-w-md">
             <button
               onClick={() => setSearchOpen(true)}
-              className="w-full flex items-center gap-2 pl-3 pr-4 py-1.5 text-sm rounded-[10px] border border-gray-200 bg-gray-50 text-gray-400 hover:bg-white hover:border-primary/40 transition-all text-left dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500 dark:hover:bg-gray-700"
+              className="w-full flex items-center gap-2 pl-3 pr-4 py-1.5 min-h-[36px] md:min-h-0 text-sm rounded-[10px] border border-gray-200 bg-gray-50 text-gray-400 hover:bg-white hover:border-primary/40 transition-all text-left dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500 dark:hover:bg-gray-700"
             >
               <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <span>Search anything...</span>
-              <span className="ml-auto text-xs border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5 hidden sm:inline">⌘K</span>
+              <span className="hidden sm:inline">Search anything...</span>
+              <span className="sm:hidden">Search...</span>
+              <span className="ml-auto text-xs border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5 hidden md:inline">⌘K</span>
             </button>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
-            {/* AI assistant quick button */}
+          <div className="ml-auto flex items-center gap-1 md:gap-2">
+            {/* AI assistant quick button — hidden on mobile (use bottom tab instead) */}
             <button
               onClick={() => aiSidebarToggle()}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-xs font-semibold transition-colors ${
+              className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-[10px] text-xs font-semibold transition-colors ${
                 aiSidebarIsOpen
                   ? 'bg-primary text-white'
                   : 'bg-primary/10 text-primary hover:bg-primary/20'
@@ -195,7 +255,7 @@ export default function AppShell() {
             {/* Theme toggle */}
             <button
               onClick={() => setTheme(resolvedTheme() === 'dark' ? 'light' : 'dark')}
-              className="p-1.5 rounded-[8px] text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-[8px] text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 transition-colors"
               title={resolvedTheme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {resolvedTheme() === 'dark' ? (
@@ -280,8 +340,21 @@ export default function AppShell() {
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-auto">
+        {/* PWA update banner — non-blocking, shown when new SW is waiting */}
+        {updateAvailable && (
+          <div className="bg-[#51459d] text-white text-xs flex items-center justify-between px-4 py-2 shrink-0">
+            <span>A new version is available.</span>
+            <button
+              onClick={applyUpdate}
+              className="ml-4 font-semibold underline underline-offset-2 hover:no-underline min-h-[44px] px-2"
+            >
+              Refresh now
+            </button>
+          </div>
+        )}
+
+        {/* Page content — bottom padding on mobile for bottom tab bar */}
+        <main className="flex-1 overflow-auto pb-14 md:pb-0">
           <Outlet />
         </main>
       </div>
@@ -289,6 +362,11 @@ export default function AppShell() {
       {/* Urban Bad AI sidebar */}
       <AISidebar />
 
+      {/* Mobile navigation drawer (< md) */}
+      <MobileDrawer modules={MODULES} />
+
+      {/* Mobile bottom tab bar (< md) */}
+      <MobileBottomTabBar onSearchOpen={() => setSearchOpen(true)} />
 
       {/* Global search modal */}
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />

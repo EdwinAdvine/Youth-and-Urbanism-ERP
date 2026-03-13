@@ -1,3 +1,16 @@
+/**
+ * Meetings Extended API client — recordings, templates, instant meetings, and AI summaries.
+ *
+ * Exports TanStack Query hooks and Axios helper functions. All requests go
+ * through `client.ts` (Axios instance with auth interceptors).
+ * Backend prefix: `/api/v1/meetings`.
+ *
+ * Key exports:
+ *   - useMeetingRecording() — fetch MinIO-stored recordings for a meeting
+ *   - useInstantMeeting() — create and immediately join an ad-hoc meeting room
+ *   - useMeetingTemplates() / useCreateMeetingTemplate() — reusable meeting templates
+ *   - useMeetingAISummary() — generate an AI-written summary of a completed meeting
+ */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from './client'
 import type { Meeting } from './meetings'

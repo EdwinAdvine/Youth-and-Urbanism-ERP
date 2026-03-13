@@ -1,5 +1,4 @@
 """Estimates (Quotes) endpoints — create, send, accept, convert to invoice."""
-from __future__ import annotations
 
 import uuid
 from datetime import date

@@ -1,21 +1,27 @@
-from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
 import redis.asyncio as aioredis
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.audit import log_audit
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import SuperAdminUser
 from app.models.ai import AIAuditLog
 from app.models.user import AppAdmin, User
 from app.schemas.ai import AIAuditLogResponse, AIConfigResponse, AIConfigUpdate
-from app.schemas.user import AppAdminCreate, AppAdminResponse
+from app.schemas.user import (
+    AppAccessBulkUpdate,
+    AppAccessEntry,
+    AppAdminCreate,
+    AppAdminResponse,
+    AuditLogResponse,
+)
 from app.services.ai import AIService
 from app.services.user import UserService
 
@@ -95,11 +101,16 @@ async def list_app_admins(
     summary="Grant app admin rights",
 )
 async def grant_app_admin(
+    request: Request,
     payload: AppAdminCreate,
     current_user: SuperAdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> AppAdminResponse:
     aa = await UserService(db).grant_app_admin(payload, current_user.id)
+    await log_audit(db, current_user, "app_admin.granted",
+                    resource_type="app_admin", resource_id=str(aa.id),
+                    metadata={"user_id": str(payload.user_id), "app_name": payload.app_name},
+                    request=request)
     return AppAdminResponse.model_validate(aa)
 
 
@@ -109,11 +120,15 @@ async def grant_app_admin(
     summary="Revoke app admin rights",
 )
 async def revoke_app_admin(
+    request: Request,
     app_admin_id: uuid.UUID,
-    _: SuperAdminUser,
+    current_user: SuperAdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> None:
     await UserService(db).revoke_app_admin(app_admin_id)
+    await log_audit(db, current_user, "app_admin.revoked",
+                    resource_type="app_admin", resource_id=str(app_admin_id),
+                    request=request)
 
 
 # ── AI Config ─────────────────────────────────────────────────────────────────
@@ -140,6 +155,7 @@ async def get_ai_config(
 
 @router.put("/ai-config", response_model=AIConfigResponse, summary="Update AI configuration")
 async def update_ai_config(
+    request: Request,
     payload: AIConfigUpdate,
     current_user: SuperAdminUser,
     db: AsyncSession = Depends(get_db),
@@ -149,6 +165,10 @@ async def update_ai_config(
         payload.model_dump(exclude_unset=True),
         current_user.id,
     )
+    await log_audit(db, current_user, "ai_config.updated",
+                    resource_type="ai_config",
+                    metadata={"provider": payload.provider, "model_name": payload.model_name},
+                    request=request)
     return AIConfigResponse.model_validate(config)
 
 
@@ -210,3 +230,61 @@ async def get_audit_logs(
     )
     logs = list(result.scalars().all())
     return [AIAuditLogResponse.model_validate(log) for log in logs]
+
+
+# ── General Audit Logs ────────────────────────────────────────────────────────
+@router.get(
+    "/audit-logs/general",
+    response_model=list[AuditLogResponse],
+    summary="Get general admin audit logs",
+)
+async def get_general_audit_logs(
+    _: SuperAdminUser,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=500),
+    user_id: uuid.UUID | None = Query(default=None),
+    action: str | None = Query(default=None),
+    resource_type: str | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+) -> list[AuditLogResponse]:
+    logs = await UserService(db).list_audit_logs(
+        skip=skip, limit=limit,
+        user_id=user_id, action=action, resource_type=resource_type,
+    )
+    return [AuditLogResponse.model_validate(log) for log in logs]
+
+
+# ── User App Access ───────────────────────────────────────────────────────────
+@router.get(
+    "/users/{user_id}/app-access",
+    response_model=list[AppAccessEntry],
+    summary="Get app access grants for a user",
+)
+async def get_user_app_access(
+    user_id: uuid.UUID,
+    _: SuperAdminUser,
+    db: AsyncSession = Depends(get_db),
+) -> list[AppAccessEntry]:
+    entries = await UserService(db).list_user_app_access(user_id)
+    return [AppAccessEntry.model_validate(e) for e in entries]
+
+
+@router.put(
+    "/users/{user_id}/app-access",
+    summary="Bulk set app access for a user",
+)
+async def set_user_app_access(
+    request: Request,
+    user_id: uuid.UUID,
+    payload: AppAccessBulkUpdate,
+    current_user: SuperAdminUser,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int]:
+    count = await UserService(db).bulk_set_app_access(
+        user_id, payload.app_grants, current_user.id
+    )
+    await log_audit(db, current_user, "app_access.updated",
+                    resource_type="user", resource_id=str(user_id),
+                    metadata={"grants": payload.app_grants},
+                    request=request)
+    return {"updated": count}

@@ -174,7 +174,7 @@ export default function CallUI({
     )
   }, [activeCallId, updateCall, onCallEnd])
 
-  const jitsiRoom = currentActiveCall?.jitsi_room || `urban-erp-${channelId}-${activeCallId || ''}`
+  const jitsiRoom = currentActiveCall?.jitsi_room || `urban-vibes-dynamics-${channelId}-${activeCallId || ''}`
 
   // ── Incoming call banner ───────────────────────────────────────────────────
 

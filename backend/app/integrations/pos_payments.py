@@ -431,7 +431,7 @@ class StripeTerminalProcessor(POSPaymentProcessor):
             "payment_method_types[]": "card_present",
             "capture_method": capture_method,
             "metadata[reference]": reference,
-            "metadata[source]": "urban_erp_pos",
+            "metadata[source]": "urban_vibes_dynamics_pos",
         }
 
         try:
@@ -563,7 +563,7 @@ class StripeTerminalProcessor(POSPaymentProcessor):
                     data={
                         "payment_intent": payment_id,
                         "amount": str(amount_cents),
-                        "metadata[source]": "urban_erp_pos",
+                        "metadata[source]": "urban_vibes_dynamics_pos",
                     },
                     headers=self._headers(),
                     timeout=30.0,

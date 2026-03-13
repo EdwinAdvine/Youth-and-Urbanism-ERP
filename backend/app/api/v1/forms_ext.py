@@ -1,5 +1,4 @@
 """Forms extensions — analytics, templates, versioning, webhooks, ERP integrations, AI generation."""
-from __future__ import annotations
 
 import hashlib
 import hmac
@@ -9,7 +8,7 @@ from datetime import date, datetime, timezone
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
@@ -17,12 +16,21 @@ from sqlalchemy.orm import selectinload
 from app.core.deps import CurrentUser, DBSession
 from app.models.forms import (
     Form,
+    FormApprovalWorkflow,
     FormAuditLog,
+    FormAutomation,
     FormCollaborator,
+    FormConsent,
+    FormConsentRecord,
     FormField,
     FormFieldOption,
+    FormQuizResult,
     FormResponse,
+    FormResponseApproval,
+    FormResponseDraft,
+    FormSchedule,
     FormTemplate,
+    FormTranslation,
     FormVersion,
     FormWebhook,
 )
@@ -1280,3 +1288,699 @@ async def create_task_from_response(
         "form_id": str(form_id),
         "response_id": str(resp.id),
     }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PHASE 2 & PHASE 3 — ADDITIONAL SCHEMAS
+# ══════════════════════════════════════════════════════════════════════════════
+
+class ResponseDraftPayload(BaseModel):
+    answers: dict
+    device_id: str | None = None
+    offline_created_at: datetime | None = None
+
+
+class BulkSyncPayload(BaseModel):
+    drafts: list[ResponseDraftPayload]
+
+
+class QuizGradePayload(BaseModel):
+    response_id: uuid.UUID
+    override_score: float | None = None
+
+
+class ScheduleCreate(BaseModel):
+    recurrence_rule: str | None = None
+    recipients: list[str] = []
+    distribution_channel: str = "email"
+    is_active: bool = True
+
+
+class ApprovalWorkflowCreate(BaseModel):
+    steps: list[dict]  # [{label, approver_id?, role?}]
+
+
+class ApproveResponsePayload(BaseModel):
+    status: str  # "approved" | "rejected"
+    comments: str | None = None
+
+
+class TranslationCreate(BaseModel):
+    locale: str
+    translations: dict
+
+
+class ConsentCreate(BaseModel):
+    consent_text: str = "I agree to the data processing terms."
+    is_required: bool = True
+    data_retention_days: int | None = None
+    privacy_policy_url: str | None = None
+
+
+class ConsentRecordCreate(BaseModel):
+    response_id: uuid.UUID | None = None
+    ip_address: str | None = None
+    user_agent: str | None = None
+
+
+class AutomationCreate(BaseModel):
+    name: str
+    trigger: str
+    trigger_conditions: dict | None = None
+    actions: list[dict] = []
+    is_active: bool = True
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SECTION A: OFFLINE SYNC (PHASE 2)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/{form_id}/responses/draft", status_code=status.HTTP_201_CREATED)
+async def save_draft(form_id: uuid.UUID, payload: ResponseDraftPayload, user: CurrentUser, db: DBSession):
+    """Save an offline draft response (not yet submitted)."""
+    form = await db.get(Form, form_id)
+    if not form:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Form not found")
+    draft = FormResponseDraft(
+        form_id=form_id,
+        user_id=user.id,
+        device_id=payload.device_id,
+        draft_data=payload.answers,
+        offline_created_at=payload.offline_created_at or datetime.now(timezone.utc),
+    )
+    db.add(draft)
+    await db.commit()
+    await db.refresh(draft)
+    return {"id": str(draft.id), "synced": False}
+
+
+@router.post("/{form_id}/responses/bulk-sync")
+async def bulk_sync_drafts(form_id: uuid.UUID, payload: BulkSyncPayload, user: CurrentUser, db: DBSession):
+    """Bulk sync offline drafts — convert each to a real FormResponse."""
+    form = await db.get(Form, form_id)
+    if not form:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Form not found")
+    results = []
+    for d in payload.drafts:
+        resp = FormResponse(
+            form_id=form_id,
+            respondent_id=user.id,
+            answers=d.answers,
+            is_sandbox=False,
+        )
+        db.add(resp)
+        await db.flush()
+        results.append({"response_id": str(resp.id), "synced": True})
+    await db.commit()
+    return {"synced_count": len(results), "results": results}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SECTION B: QUIZ (PHASE 2)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/{form_id}/quiz-results")
+async def get_quiz_results(form_id: uuid.UUID, user: CurrentUser, db: DBSession):
+    """List all quiz results for a form."""
+    stmt = select(FormQuizResult).where(FormQuizResult.form_id == form_id).order_by(FormQuizResult.created_at.desc())
+    rows = (await db.execute(stmt)).scalars().all()
+    return {
+        "total": len(rows),
+        "results": [
+            {
+                "id": str(r.id),
+                "form_id": str(r.form_id),
+                "response_id": str(r.response_id),
+                "score": r.score,
+                "max_score": r.max_score,
+                "percentage": r.percentage,
+                "pass_fail": r.pass_fail,
+                "graded_at": r.graded_at,
+                "ai_feedback": r.ai_feedback,
+            }
+            for r in rows
+        ],
+    }
+
+
+@router.post("/{form_id}/quiz-results/grade", status_code=status.HTTP_201_CREATED)
+async def grade_quiz_response(form_id: uuid.UUID, payload: QuizGradePayload, user: CurrentUser, db: DBSession):
+    """Grade a quiz response. Computes score from FormFieldOption.is_correct marks."""
+    resp = await db.get(FormResponse, payload.response_id)
+    if not resp or resp.form_id != form_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Response not found")
+
+    # Get all fields and their correct options
+    fields_stmt = select(FormField).where(FormField.form_id == form_id).options(selectinload(FormField.field_options))
+    fields = (await db.execute(fields_stmt)).scalars().all()
+
+    total_score = 0.0
+    max_score = 0.0
+    for field in fields:
+        correct_opts = [o for o in field.field_options if o.is_correct]
+        if not correct_opts:
+            continue
+        max_pts = max((o.score or 1.0) for o in correct_opts)
+        max_score += max_pts
+        ans = resp.answers.get(str(field.id))
+        if ans:
+            ans_list = ans if isinstance(ans, list) else [ans]
+            for opt in field.field_options:
+                if opt.is_correct and (opt.value in ans_list or opt.label in ans_list):
+                    total_score += opt.score or 1.0
+
+    if payload.override_score is not None:
+        total_score = payload.override_score
+
+    percentage = (total_score / max_score * 100) if max_score > 0 else 0.0
+    pass_threshold = 60.0
+    pass_fail = "pass" if percentage >= pass_threshold else "fail"
+
+    result = FormQuizResult(
+        form_id=form_id,
+        response_id=payload.response_id,
+        score=total_score,
+        max_score=max_score,
+        percentage=percentage,
+        pass_fail=pass_fail,
+        graded_at=datetime.now(timezone.utc),
+        graded_by=user.id,
+    )
+    db.add(result)
+    await db.commit()
+    await db.refresh(result)
+    return {"id": str(result.id), "score": total_score, "max_score": max_score, "percentage": percentage, "pass_fail": pass_fail}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SECTION C: SCHEDULE (PHASE 2)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/{form_id}/schedule", status_code=status.HTTP_201_CREATED)
+async def create_schedule(form_id: uuid.UUID, payload: ScheduleCreate, user: CurrentUser, db: DBSession):
+    form = await db.get(Form, form_id)
+    if not form:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Form not found")
+    sched = FormSchedule(
+        form_id=form_id,
+        recurrence_rule=payload.recurrence_rule,
+        recipients=payload.recipients,
+        distribution_channel=payload.distribution_channel,
+        is_active=payload.is_active,
+    )
+    db.add(sched)
+    await db.commit()
+    await db.refresh(sched)
+    return {"id": str(sched.id), "form_id": str(sched.form_id), "recurrence_rule": sched.recurrence_rule, "is_active": sched.is_active}
+
+
+@router.get("/{form_id}/schedule")
+async def get_schedule(form_id: uuid.UUID, user: CurrentUser, db: DBSession):
+    stmt = select(FormSchedule).where(FormSchedule.form_id == form_id)
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if not row:
+        return None
+    return {"id": str(row.id), "recurrence_rule": row.recurrence_rule, "recipients": row.recipients, "distribution_channel": row.distribution_channel, "is_active": row.is_active, "next_run_at": row.next_run_at, "last_run_at": row.last_run_at}
+
+
+@router.delete("/{form_id}/schedule", status_code=status.HTTP_200_OK)
+async def delete_schedule(form_id: uuid.UUID, user: CurrentUser, db: DBSession):
+    stmt = select(FormSchedule).where(FormSchedule.form_id == form_id)
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if row:
+        await db.delete(row)
+        await db.commit()
+    return {"deleted": True}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SECTION D: AI ANALYZE RESPONSES (PHASE 2)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/{form_id}/ai-analyze-responses")
+async def ai_analyze_responses(form_id: uuid.UUID, user: CurrentUser, db: DBSession):
+    """Use Ollama to generate an AI summary of all form responses."""
+    from app.services.ai import chat_with_ai
+    stmt = select(FormResponse).where(FormResponse.form_id == form_id, FormResponse.is_sandbox == False).order_by(FormResponse.submitted_at.desc()).limit(100)  # noqa: E712
+    responses = (await db.execute(stmt)).scalars().all()
+    if not responses:
+        return {"summary": "No responses to analyze yet.", "response_count": 0}
+
+    sample = [r.answers for r in responses[:20]]
+    prompt = f"Analyze these {len(responses)} form responses and provide:\n1. Key themes and patterns\n2. Most common answers\n3. Notable outliers or concerns\n4. Actionable recommendations\n\nSample data: {json.dumps(sample, default=str)[:3000]}"
+
+    try:
+        result = await chat_with_ai(prompt, model="ollama")
+        return {"summary": result, "response_count": len(responses), "sample_size": min(20, len(responses))}
+    except Exception:
+        return {"summary": "AI analysis temporarily unavailable.", "response_count": len(responses)}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SECTION E: CROSS-TAB & FUNNEL ANALYTICS (PHASE 2)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/{form_id}/analytics/cross-tab")
+async def cross_tab_analytics(
+    form_id: uuid.UUID,
+    row_field_id: str = Query(...),
+    col_field_id: str = Query(...),
+    user: CurrentUser = None,
+    db: DBSession = None,
+):
+    """Cross-tabulation of two fields."""
+    stmt = select(FormResponse).where(FormResponse.form_id == form_id, FormResponse.is_sandbox == False)  # noqa: E712
+    responses = (await db.execute(stmt)).scalars().all()
+
+    table: dict = {}
+    for resp in responses:
+        row_val = str(resp.answers.get(row_field_id, "N/A"))
+        col_val = str(resp.answers.get(col_field_id, "N/A"))
+        if row_val not in table:
+            table[row_val] = {}
+        table[row_val][col_val] = table[row_val].get(col_val, 0) + 1
+
+    return {"row_field_id": row_field_id, "col_field_id": col_field_id, "table": table, "total_responses": len(responses)}
+
+
+@router.get("/{form_id}/analytics/funnel")
+async def funnel_analytics(form_id: uuid.UUID, user: CurrentUser, db: DBSession):
+    """Page-by-page drop-off funnel analysis."""
+    fields_stmt = select(FormField).where(FormField.form_id == form_id).order_by(FormField.page_number, FormField.order)
+    fields = (await db.execute(fields_stmt)).scalars().all()
+    if not fields:
+        return {"pages": []}
+
+    pages = sorted(set(f.page_number for f in fields))
+    total_stmt = select(func.count()).select_from(FormResponse).where(FormResponse.form_id == form_id, FormResponse.is_sandbox == False)  # noqa: E712
+    total = (await db.execute(total_stmt)).scalar_one()
+
+    page_fields: dict = {}
+    for f in fields:
+        page_fields.setdefault(f.page_number, []).append(str(f.id))
+
+    responses_stmt = select(FormResponse).where(FormResponse.form_id == form_id, FormResponse.is_sandbox == False)  # noqa: E712
+    responses = (await db.execute(responses_stmt)).scalars().all()
+
+    funnel = []
+    for pg in pages:
+        answered = sum(
+            1 for r in responses
+            if any(str(fid) in r.answers for fid in page_fields.get(pg, []))
+        )
+        funnel.append({"page": pg, "responses": answered, "drop_off": total - answered if pg > 1 else 0})
+
+    return {"total_started": total, "pages": funnel}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SECTION F: PHASE 3 — APPROVAL WORKFLOW
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/{form_id}/approval-workflow", status_code=status.HTTP_201_CREATED)
+async def create_approval_workflow(form_id: uuid.UUID, payload: ApprovalWorkflowCreate, user: CurrentUser, db: DBSession):
+    form = await db.get(Form, form_id)
+    if not form:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Form not found")
+    wf = FormApprovalWorkflow(form_id=form_id, steps=payload.steps, is_active=True)
+    db.add(wf)
+    await db.commit()
+    await db.refresh(wf)
+    return {"id": str(wf.id), "form_id": str(wf.form_id), "steps": wf.steps, "is_active": wf.is_active}
+
+
+@router.get("/{form_id}/approval-workflow")
+async def get_approval_workflow(form_id: uuid.UUID, user: CurrentUser, db: DBSession):
+    stmt = select(FormApprovalWorkflow).where(FormApprovalWorkflow.form_id == form_id)
+    wf = (await db.execute(stmt)).scalar_one_or_none()
+    if not wf:
+        return None
+    return {"id": str(wf.id), "steps": wf.steps, "current_step": wf.current_step, "is_active": wf.is_active}
+
+
+@router.post("/responses/{response_id}/approve")
+async def approve_response(response_id: uuid.UUID, payload: ApproveResponsePayload, user: CurrentUser, db: DBSession):
+    resp = await db.get(FormResponse, response_id)
+    if not resp:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Response not found")
+    approval = FormResponseApproval(
+        response_id=response_id,
+        approver_id=user.id,
+        status=payload.status,
+        comments=payload.comments,
+        decided_at=datetime.now(timezone.utc),
+    )
+    db.add(approval)
+    await db.commit()
+    return {"response_id": str(response_id), "status": payload.status, "approver_id": str(user.id)}
+
+
+@router.get("/{form_id}/approval-queue")
+async def get_approval_queue(form_id: uuid.UUID, user: CurrentUser, db: DBSession):
+    stmt = (
+        select(FormResponse)
+        .where(FormResponse.form_id == form_id, FormResponse.is_sandbox == False)  # noqa: E712
+        .options(selectinload(FormResponse.form))
+        .order_by(FormResponse.submitted_at.desc())
+        .limit(50)
+    )
+    responses = (await db.execute(stmt)).scalars().all()
+    result = []
+    for r in responses:
+        approval_stmt = select(FormResponseApproval).where(FormResponseApproval.response_id == r.id).order_by(FormResponseApproval.created_at.desc())
+        approvals = (await db.execute(approval_stmt)).scalars().all()
+        latest_status = approvals[0].status if approvals else "pending"
+        result.append({"response_id": str(r.id), "submitted_at": r.submitted_at, "status": latest_status})
+    return {"total": len(result), "responses": result}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SECTION G: PHASE 3 — TRANSLATIONS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/{form_id}/translations")
+async def get_translations(form_id: uuid.UUID, user: CurrentUser, db: DBSession):
+    stmt = select(FormTranslation).where(FormTranslation.form_id == form_id)
+    rows = (await db.execute(stmt)).scalars().all()
+    return {"translations": [{"id": str(r.id), "locale": r.locale, "translations": r.translations, "is_ai_generated": r.is_ai_generated} for r in rows]}
+
+
+@router.post("/{form_id}/translations", status_code=status.HTTP_201_CREATED)
+async def create_translation(form_id: uuid.UUID, payload: TranslationCreate, user: CurrentUser, db: DBSession):
+    form = await db.get(Form, form_id)
+    if not form:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Form not found")
+    existing = (await db.execute(select(FormTranslation).where(FormTranslation.form_id == form_id, FormTranslation.locale == payload.locale))).scalar_one_or_none()
+    if existing:
+        existing.translations = payload.translations
+        await db.commit()
+        return {"id": str(existing.id), "locale": existing.locale, "updated": True}
+    t = FormTranslation(form_id=form_id, locale=payload.locale, translations=payload.translations)
+    db.add(t)
+    await db.commit()
+    await db.refresh(t)
+    return {"id": str(t.id), "locale": t.locale, "created": True}
+
+
+@router.post("/{form_id}/translations/ai-generate")
+async def ai_generate_translations(form_id: uuid.UUID, locale: str = Query(...), user: CurrentUser = None, db: DBSession = None):
+    """Auto-translate form fields to the given locale using Ollama."""
+    import re
+    from app.services.ai import chat_with_ai
+    form_stmt = select(Form).where(Form.id == form_id).options(selectinload(Form.fields).selectinload(FormField.field_options))
+    form = (await db.execute(form_stmt)).scalar_one_or_none()
+    if not form:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Form not found")
+
+    fields_data = [{"id": str(f.id), "label": f.label, "description": f.description, "options": [o.label for o in f.field_options]} for f in form.fields if f.label]
+    prompt = f"Translate this form to locale '{locale}'. Return valid JSON only: a dict mapping field_id to {{label, description, options}} all translated.\nFields: {json.dumps(fields_data)}"
+
+    try:
+        result = await chat_with_ai(prompt, model="ollama")
+        json_match = re.search(r'\{.*\}', result, re.DOTALL)
+        translations = json.loads(json_match.group()) if json_match else {}
+    except Exception:
+        translations = {}
+
+    existing = (await db.execute(select(FormTranslation).where(FormTranslation.form_id == form_id, FormTranslation.locale == locale))).scalar_one_or_none()
+    if existing:
+        existing.translations = translations
+        existing.is_ai_generated = True
+        await db.commit()
+        return {"locale": locale, "translations": translations, "updated": True, "ai_generated": True}
+
+    t = FormTranslation(form_id=form_id, locale=locale, translations=translations, is_ai_generated=True)
+    db.add(t)
+    await db.commit()
+    return {"locale": locale, "translations": translations, "created": True, "ai_generated": True}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SECTION H: PHASE 3 — CONSENT
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/{form_id}/consent", status_code=status.HTTP_201_CREATED)
+async def configure_consent(form_id: uuid.UUID, payload: ConsentCreate, user: CurrentUser, db: DBSession):
+    form = await db.get(Form, form_id)
+    if not form:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Form not found")
+    existing = (await db.execute(select(FormConsent).where(FormConsent.form_id == form_id))).scalar_one_or_none()
+    if existing:
+        existing.consent_text = payload.consent_text
+        existing.is_required = payload.is_required
+        existing.data_retention_days = payload.data_retention_days
+        existing.privacy_policy_url = payload.privacy_policy_url
+        await db.commit()
+        return {"id": str(existing.id), "updated": True}
+    c = FormConsent(form_id=form_id, consent_text=payload.consent_text, is_required=payload.is_required, data_retention_days=payload.data_retention_days, privacy_policy_url=payload.privacy_policy_url)
+    db.add(c)
+    await db.commit()
+    await db.refresh(c)
+    return {"id": str(c.id), "created": True}
+
+
+@router.get("/{form_id}/consent")
+async def get_consent_config(form_id: uuid.UUID):
+    # Public endpoint — no auth needed (called during form display)
+    from app.core.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        row = (await db.execute(select(FormConsent).where(FormConsent.form_id == form_id))).scalar_one_or_none()
+        if not row:
+            return None
+        return {"consent_text": row.consent_text, "is_required": row.is_required, "privacy_policy_url": row.privacy_policy_url}
+
+
+@router.post("/{form_id}/consent/record", status_code=status.HTTP_201_CREATED)
+async def record_consent(form_id: uuid.UUID, payload: ConsentRecordCreate, db: DBSession):
+    record = FormConsentRecord(form_id=form_id, response_id=payload.response_id, ip_address=payload.ip_address, user_agent=payload.user_agent)
+    db.add(record)
+    await db.commit()
+    return {"recorded": True}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SECTION I: PHASE 3 — AUTOMATIONS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/{form_id}/automations", status_code=status.HTTP_201_CREATED)
+async def create_automation(form_id: uuid.UUID, payload: AutomationCreate, user: CurrentUser, db: DBSession):
+    form = await db.get(Form, form_id)
+    if not form:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Form not found")
+    auto = FormAutomation(form_id=form_id, name=payload.name, trigger=payload.trigger, trigger_conditions=payload.trigger_conditions, actions=payload.actions, is_active=payload.is_active)
+    db.add(auto)
+    await db.commit()
+    await db.refresh(auto)
+    return {"id": str(auto.id), "name": auto.name, "trigger": auto.trigger, "is_active": auto.is_active}
+
+
+@router.get("/{form_id}/automations")
+async def list_automations(form_id: uuid.UUID, user: CurrentUser, db: DBSession):
+    stmt = select(FormAutomation).where(FormAutomation.form_id == form_id)
+    rows = (await db.execute(stmt)).scalars().all()
+    return {"total": len(rows), "automations": [{"id": str(r.id), "name": r.name, "trigger": r.trigger, "actions": r.actions, "is_active": r.is_active, "run_count": r.run_count, "last_run_at": r.last_run_at} for r in rows]}
+
+
+@router.delete("/{form_id}/automations/{auto_id}", status_code=status.HTTP_200_OK)
+async def delete_automation(form_id: uuid.UUID, auto_id: uuid.UUID, user: CurrentUser, db: DBSession):
+    row = await db.get(FormAutomation, auto_id)
+    if not row or row.form_id != form_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Automation not found")
+    await db.delete(row)
+    await db.commit()
+    return {"deleted": True}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SECTION J: PHASE 3 — PUBLIC FORM ACCESS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/public/{share_token}")
+async def get_public_form(share_token: str, db: DBSession):
+    """Unauthenticated form access by share token stored in settings."""
+    stmt = select(Form).options(selectinload(Form.fields).selectinload(FormField.field_options))
+    forms = (await db.execute(stmt)).scalars().all()
+    form = next((f for f in forms if (f.settings or {}).get("share_token") == share_token), None)
+    if not form or not form.is_published:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Form not found or not published")
+    return {
+        "id": str(form.id),
+        "title": form.title,
+        "description": form.description,
+        "settings": form.settings,
+        "fields": [
+            {
+                "id": str(f.id),
+                "label": f.label,
+                "field_type": f.field_type,
+                "is_required": f.is_required,
+                "order": f.order,
+                "page_number": f.page_number,
+                "description": f.description,
+                "placeholder": f.placeholder,
+                "options": f.options,
+                "field_options": [{"id": str(o.id), "label": o.label, "value": o.value, "order": o.order} for o in f.field_options],
+            }
+            for f in sorted(form.fields, key=lambda x: (x.page_number, x.order))
+        ],
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SECTION K: AI SUGGEST IMPROVEMENTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/{form_id}/ai-suggest-improvements")
+async def ai_suggest_improvements(form_id: uuid.UUID, user: CurrentUser, db: DBSession):
+    """AI-powered form quality audit: clarity, completion likelihood, bias, accessibility."""
+    form = await db.get(Form, form_id)
+    if not form:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Form not found")
+    fields_summary = [
+        {"label": f.label, "type": f.field_type, "required": f.is_required, "description": f.description}
+        for f in form.fields
+    ]
+    prompt = (
+        f"You are a form design expert. Analyze this form and provide improvement suggestions.\n\n"
+        f"Form: {form.title}\nDescription: {form.description or 'None'}\n"
+        f"Fields ({len(fields_summary)}):\n"
+        + "\n".join(f"- [{f['type']}] {f['label']} ({'required' if f['required'] else 'optional'})" for f in fields_summary)
+        + "\n\nProvide a JSON response with these keys:\n"
+        "  overall_score (0-100 integer),\n"
+        "  clarity_score (0-100),\n"
+        "  completion_likelihood (0-100),\n"
+        "  accessibility_score (0-100),\n"
+        "  bias_score (0-100, higher=less bias),\n"
+        "  estimated_completion_minutes (float),\n"
+        "  suggestions (array of {issue, severity: 'high'|'medium'|'low', recommendation})\n"
+        "Return ONLY valid JSON."
+    )
+    try:
+        from app.services.ai import AIService
+        svc = AIService(db)
+        raw = await svc.chat(message=prompt, session_id=f"form-audit-{form_id}")
+        import json, re
+        match = re.search(r"\{.*\}", raw, re.DOTALL)
+        result = json.loads(match.group()) if match else {"raw": raw}
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@router.post("/{form_id}/media-upload")
+async def upload_form_media(
+    form_id: uuid.UUID,
+    file: UploadFile,
+    user: CurrentUser,
+    db: DBSession,
+):
+    """Upload media (photo/video/audio/document) attached to a form response."""
+    from app.integrations import minio_client
+    form = await db.get(Form, form_id)
+    if not form:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Form not found")
+    content = await file.read()
+    ext = file.filename.rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else "bin"
+    filename = f"form-{form_id}/{uuid.uuid4()}.{ext}"
+    try:
+        record = minio_client.upload_file(
+            file_data=content,
+            filename=filename,
+            user_id=str(user.id),
+            folder_path=f"forms/{form_id}/media",
+            content_type=file.content_type or "application/octet-stream",
+        )
+        return {"url": record.get("url", ""), "minio_key": record.get("minio_key", filename), "filename": file.filename}
+    except Exception as exc:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Upload failed: {exc}")
+
+
+@router.put("/{form_id}/embed-config")
+async def save_embed_config(form_id: uuid.UUID, payload: dict, user: CurrentUser, db: DBSession):
+    """Save embed configuration (allowed domains, iframe height, hide header, etc.)."""
+    form = await db.get(Form, form_id)
+    if not form:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Form not found")
+    settings_data = dict(form.settings or {})
+    settings_data["embed_config"] = payload
+    form.settings = settings_data
+    await db.commit()
+    return {"embed_config": payload}
+
+
+@router.get("/{form_id}/embed-config")
+async def get_embed_config(form_id: uuid.UUID, user: CurrentUser, db: DBSession):
+    """Get embed configuration for a form."""
+    form = await db.get(Form, form_id)
+    if not form:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Form not found")
+    return {"embed_config": (form.settings or {}).get("embed_config", {})}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SECTION L: REAL-TIME ANALYTICS WEBSOCKET
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.websocket("/{form_id}/ws/analytics")
+async def realtime_analytics_ws(
+    form_id: uuid.UUID,
+    websocket: WebSocket,
+    db: DBSession,
+    token: str = Query(""),
+):
+    """WebSocket endpoint for real-time form analytics. Pushes stats on each new submission."""
+    import asyncio
+    import json as _json
+    from app.core.events import event_bus
+    from app.core.ws_auth import validate_ws_token  # noqa: PLC0415
+
+    payload = await validate_ws_token(websocket, token)
+    if payload is None:
+        return
+
+    await websocket.accept()
+
+    async def _get_stats():
+        stmt = select(FormResponse).where(FormResponse.form_id == form_id, FormResponse.is_sandbox == False)  # noqa: E712
+        responses = (await db.execute(stmt)).scalars().all()
+        total = len(responses)
+        return {"total_responses": total, "form_id": str(form_id)}
+
+    try:
+        # Send initial stats
+        stats = await _get_stats()
+        await websocket.send_text(_json.dumps(stats))
+
+        # Subscribe to form.submitted events
+        channel = f"form.submitted.{form_id}"
+        pubsub = event_bus.redis.pubsub() if hasattr(event_bus, 'redis') else None
+
+        if pubsub:
+            await pubsub.subscribe(channel)
+            try:
+                while True:
+                    try:
+                        message = await asyncio.wait_for(pubsub.get_message(ignore_subscribe_messages=True), timeout=30)
+                        if message:
+                            stats = await _get_stats()
+                            await websocket.send_text(_json.dumps(stats))
+                        else:
+                            # Send heartbeat
+                            await websocket.send_text(_json.dumps({"heartbeat": True}))
+                    except asyncio.TimeoutError:
+                        await websocket.send_text(_json.dumps({"heartbeat": True}))
+            finally:
+                await pubsub.unsubscribe(channel)
+        else:
+            # Polling fallback every 10s
+            while True:
+                stats = await _get_stats()
+                await websocket.send_text(_json.dumps(stats))
+                await asyncio.sleep(10)
+    except Exception:
+        pass
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass

@@ -1,6 +1,33 @@
-"""Async IMAP client for fetching emails.
+"""Async IMAP client for fetching emails from an external mail server.
 
-Uses ``aioimaplib`` for non-blocking IMAP access with full message parsing.
+Wraps the ``aioimaplib`` library to provide non-blocking IMAP access with
+full RFC 2822 message parsing, including MIME body extraction and attachment
+handling.
+
+Connection:
+    Connects to the mail server configured via ``settings.IMAP_HOST``,
+    ``settings.IMAP_PORT``, ``settings.IMAP_USER``, and
+    ``settings.IMAP_PASSWORD``.  SSL/TLS is controlled by
+    ``settings.IMAP_USE_SSL``.  Each public function creates a fresh
+    connection, performs its work, and logs out — there is no persistent
+    connection pool (safe for Celery workers and request handlers alike).
+
+Used by:
+    - ``api/v1/mail.py`` — Mail module REST endpoints (list, read, move,
+      delete, star messages)
+    - ``tasks/celery_app.py`` — periodic email sync task
+    - ``api/v1/mail_ext.py`` — cross-module mail integrations (Drive, CRM,
+      Projects, Notes)
+
+Public functions:
+    - :func:`list_folders`      — list all IMAP mailboxes
+    - :func:`fetch_messages`    — paginated message summaries from a folder
+    - :func:`get_message`       — full message by UID (headers + body + attachments)
+    - :func:`get_attachment`    — download a single attachment by index
+    - :func:`move_message`      — COPY + delete (standard IMAP move)
+    - :func:`delete_message`    — flag as \\Deleted + EXPUNGE
+    - :func:`mark_read`         — set \\Seen flag
+    - :func:`mark_starred`      — toggle \\Flagged flag
 """
 from __future__ import annotations
 
@@ -20,13 +47,21 @@ logger = logging.getLogger(__name__)
 
 
 def _decode_header(raw: str | None) -> str:
-    """Decode RFC 2047 encoded header value into a plain string."""
+    """Decode RFC 2047 encoded header value into a plain string.
+
+    RFC 2047 allows non-ASCII text in headers via encoded-words like
+    ``=?utf-8?Q?...?=``.  This function decodes each segment and joins
+    them with a single space, falling back to UTF-8 when the charset is
+    not specified.
+    """
     if not raw:
         return ""
+    # email.header.decode_header returns a list of (bytes|str, charset|None)
     decoded_parts = email.header.decode_header(raw)
     result = []
     for part, charset in decoded_parts:
         if isinstance(part, bytes):
+            # Use the advertised charset; default to UTF-8 for safety
             result.append(part.decode(charset or "utf-8", errors="replace"))
         else:
             result.append(part)
@@ -34,19 +69,30 @@ def _decode_header(raw: str | None) -> str:
 
 
 def _parse_address(addr_str: str | None) -> list[dict[str, str]]:
-    """Parse an email address header into a list of {name, email} dicts."""
+    """Parse an email address header into a list of ``{"name", "email"}`` dicts.
+
+    Handles comma-separated addresses and RFC 2822 display-name quoting.
+    Entries with an empty email address are silently dropped.
+    """
     if not addr_str:
         return []
+    # getaddresses handles groups, quoted display names, and multiple addrs
     addresses = email.utils.getaddresses([addr_str])
     return [{"name": name, "email": addr} for name, addr in addresses if addr]
 
 
 def _parse_date(date_str: str | None) -> datetime | None:
-    """Parse an email date header into a timezone-aware datetime."""
+    """Parse an email Date header into a timezone-aware datetime.
+
+    If the date string lacks timezone info, UTC is assumed.  Malformed
+    date strings return ``None`` rather than raising — callers should
+    treat ``None`` as "date unknown".
+    """
     if not date_str:
         return None
     try:
         parsed = email.utils.parsedate_to_datetime(date_str)
+        # Ensure the result is always tz-aware for consistent comparisons
         if parsed.tzinfo is None:
             parsed = parsed.replace(tzinfo=timezone.utc)
         return parsed
@@ -57,7 +103,22 @@ def _parse_date(date_str: str | None) -> datetime | None:
 def _extract_body_and_attachments(
     msg: email.message.Message,
 ) -> dict[str, Any]:
-    """Walk a MIME message and extract text/html bodies and attachment metadata."""
+    """Walk a MIME message tree and extract text/html bodies and attachment metadata.
+
+    For multipart messages, the function iterates over all MIME parts:
+    - Parts with ``Content-Disposition: attachment`` are collected as
+      attachment metadata (filename, type, size, Content-ID).
+    - The first ``text/plain`` part becomes ``body_text``.
+    - The first ``text/html`` part becomes ``body_html``.
+
+    For single-part messages the payload is treated as either HTML or
+    plain text based on the Content-Type.
+
+    Returns
+    -------
+    dict
+        ``{"body_text": str, "body_html": str, "attachments": list[dict]}``
+    """
     body_text = ""
     body_html = ""
     attachments: list[dict[str, Any]] = []
@@ -68,6 +129,8 @@ def _extract_body_and_attachments(
             content_disposition = str(part.get("Content-Disposition", ""))
 
             if "attachment" in content_disposition:
+                # Collect attachment metadata without loading the full body
+                # into the return dict — actual download is via get_attachment()
                 filename = part.get_filename() or "attachment"
                 filename = _decode_header(filename)
                 attachments.append({
@@ -77,14 +140,18 @@ def _extract_body_and_attachments(
                     "part_id": part.get("Content-ID", ""),
                 })
             elif content_type == "text/plain" and not body_text:
+                # Take only the first text/plain part (avoid duplicates
+                # from multipart/alternative structures)
                 payload = part.get_payload(decode=True)
                 charset = part.get_content_charset() or "utf-8"
                 body_text = payload.decode(charset, errors="replace") if payload else ""
             elif content_type == "text/html" and not body_html:
+                # Take only the first text/html part
                 payload = part.get_payload(decode=True)
                 charset = part.get_content_charset() or "utf-8"
                 body_html = payload.decode(charset, errors="replace") if payload else ""
     else:
+        # Single-part message — classify by Content-Type
         content_type = msg.get_content_type()
         payload = msg.get_payload(decode=True)
         charset = msg.get_content_charset() or "utf-8"
@@ -102,12 +169,18 @@ def _extract_body_and_attachments(
 
 
 def _parse_email_message(raw_bytes: bytes, uid: str) -> dict[str, Any]:
-    """Parse raw email bytes into a structured dict."""
+    """Parse raw email bytes into a structured dict suitable for API responses.
+
+    Combines header extraction, body parsing, and attachment metadata into a
+    single flat dict keyed by standard fields (subject, from, to, cc, bcc,
+    date, in_reply_to, references, body_text, body_html, attachments, headers).
+    """
+    # Use the "default" email policy for modern header handling (returns str)
     msg = email.message_from_bytes(raw_bytes, policy=email.policy.default)
 
     bodies = _extract_body_and_attachments(msg)
 
-    # Extract headers as dict
+    # Collect all raw headers into a dict for debugging / advanced UI display
     headers: dict[str, str] = {}
     for key in msg.keys():
         headers[key] = str(msg[key])
@@ -131,7 +204,18 @@ def _parse_email_message(raw_bytes: bytes, uid: str) -> dict[str, Any]:
 
 
 async def _get_client() -> aioimaplib.IMAP4_SSL | aioimaplib.IMAP4:
-    """Create and authenticate an IMAP client connection."""
+    """Create and authenticate an IMAP client connection.
+
+    Reads connection details from ``app.core.config.settings``:
+    - ``IMAP_HOST`` / ``IMAP_PORT`` — server address
+    - ``IMAP_USE_SSL`` — whether to use IMAP4_SSL (port 993) or plain IMAP4
+    - ``IMAP_USER`` / ``IMAP_PASSWORD`` — login credentials
+
+    The caller is responsible for calling ``await client.logout()`` when done.
+    All public functions in this module use a try/finally pattern to ensure
+    logout even on error.
+    """
+    # Choose SSL vs plaintext transport based on configuration
     if settings.IMAP_USE_SSL:
         client = aioimaplib.IMAP4_SSL(
             host=settings.IMAP_HOST,
@@ -145,6 +229,7 @@ async def _get_client() -> aioimaplib.IMAP4_SSL | aioimaplib.IMAP4:
             timeout=30,
         )
 
+    # Wait for the server greeting before attempting authentication
     await client.wait_hello_from_server()
     await client.login(settings.IMAP_USER, settings.IMAP_PASSWORD)
     return client

@@ -1,4 +1,5 @@
-FROM nginx:1.27-alpine
+# fholzer/nginx-brotli includes the ngx_brotli module pre-compiled
+FROM fholzer/nginx-brotli:v1.27.3
 
 # Remove default config
 RUN rm /etc/nginx/conf.d/default.conf
