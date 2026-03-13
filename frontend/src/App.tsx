@@ -9,6 +9,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import AppShell from './components/layout/AppShell'
 import HomePage from './features/home/HomePage'
 import LoginPage from './features/auth/LoginPage'
+import SSOCallbackPage from './features/auth/SSOCallbackPage'
 
 // ─── Preloadable lazy imports (sidebar-linked dashboards — prefetch on hover) ─
 
@@ -605,6 +606,9 @@ export default function App() {
               </RequireGuest>
             }
           />
+
+          {/* SSO callback */}
+          <Route path="/auth/sso-callback" element={<SSOCallbackPage />} />
 
           {/* Public storefront */}
           <Route path="/store/:storeSlug" element={<S><StorefrontLayout /></S>}>
