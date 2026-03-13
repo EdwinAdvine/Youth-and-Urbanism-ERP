@@ -57,6 +57,17 @@ server {
         proxy_send_timeout 7d;
     }
 
+    # OnlyOffice document server proxy
+    location /onlyoffice/ {
+        proxy_pass http://onlyoffice:80/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+    }
+
     # Cache static assets aggressively
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map)$ {
         expires 1y;

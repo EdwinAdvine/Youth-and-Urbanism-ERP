@@ -113,7 +113,7 @@ class Settings(BaseSettings):
     # Document editing engine — kept forever. Our React UI wraps the ONLYOFFICE
     # JS API for docs, spreadsheets, and presentations.
     ONLYOFFICE_URL: str = "http://onlyoffice:80"  # internal Docker network — backend→ONLYOFFICE calls
-    ONLYOFFICE_PUBLIC_URL: str = "http://localhost:8083"  # browser-accessible URL for the JS editor SDK
+    ONLYOFFICE_PUBLIC_URL: str = "https://urbanvibedynamics.com/onlyoffice"  # browser-accessible URL for the JS editor SDK
     ONLYOFFICE_JWT_SECRET: str = "onlyoffice-jwt-secret-2026-urban-vibes-dynamics"  # shared secret for callback auth
 
     # Internal backend URL reachable by other containers (e.g. ONLYOFFICE callback)
