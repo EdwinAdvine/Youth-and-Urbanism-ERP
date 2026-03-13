@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, NavLink } from 'react-router-dom'
 import { cn, Button, Spinner, Modal, Input, Badge } from '../../components/ui'
 import { toast } from '../../components/ui'
 import { useProjects, useCreateProject, type Project } from '../../api/projects'
@@ -14,6 +14,46 @@ const STATUS_BADGE: Record<string, 'success' | 'warning' | 'info' | 'default'> =
 const COLOR_PRESETS = [
   '#51459d', '#6fd943', '#3ec9d6', '#ffa21d', '#ff3a6e',
   '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316',
+]
+
+// Features surfaced in the empty state to show what becomes available
+const FEATURE_CARDS = [
+  {
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+      </svg>
+    ),
+    title: 'Kanban Board',
+    desc: 'Drag-and-drop task management with custom columns, swimlanes, and bulk operations.',
+  },
+  {
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      </svg>
+    ),
+    title: 'Gantt & Milestones',
+    desc: 'Timeline visualisation, dependency tracking, and milestone progress.',
+  },
+  {
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+      </svg>
+    ),
+    title: 'Time Tracking',
+    desc: 'Log time per task, view team workload, and export detailed time reports.',
+  },
+  {
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+      </svg>
+    ),
+    title: 'Cross-Module Links',
+    desc: 'Connect tasks to CRM deals, finance expenses, Drive folders, and Docs.',
+  },
 ]
 
 export default function ProjectsPage() {
@@ -68,40 +108,89 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="p-3 sm:p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Projects</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage your projects and track progress</p>
+    <div className="flex flex-col h-full">
+      {/* Top nav tabs */}
+      <div className="shrink-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4">
+        <div className="flex items-center justify-between">
+          <div className="flex gap-0">
+            {[
+              { label: 'Projects', href: '/projects' },
+              { label: 'Workload', href: '/projects/workload' },
+              { label: 'Templates', href: '/projects/templates' },
+            ].map(({ label, href }) => (
+              <NavLink
+                key={href}
+                to={href}
+                end
+                className={({ isActive }) =>
+                  cn(
+                    'px-4 py-3 text-sm font-medium border-b-2 transition-colors',
+                    isActive
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                  )
+                }
+              >
+                {label}
+              </NavLink>
+            ))}
+          </div>
+          <Button size="sm" onClick={() => setModalOpen(true)} className="my-2">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Project
+          </Button>
         </div>
-        <Button onClick={() => setModalOpen(true)} className="w-full sm:w-auto">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Project
-        </Button>
       </div>
 
-      {/* Project Grid */}
-      {projects && projects.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} onClick={() => navigate(`/projects/${project.id}`)} />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
-            <svg className="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
+      {/* Content */}
+      <div className="flex-1 overflow-auto p-3 sm:p-6">
+        {projects && projects.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {projects.map((project) => (
+              <ProjectCard key={project.id} project={project} onClick={() => navigate(`/projects/${project.id}`)} />
+            ))}
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">No projects yet</h2>
-          <p className="text-sm text-gray-500 mt-1 mb-4">Create your first project to get started</p>
-          <Button size="sm" onClick={() => setModalOpen(true)}>Create Project</Button>
-        </div>
-      )}
+        ) : (
+          <div className="flex flex-col items-center py-12">
+            {/* Empty state header */}
+            <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
+              <svg className="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">No projects yet</h2>
+            <p className="text-sm text-gray-500 mb-6 text-center max-w-sm">
+              Create your first project to unlock Kanban boards, Gantt charts, time tracking, and more.
+            </p>
+            <Button onClick={() => setModalOpen(true)}>
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Create Project
+            </Button>
+
+            {/* Feature preview cards */}
+            <div className="mt-10 w-full max-w-3xl grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {FEATURE_CARDS.map((f) => (
+                <div
+                  key={f.title}
+                  className="flex gap-3 p-4 rounded-[10px] bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm"
+                >
+                  <div className="shrink-0 w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    {f.icon}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{f.title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{f.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Create Project Modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="New Project" size="md">
@@ -170,7 +259,7 @@ function ProjectCard({ project, onClick }: { project: Project; onClick: () => vo
     <div
       onClick={onClick}
       className={cn(
-        'bg-white rounded-[10px] border border-gray-100 shadow-sm overflow-hidden',
+        'bg-white dark:bg-gray-800 rounded-[10px] border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden',
         'cursor-pointer hover:shadow-md transition-shadow group'
       )}
     >

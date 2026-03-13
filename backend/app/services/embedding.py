@@ -5,7 +5,6 @@ import logging
 import uuid
 from typing import Any
 
-import httpx
 from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,9 +13,6 @@ from app.models.embedding import DocumentEmbedding
 
 logger = logging.getLogger(__name__)
 
-# Default embedding model available via Ollama
-EMBEDDING_MODEL = "nomic-embed-text"
-
 # Approximate token-to-character ratio (1 token ~ 4 chars for English).
 # We target ~500 tokens per chunk, so ~2000 characters.
 CHUNK_SIZE_CHARS = 2000
@@ -24,23 +20,22 @@ CHUNK_OVERLAP_CHARS = 200
 
 
 class EmbeddingService:
-    """Handles text embedding via Ollama and vector storage/search in pgvector."""
-
-    def __init__(self, ollama_url: str | None = None):
-        self.ollama_url = (ollama_url or settings.OLLAMA_URL).rstrip("/")
+    """Handles text embedding via OpenAI-compatible API and vector storage/search in pgvector."""
 
     # ── Embed a single text ────────────────────────────────────────────────
     async def embed_text(self, text: str) -> list[float]:
-        """Call Ollama /api/embeddings to get a 768-dim vector for *text*."""
-        url = f"{self.ollama_url}/api/embeddings"
-        payload = {"model": EMBEDDING_MODEL, "prompt": text}
-        async with httpx.AsyncClient(timeout=60) as client:
-            resp = await client.post(url, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-        embedding = data.get("embedding")
+        """Call the configured AI provider's embeddings API to get a vector for *text*."""
+        from openai import AsyncOpenAI
+
+        client = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+
+        resp = await client.embeddings.create(
+            model="text-embedding-3-small",
+            input=text,
+        )
+        embedding = resp.data[0].embedding
         if not embedding:
-            raise ValueError(f"Ollama returned no embedding. Response: {data}")
+            raise ValueError("AI provider returned no embedding.")
         return embedding
 
     # ── Chunk text into ~500-token pieces ──────────────────────────────────

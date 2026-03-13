@@ -1,6 +1,6 @@
 """Mail Calendar Scanner — detects scheduling intent in Era Mail messages.
 
-Uses the local Ollama instance to analyse email subject + body and extract
+Uses the configured AI provider to analyse email subject + body and extract
 structured event data (date, time, duration, attendees, location, title).
 
 Public API
@@ -24,7 +24,6 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,10 +36,9 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-OLLAMA_TIMEOUT = 120  # seconds
 _SCANNED_FLAG_KEY = "calendar_scan"  # key checked/set in ai_triage JSONB
 
-# System prompt fed to Ollama so it stays focused on scheduling extraction
+# System prompt fed to the AI so it stays focused on scheduling extraction
 _SYSTEM_PROMPT = (
     "You are a scheduling assistant embedded in an enterprise ERP. "
     "Your only job is to read an email and determine whether it contains "
@@ -84,26 +82,48 @@ Rules:
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-async def _call_ollama(prompt: str) -> str:
-    """POST prompt to local Ollama /api/generate. Returns the response text."""
-    url = f"{settings.OLLAMA_URL.rstrip('/')}/api/generate"
-    payload: dict[str, Any] = {
-        "model": settings.OLLAMA_MODEL,
-        "prompt": prompt,
-        "system": _SYSTEM_PROMPT,
-        "stream": False,
-    }
-    async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT) as client:
-        resp = await client.post(url, json=payload)
-        resp.raise_for_status()
-        data = resp.json()
-        return data.get("response", "")
+async def _ai_chat(messages: list[dict], model: str | None = None) -> str:
+    """Call the configured AI provider."""
+    from openai import AsyncOpenAI
+
+    provider = settings.AI_PROVIDER
+    if provider == "anthropic":
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+        system_parts = [m["content"] for m in messages if m["role"] == "system"]
+        non_system = [m for m in messages if m["role"] != "system"]
+        kwargs: dict[str, Any] = {
+            "model": model or settings.AI_MODEL,
+            "max_tokens": 4096,
+            "messages": non_system,
+        }
+        if system_parts:
+            kwargs["system"] = "\n\n".join(system_parts)
+        resp = await client.messages.create(**kwargs)
+        return resp.content[0].text
+    else:
+        client_oai = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+        resp = await client_oai.chat.completions.create(
+            model=model or settings.AI_MODEL,
+            messages=messages,
+        )
+        return resp.choices[0].message.content or ""
 
 
-def _parse_ollama_response(raw: str) -> dict[str, Any]:
-    """Extract the JSON object from Ollama's text response.
+async def _call_ai(prompt: str) -> str:
+    """Send prompt to the configured AI provider. Returns the response text."""
+    messages = [
+        {"role": "system", "content": _SYSTEM_PROMPT},
+        {"role": "user", "content": prompt},
+    ]
+    return await _ai_chat(messages)
 
-    Ollama sometimes wraps JSON in markdown code fences; this strips them.
+
+def _parse_ai_response(raw: str) -> dict[str, Any]:
+    """Extract the JSON object from the AI's text response.
+
+    Sometimes wraps JSON in markdown code fences; this strips them.
     Returns a dict — never raises.
     """
     text = raw.strip()
@@ -188,7 +208,7 @@ async def scan_mail_for_scheduling_intent(
     """
     from app.models.mail_storage import MailboxMessage  # local import avoids circular deps
 
-    # ── Load message ─────────────────────────────────────────────────────────
+    # -- Load message --
     try:
         msg_uuid = uuid.UUID(str(message_id))
     except (ValueError, AttributeError):
@@ -207,27 +227,24 @@ async def scan_mail_for_scheduling_intent(
     subject = message.subject or ""
     body = (message.body_text or message.body_html or "").strip()
 
-    # Truncate very long bodies to keep Ollama prompt manageable
+    # Truncate very long bodies to keep AI prompt manageable
     body_excerpt = body[:4000] if len(body) > 4000 else body
 
-    # ── Build prompt ─────────────────────────────────────────────────────────
+    # -- Build prompt --
     prompt = _EXTRACTION_PROMPT_TEMPLATE.format(
         subject=subject,
         body=body_excerpt,
     )
 
-    # ── Call Ollama ───────────────────────────────────────────────────────────
+    # -- Call AI --
     try:
-        raw_response = await _call_ollama(prompt)
-    except httpx.HTTPError as exc:
-        logger.error("Ollama HTTP error while scanning message %s: %s", message_id, exc)
-        return {"has_scheduling_intent": False, "confidence": 0.0, "suggested_event": None}
-    except Exception:
-        logger.exception("Unexpected error calling Ollama for message %s", message_id)
+        raw_response = await _call_ai(prompt)
+    except Exception as exc:
+        logger.error("AI error while scanning message %s: %s", message_id, exc)
         return {"has_scheduling_intent": False, "confidence": 0.0, "suggested_event": None}
 
-    # ── Parse response ────────────────────────────────────────────────────────
-    parsed = _parse_ollama_response(raw_response)
+    # -- Parse response --
+    parsed = _parse_ai_response(raw_response)
     has_intent: bool = bool(parsed.get("has_scheduling_intent", False))
     confidence: float = float(parsed.get("confidence", 0.0))
 
@@ -244,7 +261,7 @@ async def scan_mail_for_scheduling_intent(
     if not has_intent:
         return {"has_scheduling_intent": False, "confidence": confidence, "suggested_event": None}
 
-    # ── Build suggested event ─────────────────────────────────────────────────
+    # -- Build suggested event --
     raw_event: dict = parsed.get("suggested_event") or {}
 
     start_iso, end_iso = _build_event_times(
@@ -342,7 +359,7 @@ async def batch_scan_recent_mail(
             ),
         )
         .order_by(MailboxMessage.received_at.desc())
-        .limit(50)  # safety cap — avoid hammering Ollama
+        .limit(50)  # safety cap
     )
 
     result = await db.execute(stmt)

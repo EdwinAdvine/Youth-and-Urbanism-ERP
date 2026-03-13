@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { Button, Card, Badge, toast } from '../../components/ui'
 import {
   useForumPost,
@@ -14,11 +15,9 @@ function formatDate(d: string) {
   })
 }
 
-interface Props {
-  postId: string
-}
-
-export default function ForumPostDetail({ postId }: Props) {
+export default function ForumPostDetail() {
+  const { postId } = useParams<{ postId: string }>()
+  if (!postId) return <div className="p-6 text-center text-gray-400">Post not found</div>
   const { data: post, isLoading } = useForumPost(postId)
   const createReply = useCreateForumReply()
   const upvotePost = useUpvotePost()

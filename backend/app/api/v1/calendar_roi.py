@@ -69,7 +69,7 @@ async def meeting_roi_dashboard(
 
 @router.post(
     "/events/{event_id}/analyze-sentiment",
-    summary="Run Ollama sentiment analysis on meeting notes",
+    summary="Run AI sentiment analysis on meeting notes",
     response_model=None,
 )
 async def analyze_event_sentiment(
@@ -78,7 +78,7 @@ async def analyze_event_sentiment(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
-    """Send meeting notes through the local Ollama model and receive:
+    """Send meeting notes through the AI provider and receive:
     sentiment (positive/neutral/negative), a 0-1 score, key themes,
     extracted action items, and a coaching tip.
     """
@@ -95,7 +95,7 @@ async def meeting_coach_report(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
-    """Analyse the last 10 meetings with notes via Ollama.
+    """Analyse the last 10 meetings with notes via AI.
 
     Returns:
     - Overall sentiment trend (positive / neutral / negative)

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button, Spinner, Badge } from '../../components/ui'
 import { useDriveFile, useDownloadFile, formatFileSize, getFileType } from '../../api/drive'
 import { useLockFile, useUnlockFile } from '../../api/drive_ext'
@@ -12,7 +13,10 @@ interface Props {
   onClose?: () => void
 }
 
+const EDITABLE_EXTENSIONS = new Set(['docx', 'doc', 'odt', 'xlsx', 'xls', 'ods', 'pptx', 'ppt', 'odp', 'pdf'])
+
 export default function FilePreviewPanel({ fileId, onClose }: Props) {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'preview' | 'ai' | 'comments'>('preview')
   const [commentText, setCommentText] = useState('')
   const [replyTo, setReplyTo] = useState<{ id: string; user: string } | null>(null)
@@ -64,6 +68,27 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
   const isImage = file.content_type.startsWith('image/')
   const isPdf = file.content_type.includes('pdf')
   const isText = file.content_type.startsWith('text/') || file.content_type.includes('json') || file.content_type.includes('xml')
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
+  const isEditable = EDITABLE_EXTENSIONS.has(ext) || file.content_type.includes('word') || file.content_type.includes('spreadsheet') || file.content_type.includes('presentation')
+
+  const handleOpenInDocs = () => {
+    navigate('/docs', {
+      state: {
+        openDriveFile: {
+          id: file.id,
+          name: file.name,
+          extension: ext || 'docx',
+          content_type: file.content_type,
+          size: file.size,
+          minio_key: file.minio_key,
+          folder_path: file.folder_path,
+          is_public: file.is_public,
+          created_at: file.created_at,
+          updated_at: file.updated_at,
+        },
+      },
+    })
+  }
 
   return (
     <div className="w-96 border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 flex flex-col h-full">
@@ -240,6 +265,22 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
             <pre className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap font-mono">
               Content preview requires loading from the server.
             </pre>
+          </div>
+        ) : isEditable ? (
+          <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+            <div className="w-16 h-16 rounded-2xl bg-[#51459d]/10 flex items-center justify-center mb-3">
+              <svg className="w-8 h-8 text-[#51459d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Open in Y&U Docs</p>
+            <p className="text-xs text-gray-400 mt-1 mb-3">Edit this file with the built-in document editor</p>
+            <Button size="sm" onClick={handleOpenInDocs} className="bg-[#51459d] hover:bg-[#3d3480] text-white">
+              Open in Editor
+            </Button>
+            <Button size="sm" variant="outline" className="mt-2" onClick={handleDownload}>
+              Download instead
+            </Button>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">

@@ -401,7 +401,7 @@ Features:
 - Cash flow forecast (30/60/90 day)
 - Financial narrative generator
 - AI bank transaction categorizer
-- Receipt OCR (Ollama vision)
+- Receipt OCR (AI vision)
 - Natural language report query
 - Anomaly detection
 - Tax optimizer suggestions
@@ -412,13 +412,13 @@ Features:
 |--------|------|----------|-------------|
 | `GET` | `/ai/cash-flow-forecast` | `cash_flow_forecast` | 30/60/90-day rolling cash flow forecast. |
 | `POST` | `/ai/financial-narrative` | `generate_financial_narrative` | Generate an AI executive summary for any financial report. |
-| `POST` | `/ai/categorize-bank-transactions` | `categorize_bank_transactions` | AI-powered bank transaction categorization using rules + Ollama embeddings. |
+| `POST` | `/ai/categorize-bank-transactions` | `categorize_bank_transactions` | AI-powered bank transaction categorization using rules + AI embeddings. |
 | `POST` | `/ai/nl-query` | `natural_language_query` | Convert natural language financial query to safe SQL and execute it. |
 | `GET` | `/ai/anomaly-detection` | `detect_financial_anomalies` | Detect statistical anomalies and suspicious patterns in recent transactions. |
 | `POST` | `/ai/dunning/generate-reminder/{invoice_id}` | `generate_dunning_reminder` | Generate AI-personalized payment reminder for an overdue invoice. |
 | `GET` | `/ai/dunning/status/{invoice_id}` | `get_dunning_status` | Get the dunning history for an invoice. |
 | `GET` | `/ai/tax-optimizer` | `tax_optimizer` | AI quarter-end tax optimization suggestions. |
-| `POST` | `/ai/ocr-receipt` | `ocr_receipt` | Upload a receipt image → Ollama llava extracts vendor, amount, date, category. |
+| `POST` | `/ai/ocr-receipt` | `ocr_receipt` | Upload a receipt image → AI vision extracts vendor, amount, date, category. |
 
 ### `GET /ai/cash-flow-forecast`
 
@@ -449,7 +449,7 @@ Generate an AI executive summary for any financial report.
 
 **Function:** `categorize_bank_transactions` (line 248)
 
-AI-powered bank transaction categorization using rules + Ollama embeddings.
+AI-powered bank transaction categorization using rules + AI embeddings.
 
 **Parameters:** `payload`
 
@@ -517,7 +517,7 @@ AI quarter-end tax optimization suggestions.
 
 **Function:** `ocr_receipt` (line 699)
 
-Upload a receipt image → Ollama llava extracts vendor, amount, date, category.
+Upload a receipt image → AI vision extracts vendor, amount, date, category.
 
 Returns pre-filled expense fields ready for form auto-population.
 

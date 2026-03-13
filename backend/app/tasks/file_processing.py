@@ -2,7 +2,7 @@
 
 Celery tasks that run asynchronously after file upload:
 1. extract_file_content — extract text from PDF/DOCX/XLSX/images (OCR)
-2. generate_file_embedding — embed extracted text via Ollama + store in pgvector
+2. generate_file_embedding — embed extracted text + store in pgvector
 3. ai_analyze_file — summarize, extract entities, suggest tags, classify sensitivity
 4. purge_expired_trash — daily cleanup of expired trash items
 """
@@ -319,14 +319,31 @@ def generate_file_embedding(self, file_id: str) -> dict:
         raise self.retry(exc=exc, countdown=60)
 
 
+async def _ai_chat(messages, model=None):
+    """Route AI chat to the configured provider (openai, grok, or anthropic)."""
+    from openai import AsyncOpenAI
+    from app.core.config import settings
+    provider = settings.AI_PROVIDER
+    if provider == "anthropic":
+        import anthropic
+        client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+        system_parts = [m["content"] for m in messages if m["role"] == "system"]
+        non_system = [m for m in messages if m["role"] != "system"]
+        kwargs = {"model": model or settings.AI_MODEL, "max_tokens": 4096, "messages": non_system}
+        if system_parts:
+            kwargs["system"] = "\n\n".join(system_parts)
+        resp = await client.messages.create(**kwargs)
+        return resp.content[0].text
+    else:
+        client = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+        resp = await client.chat.completions.create(model=model or settings.AI_MODEL, messages=messages)
+        return resp.choices[0].message.content or ""
+
+
 @shared_task(name="tasks.ai_analyze_file", bind=True, max_retries=2)
 def ai_analyze_file(self, file_id: str) -> dict:
-    """AI analysis of a Drive file: summarize, extract entities, suggest tags, classify.
-
-    Uses Ollama (local LLM) for all analysis — zero external API calls.
-    """
+    """AI analysis of a Drive file: summarize, extract entities, suggest tags, classify."""
     async def _analyze():
-        import httpx
         from app.core.database import AsyncSessionLocal
         from app.models.drive import DriveFile, FileAIMetadata
 
@@ -364,21 +381,10 @@ Document content:
 Respond with ONLY valid JSON, no markdown formatting."""
 
             try:
-                ollama_url = settings.OLLAMA_URL.rstrip("/")
-                async with httpx.AsyncClient(timeout=120) as client:
-                    resp = await client.post(
-                        f"{ollama_url}/api/generate",
-                        json={
-                            "model": settings.OLLAMA_MODEL,
-                            "prompt": prompt,
-                            "stream": False,
-                            "format": "json",
-                        },
-                    )
-                    resp.raise_for_status()
-                    resp_data = resp.json()
-
-                ai_text = resp_data.get("response", "")
+                ai_text = await _ai_chat([
+                    {"role": "system", "content": "You are a document analysis assistant. Always respond with valid JSON only."},
+                    {"role": "user", "content": prompt},
+                ])
 
                 # Parse the JSON response
                 try:

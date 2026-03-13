@@ -495,7 +495,7 @@ export default function NotesAIPanel({ noteContent = '', notebookId, onClose, on
       {/* Footer hint */}
       <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-800 shrink-0">
         <p className="text-[9px] text-gray-400 text-center">
-          Powered by Ollama (local) · ERP-context aware
+          Powered by Urban Board AI · ERP-context aware
         </p>
       </div>
     </div>

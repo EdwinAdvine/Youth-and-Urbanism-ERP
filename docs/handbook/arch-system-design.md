@@ -15,7 +15,7 @@ Urban Vibes Dynamics is a fully self-hosted platform running as a single Docker 
 
 ---
 
-## The 14-Container Stack
+## The 13-Container Stack
 
 All containers are prefixed `urban-vibes-dynamics-*` and communicate over the internal Docker network `urban-vibes-dynamics-net`. Only the ports listed below are exposed to the host.
 
@@ -35,7 +35,6 @@ All containers are prefixed `urban-vibes-dynamics-*` and communicate over the in
 | `urban-vibes-dynamics-frontend` | 3010 | React 18 + Vite SPA — served by a lightweight static file server |
 | `urban-vibes-dynamics-celery-worker` | — | Async task worker — email sending, report generation, data exports, scheduled jobs |
 | `urban-vibes-dynamics-celery-beat` | — | Scheduler — fires recurring Celery tasks (nightly payroll accruals, daily analytics rollup, reminder emails) |
-| `urban-vibes-dynamics-ollama` | 11435 | Local LLM server — runs open-weight models (Llama 3, Mistral, etc.) for AI features with zero data leaving your server |
 
 ### Communication & Document Layer
 
@@ -61,7 +60,6 @@ Browser (React) → urban-vibes-dynamics-frontend (static)
                      → urban-vibes-dynamics-redis (cache / events)
                      → urban-vibes-dynamics-minio (file I/O)
                      → urban-vibes-dynamics-celery-worker (async offload via Redis)
-                     → urban-vibes-dynamics-ollama (AI inference)
 ```
 
 WebSocket connections (AI chat, real-time notifications, live collaboration) maintain a persistent connection to `urban-vibes-dynamics-backend`. The backend publishes events to Redis pub/sub channels; subscribed handlers in the same process (and in Celery workers) consume them to trigger cross-module side effects.
@@ -78,7 +76,7 @@ WebSocket connections (AI chat, real-time notifications, live collaboration) mai
 
 **Celery + Redis:** Reliable async task processing without a heavyweight message broker. Redis doubles as the event bus, eliminating a second queue service.
 
-**Ollama (local LLM):** All AI inference runs on your hardware. The Super Admin can optionally configure OpenAI, Anthropic, or Grok as fallback providers in **Admin → System Settings → AI**, but this is never required.
+**AI (cloud providers):** The Super Admin configures OpenAI, Anthropic, or Grok as the AI provider in **Admin → System Settings → AI**.
 
 **MinIO (S3-compatible):** All file storage uses the standard S3 API. If you ever need to migrate to AWS S3 or another provider, only the endpoint and credentials change — no application code changes.
 
@@ -88,4 +86,4 @@ WebSocket connections (AI chat, real-time notifications, live collaboration) mai
 
 ## Zero External API Dependency Principle
 
-Every core feature works without calling any external API. Email goes through Stalwart (or your own SMTP server). AI runs through Ollama. Files stay in MinIO. Docs and video use ONLYOFFICE and Jitsi — all self-hosted. This means Urban Vibes Dynamics works in air-gapped environments and you never face unexpected downtime or pricing changes from third-party services.
+Every core feature works without calling any external API. Email goes through Stalwart (or your own SMTP server). Files stay in MinIO. Docs and video use ONLYOFFICE and Jitsi — all self-hosted. AI uses configurable cloud providers (OpenAI, Anthropic, or Grok). This means Urban Vibes Dynamics minimizes external dependencies and you control which services your data touches.

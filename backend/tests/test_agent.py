@@ -390,8 +390,8 @@ async def test_short_circuit_single_read_only(db: AsyncSession, test_user):
     mock_ai = MagicMock()
     plan_json = json.dumps([{"action": "list_meetings", "args": {"date": "today"}, "rationale": "Show meetings"}])
     mock_ai.chat = AsyncMock(side_effect=[
-        (plan_json, "ollama", "llama3"),
-        ("Here are your meetings.", "ollama", "llama3"),
+        (plan_json, "openai", "gpt-4o"),
+        ("Here are your meetings.", "openai", "gpt-4o"),
     ])
 
     mock_tool_executor = AsyncMock()
@@ -417,7 +417,7 @@ async def test_short_circuit_single_read_only(db: AsyncSession, test_user):
 async def test_no_tool_fallback(db: AsyncSession, test_user):
     """When plan parsing fails 3 times, should fall back to _no_tool."""
     mock_ai = MagicMock()
-    mock_ai.chat = AsyncMock(return_value=("I cannot help with that request.", "ollama", "llama3"))
+    mock_ai.chat = AsyncMock(return_value=("I cannot help with that request.", "openai", "gpt-4o"))
 
     with patch("app.services.agent_orchestrator.ToolExecutor"), \
          patch("app.services.agent_orchestrator.get_user_permissions", new_callable=AsyncMock, return_value=[]):
@@ -436,8 +436,8 @@ async def test_token_tracking_accumulates(db: AsyncSession, test_user):
     mock_ai = MagicMock()
     plan_json = json.dumps([{"action": "list_meetings", "args": {}, "rationale": "Show meetings"}])
     mock_ai.chat = AsyncMock(side_effect=[
-        (plan_json, "ollama", "llama3"),
-        ("Your meetings are listed.", "ollama", "llama3"),
+        (plan_json, "openai", "gpt-4o"),
+        ("Your meetings are listed.", "openai", "gpt-4o"),
     ])
 
     mock_tool_executor = AsyncMock()
@@ -459,9 +459,9 @@ async def test_approval_flow_pauses(db: AsyncSession, superadmin_user):
         {"action": "create_user", "args": {"email": "new@test.com"}, "rationale": "Create new user"},
     ])
     mock_ai.chat = AsyncMock(side_effect=[
-        (plan_json, "ollama", "llama3"),
-        ("Research complete.", "ollama", "llama3"),
-        ("Completed the operation.", "ollama", "llama3"),
+        (plan_json, "openai", "gpt-4o"),
+        ("Research complete.", "openai", "gpt-4o"),
+        ("Completed the operation.", "openai", "gpt-4o"),
     ])
 
     mock_tool_executor = AsyncMock()

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import {
   useCustomObject,
   useUpdateCustomObject,
@@ -17,14 +18,8 @@ const FIELD_TYPES = [
   { value: 'url', label: 'URL' },
 ]
 
-function getDefinitionId(): string {
-  const parts = window.location.pathname.split('/')
-  const idx = parts.indexOf('custom-objects')
-  return idx !== -1 && parts[idx + 1] ? parts[idx + 1] : ''
-}
-
 export default function CustomObjectFormBuilder() {
-  const definitionId = getDefinitionId()
+  const { id: definitionId = '' } = useParams<{ id: string }>()
   const { data: definition, isLoading } = useCustomObject(definitionId)
   const updateObject = useUpdateCustomObject()
 

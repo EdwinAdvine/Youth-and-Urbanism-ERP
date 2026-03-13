@@ -650,7 +650,7 @@ async def hr_chatbot_query(
     body: HRChatbotQuery,
     current_user: CurrentUser,
 ) -> dict:
-    """HR policy/data chatbot powered by Ollama."""
+    """HR policy/data chatbot powered by AI."""
     prompt_parts = []
     if body.context:
         prompt_parts.append(f"Context: {body.context}\n\n")
@@ -670,7 +670,7 @@ async def hr_chatbot_query(
             resp.raise_for_status()
             data = resp.json()
     except httpx.HTTPError as exc:
-        logger.warning("Ollama HR chatbot call failed: %s", exc)
+        logger.warning("AI HR chatbot call failed: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="AI service is currently unavailable. Please try again later.",

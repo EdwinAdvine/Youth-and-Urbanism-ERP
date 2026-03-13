@@ -26,9 +26,9 @@
               ┌─────────┬──────────┬────────┼────────┬──────────┬─────────┐
               │         │          │        │        │          │         │
         ┌─────▼───┐ ┌───▼────┐ ┌──▼───┐ ┌──▼──┐ ┌──▼────┐ ┌──▼───┐ ┌──▼────────┐
-        │Postgres │ │ Redis  │ │MinIO │ │Ollama│ │Stalwart│ │Jitsi │ │ONLYOFFICE │
-        │ (:5433) │ │(:6380) │ │(:9010)│ │(:11435)│(:8082)│ │(:8443)│ │  (:8083)  │
-        └─────────┘ └────────┘ └──────┘ └──────┘ └───────┘ └──────┘ └───────────┘
+        │Postgres │ │ Redis  │ │MinIO │ │Stalwart│ │Jitsi │ │ONLYOFFICE │
+        │ (:5433) │ │(:6380) │ │(:9010)│ │(:8082) │ │(:8443)│ │  (:8083)  │
+        └─────────┘ └────────┘ └──────┘ └────────┘ └──────┘ └───────────┘
                                                                 │
                                                     ┌───────────┴────────┐
                                                     │  Celery Worker(s)  │
@@ -108,8 +108,8 @@ User Message → Context Enrichment (RAG/pgvector) → Provider Selection → St
                                                          │
                               ┌───────────────────────────┼────────────┐
                               │                           │            │
-                         Ollama (local)            OpenAI/Grok    Anthropic
-                         (default)                 (fallback)    (fallback)
+                         OpenAI               Anthropic          Grok
+                         (configurable)       (configurable)    (configurable)
 ```
 
 - **34 AI tools** in `services/ai_tools.py` for cross-module actions

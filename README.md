@@ -10,8 +10,8 @@ Urban Vibes Dynamics replaces fragmented SaaS tools with one unified, privacy-fi
 - **Productivity** — Docs/Excel/PowerPoint (ONLYOFFICE), Calendar (FullCalendar + CalDAV), Forms, Projects (Kanban)
 - **File Management** — Drive (MinIO + Nextcloud), SharePoint-level sharing
 - **Business Modules** — Finance, HR & Payroll, CRM, Inventory, Supply Chain, Manufacturing, POS, E-Commerce
-- **AI Assistant** — Urban Board AI with tool-calling across all modules (Ollama local-first, configurable providers)
-- **Analytics** — Apache Superset dashboards connected to the shared database
+- **AI Assistant** — Urban Board AI with tool-calling across all modules (configurable providers: OpenAI, Anthropic, Grok)
+- **Analytics** — Built-in dashboards with direct PostgreSQL queries
 
 ## Tech Stack
 
@@ -21,7 +21,7 @@ Urban Vibes Dynamics replaces fragmented SaaS tools with one unified, privacy-fi
 | Backend | Python FastAPI + SQLAlchemy 2.0 (async) + Alembic |
 | Database | PostgreSQL 16 + pgvector |
 | Queue | Celery + Redis 7 |
-| AI | Ollama (local) + OpenAI / Anthropic / Grok (configurable fallback) |
+| AI | OpenAI / Anthropic / Grok (configurable) |
 | File Storage | MinIO (S3-compatible) + Nextcloud |
 | Mail | Stalwart (Rust — IMAP/SMTP/JMAP/CalDAV/CardDAV) |
 | Office | ONLYOFFICE Document Server |
@@ -117,7 +117,7 @@ The central AI assistant provides:
 - Tool-calling across all modules (34 tools — create invoices, schedule meetings, query inventory, etc.)
 - RAG with pgvector embeddings for document-aware answers
 - Voice input/output
-- Configurable provider: Ollama (local, default) → OpenAI / Anthropic / Grok
+- Configurable provider: OpenAI / Anthropic / Grok
 - Full audit log of AI actions
 
 WebSocket endpoint: `ws://localhost:8000/api/v1/ws/chat/{session_id}?token={jwt}`

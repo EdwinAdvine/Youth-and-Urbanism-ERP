@@ -123,7 +123,7 @@ export interface UpdateDepartmentPayload extends Partial<CreateDepartmentPayload
 
 export interface CreateEmployeePayload {
   user_id?: string
-  employee_number: string
+  employee_number?: string
   first_name: string
   last_name: string
   email: string

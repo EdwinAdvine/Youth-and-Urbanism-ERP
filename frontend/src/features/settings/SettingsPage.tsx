@@ -254,7 +254,6 @@ function NotificationsTab() {
 // ─── Integrations Tab ────────────────────────────────────────────────────────
 
 const INTEGRATIONS = [
-  { name: 'Ollama', description: 'Local AI inference engine', status: 'connected' },
   { name: 'MinIO', description: 'S3-compatible object storage', status: 'connected' },
   { name: 'Mail Engine', description: 'SMTP/IMAP + PostgreSQL', status: 'connected' },
 ]

@@ -60,7 +60,7 @@ The Sales & Operations Plan aligns your procurement schedule with your sales com
 
 ## Reviewing AI-Generated Procurement Suggestions
 
-Urban Vibes Dynamics's AI (powered by the local Ollama instance) analyses the demand forecast, safety stock levels, supplier lead times, and your S&OP plan to generate **Suggested Purchase Requisitions**.
+Urban Vibes Dynamics's AI analyses the demand forecast, safety stock levels, supplier lead times, and your S&OP plan to generate **Suggested Purchase Requisitions**.
 
 To review:
 

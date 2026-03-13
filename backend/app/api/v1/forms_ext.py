@@ -1519,8 +1519,7 @@ async def delete_schedule(form_id: uuid.UUID, user: CurrentUser, db: DBSession):
 
 @router.post("/{form_id}/ai-analyze-responses")
 async def ai_analyze_responses(form_id: uuid.UUID, user: CurrentUser, db: DBSession):
-    """Use Ollama to generate an AI summary of all form responses."""
-    from app.services.ai import chat_with_ai
+    """Use AI to generate a summary of all form responses."""
     stmt = select(FormResponse).where(FormResponse.form_id == form_id, FormResponse.is_sandbox == False).order_by(FormResponse.submitted_at.desc()).limit(100)  # noqa: E712
     responses = (await db.execute(stmt)).scalars().all()
     if not responses:
@@ -1530,7 +1529,24 @@ async def ai_analyze_responses(form_id: uuid.UUID, user: CurrentUser, db: DBSess
     prompt = f"Analyze these {len(responses)} form responses and provide:\n1. Key themes and patterns\n2. Most common answers\n3. Notable outliers or concerns\n4. Actionable recommendations\n\nSample data: {json.dumps(sample, default=str)[:3000]}"
 
     try:
-        result = await chat_with_ai(prompt, model="ollama")
+        from app.core.config import settings  # noqa: PLC0415
+        from openai import AsyncOpenAI  # noqa: PLC0415
+
+        provider = settings.AI_PROVIDER
+        if provider == "anthropic":
+            import anthropic  # noqa: PLC0415
+            client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+            resp = await client.messages.create(
+                model=settings.AI_MODEL, max_tokens=2048,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            result = resp.content[0].text
+        else:
+            client = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+            resp = await client.chat.completions.create(
+                model=settings.AI_MODEL, messages=[{"role": "user", "content": prompt}],
+            )
+            result = resp.choices[0].message.content or ""
         return {"summary": result, "response_count": len(responses), "sample_size": min(20, len(responses))}
     except Exception:
         return {"summary": "AI analysis temporarily unavailable.", "response_count": len(responses)}
@@ -1684,9 +1700,8 @@ async def create_translation(form_id: uuid.UUID, payload: TranslationCreate, use
 
 @router.post("/{form_id}/translations/ai-generate")
 async def ai_generate_translations(form_id: uuid.UUID, locale: str = Query(...), user: CurrentUser = None, db: DBSession = None):
-    """Auto-translate form fields to the given locale using Ollama."""
-    import re
-    from app.services.ai import chat_with_ai
+    """Auto-translate form fields to the given locale using AI."""
+    import re  # noqa: PLC0415
     form_stmt = select(Form).where(Form.id == form_id).options(selectinload(Form.fields).selectinload(FormField.field_options))
     form = (await db.execute(form_stmt)).scalar_one_or_none()
     if not form:
@@ -1696,7 +1711,24 @@ async def ai_generate_translations(form_id: uuid.UUID, locale: str = Query(...),
     prompt = f"Translate this form to locale '{locale}'. Return valid JSON only: a dict mapping field_id to {{label, description, options}} all translated.\nFields: {json.dumps(fields_data)}"
 
     try:
-        result = await chat_with_ai(prompt, model="ollama")
+        from app.core.config import settings  # noqa: PLC0415
+        from openai import AsyncOpenAI  # noqa: PLC0415
+
+        provider = settings.AI_PROVIDER
+        if provider == "anthropic":
+            import anthropic  # noqa: PLC0415
+            client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+            resp = await client.messages.create(
+                model=settings.AI_MODEL, max_tokens=2048,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            result = resp.content[0].text
+        else:
+            client = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+            resp = await client.chat.completions.create(
+                model=settings.AI_MODEL, messages=[{"role": "user", "content": prompt}],
+            )
+            result = resp.choices[0].message.content or ""
         json_match = re.search(r'\{.*\}', result, re.DOTALL)
         translations = json.loads(json_match.group()) if json_match else {}
     except Exception:

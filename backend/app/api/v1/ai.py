@@ -147,7 +147,7 @@ async def websocket_chat(
                 messages.append({"role": "user", "content": message_text})
 
                 svc = AIService(db, user=user)
-                provider_used = "ollama"
+                provider_used = "openai"
                 model_used = ""
                 try:
                     config = await svc.get_active_config()

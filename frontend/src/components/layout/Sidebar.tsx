@@ -19,7 +19,7 @@ import { memo } from 'react'
 import { useLocation } from 'react-router-dom'
 import { cn } from '../ui'
 import { useAuthStore } from '../../store/auth'
-import { APP_SUBMENUS } from './sidebarMenus'
+import { APP_SUBMENUS, buildProjectsMenu } from './sidebarMenus'
 import SidebarContent from './SidebarContent'
 
 function getActiveApp(pathname: string): string {
@@ -38,7 +38,9 @@ function SidebarInner({ open, onToggle }: SidebarProps) {
   const location = useLocation()
 
   const activeApp = getActiveApp(location.pathname)
-  const menu = activeApp ? APP_SUBMENUS[activeApp] : null
+  const menu = activeApp === 'projects'
+    ? buildProjectsMenu(location.pathname)
+    : (activeApp ? APP_SUBMENUS[activeApp] : null)
 
   // Role check for restricted menus (e.g. admin)
   const canAccess = !menu?.roles || (user && menu.roles.includes(user.role))

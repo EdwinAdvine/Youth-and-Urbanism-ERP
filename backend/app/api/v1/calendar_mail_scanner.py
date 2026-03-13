@@ -136,7 +136,7 @@ async def _get_message_with_suggestion(
     response_model=MailScanResult,
     summary="Scan a mail message for scheduling intent",
     description=(
-        "Sends the email's subject and body to the local Ollama model and "
+        "Sends the email's subject and body to the AI provider and "
         "extracts any meeting/scheduling information. The result is stored "
         "back into the message's ai_triage field so it can be retrieved later "
         "via GET /calendar/mail-suggestions."

@@ -12,7 +12,6 @@ import uuid
 from datetime import datetime, date, timedelta
 from typing import Any
 
-import httpx
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -74,9 +73,9 @@ async def _generate_invoice_number(db) -> str:
 # ── AI title extractor ────────────────────────────────────────────────────────
 
 async def _ai_extract_title(content: str, fallback: str) -> str:
-    """Ask Ollama to extract or summarise a short title from note content.
+    """Ask AI to extract or summarise a short title from note content.
 
-    Falls back to ``fallback`` on any error (including Ollama unavailable).
+    Falls back to ``fallback`` on any error (including AI unavailable).
     """
     clean = _strip_html(content)
     if not clean:
@@ -88,19 +87,25 @@ async def _ai_extract_title(content: str, fallback: str) -> str:
         f"{clean[:500]}"
     )
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(
-                f"{settings.OLLAMA_URL}/api/generate",
-                json={
-                    "model": settings.OLLAMA_MODEL,
-                    "prompt": prompt,
-                    "stream": False,
-                },
+        from openai import AsyncOpenAI  # noqa: PLC0415
+
+        provider = settings.AI_PROVIDER
+        if provider == "anthropic":
+            import anthropic  # noqa: PLC0415
+            client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+            resp = await client.messages.create(
+                model=settings.AI_MODEL, max_tokens=64,
+                messages=[{"role": "user", "content": prompt}],
             )
-            resp.raise_for_status()
-            data = resp.json()
-            title = data.get("response", "").strip()
-            return title or fallback
+            title = resp.content[0].text.strip()
+        else:
+            client = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+            resp = await client.chat.completions.create(
+                model=settings.AI_MODEL, max_tokens=64,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            title = (resp.choices[0].message.content or "").strip()
+        return title or fallback
     except Exception:
         return fallback
 

@@ -351,46 +351,6 @@ superset:
 
 ---
 
-## 7. Ollama (Local AI)
-
-**Service:** `ollama`
-**Used by:** `backend/app/services/ai.py`
-
-### What It Does
-
-Runs large language models locally for 100% independent AI. No data leaves the server.
-
-### How We Integrate
-
-**AIService** (`services/ai.py`) uses Ollama as the default provider:
-- Chat completions (streaming via WebSocket)
-- Document embeddings for RAG (pgvector storage)
-- Tool calling for cross-module actions
-
-**Provider Fallback Chain:** Ollama → OpenAI → Anthropic → Grok (configurable by Super Admin)
-
-### Model Management
-
-```bash
-# Pull models
-docker compose exec ollama ollama pull llama3.1
-docker compose exec ollama ollama pull nomic-embed-text  # For RAG embeddings
-
-# List available models
-docker compose exec ollama ollama list
-```
-
-### Configuration
-
-```env
-AI_PROVIDER=ollama
-OLLAMA_BASE_URL=http://ollama:11434
-OLLAMA_MODEL=llama3.1
-OLLAMA_EMBED_MODEL=nomic-embed-text
-```
-
----
-
 ## Cross-Service Event Flows
 
 ### Meeting Scheduling
@@ -448,7 +408,6 @@ The `/health` endpoint checks connectivity to all integrated services:
     "database": "ok",
     "redis": "ok",
     "minio": "ok",
-    "ollama": "ok",
     "stalwart": "ok",
     "nextcloud": "ok",
     "onlyoffice": "ok"

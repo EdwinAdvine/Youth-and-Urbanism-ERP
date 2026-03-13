@@ -1701,5 +1701,5 @@ async def ai_summary(
             f"{active_risks.scalar() or 0} active supplier risks. "
             "Review control tower dashboard for detailed KPIs."
         ),
-        "note": "Full AI-generated summary requires Ollama integration (coming in AI agents phase)",
+        "note": "Full AI-generated summary requires AI integration (coming in AI agents phase)",
     }

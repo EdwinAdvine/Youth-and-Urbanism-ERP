@@ -2,7 +2,7 @@
  * Note Collaboration API client — inline comments, version history, and live presence.
  *
  * Exports TanStack Query hooks and Axios helper functions. Calls
- * `/api/v1/collab/*` directly via its own Axios instance (no shared client.ts).
+ * `/collab/*` directly via its own Axios instance (no shared client.ts).
  * Backend prefix: `/api/v1/collab`.
  *
  * Key exports:
@@ -11,7 +11,7 @@
  *   - useNoteVersions() / useRestoreVersion() — snapshot-based version history
  *   - useNotePresence() — real-time list of users currently viewing a note
  */
-import axios from 'axios'
+import apiClient from './client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 export interface NoteComment {
@@ -50,7 +50,7 @@ export function useNoteComments(noteId: string) {
   return useQuery({
     queryKey: ['note-comments', noteId],
     queryFn: async () => {
-      const { data } = await axios.get<NoteComment[]>(`/api/v1/collab/comments/${noteId}`)
+      const { data } = await apiClient.get<NoteComment[]>(`/collab/comments/${noteId}`)
       return data
     },
     enabled: !!noteId,
@@ -62,7 +62,7 @@ export function useCreateComment(noteId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (body: { content: string; parent_comment_id?: string; anchor_block_id?: string; anchor_text?: string }) => {
-      const { data } = await axios.post<NoteComment>(`/api/v1/collab/comments/${noteId}`, body)
+      const { data } = await apiClient.post<NoteComment>(`/collab/comments/${noteId}`, body)
       return data
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['note-comments', noteId] }),
@@ -73,7 +73,7 @@ export function useResolveComment(noteId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (commentId: string) => {
-      await axios.patch(`/api/v1/collab/comments/${noteId}/${commentId}/resolve`)
+      await apiClient.patch(`/collab/comments/${noteId}/${commentId}/resolve`)
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['note-comments', noteId] }),
   })
@@ -83,7 +83,7 @@ export function useDeleteComment(noteId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (commentId: string) => {
-      await axios.delete(`/api/v1/collab/comments/${noteId}/${commentId}`)
+      await apiClient.delete(`/collab/comments/${noteId}/${commentId}`)
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['note-comments', noteId] }),
   })
@@ -95,7 +95,7 @@ export function useNoteVersions(noteId: string) {
   return useQuery({
     queryKey: ['note-versions', noteId],
     queryFn: async () => {
-      const { data } = await axios.get<NoteVersion[]>(`/api/v1/collab/versions/${noteId}`)
+      const { data } = await apiClient.get<NoteVersion[]>(`/collab/versions/${noteId}`)
       return data
     },
     enabled: !!noteId,
@@ -107,7 +107,7 @@ export function useCreateVersion(noteId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (label?: string) => {
-      const { data } = await axios.post<NoteVersion>(`/api/v1/collab/versions/${noteId}`, { label })
+      const { data } = await apiClient.post<NoteVersion>(`/collab/versions/${noteId}`, { label })
       return data
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['note-versions', noteId] }),
@@ -118,7 +118,7 @@ export function useRestoreVersion(noteId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (versionId: string) => {
-      await axios.post(`/api/v1/collab/versions/${noteId}/${versionId}/restore`)
+      await apiClient.post(`/collab/versions/${noteId}/${versionId}/restore`)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['note-versions', noteId] })
@@ -133,8 +133,8 @@ export function useNotePresence(noteId: string) {
   return useQuery({
     queryKey: ['note-presence', noteId],
     queryFn: async () => {
-      const { data } = await axios.get<{ note_id: string; active_users: PresenceUser[]; count: number }>(
-        `/api/v1/collab/presence/${noteId}`
+      const { data } = await apiClient.get<{ note_id: string; active_users: PresenceUser[]; count: number }>(
+        `/collab/presence/${noteId}`
       )
       return data
     },

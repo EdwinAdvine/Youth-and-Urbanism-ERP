@@ -151,7 +151,7 @@ Forms extensions — analytics, templates, versioning, webhooks, ERP integration
 | `POST` | `/{form_id}/schedule` | `create_schedule` | — |
 | `GET` | `/{form_id}/schedule` | `get_schedule` | — |
 | `DELETE` | `/{form_id}/schedule` | `delete_schedule` | — |
-| `POST` | `/{form_id}/ai-analyze-responses` | `ai_analyze_responses` | Use Ollama to generate an AI summary of all form responses. |
+| `POST` | `/{form_id}/ai-analyze-responses` | `ai_analyze_responses` | Use AI to generate a summary of all form responses. |
 | `GET` | `/{form_id}/analytics/cross-tab` | `cross_tab_analytics` | Cross-tabulation of two fields. |
 | `GET` | `/{form_id}/analytics/funnel` | `funnel_analytics` | Page-by-page drop-off funnel analysis. |
 | `POST` | `/{form_id}/approval-workflow` | `create_approval_workflow` | — |
@@ -160,7 +160,7 @@ Forms extensions — analytics, templates, versioning, webhooks, ERP integration
 | `GET` | `/{form_id}/approval-queue` | `get_approval_queue` | — |
 | `GET` | `/{form_id}/translations` | `get_translations` | — |
 | `POST` | `/{form_id}/translations` | `create_translation` | — |
-| `POST` | `/{form_id}/translations/ai-generate` | `ai_generate_translations` | Auto-translate form fields to the given locale using Ollama. |
+| `POST` | `/{form_id}/translations/ai-generate` | `ai_generate_translations` | Auto-translate form fields to the given locale using AI. |
 | `POST` | `/{form_id}/consent` | `configure_consent` | — |
 | `GET` | `/{form_id}/consent` | `get_consent_config` | — |
 | `POST` | `/{form_id}/consent/record` | `record_consent` | — |
@@ -446,7 +446,7 @@ Grade a quiz response. Computes score from FormFieldOption.is_correct marks.
 
 **Function:** `ai_analyze_responses` (line 1521)
 
-Use Ollama to generate an AI summary of all form responses.
+Use AI to generate a summary of all form responses.
 
 **Parameters:** `form_id`
 
@@ -533,7 +533,7 @@ Page-by-page drop-off funnel analysis.
 
 **Function:** `ai_generate_translations` (line 1686)
 
-Auto-translate form fields to the given locale using Ollama.
+Auto-translate form fields to the given locale using AI.
 
 **Parameters:** `form_id`, `locale`
 

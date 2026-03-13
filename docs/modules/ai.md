@@ -4,14 +4,14 @@
 
 ## Overview
 
-Urban Vibes Dynamics runs AI completely locally using **Ollama** as the primary provider. Every AI feature works offline with full data privacy — no data leaves the server. OpenAI, Anthropic, and Grok can be configured as fallback providers by the Super Admin.
+Urban Vibes Dynamics uses cloud AI providers — OpenAI, Anthropic, and Grok — configurable by the Super Admin.
 
 The AI system has two layers:
 1. **Basic AI Chat** — streaming chat with module context and voice input
 2. **Urban Bad AI** — multi-agent system (Orchestrator → Researcher → Verifier → Executor) for complex cross-module tasks
 
 **Who uses it:** All authenticated users (chat), Super Admin (provider config)
-**Requires:** Ollama running locally (default) or external API key configured
+**Requires:** API key configured for at least one provider (OpenAI, Anthropic, or Grok)
 
 ---
 
@@ -44,7 +44,7 @@ The AI system has two layers:
 | `backend/app/api/v1/ai_ext.py` | Extended AI: document AI, email AI |
 | `backend/app/api/v1/ai_features.py` | Module-specific AI features |
 | `backend/app/api/v1/agent.py` | Urban Bad AI WebSocket + approval endpoints |
-| `backend/app/services/ai.py` | Core AI service (Ollama + fallback providers) |
+| `backend/app/services/ai.py` | Core AI service (OpenAI / Anthropic / Grok providers) |
 | `backend/app/services/ai_tools.py` | All 55 tool definitions and approval tiers |
 | `backend/app/services/agent_orchestrator.py` | Multi-agent orchestration engine (~400 lines) |
 | `backend/app/services/agent_prompts.py` | System prompts for each agent type |
@@ -105,16 +105,9 @@ Configured by Super Admin at Admin > AI Settings:
 
 | Provider | Model Examples | When Used |
 |----------|---------------|---------|
-| Ollama (local) | llama3.1, mistral, codellama | Default — always used if available |
-| OpenAI | gpt-4o, gpt-4-turbo | Fallback when Ollama unavailable |
-| Anthropic | claude-3-5-sonnet | Fallback option |
-| Grok | grok-2 | Optional additional provider |
-
-Pull Ollama models:
-```bash
-docker compose exec ollama ollama pull llama3.1
-docker compose exec ollama ollama list
-```
+| OpenAI | gpt-4o, gpt-4-turbo | Default provider |
+| Anthropic | claude-3-5-sonnet | Alternative provider |
+| Grok | grok-2 | Alternative provider |
 
 ---
 

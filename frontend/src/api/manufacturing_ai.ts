@@ -131,5 +131,5 @@ export const useExecutiveSummary = () =>
     queryKey: ['mfg-executive-summary'],
     queryFn: () =>
       apiClient.get<ExecutiveSummary>('/manufacturing/ai/executive-summary').then(r => r.data),
-    staleTime: 5 * 60 * 1000, // 5 min cache — Ollama call is expensive
+    staleTime: 5 * 60 * 1000, // 5 min cache — AI call is expensive
   })

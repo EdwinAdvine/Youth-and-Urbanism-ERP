@@ -7,7 +7,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
-from sqlalchemy import and_, extract, func, select
+from sqlalchemy import Integer, and_, extract, func, select
 from sqlalchemy.orm import selectinload
 
 from app.core.deps import CurrentUser, DBSession, require_app_admin
@@ -161,9 +161,13 @@ def _employee_to_dict(employee: Employee) -> dict[str, Any]:
 
 async def _next_employee_number(db) -> str:
     """Generate the next employee number in the format EMP-0001."""
-    result = await db.execute(select(func.count()).select_from(Employee))
-    count = result.scalar() or 0
-    return f"EMP-{count + 1:04d}"
+    result = await db.execute(
+        select(func.max(
+            func.cast(func.substr(Employee.employee_number, 5), Integer)
+        )).where(Employee.employee_number.like("EMP-%"))
+    )
+    max_num = result.scalar() or 0
+    return f"EMP-{max_num + 1:04d}"
 
 
 # ── Department endpoints ──────────────────────────────────────────────────────

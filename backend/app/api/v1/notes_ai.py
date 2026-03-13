@@ -208,14 +208,13 @@ async def transcribe_audio(
     user=Depends(CurrentUser),
     notebook_id: str | None = Query(None),
 ) -> dict:
-    """Upload audio → Whisper (via Ollama) → create structured note.
+    """Upload audio -> Whisper (via OpenAI) -> create structured note.
 
     Accepts: mp3, mp4, wav, m4a, ogg, webm (max 25 MB)
     Returns: created note id + transcript
     """
     import tempfile, os, uuid as uuid_mod  # noqa: PLC0415
     from app.models.notes import Note  # noqa: PLC0415
-    import httpx  # noqa: PLC0415
     from app.core.config import settings  # noqa: PLC0415
 
     MAX_SIZE = 25 * 1024 * 1024
@@ -231,21 +230,18 @@ async def transcribe_audio(
 
     transcript = ""
     try:
-        # Call Ollama Whisper endpoint
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            with open(tmp_path, "rb") as af:
-                resp = await client.post(
-                    f"{settings.OLLAMA_URL}/api/transcribe",
-                    files={"audio": af},
-                    data={"model": "whisper"},
-                )
-            if resp.status_code == 200:
-                transcript = resp.json().get("text", "")
-            else:
-                # Fallback: create note with placeholder
-                transcript = "[Audio transcription pending — Whisper model not available]"
+        from openai import AsyncOpenAI  # noqa: PLC0415
+        client = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+        with open(tmp_path, "rb") as af:
+            resp = await client.audio.transcriptions.create(
+                model="whisper-1",
+                file=af,
+            )
+        transcript = resp.text or ""
+        if not transcript:
+            transcript = "[Audio transcription returned empty result]"
     except Exception:
-        transcript = "[Audio transcription failed — check Ollama Whisper model]"
+        transcript = "[Audio transcription failed — check OpenAI API key and Whisper access]"
     finally:
         os.unlink(tmp_path)
 

@@ -31,9 +31,8 @@ REDIS_URL=redis://redis:6379/0
 JWT_SECRET_KEY=your-secret-key-change-in-production
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
 
-# AI Provider (ollama = local, openai/grok/anthropic = cloud)
-AI_PROVIDER=ollama
-OLLAMA_BASE_URL=http://ollama:11434
+# AI Provider (openai/anthropic/grok)
+AI_PROVIDER=openai
 
 # MinIO
 MINIO_ENDPOINT=minio:9000
@@ -108,8 +107,7 @@ CORS_ORIGINS=https://erp.yourdomain.com
 DATABASE_URL=postgresql+asyncpg://urban:<db-password>@postgres:5432/urban_erp
 
 # AI (production)
-AI_PROVIDER=ollama
-OLLAMA_BASE_URL=http://ollama:11434
+AI_PROVIDER=openai
 
 # Disable debug mode
 DEBUG=false
@@ -218,7 +216,6 @@ curl -X POST http://localhost:8010/api/v1/backups/{backup_id}/restore \
 | postgres | 5432 | 5433 | PostgreSQL + pgvector |
 | redis | 6379 | 6380 | Cache + message broker |
 | minio | 9000/9001 | 9010/9011 | Object storage |
-| ollama | 11434 | 11435 | Local LLM |
 | backend | 8000 | 8010 | FastAPI API |
 | frontend | 80 | 3010 | React app (Nginx) |
 | celery-worker | — | — | Background task worker |
@@ -236,16 +233,6 @@ curl -X POST http://localhost:8010/api/v1/backups/{backup_id}/restore \
 docker compose up -d --scale celery-worker=3
 ```
 
-### Ollama Model Management
-
-```bash
-# Pull a model
-docker compose exec ollama ollama pull llama3.1
-
-# List models
-docker compose exec ollama ollama list
-```
-
 ---
 
 ## Monitoring
@@ -256,7 +243,7 @@ docker compose exec ollama ollama list
 curl http://localhost:8010/health
 ```
 
-Returns status of: PostgreSQL, Redis, MinIO, Ollama, Stalwart, Nextcloud
+Returns status of: PostgreSQL, Redis, MinIO, Stalwart, Nextcloud
 
 ### Prometheus Metrics
 
@@ -306,12 +293,6 @@ docker compose exec backend alembic heads
 ```bash
 # Verify credentials match .env
 docker compose exec minio mc admin info local
-```
-
-**Ollama model not found:**
-```bash
-# Pull the model first
-docker compose exec ollama ollama pull llama3.1
 ```
 
 **Frontend can't reach backend:**

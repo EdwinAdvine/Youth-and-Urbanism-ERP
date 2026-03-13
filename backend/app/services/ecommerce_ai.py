@@ -110,9 +110,9 @@ async def generate_product_description(
     product_name: str,
     attributes: dict,
 ) -> str:
-    """Generate SEO-optimized product description using Ollama."""
+    """Generate SEO-optimized product description using the configured AI provider."""
     try:
-        import httpx
+        from openai import AsyncOpenAI
         from app.core.config import settings
 
         prompt = (
@@ -121,13 +121,25 @@ async def generate_product_description(
             "Keep it 2-3 paragraphs. Focus on benefits, not just features. "
             "Use natural language. No markdown headers."
         )
-        async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.post(
-                f"{settings.OLLAMA_URL}/api/generate",
-                json={"model": settings.OLLAMA_MODEL, "prompt": prompt, "stream": False},
+
+        provider = settings.AI_PROVIDER
+        if provider == "anthropic":
+            import anthropic
+
+            client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+            resp = await client.messages.create(
+                model=settings.AI_MODEL,
+                max_tokens=1024,
+                messages=[{"role": "user", "content": prompt}],
             )
-            result = response.json()
-            return result.get("response", "").strip()
+            return resp.content[0].text
+        else:
+            client_oai = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+            resp = await client_oai.chat.completions.create(
+                model=settings.AI_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return resp.choices[0].message.content or ""
     except Exception as e:
         logger.warning("AI description generation failed: %s", e)
         return f"Discover the {product_name} — a high-quality product crafted for excellence."

@@ -4,7 +4,7 @@ Features:
 - Cash flow forecast (30/60/90 day)
 - Financial narrative generator
 - AI bank transaction categorizer
-- Receipt OCR (Ollama vision)
+- Receipt OCR (vision via OpenAI/Anthropic)
 - Natural language report query
 - Anomaly detection
 - Tax optimizer suggestions
@@ -15,7 +15,6 @@ import json
 import uuid
 from datetime import date, datetime, timedelta
 
-import httpx
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import func, select, text
@@ -33,20 +32,35 @@ from app.models.finance_ext import BankCategorizationRule
 router = APIRouter(tags=["Finance AI"])
 
 
-# ── Ollama helper ──────────────────────────────────────────────────────────
+# ── AI helper ──────────────────────────────────────────────────────────────
 
-async def _ollama_complete(prompt: str, model: str = "llama3.2", max_tokens: int = 1024) -> str:
-    """Send a completion request to Ollama."""
+async def _ai_chat(messages: list[dict[str, str]], model: str | None = None) -> str:
+    """Send a chat request to the configured AI provider."""
+    from openai import AsyncOpenAI  # noqa: PLC0415
+
+    provider = settings.AI_PROVIDER
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(
-                f"{settings.OLLAMA_URL}/api/generate",
-                json={"model": model, "prompt": prompt, "stream": False, "options": {"num_predict": max_tokens}},
-            )
-            resp.raise_for_status()
-            return resp.json().get("response", "")
+        if provider == "anthropic":
+            import anthropic  # noqa: PLC0415
+            client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+            system_parts = [m["content"] for m in messages if m["role"] == "system"]
+            non_system = [m for m in messages if m["role"] != "system"]
+            kwargs: dict = {"model": model or settings.AI_MODEL, "max_tokens": 4096, "messages": non_system}
+            if system_parts:
+                kwargs["system"] = "\n\n".join(system_parts)
+            resp = await client.messages.create(**kwargs)
+            return resp.content[0].text
+        else:
+            client = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+            resp = await client.chat.completions.create(model=model or settings.AI_MODEL, messages=messages)
+            return resp.choices[0].message.content or ""
     except Exception as e:
         return f"[AI unavailable: {str(e)[:100]}]"
+
+
+async def _ai_complete(prompt: str, max_tokens: int = 1024) -> str:
+    """Convenience wrapper: single prompt -> AI response."""
+    return await _ai_chat([{"role": "user", "content": prompt}])
 
 
 # ── Cash Flow Forecast ─────────────────────────────────────────────────────
@@ -166,7 +180,7 @@ Overall collection rate: {overall_rate:.0%}
 
 Identify any cash shortfall risks and highlight the most critical period. Be direct and specific."""
 
-    narrative = await _ollama_complete(prompt, max_tokens=200)
+    narrative = await _ai_complete(prompt, max_tokens=200)
 
     return {
         "horizon_days": horizon_days,
@@ -226,7 +240,7 @@ Write a 3-5 sentence executive narrative that:
 
 Be specific with numbers from the data. Do not use generic phrases."""
 
-    narrative = await _ollama_complete(prompt, max_tokens=300)
+    narrative = await _ai_complete(prompt, max_tokens=300)
 
     return {
         "report_type": payload.report_type,
@@ -250,7 +264,7 @@ async def categorize_bank_transactions(
     db: DBSession,
     current_user: CurrentUser,
 ):
-    """AI-powered bank transaction categorization using rules + Ollama embeddings."""
+    """AI-powered bank transaction categorization using rules + AI classification."""
     # First pass: apply exact rules from BankCategorizationRule table
     rules_result = await db.execute(
         select(BankCategorizationRule)
@@ -298,7 +312,7 @@ async def categorize_bank_transactions(
                 "rule_id": str(matched_rule.id),
             })
         else:
-            # Fall back to Ollama AI classification
+            # Fall back to AI classification
             prompt = f"""You are an accounting assistant. Classify this bank transaction into one of these categories:
 - Revenue (sales income, customer payments)
 - Cost of Goods Sold (COGS, inventory costs)
@@ -320,7 +334,7 @@ Amount: {txn.get('amount', 0)}
 
 Respond with ONLY: CategoryName|confidence_score (e.g. "Software & Subscriptions|0.92")"""
 
-            ai_response = await _ollama_complete(prompt, max_tokens=30)
+            ai_response = await _ai_complete(prompt, max_tokens=30)
             parts = ai_response.strip().split("|")
             category = parts[0].strip() if parts else "Other"
             try:
@@ -362,7 +376,7 @@ async def natural_language_query(
 
     SAFETY: Only SELECT queries against finance tables. No DDL/DML allowed.
     """
-    # Describe schema to Ollama
+    # Describe schema to AI
     schema_desc = """Finance database tables:
 - finance_invoices (id, invoice_number, invoice_type, status, customer_name, customer_email, issue_date, due_date, subtotal, tax_amount, total, currency, created_at)
 - finance_payments (id, payment_number, amount, currency, payment_method, payment_date, status)
@@ -386,7 +400,7 @@ Rules:
 4. Return ONLY the SQL statement, no explanation
 5. If the query is ambiguous or unsafe, return: SELECT 'Query not supported' as message;"""
 
-    sql = await _ollama_complete(prompt, max_tokens=200)
+    sql = await _ai_complete(prompt, max_tokens=200)
     sql = sql.strip().strip("`").strip()
 
     # Safety check — block any non-SELECT or dangerous patterns
@@ -499,7 +513,7 @@ async def detect_financial_anomalies(
 Focus on the highest severity items and recommend immediate actions.
 
 Anomalies: {json.dumps(anomalies[:5], default=str)}"""
-        ai_summary = await _ollama_complete(prompt, max_tokens=150)
+        ai_summary = await _ai_complete(prompt, max_tokens=150)
     else:
         ai_summary = "No significant anomalies detected in the review period. Financial patterns appear normal."
 
@@ -554,7 +568,7 @@ Write a complete email with subject line and body. The tone must be {tone}.
 Format: SUBJECT: <subject>\n\nBODY: <body>
 Keep body under 150 words. Include the amount and invoice number."""
 
-    email_content = await _ollama_complete(prompt, max_tokens=300)
+    email_content = await _ai_complete(prompt, max_tokens=300)
 
     # Parse subject and body
     subject, body = "", email_content
@@ -680,7 +694,7 @@ For each suggestion:
 Focus on: expense categorization, timing of income/deductions, and commonly missed deductions.
 Format each suggestion as: "• [Opportunity]: [Action] — Estimated savings: [Amount/Percentage]"."""
 
-    suggestions = await _ollama_complete(prompt, max_tokens=400)
+    suggestions = await _ai_complete(prompt, max_tokens=400)
 
     return {
         "fiscal_year": year,
@@ -701,11 +715,12 @@ async def ocr_receipt(
     current_user: CurrentUser = None,
     db: DBSession = None,
 ):
-    """Upload a receipt image → Ollama llava extracts vendor, amount, date, category.
+    """Upload a receipt image -> AI vision extracts vendor, amount, date, category.
 
     Returns pre-filled expense fields ready for form auto-population.
     """
-    import base64
+    import base64  # noqa: PLC0415
+    import re  # noqa: PLC0415
 
     allowed_types = {"image/jpeg", "image/png", "image/webp", "image/gif"}
     if file.content_type not in allowed_types:
@@ -719,6 +734,7 @@ async def ocr_receipt(
         raise HTTPException(status_code=400, detail="File too large. Max 10 MB.")
 
     image_b64 = base64.b64encode(content).decode("utf-8")
+    mime = file.content_type or "image/jpeg"
 
     prompt = (
         "You are a receipt OCR assistant. Extract the following fields from this receipt image "
@@ -730,25 +746,45 @@ async def ocr_receipt(
         "Only return the JSON object, nothing else."
     )
 
+    provider = settings.AI_PROVIDER
+    raw_response = ""
+    model_used = settings.AI_MODEL
+
     try:
-        async with httpx.AsyncClient(timeout=90.0) as client:
-            resp = await client.post(
-                f"{settings.OLLAMA_URL}/api/generate",
-                json={
-                    "model": "llava",
-                    "prompt": prompt,
-                    "images": [image_b64],
-                    "stream": False,
-                    "options": {"temperature": 0.1, "num_predict": 256},
-                },
+        if provider == "anthropic":
+            import anthropic  # noqa: PLC0415
+            client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+            model_used = settings.AI_MODEL
+            resp = await client.messages.create(
+                model=model_used,
+                max_tokens=512,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "image", "source": {"type": "base64", "media_type": mime, "data": image_b64}},
+                        {"type": "text", "text": prompt},
+                    ],
+                }],
             )
-            if resp.status_code != 200:
-                raise HTTPException(status_code=502, detail="OCR model unavailable")
-            raw_response = resp.json().get("response", "")
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="OCR request timed out. Try a smaller image.")
-    except httpx.ConnectError:
-        raise HTTPException(status_code=503, detail="AI service unavailable")
+            raw_response = resp.content[0].text
+        else:
+            from openai import AsyncOpenAI  # noqa: PLC0415
+            model_used = settings.AI_MODEL
+            client = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+            resp = await client.chat.completions.create(
+                model=model_used,
+                max_tokens=512,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}},
+                        {"type": "text", "text": prompt},
+                    ],
+                }],
+            )
+            raw_response = resp.choices[0].message.content or ""
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"AI service unavailable: {str(exc)[:200]}") from exc
 
     extracted: dict[str, Any] = {}
     try:
@@ -764,7 +800,7 @@ async def ocr_receipt(
         "ocr_result": extracted,
         "filename": file.filename,
         "file_size_bytes": len(content),
-        "model_used": "llava",
+        "model_used": model_used,
         "pre_filled": {
             "vendor_name": extracted.get("vendor_name"),
             "amount": extracted.get("amount"),

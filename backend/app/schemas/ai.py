@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
 class AIConfigUpdate(BaseModel):
-    provider: Literal["ollama", "openai", "grok", "anthropic"] | None = None
+    provider: str | None = None
     model_name: str | None = Field(default=None, max_length=150)
     api_key: str | None = None
     base_url: str | None = None

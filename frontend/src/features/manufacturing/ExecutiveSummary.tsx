@@ -60,7 +60,7 @@ export default function ExecutiveSummary() {
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-purple-500" />
             <h2 className="font-semibold">AI-Generated Summary</h2>
-            <Badge variant="primary" className="text-xs">Ollama</Badge>
+            <Badge variant="primary" className="text-xs">AI</Badge>
           </div>
           <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap">
             {summary.summary}

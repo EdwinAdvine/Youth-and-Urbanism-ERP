@@ -1,4 +1,4 @@
-"""Knowledge Base embeddings — generate via Ollama, search via pgvector cosine similarity."""
+"""Knowledge Base embeddings — generate via OpenAI-compatible API, search via pgvector cosine similarity."""
 from __future__ import annotations
 
 import logging
@@ -6,28 +6,26 @@ import logging
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.crm_service import CRMKnowledgeBaseArticle as KnowledgeBaseArticle
 
 logger = logging.getLogger(__name__)
 
 
 async def generate_embedding(text_content: str) -> list[float] | None:
-    """Generate an embedding vector using the local Ollama instance."""
+    """Generate an embedding vector using the configured AI provider."""
     try:
-        import httpx
-        from app.core.config import settings
+        from openai import AsyncOpenAI
 
-        ollama_url = f"http://{settings.OLLAMA_HOST}:{settings.OLLAMA_PORT}"
-        async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.post(
-                f"{ollama_url}/api/embeddings",
-                json={"model": "nomic-embed-text", "prompt": text_content[:8000]},
-            )
-            if response.status_code == 200:
-                data = response.json()
-                return data.get("embedding")
+        client = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+
+        resp = await client.embeddings.create(
+            model="text-embedding-3-small",
+            input=text_content[:8000],
+        )
+        return resp.data[0].embedding
     except Exception:
-        logger.exception("Failed to generate embedding via Ollama")
+        logger.exception("Failed to generate embedding via AI provider")
     return None
 
 

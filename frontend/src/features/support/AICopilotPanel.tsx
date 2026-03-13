@@ -102,11 +102,8 @@ interface OutputItem {
   timestamp: string
 }
 
-interface Props {
-  ticketId: string
-}
-
-export default function AICopilotPanel({ ticketId }: Props) {
+export default function AICopilotPanel() {
+  const ticketId = new URLSearchParams(window.location.search).get('ticketId') ?? ''
   const [outputs, setOutputs] = useState<OutputItem[]>([])
   const [activeAction, setActiveAction] = useState<string | null>(null)
 

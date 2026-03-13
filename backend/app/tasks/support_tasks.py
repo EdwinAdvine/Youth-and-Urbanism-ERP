@@ -352,9 +352,9 @@ def support_ai_classify_ticket(ticket_id: str):
 
             text = f"{ticket.subject}\n{ticket.description or ''}"
 
-            # Sentiment analysis via Ollama
+            # Sentiment analysis via AI
             try:
-                from app.services.ai import call_ollama
+                from app.tasks.file_processing import _ai_chat
 
                 sentiment_prompt = (
                     f"Analyze the sentiment of this support ticket. "
@@ -362,7 +362,10 @@ def support_ai_classify_ticket(ticket_id: str):
                     f"and 'label' (one of: frustrated, angry, confused, neutral, satisfied).\n\n"
                     f"Ticket: {text[:1000]}"
                 )
-                sentiment_resp = await call_ollama(sentiment_prompt)
+                sentiment_resp = await _ai_chat([
+                    {"role": "system", "content": "You are a sentiment analysis assistant. Respond with valid JSON only."},
+                    {"role": "user", "content": sentiment_prompt},
+                ])
 
                 import json
                 try:
@@ -673,10 +676,9 @@ def support_ai_auto_respond(ticket_id: str):
                 f"- {a.title}: {(a.content or '')[:200]}" for a in unique_articles[:5]
             )
 
-            # Generate response via Ollama
+            # Generate response via AI
             try:
-                import httpx
-                from app.core.config import settings
+                from app.tasks.file_processing import _ai_chat
                 prompt = (
                     f"You are a helpful support agent. Draft a professional response to this support ticket.\n\n"
                     f"Subject: {ticket.subject}\n"
@@ -689,17 +691,10 @@ def support_ai_auto_respond(ticket_id: str):
                     "Keep it concise (2-3 paragraphs max)."
                 )
 
-                async with httpx.AsyncClient(timeout=30) as client:
-                    resp = await client.post(
-                        f"{settings.OLLAMA_URL}/api/chat",
-                        json={
-                            "model": getattr(settings, "OLLAMA_MODEL", "llama3.2"),
-                            "messages": [{"role": "user", "content": prompt}],
-                            "stream": False,
-                        },
-                    )
-                    resp.raise_for_status()
-                    draft = resp.json().get("message", {}).get("content", "")
+                draft = await _ai_chat([
+                    {"role": "system", "content": "You are a helpful, empathetic support agent."},
+                    {"role": "user", "content": prompt},
+                ])
 
             except Exception as exc:
                 task_logger.warning("AI auto-respond LLM call failed: %s", exc)
@@ -1120,7 +1115,7 @@ def support_compute_customer_health(customer_email: str | None = None):
 
 @celery_app.task(name="tasks.support_transcribe_voice")
 def support_transcribe_voice(call_id: str):
-    """Transcribe a voice call recording via Ollama."""
+    """Transcribe a voice call recording via AI."""
 
     async def _transcribe():
         from sqlalchemy import select
@@ -1135,7 +1130,7 @@ def support_transcribe_voice(call_id: str):
             if not call or not call.recording_url:
                 return {"status": "no_recording"}
 
-            # Placeholder: real implementation would download recording and use Whisper/Ollama
+            # Placeholder: real implementation would download recording and use Whisper API
             call.transcript = "[Transcription service not yet configured. Recording available at: " + call.recording_url + "]"
             await db.commit()
             return {"status": "pending", "call_id": call_id}

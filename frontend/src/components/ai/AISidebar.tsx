@@ -488,7 +488,7 @@ export default function AISidebar() {
               </div>
 
               <p className="text-[10px] text-gray-300 mt-2">
-                Powered by Ollama · 100% local
+                Powered by Urban Board AI
               </p>
             </div>
           )}

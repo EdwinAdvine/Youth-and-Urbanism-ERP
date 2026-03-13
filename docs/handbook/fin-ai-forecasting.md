@@ -16,7 +16,7 @@ Urban Bad AI — Urban Vibes Dynamics's built-in multi-agent AI system — has d
 
 ## Opening the AI Sidebar
 
-Press **Cmd+Shift+A** (Mac) or **Ctrl+Shift+A** (Windows/Linux) from anywhere in the application to open the AI sidebar. It slides in from the right side of the screen. No data leaves your server — the AI runs locally via Ollama, or via your configured fallback provider if set by your Super Admin.
+Press **Cmd+Shift+A** (Mac) or **Ctrl+Shift+A** (Windows/Linux) from anywhere in the application to open the AI sidebar. It slides in from the right side of the screen. No data leaves your server unless you have configured an external AI provider. The AI runs via your configured provider as set by your Super Admin.
 
 ## Useful Finance Prompts
 

@@ -228,7 +228,7 @@ Urban Vibes Dynamics is a **fully self-hosted ERP platform** that consolidates M
 - **Backend:** Python FastAPI + SQLAlchemy 2.0 (async) + Alembic
 - **Database:** PostgreSQL 16 with pgvector for AI embeddings
 - **Queue:** Celery + Redis
-- **AI:** Ollama (local, primary) with OpenAI/Anthropic/Grok fallback
+- **AI:** OpenAI / Anthropic / Grok (configurable by Super Admin)
 - **File Storage:** MinIO (S3-compatible)
 - **Engines:** ONLYOFFICE (docs) + Jitsi (video)
 - **Mail:** Stalwart (Rust-based, IMAP/SMTP/CalDAV/CardDAV)
@@ -361,7 +361,6 @@ The system runs 14 Docker containers:
 | PostgreSQL + pgvector | 5433 | Primary database |
 | Redis | 6380 | Cache + message broker |
 | MinIO | 9010/9011 | S3-compatible file storage |
-| Ollama | 11435 | Local AI/LLM |
 | Stalwart | 8082 | Mail server (IMAP/SMTP) |
 | ONLYOFFICE | 8083 | Document editing engine |
 | Jitsi (4 containers) | 8443 | Video conferencing |
@@ -429,10 +428,9 @@ Urban Vibes Dynamics includes a powerful AI system that can understand your data
 ## AI Providers
 
 The system uses a **provider fallback chain**:
-1. **Ollama** (default) -- runs models locally, no data leaves your server
-2. **OpenAI** -- cloud fallback (optional)
-3. **Anthropic** -- cloud fallback (optional)
-4. **Grok** -- cloud fallback (optional)
+1. **OpenAI** -- cloud AI provider
+2. **Anthropic** -- cloud AI provider
+3. **Grok** -- cloud AI provider
 
 The Super Admin configures which providers are enabled under **Admin > AI Configuration**.
 
@@ -929,9 +927,9 @@ Video conferencing powered by **Jitsi Meet**.
         "category_slug": "integrations",
         "article_type": "guide",
         "module": None,
-        "tags": ["integrations", "stalwart", "jitsi", "onlyoffice", "minio", "ollama"],
+        "tags": ["integrations", "stalwart", "jitsi", "onlyoffice", "minio"],
         "sort_order": 0,
-        "excerpt": "How Urban Vibes Dynamics integrates with Stalwart (mail), ONLYOFFICE (docs), Jitsi (video), MinIO (files), and Ollama (AI).",
+        "excerpt": "How Urban Vibes Dynamics integrates with Stalwart (mail), ONLYOFFICE (docs), Jitsi (video), and MinIO (files).",
         "content_markdown": """# Integrated Services
 
 Urban Vibes Dynamics integrates five open-source services, all running internally within the Docker stack. No external API calls are made.
@@ -975,19 +973,6 @@ S3-compatible object storage for all file operations:
 
 Access via the MinIO Console at http://localhost:9011.
 
-## Ollama (Local AI)
-
-Runs large language models locally for 100% data privacy:
-- Chat completions with streaming
-- Document embeddings for RAG search
-- Tool calling for cross-module actions
-
-Models are managed via Docker:
-```
-docker compose exec ollama ollama pull llama3.1
-docker compose exec ollama ollama list
-```
-
 ## Cross-Service Event Flows
 
 Services communicate through the backend event bus:
@@ -1030,7 +1015,7 @@ docker compose exec backend alembic upgrade head
 |----------|---------|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_SECRET_KEY` | JWT signing secret |
-| `AI_PROVIDER` | AI provider (ollama/openai/anthropic/grok) |
+| `AI_PROVIDER` | AI provider (openai/anthropic/grok) |
 | `MINIO_ACCESS_KEY` | MinIO access credentials |
 | `FIRST_SUPERADMIN_EMAIL` | Initial admin email |
 | `FIRST_SUPERADMIN_PASSWORD` | Initial admin password |
@@ -1083,7 +1068,6 @@ Super Admins can manage backups via **Admin > Backups** or the API.
 | Database connection refused | Check `docker compose ps postgres` |
 | Migration conflicts | Run `alembic current` then `alembic heads` |
 | MinIO access denied | Verify credentials in `.env` |
-| Ollama model not found | Run `docker compose exec ollama ollama pull llama3.1` |
 | Frontend can't reach backend | Check `VITE_API_URL` and `CORS_ORIGINS` |
 """,
     },
@@ -1106,7 +1090,7 @@ For faster iteration, run backend and frontend locally while keeping infrastruct
 
 ```
 # Start infrastructure only
-docker compose up -d postgres redis minio ollama
+docker compose up -d postgres redis minio
 
 # Backend (terminal 1)
 cd backend && source venv/bin/activate

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useDocuments, useCreateDocument, useEditorConfig, useDocComments, useCreateDocComment, useUpdateDocComment, useDeleteDocComment, useDocVersions, useDownloadVersion, useRestoreVersion, useDocLinks, useCreateDocLink, useDeleteDocLink, useBookmarks, Document } from '../../api/docs'
 import { useThemeStore } from '../../store/theme'
 import { formatFileSize } from '../../api/drive'
@@ -460,7 +460,18 @@ export default function DocsPage() {
     recent: 'Recent',
   }
 
-  const [openFile, setOpenFile] = useState<Document | null>(null)
+  const docsNavigate = useNavigate()
+
+  // Support opening a Drive file passed via route state (from Drive → Y&U Docs)
+  const driveFile = (location.state as { openDriveFile?: Document } | null)?.openDriveFile ?? null
+  const [openFile, setOpenFile] = useState<Document | null>(driveFile)
+
+  // Clear location state after consuming it to prevent re-opening on back/forward
+  useEffect(() => {
+    if (driveFile) {
+      docsNavigate(location.pathname, { replace: true, state: {} })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showCreate, setShowCreate] = useState(false)
   const [showFilePicker, setShowFilePicker] = useState(false)

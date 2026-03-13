@@ -26,8 +26,11 @@ class AIService:
 
     Provider priority:
       1. Active AIConfig record in the database (overrides env settings)
-      2. env: AI_PROVIDER / OLLAMA_URL / OLLAMA_MODEL
-    Falls back to Ollama if a cloud provider key fails.
+      2. env: AI_PROVIDER + AI_API_KEY + AI_BASE_URL + AI_MODEL
+
+    Any OpenAI-compatible provider works (OpenAI, Grok, OpenRouter, Together,
+    Groq, Mistral, vLLM, etc.) — just set the base URL and API key.
+    For Anthropic, set provider="anthropic" to use the native SDK.
     """
 
     def __init__(self, db: AsyncSession, user: Any | None = None) -> None:
@@ -59,8 +62,7 @@ class AIService:
         if config is None:
             config = AIConfig(
                 provider=settings.AI_PROVIDER,
-                model_name=settings.OLLAMA_MODEL,
-                base_url=settings.OLLAMA_URL,
+                model_name="gpt-4o",
                 is_active=True,
             )
             self.db.add(config)
@@ -91,9 +93,9 @@ class AIService:
             return config.provider, config.model_name, api_key, config.base_url
         return (
             settings.AI_PROVIDER,
-            settings.OLLAMA_MODEL,
-            settings.OPENAI_API_KEY or settings.GROK_API_KEY or settings.ANTHROPIC_API_KEY,
-            settings.OLLAMA_URL,
+            settings.AI_MODEL,
+            settings.AI_API_KEY,
+            settings.AI_BASE_URL,
         )
 
     # ── Audit ─────────────────────────────────────────────────────────────────
@@ -165,38 +167,21 @@ class AIService:
         await self._save_message(user_id, session_id, "user", user_msg)
 
         try:
-            if tools and provider in ("openai", "grok"):
-                reply = await self._openai_chat_with_tools(
-                    api_key, model, messages,
-                    base_url if provider == "grok" else base_url,
-                    user_id,
-                )
-            elif tools and provider == "anthropic":
+            if tools and provider == "anthropic":
                 reply = await self._anthropic_chat_with_tools(
                     messages, self._get_effective_tools(), model, api_key, user_id,
                 )
-            elif tools and provider == "ollama":
-                reply = await self._ollama_chat_with_tools(
-                    base_url or settings.OLLAMA_URL, model, messages, user_id,
+            elif tools:
+                reply = await self._openai_chat_with_tools(
+                    api_key, model, messages, base_url, user_id,
                 )
             else:
                 reply = await self._dispatch(provider, model, api_key, base_url, messages)
         except Exception as exc:
-            # Fallback to Ollama
-            if provider != "ollama":
-                await self._audit(
-                    user_id,
-                    "ai_fallback",
-                    details={"reason": str(exc), "original_provider": provider},
-                )
-                reply = await self._ollama_chat(settings.OLLAMA_URL, settings.OLLAMA_MODEL, messages)
-                provider = "ollama"
-                model = settings.OLLAMA_MODEL
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=f"AI service unavailable: {exc}",
-                ) from exc
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"AI service unavailable: {exc}",
+            ) from exc
 
         await self._save_message(user_id, session_id, "assistant", reply)
         await self._audit(
@@ -266,20 +251,10 @@ class AIService:
         base_url: str | None,
         messages: list[dict[str, str]],
     ) -> str:
-        if provider == "ollama":
-            return await self._ollama_chat(base_url or settings.OLLAMA_URL, model, messages)
-        if provider == "openai":
-            return await self._openai_chat(api_key, model, messages, base_url)
-        if provider == "grok":
-            return await self._openai_chat(
-                api_key,
-                model,
-                messages,
-                base_url or "https://api.x.ai/v1",
-            )
         if provider == "anthropic":
             return await self._anthropic_chat(api_key, model, messages)
-        raise ValueError(f"Unknown provider: {provider}")
+        # All non-anthropic providers use the OpenAI-compatible API
+        return await self._openai_chat(api_key, model, messages, base_url)
 
     # ── Streaming (for WebSocket) ─────────────────────────────────────────────
     async def stream_chat(
@@ -299,34 +274,26 @@ class AIService:
         full_reply: list[str] = []
 
         # Tool-calling in streaming mode
-        if tools and provider in ("openai", "grok"):
-            async for chunk in self._openai_stream_with_tools(
-                api_key, model, messages,
-                base_url if provider == "grok" else base_url,
-                user_id,
-            ):
-                full_reply.append(chunk)
-                yield chunk
-        elif tools and provider == "anthropic":
+        if tools and provider == "anthropic":
             # Anthropic tool-calling is non-streaming; yield the full result
             reply = await self._anthropic_chat_with_tools(
                 messages, self._get_effective_tools(), model, api_key, user_id,
             )
             full_reply.append(reply)
             yield reply
+        elif tools:
+            async for chunk in self._openai_stream_with_tools(
+                api_key, model, messages, base_url, user_id,
+            ):
+                full_reply.append(chunk)
+                yield chunk
         else:
             try:
                 async for chunk in self._stream_dispatch(provider, model, api_key, base_url, messages):
                     full_reply.append(chunk)
                     yield chunk
             except Exception as exc:
-                if provider != "ollama":
-                    await self._audit(user_id, "ai_fallback", details={"reason": str(exc)})
-                    async for chunk in self._ollama_stream(settings.OLLAMA_URL, settings.OLLAMA_MODEL, messages):
-                        full_reply.append(chunk)
-                        yield chunk
-                else:
-                    yield f"[ERROR] AI service unavailable: {exc}"
+                yield f"[ERROR] AI service unavailable: {exc}"
 
         reply_text = "".join(full_reply)
         await self._save_message(user_id, session_id, "assistant", reply_text)
@@ -442,14 +409,14 @@ class AIService:
         base_url: str | None,
         messages: list[dict[str, str]],
     ) -> AsyncGenerator[str, None]:
-        if provider in ("ollama", "grok", "openai"):
-            url = base_url if provider != "ollama" else (base_url or settings.OLLAMA_URL)
-            async for chunk in self._ollama_stream(url, model, messages, api_key=api_key, provider=provider):
-                yield chunk
-        else:
+        if provider == "anthropic":
             # Non-streaming fallback for anthropic in WebSocket context
             reply = await self._dispatch(provider, model, api_key, base_url, messages)
             yield reply
+        else:
+            # All non-anthropic providers use OpenAI-compatible streaming
+            async for chunk in self._openai_stream(api_key, model, messages, base_url):
+                yield chunk
 
     # ── Tool-calling provider implementations ───────────────────────────────
 
@@ -603,104 +570,19 @@ class AIService:
         response = await client.messages.create(**final_kwargs)
         return response.content[0].text if response.content else ""
 
-    async def _ollama_chat_with_tools(
-        self,
-        base_url: str,
-        model: str,
-        messages: list[dict[str, str]],
-        user_id: uuid.UUID,
-        max_rounds: int = 3,
-    ) -> str:
-        """Ollama chat with tool-calling loop."""
-        tool_executor = self._make_tool_executor(user_id)
-        # Convert tool definitions to Ollama format
-        effective_tools = self._get_effective_tools()
-        ollama_tools = []
-        for t in effective_tools:
-            ollama_tools.append(
-                {
-                    "type": "function",
-                    "function": t["function"],
-                }
-            )
-
-        url = f"{base_url.rstrip('/')}/api/chat"
-        conversation: list[dict[str, Any]] = list(messages)
-
-        async with httpx.AsyncClient(timeout=120) as client:
-            for _ in range(max_rounds):
-                resp = await client.post(
-                    url,
-                    json={
-                        "model": model,
-                        "messages": conversation,
-                        "stream": False,
-                        "tools": ollama_tools,
-                        "options": {"num_ctx": 2048},
-                    },
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                msg = data.get("message", {})
-
-                tool_calls = msg.get("tool_calls")
-                if not tool_calls:
-                    return msg.get("content", "")
-
-                # Append assistant message
-                conversation.append(msg)
-
-                # Execute tool calls
-                for tc in tool_calls:
-                    fn = tc.get("function", {})
-                    fn_name = fn.get("name", "")
-                    fn_args = fn.get("arguments", {})
-                    logger.info("AI tool call (ollama): %s(%s)", fn_name, fn_args)
-                    result = await tool_executor.execute(fn_name, fn_args)
-                    conversation.append(
-                        {"role": "tool", "content": json.dumps(result)}
-                    )
-
-        # Final call without tools
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.post(
-                url,
-                json={"model": model, "messages": conversation, "stream": False, "options": {"num_ctx": 2048}},
-            )
-            resp.raise_for_status()
-            return resp.json()["message"]["content"]
-
     # ── Provider implementations ──────────────────────────────────────────────
-    async def _ollama_chat(
-        self, base_url: str, model: str, messages: list[dict[str, str]]
-    ) -> str:
-        url = f"{base_url.rstrip('/')}/api/chat"
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.post(
-                url,
-                json={"model": model, "messages": messages, "stream": False, "options": {"num_ctx": 2048}},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            return data["message"]["content"]
 
-    async def _ollama_stream(
+    async def _openai_stream(
         self,
-        base_url: str,
+        api_key: str | None,
         model: str,
         messages: list[dict[str, str]],
-        api_key: str | None = None,
-        provider: str = "ollama",
+        base_url: str | None = None,
     ) -> AsyncGenerator[str, None]:
-        if provider == "ollama":
-            url = f"{base_url.rstrip('/')}/api/chat"
-            headers: dict[str, str] = {}
-            body = {"model": model, "messages": messages, "stream": True, "options": {"num_ctx": 2048}}
-        else:
-            # OpenAI-compatible streaming (openai / grok)
-            url = f"{base_url.rstrip('/')}/chat/completions"
-            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-            body = {"model": model, "messages": messages, "stream": True}
+        """OpenAI-compatible SSE streaming (works for openai and grok)."""
+        url = f"{(base_url or 'https://api.openai.com/v1').rstrip('/')}/chat/completions"
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        body = {"model": model, "messages": messages, "stream": True}
 
         async with httpx.AsyncClient(timeout=180) as client:
             async with client.stream("POST", url, json=body, headers=headers) as resp:
@@ -708,29 +590,17 @@ class AIService:
                 async for line in resp.aiter_lines():
                     if not line:
                         continue
-                    if provider != "ollama":
-                        # SSE format: data: {...}
-                        if line.startswith("data:"):
-                            line = line[5:].strip()
-                        if line == "[DONE]":
-                            break
-                        try:
-                            data = json.loads(line)
-                            delta = data["choices"][0]["delta"].get("content", "")
-                            if delta:
-                                yield delta
-                        except (json.JSONDecodeError, KeyError):
-                            continue
-                    else:
-                        try:
-                            data = json.loads(line)
-                            chunk = data.get("message", {}).get("content", "")
-                            if chunk:
-                                yield chunk
-                            if data.get("done"):
-                                break
-                        except json.JSONDecodeError:
-                            continue
+                    if line.startswith("data:"):
+                        line = line[5:].strip()
+                    if line == "[DONE]":
+                        break
+                    try:
+                        data = json.loads(line)
+                        delta = data["choices"][0]["delta"].get("content", "")
+                        if delta:
+                            yield delta
+                    except (json.JSONDecodeError, KeyError):
+                        continue
 
     async def _openai_chat(
         self,

@@ -90,7 +90,6 @@ export default function AdminDashboard() {
               { name: 'Redis', status: 'healthy', detail: 'redis:6379' },
               { name: 'Celery Worker', status: 'healthy', detail: '3 workers active' },
               { name: 'MinIO Storage', status: 'healthy', detail: 'minio:9000' },
-              { name: 'Ollama AI', status: 'healthy', detail: 'ollama:11434 · llama3.2' },
             ].map((svc) => (
               <div key={svc.name} className="flex items-center justify-between py-1.5">
                 <div className="flex items-center gap-2.5">

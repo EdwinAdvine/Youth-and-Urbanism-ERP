@@ -21,7 +21,7 @@ async def test_ai_chat_endpoint(client: AsyncClient, test_user):
 
     with patch("app.api.v1.ai.AIService") as MockAI:
         mock_instance = MagicMock()
-        mock_instance.chat = AsyncMock(return_value=("Hello! How can I help?", "ollama", "llama3"))
+        mock_instance.chat = AsyncMock(return_value=("Hello! How can I help?", "openai", "gpt-4o"))
         MockAI.return_value = mock_instance
 
         resp = await client.post(
@@ -33,7 +33,7 @@ async def test_ai_chat_endpoint(client: AsyncClient, test_user):
         data = resp.json()
         assert "reply" in data
         assert data["reply"] == "Hello! How can I help?"
-        assert data["provider"] == "ollama"
+        assert data["provider"] == "openai"
 
 
 @pytest.mark.asyncio
@@ -66,7 +66,7 @@ async def test_ai_chat_returns_session_id(client: AsyncClient, test_user):
 
     with patch("app.api.v1.ai.AIService") as MockAI:
         mock_instance = MagicMock()
-        mock_instance.chat = AsyncMock(return_value=("Sure thing.", "ollama", "llama3"))
+        mock_instance.chat = AsyncMock(return_value=("Sure thing.", "openai", "gpt-4o"))
         MockAI.return_value = mock_instance
 
         resp = await client.post(
@@ -99,8 +99,8 @@ async def test_ai_tool_execution_via_chat(client: AsyncClient, test_user):
         # Simulate a tool-call response where the AI used a tool
         mock_instance.chat = AsyncMock(return_value=(
             "I found 15 open invoices totaling $42,300.",
-            "ollama",
-            "llama3",
+            "openai",
+            "gpt-4o",
         ))
         MockAI.return_value = mock_instance
 

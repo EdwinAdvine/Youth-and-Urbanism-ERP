@@ -155,7 +155,7 @@ export default function AIChat({ onClose, context, fullPage, initialMessage }: A
               ...prev.slice(0, -1),
               {
                 ...last,
-                content: "I'm having trouble connecting to the AI service right now. Please check that the backend and Ollama services are running.",
+                content: "I'm having trouble connecting to the AI service right now. Please check that the backend service is running and an AI provider is configured.",
                 streaming: false,
               },
             ]

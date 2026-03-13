@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useLogin, useRegister, useVerifyMFA, isMFARequired } from '../../api/auth'
+import { useLogin, useVerifyMFA, isMFARequired } from '../../api/auth'
 import { useSSOProviders } from '../../api/sso'
 import { Button, Input } from '../../components/ui'
 import { getPostLoginRoute } from '../../utils/getPostLoginRoute'
@@ -15,18 +15,7 @@ const loginSchema = z.object({
   remember: z.boolean().optional(),
 })
 
-const registerSchema = z.object({
-  full_name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirm_password: z.string(),
-}).refine((d) => d.password === d.confirm_password, {
-  message: 'Passwords do not match',
-  path: ['confirm_password'],
-})
-
 type LoginFormData = z.infer<typeof loginSchema>
-type RegisterFormData = z.infer<typeof registerSchema>
 
 const mfaSchema = z.object({
   code: z.string().min(6, 'Enter the 6-digit code').max(8),
@@ -35,28 +24,34 @@ type MFAFormData = z.infer<typeof mfaSchema>
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const login = useLogin()
   const verifyMFA = useVerifyMFA()
-  const registerMutation = useRegister()
   const { data: ssoProviders } = useSSOProviders()
   const [showPassword, setShowPassword] = useState(false)
-  const [isRegistering, setIsRegistering] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
   const [mfaToken, setMfaToken] = useState<string | null>(null)
-  const [searchParams] = useSearchParams()
+  const [showMSModal, setShowMSModal] = useState(false)
 
-  // Show error message when redirected back from a failed SSO attempt
+  const msProvider = ssoProviders?.find((p) => p.provider_type === 'microsoft')
+
+  // Auto-open Microsoft modal when provider is configured
+  useEffect(() => {
+    if (msProvider) setShowMSModal(true)
+  }, [msProvider])
+
   useEffect(() => {
     const error = searchParams.get('error')
     if (error === 'sso_not_registered') {
-      setLoginError('Your Microsoft account is not registered in this organisation. Please ask your administrator to create your account first.')
+      setShowMSModal(false)
+      setLoginError('This email is not registered. Please contact your administrator.')
     } else if (error === 'sso_failed') {
+      setShowMSModal(false)
       setLoginError('Microsoft sign-in failed. Please try again or use email & password.')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loginForm = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) })
-  const registerForm = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) })
   const mfaForm = useForm<MFAFormData>({ resolver: zodResolver(mfaSchema) })
 
   const {
@@ -103,21 +98,56 @@ export default function LoginPage() {
     }
   }
 
-  const onRegisterSubmit = async (data: RegisterFormData) => {
-    try {
-      await registerMutation.mutateAsync({
-        full_name: data.full_name,
-        email: data.email,
-        password: data.password,
-      })
-      navigate('/', { replace: true })
-    } catch {
-      registerForm.setError('email', { message: 'Registration failed. Email may already be in use.' })
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#51459d] via-[#3d3480] to-[#2a2560] flex items-center justify-center p-4">
+
+      {/* Microsoft Sign-In Modal — shown automatically when MS provider is configured */}
+      {showMSModal && msProvider && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-sm flex flex-col items-center gap-6">
+            {/* Branding */}
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gray-50 dark:bg-gray-900 mb-4">
+                <svg className="w-8 h-8" viewBox="0 0 23 23">
+                  <path fill="#f35325" d="M1 1h10v10H1z" />
+                  <path fill="#81bc06" d="M12 1h10v10H12z" />
+                  <path fill="#05a6f0" d="M1 12h10v10H1z" />
+                  <path fill="#ffba08" d="M12 12h10v10H12z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Sign in with Microsoft</h2>
+              <p className="text-gray-500 text-sm mt-2 leading-relaxed">
+                Use your Microsoft work account to access Urban Vibes Dynamics.
+              </p>
+            </div>
+
+            {/* Single action */}
+            <button
+              type="button"
+              onClick={() => { window.location.href = `/api/v1/sso/${msProvider.id}/authorize` }}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-[10px] bg-[#0078d4] hover:bg-[#106ebe] active:bg-[#005a9e] transition-colors text-white text-sm font-semibold shadow-sm"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 23 23">
+                <path fill="rgba(255,255,255,0.9)" d="M1 1h10v10H1z" />
+                <path fill="rgba(255,255,255,0.7)" d="M12 1h10v10H12z" />
+                <path fill="rgba(255,255,255,0.7)" d="M1 12h10v10H1z" />
+                <path fill="rgba(255,255,255,0.5)" d="M12 12h10v10H12z" />
+              </svg>
+              Sign in with Microsoft
+            </button>
+
+            {/* Admin escape hatch — very subtle */}
+            <button
+              type="button"
+              onClick={() => setShowMSModal(false)}
+              className="text-xs text-gray-300 hover:text-gray-500 transition-colors"
+            >
+              Sign in with email &amp; password
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-white/5" />
@@ -181,7 +211,7 @@ export default function LoginPage() {
                 </button>
               </p>
             </>
-          ) : !isRegistering ? (
+          ) : (
             <>
               <div className="mb-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Welcome back</h2>
@@ -282,126 +312,6 @@ export default function LoginPage() {
                   </div>
                 </div>
               )}
-
-              <p className="text-center text-sm text-gray-500 mt-6">
-                Don't have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setIsRegistering(true)}
-                  className="text-primary font-medium hover:underline"
-                >
-                  Sign up
-                </button>
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Create account</h2>
-                <p className="text-gray-500 text-sm mt-1">Sign up for a new account</p>
-              </div>
-
-              <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                <Input
-                  label="Full name"
-                  type="text"
-                  placeholder="John Doe"
-                  autoComplete="name"
-                  error={registerForm.formState.errors.full_name?.message}
-                  {...registerForm.register('full_name')}
-                  leftIcon={
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  }
-                />
-
-                <Input
-                  label="Email address"
-                  type="email"
-                  placeholder="you@company.com"
-                  autoComplete="email"
-                  error={registerForm.formState.errors.email?.message}
-                  {...registerForm.register('email')}
-                  leftIcon={
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  }
-                />
-
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    </div>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      autoComplete="new-password"
-                      className={`w-full rounded-[10px] border pl-10 pr-10 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary ${registerForm.formState.errors.password ? 'border-danger' : 'border-gray-200'}`}
-                      {...registerForm.register('password')}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? (
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                        </svg>
-                      ) : (
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  {registerForm.formState.errors.password && (
-                    <p className="text-xs text-danger">{registerForm.formState.errors.password.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm password</label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    className={`w-full rounded-[10px] border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary ${registerForm.formState.errors.confirm_password ? 'border-danger' : 'border-gray-200'}`}
-                    {...registerForm.register('confirm_password')}
-                  />
-                  {registerForm.formState.errors.confirm_password && (
-                    <p className="text-xs text-danger">{registerForm.formState.errors.confirm_password.message}</p>
-                  )}
-                </div>
-
-                {registerMutation.error && (
-                  <div className="bg-red-50 border border-red-200 rounded-[8px] px-3 py-2 text-sm text-red-700">
-                    Registration failed. Please try again.
-                  </div>
-                )}
-
-                <Button type="submit" variant="primary" className="w-full" loading={registerMutation.isPending}>
-                  Create account
-                </Button>
-              </form>
-
-              <p className="text-center text-sm text-gray-500 mt-6">
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setIsRegistering(false)}
-                  className="text-primary font-medium hover:underline"
-                >
-                  Sign in
-                </button>
-              </p>
             </>
           )}
         </div>

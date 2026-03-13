@@ -19,7 +19,7 @@ import { cn } from '../ui'
 import { useNavigationStore } from '../../store/navigation'
 import { useAuthStore } from '../../store/auth'
 import { useAISidebarStore } from '../../store/aiSidebar'
-import { APP_SUBMENUS } from './sidebarMenus'
+import { APP_SUBMENUS, buildProjectsMenu } from './sidebarMenus'
 import SidebarContent from './SidebarContent'
 
 interface ModuleItem {
@@ -106,7 +106,9 @@ export default function MobileDrawer({ modules }: MobileDrawerProps) {
     closeDrawer()
   }
 
-  const menu = activeApp ? APP_SUBMENUS[activeApp] : null
+  const menu = activeApp === 'projects'
+    ? buildProjectsMenu(location.pathname)
+    : (activeApp ? APP_SUBMENUS[activeApp] : null)
   const initials = user?.full_name
     ?.split(' ')
     .map((n: string) => n[0])

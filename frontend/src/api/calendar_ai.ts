@@ -12,7 +12,7 @@
  *   - useSuggestReschedule() — generate alternative time slots for an existing event
  *
  * Note: all hooks use useMutation (no caching) as results depend on real-time
- * availability data. AI inference runs via Ollama (local) with cloud fallback.
+ * availability data. AI inference runs via the configured provider.
  */
 import { useMutation } from '@tanstack/react-query'
 import apiClient from './client'

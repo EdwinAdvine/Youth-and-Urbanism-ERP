@@ -729,7 +729,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "ai_auto_classify_ticket",
-            "description": "Enhanced auto-classify: uses Ollama LLM to determine priority, category, and assignee based on historical patterns",
+            "description": "Enhanced auto-classify: uses AI LLM to determine priority, category, and assignee based on historical patterns",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -3279,8 +3279,8 @@ class ToolExecutor:
 
     async def _summarize_via_llm(self, text_to_summarize: str, item_type: str) -> str:
         """Send text to the LLM with a summarization prompt and return the summary."""
-        import httpx  # noqa: PLC0415
         from app.core.config import settings  # noqa: PLC0415
+        from openai import AsyncOpenAI  # noqa: PLC0415
 
         prompt = (
             f"Please provide a concise summary of the following {item_type}. "
@@ -3288,22 +3288,30 @@ class ToolExecutor:
             "Keep the summary to 3-5 sentences.\n\n"
             f"{text_to_summarize}"
         )
-        url = f"{settings.OLLAMA_URL.rstrip('/')}/api/chat"
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.post(
-                url,
-                json={
-                    "model": settings.OLLAMA_MODEL,
-                    "messages": [
-                        {"role": "system", "content": "You are a helpful summarization assistant."},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "stream": False,
-                },
+        messages = [
+            {"role": "system", "content": "You are a helpful summarization assistant."},
+            {"role": "user", "content": prompt},
+        ]
+
+        provider = settings.AI_PROVIDER
+        if provider == "anthropic":
+            import anthropic  # noqa: PLC0415
+
+            client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+            resp = await client.messages.create(
+                model=settings.AI_MODEL,
+                max_tokens=4096,
+                system="You are a helpful summarization assistant.",
+                messages=[{"role": "user", "content": prompt}],
             )
-            resp.raise_for_status()
-            data = resp.json()
-        return data.get("message", {}).get("content", "Could not generate summary.")
+            return resp.content[0].text
+        else:
+            client_oai = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+            resp = await client_oai.chat.completions.create(
+                model=settings.AI_MODEL,
+                messages=messages,
+            )
+            return resp.choices[0].message.content or "Could not generate summary."
 
     async def _exec_summarize_email(self, message_id: str) -> dict[str, Any]:
         """Summarize an email by fetching it from the local PostgreSQL mailbox."""
@@ -7924,7 +7932,7 @@ class ToolExecutor:
     # ── Phase 1 Support AI Tool Executors ─────────────────────────────────
 
     async def _exec_sentiment_analyze(self, text: str) -> dict[str, Any]:
-        """Analyze text for sentiment score and emotion label using Ollama."""
+        """Analyze text for sentiment score and emotion label using AI."""
         import json as _json  # noqa: PLC0415
 
         prompt = (
@@ -8019,7 +8027,7 @@ class ToolExecutor:
         }
 
     async def _exec_ai_summarize_thread(self, ticket_id: str) -> dict[str, Any]:
-        """Summarize a ticket's comment thread using Ollama LLM."""
+        """Summarize a ticket's comment thread using AI LLM."""
         from app.models.support import Ticket, TicketComment  # noqa: PLC0415
 
         result = await self.db.execute(
@@ -8073,7 +8081,7 @@ class ToolExecutor:
         }
 
     async def _exec_ai_detect_intent(self, ticket_id: str) -> dict[str, Any]:
-        """Classify a ticket's intent using Ollama LLM."""
+        """Classify a ticket's intent using AI LLM."""
         import json as _json  # noqa: PLC0415
         from app.models.support import Ticket  # noqa: PLC0415
 
@@ -8130,7 +8138,7 @@ class ToolExecutor:
         }
 
     async def _exec_ai_auto_classify_ticket(self, ticket_id: str) -> dict[str, Any]:
-        """Enhanced auto-classify using Ollama LLM for priority, category, and sentiment."""
+        """Enhanced auto-classify using AI LLM for priority, category, and sentiment."""
         import json as _json  # noqa: PLC0415
         from app.models.support import Ticket, TicketCategory  # noqa: PLC0415
 

@@ -259,7 +259,7 @@ export default function AIGenerationPanel({ fileId, onClose, onInsert }: AIGener
       {/* Footer */}
       <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-800 shrink-0">
         <p className="text-[9px] text-gray-400 text-center">
-          Powered by Urban Vibes Dynamics AI (Ollama / OpenAI / Anthropic)
+          Powered by Urban Vibes Dynamics AI
         </p>
       </div>
     </div>

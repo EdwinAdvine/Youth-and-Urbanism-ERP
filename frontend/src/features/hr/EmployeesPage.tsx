@@ -64,7 +64,6 @@ export default function EmployeesPage() {
 
   const [showCreate, setShowCreate] = useState(false)
   const [form, setForm] = useState<CreateEmployeePayload>({
-    employee_number: '',
     first_name: '',
     last_name: '',
     email: '',
@@ -80,7 +79,6 @@ export default function EmployeesPage() {
         toast('success', 'Employee created')
         setShowCreate(false)
         setForm({
-          employee_number: '',
           first_name: '',
           last_name: '',
           email: '',
@@ -241,12 +239,10 @@ export default function EmployeesPage() {
               value={form.email}
               onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
             />
-            <Input
-              label="Employee Number"
-              required
-              value={form.employee_number}
-              onChange={(e) => setForm((p) => ({ ...p, employee_number: e.target.value }))}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Employee Number</label>
+              <p className="text-sm text-gray-500 italic py-2">Auto-generated (EMP-XXXX)</p>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input

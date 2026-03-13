@@ -320,7 +320,7 @@ HR AI Intelligence — Skills Ontology, Flight Risk, Burnout, Chatbot, Workforce
 | `POST` | `/ai/burnout/calculate/{employee_id}` | `calculate_employee_burnout` | Calculate and persist burnout risk indicators for an employee. |
 | `GET` | `/ai/burnout/indicators` | `list_burnout_indicators` | List burnout indicators (admin only), with optional risk_level filter. |
 | `GET` | `/ai/burnout/indicators/{employee_id}` | `get_employee_burnout_indicator` | Get the latest burnout indicator for a specific employee. |
-| `POST` | `/ai/hr-chatbot/query` | `hr_chatbot_query` | HR policy/data chatbot powered by Ollama. |
+| `POST` | `/ai/hr-chatbot/query` | `hr_chatbot_query` | HR policy/data chatbot powered by AI. |
 | `GET` | `/ai/workforce-planning/scenarios` | `list_workforce_planning_scenarios` | List workforce planning scenarios. |
 | `POST` | `/ai/workforce-planning/scenarios` | `create_workforce_planning_scenario` | Create a workforce planning scenario with auto-calculated cost projections. |
 | `GET` | `/ai/workforce-planning/scenarios/{scenario_id}` | `get_workforce_planning_scenario` | Get a workforce planning scenario with detailed projections. |
@@ -470,7 +470,7 @@ Get the latest burnout indicator for a specific employee.
 
 **Function:** `hr_chatbot_query` (line 649)
 
-HR policy/data chatbot powered by Ollama.
+HR policy/data chatbot powered by AI.
 
 **Parameters:** `body`
 

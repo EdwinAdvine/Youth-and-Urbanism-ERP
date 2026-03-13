@@ -351,7 +351,8 @@ async def get_editor_config(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
     try:
-        download_url = minio_client.get_download_url(file.minio_key)
+        # Use internal URL so ONLYOFFICE (inside Docker) can download the file
+        download_url = minio_client.get_download_url(file.minio_key, internal=True)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -894,7 +895,8 @@ async def convert_document(
         )
 
     try:
-        download_url = minio_client.get_download_url(file.minio_key)
+        # Use internal URL so ONLYOFFICE (inside Docker) can fetch the file
+        download_url = minio_client.get_download_url(file.minio_key, internal=True)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

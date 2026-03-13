@@ -147,7 +147,7 @@ After completing setup, verify that all services are running correctly.
    - **Database** — PostgreSQL connection status
    - **Queue** — Celery worker and beat status
    - **File Storage** — MinIO connectivity
-   - **AI Engine** — Ollama availability
+   - **AI Engine** — AI provider connectivity
    - **Mail** — SMTP test result
    - **Video** — Jitsi service status
 3. Any service showing a red status will display an error message and suggested fix.

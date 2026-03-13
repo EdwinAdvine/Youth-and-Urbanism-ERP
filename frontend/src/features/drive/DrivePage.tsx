@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useIsMobile } from '../../hooks/useMediaQuery'
 import {
   useDriveFiles,
@@ -11,7 +12,6 @@ import {
   useSharedFolders,
   useTeamFolders,
   useCreateTeamFolder,
-  useOpenInEditor,
   useFileAsAttachment,
   useLinkFileToTask,
   formatFileSize,
@@ -265,7 +265,20 @@ function ModuleFilesSidebar({ onSelectModule }: { onSelectModule: (mod: string) 
   )
 }
 
+// File types that can be opened in Y&U Docs (ONLYOFFICE)
+const EDITABLE_TYPES = new Set(['docx', 'doc', 'odt', 'xlsx', 'xls', 'ods', 'pptx', 'ppt', 'odp', 'pdf'])
+
+function isEditableInDocs(name: string, contentType: string): boolean {
+  const ext = name.split('.').pop()?.toLowerCase() ?? ''
+  if (EDITABLE_TYPES.has(ext)) return true
+  // Also check content-type for common office MIME types
+  return contentType.includes('word') || contentType.includes('spreadsheet') ||
+    contentType.includes('presentation') || contentType.includes('pdf') ||
+    contentType.includes('opendocument')
+}
+
 export default function DrivePage() {
+  const navigate = useNavigate()
   const isMobile = useIsMobile()
   const [activeSection, setActiveSection] = useState<string>('my-files')
   const [activeFolderId, setActiveFolderId] = useState<string | undefined>(undefined)
@@ -310,7 +323,6 @@ export default function DrivePage() {
   const deleteFile = useDeleteFile()
   const createFolder = useCreateFolder()
   const createTeamFolder = useCreateTeamFolder()
-  const openInEditor = useOpenInEditor()
   const fileAsAttachment = useFileAsAttachment()
   const linkFileToTask = useLinkFileToTask()
   const { data: smartFoldersData } = useSmartFolders()
@@ -372,11 +384,27 @@ export default function DrivePage() {
         alert('Download failed.')
       }
     } else if (action === 'open' && !item.isFolder) {
-      try {
-        const result = await downloadFile.mutateAsync(item.id)
-        window.open(result.download_url, '_blank')
-      } catch {
-        alert('Cannot open file.')
+      // Office files open in Y&U Docs; everything else opens the preview panel
+      if (item.raw && isEditableInDocs(item.name, item.raw.content_type)) {
+        const ext = item.name.split('.').pop() ?? 'docx'
+        navigate('/docs', {
+          state: {
+            openDriveFile: {
+              id: item.id,
+              name: item.name,
+              extension: ext,
+              content_type: item.raw.content_type,
+              size: item.raw.size,
+              minio_key: item.raw.minio_key,
+              folder_path: item.raw.folder_path,
+              is_public: item.raw.is_public,
+              created_at: item.raw.created_at,
+              updated_at: item.raw.updated_at,
+            },
+          },
+        })
+      } else {
+        setPreviewFileId(item.id)
       }
     } else if (action === 'open' && item.isFolder) {
       setBreadcrumbs((prev) => [...prev, { label: item.name, folderId: item.id }])
@@ -398,14 +426,23 @@ export default function DrivePage() {
     } else if (action === 'versions' && !item.isFolder) {
       setVersionsFile({ id: item.id, name: item.name })
     } else if (action === 'open-in-editor' && !item.isFolder) {
-      try {
-        const result = await openInEditor.mutateAsync(item.id)
-        // Open the ONLYOFFICE editor in a new tab/window with the config
-        const configParam = encodeURIComponent(JSON.stringify(result.config))
-        window.open(`${result.editor_url}?config=${configParam}`, '_blank')
-      } catch {
-        alert('Cannot open this file type in the editor.')
-      }
+      const ext = item.name.split('.').pop() ?? 'docx'
+      navigate('/docs', {
+        state: {
+          openDriveFile: {
+            id: item.id,
+            name: item.name,
+            extension: ext,
+            content_type: item.raw?.content_type ?? 'application/octet-stream',
+            size: item.raw?.size ?? 0,
+            minio_key: item.raw?.minio_key ?? '',
+            folder_path: item.raw?.folder_path ?? '/',
+            is_public: item.raw?.is_public ?? false,
+            created_at: item.raw?.created_at ?? new Date().toISOString(),
+            updated_at: item.raw?.updated_at ?? new Date().toISOString(),
+          },
+        },
+      })
     } else if (action === 'attach-to-mail' && !item.isFolder) {
       try {
         const meta = await fileAsAttachment.mutateAsync(item.id)

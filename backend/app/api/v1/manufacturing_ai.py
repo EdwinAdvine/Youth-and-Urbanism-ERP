@@ -386,20 +386,20 @@ async def executive_dashboard(
     }
 
 
-# ─── AI Executive Summary (Ollama) ───────────────────────────────────────────
+# ─── AI Executive Summary ────────────────────────────────────────────────────
 
 @router.get("/ai/executive-summary")
 async def executive_summary(
     db: DBSession,
     user: CurrentUser,
 ):
-    """Generate NL executive summary of manufacturing KPIs using Ollama."""
+    """Generate NL executive summary of manufacturing KPIs using AI."""
     # Get dashboard data
     dashboard = await executive_dashboard(db=db, user=user)
     bottlenecks_data = await bottleneck_analysis(days=7, db=db, user=user)
     quality_data = await quality_risk_analysis(days=7, db=db, user=user)
 
-    # Build context for Ollama
+    # Build context for AI
     context = (
         f"Manufacturing KPIs for this month:\n"
         f"- Work orders: {dashboard['work_orders']['total']} total, "
@@ -414,16 +414,28 @@ async def executive_summary(
     )
 
     try:
-        from app.services.ai import stream_ollama_chat
-        import asyncio
+        from app.core.config import settings  # noqa: PLC0415
 
-        chunks = []
         prompt = f"Write a concise 3-paragraph executive summary of these manufacturing metrics:\n\n{context}\n\nFocus on performance, risks, and recommendations."
-        async for chunk in stream_ollama_chat(prompt, model="llama3.2"):
-            chunks.append(chunk)
-        summary_text = "".join(chunks)
+        provider = settings.AI_PROVIDER
+
+        if provider == "anthropic":
+            import anthropic  # noqa: PLC0415
+            client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+            resp = await client.messages.create(
+                model=settings.AI_MODEL, max_tokens=2048,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            summary_text = resp.content[0].text
+        else:
+            from openai import AsyncOpenAI  # noqa: PLC0415
+            client = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+            resp = await client.chat.completions.create(
+                model=settings.AI_MODEL, messages=[{"role": "user", "content": prompt}],
+            )
+            summary_text = resp.choices[0].message.content or ""
     except Exception:
-        # Fallback if Ollama unavailable
+        # Fallback if AI unavailable
         wo = dashboard["work_orders"]
         out = dashboard["output"]
         summary_text = (

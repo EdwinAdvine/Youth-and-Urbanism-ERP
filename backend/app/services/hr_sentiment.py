@@ -1,7 +1,8 @@
 """HR Survey Sentiment Analysis Service.
 
-Analyzes open-text survey responses using Ollama to produce a sentiment score
-and label. Designed to run async (called from event handlers or Celery tasks).
+Analyzes open-text survey responses using the configured AI provider to produce
+a sentiment score and label. Designed to run async (called from event handlers
+or Celery tasks).
 """
 from __future__ import annotations
 
@@ -10,11 +11,39 @@ import logging
 from decimal import Decimal
 from typing import Any
 
-import httpx
-
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+async def _ai_chat(messages: list[dict], model: str | None = None) -> str:
+    """Call the configured AI provider."""
+    from openai import AsyncOpenAI
+
+    provider = settings.AI_PROVIDER
+    if provider == "anthropic":
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+        system_parts = [m["content"] for m in messages if m["role"] == "system"]
+        non_system = [m for m in messages if m["role"] != "system"]
+        kwargs: dict[str, Any] = {
+            "model": model or settings.AI_MODEL,
+            "max_tokens": 4096,
+            "messages": non_system,
+        }
+        if system_parts:
+            kwargs["system"] = "\n\n".join(system_parts)
+        resp = await client.messages.create(**kwargs)
+        return resp.content[0].text
+    else:
+        client_oai = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+        resp = await client_oai.chat.completions.create(
+            model=model or settings.AI_MODEL,
+            messages=messages,
+            temperature=0.1,
+        )
+        return resp.choices[0].message.content or ""
 
 
 SENTIMENT_PROMPT = """You are an expert at analyzing employee survey responses for sentiment.
@@ -36,7 +65,7 @@ Only return the JSON object, no other text."""
 
 
 async def analyze_sentiment(text: str) -> dict[str, Any]:
-    """Analyze sentiment of survey response text using Ollama.
+    """Analyze sentiment of survey response text using the configured AI provider.
 
     Returns dict with score (-1.0 to 1.0), label, key_themes, actionable_insights.
     """
@@ -51,33 +80,17 @@ async def analyze_sentiment(text: str) -> dict[str, Any]:
     prompt = SENTIMENT_PROMPT.format(text=text[:2000])
 
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                f"{settings.OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": settings.OLLAMA_MODEL,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {"temperature": 0.1},
-                },
-            )
-            response.raise_for_status()
-            data = response.json()
-            raw_text = data.get("response", "")
-
+        raw_text = await _ai_chat([{"role": "user", "content": prompt}])
         result = _parse_sentiment_response(raw_text)
         return result
 
-    except httpx.HTTPError as e:
-        logger.error("Ollama HTTP error during sentiment analysis: %s", e)
-        return _keyword_sentiment(text)
     except Exception as e:
-        logger.error("Unexpected error during sentiment analysis: %s", e)
+        logger.error("AI error during sentiment analysis: %s", e)
         return _keyword_sentiment(text)
 
 
 def _parse_sentiment_response(raw_text: str) -> dict[str, Any]:
-    """Extract and parse JSON from Ollama response."""
+    """Extract and parse JSON from AI response."""
     try:
         return json.loads(raw_text.strip())
     except json.JSONDecodeError:
@@ -98,7 +111,7 @@ def _parse_sentiment_response(raw_text: str) -> dict[str, Any]:
         except (json.JSONDecodeError, ValueError):
             pass
 
-    logger.warning("Could not parse sentiment JSON from Ollama response")
+    logger.warning("Could not parse sentiment JSON from AI response")
     return {"score": 0.0, "label": "neutral", "key_themes": [], "actionable_insights": []}
 
 

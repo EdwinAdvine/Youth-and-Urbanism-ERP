@@ -463,7 +463,7 @@ API router for Y&U Notes AI — generate, summarize, extract, transform, Q&A.
 | `POST` | `/transform` | `transform_text` | Transform text: improve, expand, simplify, translate, fix grammar, change tone. |
 | `POST` | `/ask` | `ask_notes` | Ask a question across all your notes (RAG Q&A with semantic search). |
 | `POST` | `/suggest-links` | `suggest_links` | Analyze content and suggest ERP entity links. |
-| `POST` | `/transcribe` | `transcribe_audio` | Upload audio → Whisper (via Ollama) → create structured note. |
+| `POST` | `/transcribe` | `transcribe_audio` | Upload audio → Whisper (via AI) → create structured note. |
 | `POST` | `/{note_id}/mindmap` | `generate_mindmap` | Analyze note content and return a mind map as a JSON graph. |
 
 ### `POST /generate`
@@ -552,7 +552,7 @@ Analyze content and suggest ERP entity links.
 
 **Function:** `transcribe_audio` (line 205)
 
-Upload audio → Whisper (via Ollama) → create structured note.
+Upload audio → Whisper (via AI) → create structured note.
 
 Accepts: mp3, mp4, wav, m4a, ogg, webm (max 25 MB)
 Returns: created note id + transcript

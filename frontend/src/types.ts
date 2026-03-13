@@ -76,10 +76,10 @@ export interface AppAdmin {
 }
 
 export interface AIConfig {
-  provider: 'ollama' | 'openai' | 'anthropic' | 'grok'
+  provider: string
   model: string
   api_key?: string
-  ollama_url?: string
+  base_url?: string
 }
 
 export interface AdminStats {

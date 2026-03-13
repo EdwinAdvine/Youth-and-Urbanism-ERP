@@ -69,7 +69,7 @@ async def test_update_ai_config(client: AsyncClient, superadmin_user):
     """PUT /api/v1/admin/ai-config updates AI configuration."""
     resp = await client.put(
         "/api/v1/admin/ai-config",
-        json={"provider": "ollama", "model_name": "llama3"},
+        json={"provider": "openai", "model_name": "gpt-4o"},
         headers=auth_headers(superadmin_user),
     )
     assert resp.status_code == 200

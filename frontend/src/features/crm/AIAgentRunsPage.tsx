@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams } from 'react-router-dom'
 import {
   useAIAgentRuns,
   useApproveRun,
@@ -29,8 +30,7 @@ function formatDate(dateStr: string | null) {
 }
 
 export default function AIAgentRunsPage() {
-  const params = new URLSearchParams(window.location.search)
-  const agentConfigId = params.get('agent_config_id') ?? ''
+  const { id: agentConfigId = '' } = useParams<{ id: string }>()
 
   const [statusFilter, setStatusFilter] = useState('')
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null)

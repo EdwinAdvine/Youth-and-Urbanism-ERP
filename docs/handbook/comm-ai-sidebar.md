@@ -81,4 +81,4 @@ Financial approval thresholds are configured by the Super Admin in **Admin → S
 - It cannot override RBAC permissions — if your account does not have access to HR payroll, neither does the AI acting on your behalf.
 - It does not guess. If it lacks enough information to complete a task safely, it asks for clarification before proceeding.
 
-Urban Bad AI runs entirely on your local Ollama server by default, keeping all data on-premise.
+Urban Bad AI runs via your configured AI provider (OpenAI, Anthropic, or Grok) as set by the Super Admin.

@@ -6,10 +6,10 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-import httpx
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.calendar import CalendarEvent
 from app.models.crm import Deal
 from app.models.finance import Invoice
@@ -19,9 +19,35 @@ from app.models.hr import Employee
 DEFAULT_HOURLY_RATE = 50.0
 # Monthly hours used to convert monthly salary to hourly
 MONTHLY_HOURS = 160.0
-# Ollama host (container name in docker network)
-OLLAMA_BASE_URL = "http://urban-vibes-dynamics-ollama:11434"
-OLLAMA_MODEL = "llama3"
+
+
+async def _ai_chat(messages: list[dict], model: str | None = None) -> str:
+    """Call the configured AI provider."""
+    from openai import AsyncOpenAI
+
+    provider = settings.AI_PROVIDER
+    if provider == "anthropic":
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+        system_parts = [m["content"] for m in messages if m["role"] == "system"]
+        non_system = [m for m in messages if m["role"] != "system"]
+        kwargs: dict[str, Any] = {
+            "model": model or settings.AI_MODEL,
+            "max_tokens": 4096,
+            "messages": non_system,
+        }
+        if system_parts:
+            kwargs["system"] = "\n\n".join(system_parts)
+        resp = await client.messages.create(**kwargs)
+        return resp.content[0].text
+    else:
+        client_oai = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+        resp = await client_oai.chat.completions.create(
+            model=model or settings.AI_MODEL,
+            messages=messages,
+        )
+        return resp.choices[0].message.content or ""
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -268,13 +294,13 @@ async def get_meeting_roi_dashboard(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# analyze_meeting_sentiment  (Ollama)
+# analyze_meeting_sentiment
 # ─────────────────────────────────────────────────────────────────────────────
 
 async def analyze_meeting_sentiment(
     event_id: str, notes: str, db: AsyncSession
 ) -> dict[str, Any]:
-    """Send meeting notes to Ollama for sentiment + coaching analysis.
+    """Send meeting notes to the configured AI provider for sentiment + coaching analysis.
 
     Returns: {sentiment, score, key_themes, action_items, coaching_tip}
     """
@@ -298,21 +324,12 @@ async def analyze_meeting_sentiment(
         f"Meeting notes:\n{notes}"
     )
 
+    import logging
+    logger = logging.getLogger(__name__)
+
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": OLLAMA_MODEL,
-                    "prompt": prompt,
-                    "stream": False,
-                    "format": "json",
-                },
-            )
-            response.raise_for_status()
-            data = response.json()
-            raw = data.get("response", "{}")
-            result = json.loads(raw)
+        raw = await _ai_chat([{"role": "user", "content": prompt}])
+        result = json.loads(raw.strip())
 
         # Validate and normalise
         sentiment = result.get("sentiment", "neutral")
@@ -330,24 +347,15 @@ async def analyze_meeting_sentiment(
             "coaching_tip": result.get("coaching_tip", ""),
         }
 
-    except httpx.HTTPError as exc:
+    except Exception as exc:
+        logger.error("AI analysis error for event %s: %s", event_id, exc)
         return {
             "event_id": str(event_id),
             "sentiment": "neutral",
             "score": 0.5,
             "key_themes": [],
             "action_items": [],
-            "coaching_tip": "AI analysis unavailable — Ollama unreachable.",
-            "error": str(exc),
-        }
-    except (json.JSONDecodeError, KeyError, ValueError) as exc:
-        return {
-            "event_id": str(event_id),
-            "sentiment": "neutral",
-            "score": 0.5,
-            "key_themes": [],
-            "action_items": [],
-            "coaching_tip": "AI response could not be parsed.",
+            "coaching_tip": "AI analysis unavailable.",
             "error": str(exc),
         }
 
@@ -390,7 +398,7 @@ async def get_meeting_coach_report(user_id: str, db: AsyncSession) -> dict[str, 
             "action_items": [],
         }
 
-    # Analyse each meeting's notes via Ollama
+    # Analyse each meeting's notes via AI
     analyses: list[dict[str, Any]] = []
     for ev in events:
         notes = ev.description or ""

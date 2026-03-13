@@ -1804,7 +1804,7 @@ async def ai_insights(
     current_user: CurrentUser,
     db: DBSession,
 ) -> dict[str, Any]:
-    """Generate 3 actionable insights using Ollama over store metrics."""
+    """Generate 3 actionable insights using AI over store metrics."""
     from app.services.ecommerce_ai import get_ecom_health_score
 
     health = await get_ecom_health_score(db, None)
@@ -1825,14 +1825,25 @@ async def ai_insights(
     )
 
     try:
-        import httpx
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(
-                "http://ollama:11434/api/generate",
-                json={"model": "llama3", "prompt": prompt, "stream": False},
+        from app.core.config import settings  # noqa: PLC0415
+        from openai import AsyncOpenAI  # noqa: PLC0415
+        import json as _json  # noqa: PLC0415
+
+        provider = settings.AI_PROVIDER
+        if provider == "anthropic":
+            import anthropic  # noqa: PLC0415
+            client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+            resp = await client.messages.create(
+                model=settings.AI_MODEL, max_tokens=1024,
+                messages=[{"role": "user", "content": prompt}],
             )
-        raw = resp.json().get("response", "[]")
-        import json as _json
+            raw = resp.content[0].text
+        else:
+            oai = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+            resp = await oai.chat.completions.create(
+                model=settings.AI_MODEL, messages=[{"role": "user", "content": prompt}],
+            )
+            raw = resp.choices[0].message.content or "[]"
         # Try to extract JSON array from response
         start = raw.find("[")
         end = raw.rfind("]") + 1

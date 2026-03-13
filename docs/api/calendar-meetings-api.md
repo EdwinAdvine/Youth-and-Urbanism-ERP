@@ -764,8 +764,8 @@ Calendar ROI & AI Meeting Coach endpoints.
 |--------|------|----------|-------------|
 | `GET` | `/calendar/events/{event_id}/roi` | `get_meeting_roi` | Return cost breakdown, attributed revenue, and ROI % for one meeting. |
 | `GET` | `/calendar/roi-dashboard` | `meeting_roi_dashboard` | Aggregate meeting costs, client vs internal split, and top 5 most expensive |
-| `POST` | `/calendar/events/{event_id}/analyze-sentiment` | `analyze_event_sentiment` | Send meeting notes through the local Ollama model and receive: |
-| `GET` | `/calendar/meeting-coach` | `meeting_coach_report` | Analyse the last 10 meetings with notes via Ollama. |
+| `POST` | `/calendar/events/{event_id}/analyze-sentiment` | `analyze_event_sentiment` | Send meeting notes through the AI provider and receive: |
+| `GET` | `/calendar/meeting-coach` | `meeting_coach_report` | Analyse the last 10 meetings with notes via AI. |
 
 ### `GET /calendar/events/{event_id}/roi`
 
@@ -798,7 +798,7 @@ meetings for the authenticated user over the requested period.
 
 **Function:** `analyze_event_sentiment` (line 75)
 
-Send meeting notes through the local Ollama model and receive:
+Send meeting notes through the AI provider and receive:
 sentiment (positive/neutral/negative), a 0-1 score, key themes,
 extracted action items, and a coaching tip.
 
@@ -811,7 +811,7 @@ extracted action items, and a coaching tip.
 
 **Function:** `meeting_coach_report` (line 94)
 
-Analyse the last 10 meetings with notes via Ollama.
+Analyse the last 10 meetings with notes via AI.
 
 Returns:
 - Overall sentiment trend (positive / neutral / negative)

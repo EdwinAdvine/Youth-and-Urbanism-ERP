@@ -7,7 +7,6 @@ volumes:
   postgres_data:       # single-node dev PostgreSQL
   redis_data:
   minio_data:
-  ollama_data:
   stalwart_data:
 
   # ── HA cluster volumes (profile: ha) ────────────────────────────────────────
@@ -100,27 +99,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    networks:
-      - urban-vibes-dynamics-net
-
-  ollama:
-    image: ollama/ollama:latest
-    container_name: urban-vibes-dynamics-ollama
-    restart: unless-stopped
-    environment:
-      OLLAMA_NUM_PARALLEL: "1"
-      OLLAMA_MAX_LOADED_MODELS: "1"
-      OLLAMA_KEEP_ALIVE: "5m"
-    ports:
-      - "11435:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
     networks:
       - urban-vibes-dynamics-net
 

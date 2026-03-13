@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { Button, Card, Modal, Input, Select, Badge, toast } from '../../components/ui'
 import {
   useEscalationChain,
@@ -26,11 +27,6 @@ const ACTION_BADGE_VARIANT: Record<string, 'info' | 'warning' | 'danger' | 'defa
   escalate: 'danger',
 }
 
-interface Props {
-  slaPolicyId: string
-  slaPolicyName?: string
-}
-
 const emptyLevel = {
   trigger_minutes_before_breach: 30,
   action: 'notify',
@@ -38,7 +34,9 @@ const emptyLevel = {
   target_user_id: '',
 }
 
-export default function SLAEscalationConfig({ slaPolicyId, slaPolicyName }: Props) {
+export default function SLAEscalationConfig() {
+  const { slaPolicyId } = useParams<{ slaPolicyId: string }>()
+  if (!slaPolicyId) return <div className="p-6 text-center text-gray-400">SLA Policy not found</div>
   const { data: chain, isLoading } = useEscalationChain(slaPolicyId)
   const addLevel = useAddEscalationLevel()
   const deleteLevel = useDeleteEscalationLevel()
@@ -87,11 +85,9 @@ export default function SLAEscalationConfig({ slaPolicyId, slaPolicyName }: Prop
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Escalation Chain</h1>
-          {slaPolicyName && (
-            <p className="text-sm text-gray-500 mt-0.5">
-              SLA Policy: <span className="font-medium">{slaPolicyName}</span>
-            </p>
-          )}
+          <p className="text-sm text-gray-500 mt-0.5">
+            SLA Policy: <span className="font-medium">{slaPolicyId}</span>
+          </p>
         </div>
         <Button onClick={() => setShowAdd(true)}>
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { Button, Card, Badge, Spinner, Modal, Input, Select, toast } from '../../components/ui'
 import {
   useLoyaltyPrograms,
@@ -35,8 +36,9 @@ const REWARD_TYPES = [
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function RewardsPage() {
+  const { programId: routeProgramId } = useParams<{ programId: string }>()
   const { data: programs, isLoading: programsLoading } = useLoyaltyPrograms()
-  const [selectedProgramId, setSelectedProgramId] = useState('')
+  const [selectedProgramId, setSelectedProgramId] = useState(routeProgramId ?? '')
   const { data: rewards, isLoading: rewardsLoading } = useLoyaltyRewards(selectedProgramId)
   const createReward = useCreateReward()
   const toggleReward = useToggleReward()
@@ -47,7 +49,7 @@ export default function RewardsPage() {
   const [pointsCost, setPointsCost] = useState('')
   const [rewardType, setRewardType] = useState('discount')
 
-  // Auto-select first program
+  // Auto-select first program if no route param
   if (!selectedProgramId && programs && programs.length > 0) {
     setSelectedProgramId(programs[0].id)
   }

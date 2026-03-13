@@ -17,10 +17,10 @@ class AIConfig(Base, UUIDPrimaryKeyMixin):
     __tablename__ = "ai_configs"
 
     provider: Mapped[str] = mapped_column(
-        String(50), nullable=False, default="ollama",
-        comment="ollama | openai | grok | anthropic",
+        String(50), nullable=False, default="openai",
+        comment="Any provider name — non-anthropic providers use OpenAI-compatible API",
     )
-    model_name: Mapped[str] = mapped_column(String(150), nullable=False, default="llama3.2")
+    model_name: Mapped[str] = mapped_column(String(150), nullable=False, default="gpt-4o")
     api_key: Mapped[str | None] = mapped_column(
         Text, nullable=True,
         comment="Encrypted API key for cloud providers",

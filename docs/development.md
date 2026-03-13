@@ -22,7 +22,7 @@ For faster iteration, run backend and frontend locally while keeping infrastruct
 
 ```bash
 # Start only infrastructure
-docker compose up -d postgres redis minio ollama
+docker compose up -d postgres redis minio
 
 # Backend
 cd backend
@@ -350,10 +350,10 @@ curl http://localhost:8010/health | python -m json.tool
 | `REDIS_URL` | — | Redis connection string |
 | `JWT_SECRET_KEY` | — | Secret for JWT signing |
 | `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Access token TTL |
-| `AI_PROVIDER` | `ollama` | AI provider (ollama/openai/grok/anthropic) |
-| `OLLAMA_BASE_URL` | `http://ollama:11434` | Ollama endpoint |
-| `OPENAI_API_KEY` | — | OpenAI API key (if using) |
-| `ANTHROPIC_API_KEY` | — | Anthropic API key (if using) |
+| `AI_PROVIDER` | `openai` | AI provider (openai/anthropic/grok or any OpenAI-compatible) |
+| `AI_API_KEY` | — | API key for the active AI provider |
+| `AI_BASE_URL` | Provider-specific | Base URL for AI API (override for self-hosted or alternatives) |
+| `AI_MODEL` | Provider-specific | Model name to use (e.g., gpt-4, claude-3-opus, grok-2) |
 | `MINIO_ENDPOINT` | `minio:9000` | MinIO server |
 | `MINIO_ACCESS_KEY` | `minioadmin` | MinIO access key |
 | `MINIO_SECRET_KEY` | `minioadmin` | MinIO secret key |
@@ -361,10 +361,6 @@ curl http://localhost:8010/health | python -m json.tool
 | `ONLYOFFICE_JWT_SECRET` | — | ONLYOFFICE JWT token secret |
 | `JITSI_URL` | `http://jitsi-web:80` | Jitsi server URL |
 | `STALWART_DOMAIN` | `urban.local` | Mail domain |
-| `SUPERSET_URL` | `http://superset:8088` | Superset URL |
-| `NEXTCLOUD_URL` | `http://nextcloud` | Nextcloud URL |
-| `NEXTCLOUD_ADMIN_USER` | `admin` | Nextcloud admin user |
-| `NEXTCLOUD_ADMIN_PASSWORD` | — | Nextcloud admin password |
 | `CORS_ORIGINS` | `http://localhost:3010` | Allowed CORS origins |
 | `DEBUG` | `true` | Debug mode flag |
 | `FIRST_SUPERADMIN_EMAIL` | — | Initial admin email |

@@ -79,15 +79,14 @@ These values are only used on **first startup** to seed the initial Super Admin 
 
 ---
 
-## AI / Ollama
+## AI
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OLLAMA_URL` | `http://localhost:11435` | Ollama API endpoint (internal Docker address) |
-| `OLLAMA_MODEL` | `llama3.1` | Default Ollama model for AI features |
-| `OPENAI_API_KEY` | `""` | Optional OpenAI API key (fallback when Ollama unavailable) |
-| `ANTHROPIC_API_KEY` | `""` | Optional Anthropic API key (fallback) |
-| `AI_PROVIDER` | `ollama` | Active AI provider: `ollama`, `openai`, or `anthropic` |
+| `AI_PROVIDER` | `openai` | Active AI provider: `openai`, `anthropic`, `grok`, or any OpenAI-compatible provider |
+| `AI_API_KEY` | `""` | API key for the active AI provider (OpenAI, Anthropic, Grok, or compatible) |
+| `AI_BASE_URL` | Provider-specific | Base URL for the AI API. Override for self-hosted or alternative OpenAI-compatible providers |
+| `AI_MODEL` | Provider-specific | Model name to use (e.g., `gpt-4`, `claude-3-opus`, `grok-2`). Defaults vary by provider |
 
 ---
 
@@ -141,7 +140,7 @@ Before going to production, ensure you have:
 - [ ] Set real `MINIO_ACCESS_KEY` and `MINIO_SECRET_KEY` (not defaults)
 - [ ] Set `ONLYOFFICE_JWT_SECRET` to a dedicated secret (not `SECRET_KEY`)
 - [ ] Set `JITSI_APP_SECRET` to a dedicated secret
-- [ ] Configured at least one AI provider (Ollama model pulled, or OpenAI/Anthropic key set)
+- [ ] Configured AI provider by setting `AI_PROVIDER`, `AI_API_KEY`, and optionally `AI_BASE_URL` and `AI_MODEL`
 
 ---
 

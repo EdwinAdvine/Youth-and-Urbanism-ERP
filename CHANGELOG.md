@@ -118,7 +118,7 @@ Urban Vibes Dynamics reaches full maturity — a complete, self-hosted ERP platf
 - Direct PostgreSQL queries for real-time data
 
 #### AI System
-- Ollama-powered local AI (primary) with OpenAI/Anthropic/Grok fallback
+- AI-powered system with configurable providers (OpenAI, Anthropic, Grok)
 - 55 AI tools across all modules (financial analysis, lead scoring, scheduling, etc.)
 - AI chat with WebSocket streaming and voice input
 - Urban Bad AI: Multi-agent system (Orchestrator, Researcher, Verifier, Executor)

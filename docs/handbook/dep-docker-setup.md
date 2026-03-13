@@ -52,9 +52,7 @@ nano .env   # or use your preferred editor
 docker compose up -d --build
 ```
 
-This starts 14 containers: PostgreSQL, Redis, MinIO, Ollama, Backend, Frontend, Celery Worker, Celery Beat, Stalwart Mail, ONLYOFFICE, and the 4 Jitsi services.
-
-First startup downloads Ollama models — allow 5–10 minutes.
+This starts 13 containers: PostgreSQL, Redis, MinIO, Backend, Frontend, Celery Worker, Celery Beat, Stalwart Mail, ONLYOFFICE, and the 4 Jitsi services.
 
 ### 4. Apply database migrations
 
@@ -108,7 +106,6 @@ docker compose logs -f frontend
 | Redis | 6380 |
 | MinIO API | 9010 |
 | MinIO Console | 9011 |
-| Ollama | 11435 |
 | ONLYOFFICE | 8083 |
 
 For production, put Nginx in front and only expose ports 80/443.

@@ -136,14 +136,22 @@ def upload_file_from_bytes(
     }
 
 
-def get_download_url(minio_key: str) -> str:
-    """Return a pre-signed URL valid for 1 hour for the given MinIO object key."""
+def get_download_url(minio_key: str, *, internal: bool = False) -> str:
+    """Return a pre-signed URL valid for 1 hour for the given MinIO object key.
+
+    The URL is rewritten to use ``MINIO_EXTERNAL_URL`` so browsers can reach it,
+    unless *internal* is True (used when the URL must be reachable from within
+    Docker, e.g. by the ONLYOFFICE Document Server).
+    """
     client = _get_client()
     url: str = client.generate_presigned_url(
         "get_object",
         Params={"Bucket": BUCKET_NAME, "Key": minio_key},
         ExpiresIn=PRESIGNED_EXPIRY,
     )
+    # Rewrite internal Docker hostname to the browser-reachable external URL
+    if not internal and settings.MINIO_EXTERNAL_URL and settings.MINIO_EXTERNAL_URL != settings.MINIO_URL:
+        url = url.replace(settings.MINIO_URL, settings.MINIO_EXTERNAL_URL, 1)
     return url
 
 

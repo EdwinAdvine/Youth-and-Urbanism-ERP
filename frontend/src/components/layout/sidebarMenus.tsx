@@ -362,20 +362,51 @@ const crmMenu: AppMenu = {
 }
 
 // ─── PROJECTS ───────────────────────────────────────────────────────────────
-const projectsMenu: AppMenu = {
-  label: 'Projects',
-  groups: [
+
+/** Build the Projects sidebar menu. When `projectId` is provided (user is inside
+ *  a project detail page) an extra "Current Project" group is added with all
+ *  view links so the user can navigate without relying on the tab bar alone. */
+export function buildProjectsMenu(pathname: string): AppMenu {
+  const match = pathname.match(/^\/projects\/([^/]+)/)
+  const projectId = match && match[1] !== 'workload' && match[1] !== 'templates'
+    ? match[1]
+    : null
+
+  const groups: MenuGroup[] = [
     {
-      label: 'Core',
+      label: 'Global',
       defaultOpen: true,
       items: [
-        { label: 'All Projects', href: '/projects', icon: <Icon path={P.clipboard} /> },
-        { label: 'Workload', href: '/projects/workload', icon: <Icon path={P.users} /> },
-        { label: 'Templates', href: '/projects/templates', icon: <Icon path={P.template} /> },
+        { label: 'All Projects', href: '/projects',           icon: <Icon path={P.clipboard} /> },
+        { label: 'Workload',     href: '/projects/workload',  icon: <Icon path={P.users} /> },
+        { label: 'Templates',    href: '/projects/templates', icon: <Icon path={P.template} /> },
       ],
     },
-  ],
+  ]
+
+  if (projectId) {
+    groups.push({
+      label: 'Project Views',
+      defaultOpen: true,
+      items: [
+        { label: 'Board',        href: `/projects/${projectId}`,               icon: <Icon path={P.grid} /> },
+        { label: 'List',         href: `/projects/${projectId}/list`,          icon: <Icon path={P.doc} /> },
+        { label: 'Backlog',      href: `/projects/${projectId}/backlog`,       icon: <Icon path={P.archive} /> },
+        { label: 'Calendar',     href: `/projects/${projectId}/calendar`,      icon: <Icon path={P.calendar} /> },
+        { label: 'Gantt',        href: `/projects/${projectId}/gantt`,         icon: <Icon path={P.trending} /> },
+        { label: 'Milestones',   href: `/projects/${projectId}/milestones`,    icon: <Icon path={P.check} /> },
+        { label: 'Burndown',     href: `/projects/${projectId}/burndown`,      icon: <Icon path={P.chart} /> },
+        { label: 'Dashboard',    href: `/projects/${projectId}/dashboard`,     icon: <Icon path={P.home} /> },
+        { label: 'Time Log',     href: `/projects/${projectId}/time-report`,   icon: <Icon path={P.adjust} /> },
+        { label: 'Integrations', href: `/projects/${projectId}/integrations`,  icon: <Icon path={P.link} /> },
+      ],
+    })
+  }
+
+  return { label: 'Projects', groups }
 }
+
+const projectsMenu: AppMenu = buildProjectsMenu('')
 
 // ─── INVENTORY ──────────────────────────────────────────────────────────────
 const inventoryMenu: AppMenu = {
@@ -482,6 +513,13 @@ const supplyChainMenu: AppMenu = {
       items: [
         { label: 'Compliance & ESG', href: '/supply-chain/compliance', icon: <Icon path={P.shield} /> },
         { label: 'SC Analytics', href: '/supply-chain/analytics', icon: <Icon path={P.pie} /> },
+      ],
+    },
+    {
+      label: 'Mobile',
+      items: [
+        { label: 'Mobile Goods Receipt', href: '/supply-chain/mobile-goods-receipt', icon: <Icon path={P.archive} /> },
+        { label: 'Mobile QI', href: '/supply-chain/mobile-quality-inspection', icon: <Icon path={P.check} /> },
       ],
     },
   ],
@@ -732,10 +770,36 @@ const supportMenu: AppMenu = {
       ],
     },
     {
+      label: 'Automation & AI',
+      items: [
+        { label: 'Automations', href: '/support/automations', icon: <Icon path={P.lightning} /> },
+        { label: 'AI Copilot', href: '/support/ai-copilot', icon: <Icon path={P.brain} /> },
+        { label: 'Proactive Rules', href: '/support/proactive-rules', icon: <Icon path={P.shield} /> },
+        { label: 'Sandboxes', href: '/support/sandboxes', icon: <Icon path={P.code} /> },
+      ],
+    },
+    {
+      label: 'Channels',
+      items: [
+        { label: 'Omnichannel', href: '/support/omnichannel', icon: <Icon path={P.link} /> },
+        { label: 'Voice', href: '/support/voice', icon: <Icon path="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /> },
+        { label: 'Forum', href: '/support/forum', icon: <Icon path={P.chat} /> },
+      ],
+    },
+    {
+      label: 'Operations',
+      items: [
+        { label: 'Agent Schedule', href: '/support/agent-schedule', icon: <Icon path={P.calendar} /> },
+        { label: 'Agent Skills', href: '/support/agent-skills', icon: <Icon path={P.star} /> },
+        { label: 'Customer Health', href: '/support/customer-health', icon: <Icon path={P.trending} /> },
+      ],
+    },
+    {
       label: 'Reports',
       items: [
         { label: 'Satisfaction', href: '/support/satisfaction', icon: <Icon path={P.smile} /> },
         { label: 'KPIs', href: '/support/kpis', icon: <Icon path={P.chart} /> },
+        { label: 'Analytics', href: '/support/analytics', icon: <Icon path={P.trending} /> },
       ],
     },
   ],
@@ -765,13 +829,33 @@ const calendarMenu: AppMenu = {
   label: 'Calendar',
   groups: [
     {
-      label: 'Calendar',
+      label: 'Views',
       defaultOpen: true,
       items: [
-        { label: 'My Calendar', href: '/calendar', icon: <Icon path={P.calendar} /> },
-        { label: 'Team Calendar', href: '/calendar/team', icon: <Icon path={P.users} /> },
+        { label: 'My Calendar',     href: '/calendar',          icon: <Icon path={P.calendar} /> },
+        { label: 'Team Calendar',   href: '/calendar/team',     icon: <Icon path={P.users} /> },
         { label: 'Upcoming Events', href: '/calendar/upcoming', icon: <Icon path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /> },
-        { label: 'Recurring', href: '/calendar/recurring', icon: <Icon path={P.refresh} /> },
+        { label: 'Recurring',       href: '/calendar/recurring',icon: <Icon path={P.refresh} /> },
+      ],
+    },
+    {
+      label: 'Tools',
+      defaultOpen: true,
+      items: [
+        { label: 'Scheduling Assistant', href: '/calendar/scheduling-assistant', icon: <Icon path={P.brain} /> },
+        { label: 'Focus Time',           href: '/calendar/focus-time',          icon: <Icon path={P.lightning} /> },
+        { label: 'Booking Page',         href: '/calendar/booking',             icon: <Icon path={P.share} /> },
+        { label: 'Resource Booking',     href: '/calendar/resources',           icon: <Icon path={P.building} /> },
+        { label: 'Mail Scanner',         href: '/calendar/mail-scanner',        icon: <Icon path={P.mail} /> },
+      ],
+    },
+    {
+      label: 'Insights',
+      defaultOpen: false,
+      items: [
+        { label: 'Analytics',   href: '/calendar/analytics', icon: <Icon path={P.chart} /> },
+        { label: 'Meeting ROI', href: '/calendar/roi',        icon: <Icon path={P.trending} /> },
+        { label: 'Automations', href: '/calendar/automations',icon: <Icon path={P.cog} /> },
       ],
     },
   ],
@@ -819,14 +903,26 @@ const driveMenu: AppMenu = {
   label: 'Drive',
   groups: [
     {
-      label: 'Drive',
+      label: 'Files',
       defaultOpen: true,
       items: [
-        { label: 'My Files', href: '/drive', icon: <Icon path={P.upload} /> },
-        { label: 'Shared with Me', href: '/drive/shared', icon: <Icon path={P.share} /> },
-        { label: 'Starred', href: '/drive/starred', icon: <Icon path={P.star} /> },
-        { label: 'Recent', href: '/drive/recent', icon: <Icon path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /> },
-        { label: 'Recycle Bin', href: '/drive/trash', icon: <Icon path={P.trash} /> },
+        { label: 'My Files',      href: '/drive',         icon: <Icon path={P.upload} /> },
+        { label: 'Shared with Me',href: '/drive/shared',  icon: <Icon path={P.share} /> },
+        { label: 'Starred',       href: '/drive/starred', icon: <Icon path={P.star} /> },
+        { label: 'Recent',        href: '/drive/recent',  icon: <Icon path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /> },
+        { label: 'Search',        href: '/drive/search',  icon: <Icon path={P.search} /> },
+        { label: 'Recycle Bin',   href: '/drive/trash',   icon: <Icon path={P.trash} /> },
+      ],
+    },
+    {
+      label: 'Tools',
+      defaultOpen: true,
+      items: [
+        { label: 'File Requests', href: '/drive/requests',  icon: <Icon path={P.clipboard} /> },
+        { label: 'Contracts',     href: '/drive/contracts', icon: <Icon path={P.doc} /> },
+        { label: 'Vault',         href: '/drive/vault',     icon: <Icon path={P.shield} /> },
+        { label: 'AI Insights',   href: '/drive/ai',        icon: <Icon path={P.brain} /> },
+        { label: 'Analytics',     href: '/drive/analytics', icon: <Icon path={P.chart} /> },
       ],
     },
   ],
@@ -840,10 +936,29 @@ const notesMenu: AppMenu = {
       label: 'Notes',
       defaultOpen: true,
       items: [
-        { label: 'All Notes', href: '/notes', icon: <Icon path={P.pencil} /> },
-        { label: 'My Notes', href: '/notes/mine', icon: <Icon path={P.user} /> },
-        { label: 'Shared', href: '/notes/shared', icon: <Icon path={P.share} /> },
-        { label: 'Archived', href: '/notes/archived', icon: <Icon path={P.archive} /> },
+        { label: 'All Notes',  href: '/notes',          icon: <Icon path={P.pencil} /> },
+        { label: 'My Notes',   href: '/notes/mine',     icon: <Icon path={P.user} /> },
+        { label: 'Shared',     href: '/notes/shared',   icon: <Icon path={P.share} /> },
+        { label: 'Templates',  href: '/notes/templates',icon: <Icon path={P.template} /> },
+        { label: 'Archived',   href: '/notes/archived', icon: <Icon path={P.archive} /> },
+      ],
+    },
+    {
+      label: 'Workspace',
+      defaultOpen: true,
+      items: [
+        { label: 'Databases',       href: '/notes/databases',     icon: <Icon path={P.grid} /> },
+        { label: 'Notebooks',       href: '/notes/notebooks',     icon: <Icon path={P.book} /> },
+        { label: 'Knowledge Graph', href: '/notes/knowledge-graph',icon: <Icon path={P.share} /> },
+      ],
+    },
+    {
+      label: 'AI & Insights',
+      defaultOpen: false,
+      items: [
+        { label: 'AI Copilot',  href: '/notes/copilot',   icon: <Icon path={P.brain} /> },
+        { label: 'Mind Map',    href: '/notes/mind-map',  icon: <Icon path={P.globe} /> },
+        { label: 'Analytics',  href: '/notes/analytics', icon: <Icon path={P.chart} /> },
       ],
     },
   ],
@@ -869,6 +984,15 @@ const analyticsMenu: AppMenu = {
       items: [
         { label: 'Reports', href: '/analytics/reports', icon: <Icon path={P.chart} /> },
         { label: 'Alerts', href: '/analytics/alerts', icon: <Icon path={P.alert} /> },
+      ],
+    },
+    {
+      label: 'Advanced',
+      items: [
+        { label: 'Scorecards', href: '/analytics/scorecards', icon: <Icon path={P.clipboard} /> },
+        { label: 'What-If Analysis', href: '/analytics/whatif', icon: <Icon path={P.brain} /> },
+        { label: 'Transforms', href: '/analytics/transforms', icon: <Icon path={P.refresh} /> },
+        { label: 'Metadata', href: '/analytics/meta', icon: <Icon path={P.link} /> },
       ],
     },
     {
@@ -939,6 +1063,7 @@ const settingsMenu: AppMenu = {
         { label: 'Integrations', href: '/settings/integrations', icon: <Icon path={P.link} /> },
         { label: 'Appearance', href: '/settings/appearance', icon: <Icon path="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /> },
         { label: 'Changelog', href: '/settings/changelog', icon: <Icon path="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /> },
+        { label: 'Privacy & Data', href: '/settings/compliance', icon: <Icon path={P.shield} /> },
       ],
     },
   ],
@@ -978,6 +1103,9 @@ const adminMenu: AppMenu = {
         { label: 'Audit Logs', href: '/admin/audit-logs', icon: <Icon path={P.clipboard} /> },
         { label: 'Backups', href: '/admin/backups', icon: <Icon path={P.archive} /> },
         { label: 'Bulk Import', href: '/admin/users/import', icon: <Icon path={P.upload} /> },
+        { label: 'Security Dashboard', href: '/admin/security', icon: <Icon path={P.shield} /> },
+        { label: 'Performance', href: '/admin/performance', icon: <Icon path={P.trending} /> },
+        { label: 'Parity Check', href: '/admin/parity', icon: <Icon path={P.check} /> },
       ],
     },
   ],

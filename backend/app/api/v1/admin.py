@@ -5,13 +5,14 @@ from typing import Any
 
 import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, Query, Request, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import log_audit
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import SuperAdminUser
+from app.core.rbac import get_user_app_scopes
 from app.models.ai import AIAuditLog
 from app.models.user import AppAdmin, User
 from app.schemas.ai import AIAuditLogResponse, AIConfigResponse, AIConfigUpdate
@@ -21,6 +22,10 @@ from app.schemas.user import (
     AppAdminCreate,
     AppAdminResponse,
     AuditLogResponse,
+    UserCreate,
+    UserMeResponse,
+    UserResponse,
+    UserUpdate,
 )
 from app.services.ai import AIService
 from app.services.user import UserService
@@ -77,11 +82,125 @@ async def get_stats(
         },
         "ai": {
             "provider": ai_config.provider if ai_config else settings.AI_PROVIDER,
-            "model": ai_config.model_name if ai_config else settings.OLLAMA_MODEL,
+            "model": ai_config.model_name if ai_config else "gpt-4o",
             "config_active": ai_config.is_active if ai_config else False,
         },
         "timestamp": datetime.now(UTC).isoformat(),
     }
+
+
+# ── Users (admin-scoped CRUD) ─────────────────────────────────────────────────
+
+
+async def _enrich_user(db: AsyncSession, user: object) -> UserMeResponse:
+    """Add computed role and app_admin_scopes to a UserResponse."""
+    base = UserResponse.model_validate(user)
+    scopes = await get_user_app_scopes(db, str(base.id))
+    role = "superadmin" if base.is_superadmin else ("admin" if scopes else "user")
+    data = base.model_dump()
+    data["role"] = role
+    data["app_admin_scopes"] = scopes if role in ("admin", "superadmin") else []
+    data.setdefault("app_access", [])
+    data.setdefault("permissions", [])
+    return UserMeResponse(**data)
+
+
+@router.get("/users", summary="List users (paginated)")
+async def admin_list_users(
+    _: SuperAdminUser,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=200),
+    search: str | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    query = select(User)
+    count_query = select(func.count()).select_from(User)
+
+    if search:
+        pattern = f"%{search}%"
+        filt = or_(User.email.ilike(pattern), User.full_name.ilike(pattern))
+        query = query.where(filt)
+        count_query = count_query.where(filt)
+
+    total_res = await db.execute(count_query)
+    total: int = total_res.scalar_one()
+
+    offset = (page - 1) * per_page
+    result = await db.execute(
+        query.order_by(User.created_at.desc()).offset(offset).limit(per_page)
+    )
+    users = list(result.scalars().all())
+    enriched = [await _enrich_user(db, u) for u in users]
+
+    return {
+        "items": [u.model_dump() for u in enriched],
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+    }
+
+
+@router.post(
+    "/users",
+    status_code=status.HTTP_201_CREATED,
+    summary="Create user (admin)",
+)
+async def admin_create_user(
+    request: Request,
+    payload: UserCreate,
+    current_user: SuperAdminUser,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    user = await UserService(db).create_user(payload)
+    await log_audit(
+        db, current_user, "user.created",
+        resource_type="user", resource_id=str(user.id),
+        metadata={"email": user.email, "full_name": user.full_name},
+        request=request,
+    )
+    enriched = await _enrich_user(db, user)
+    return enriched.model_dump()
+
+
+@router.patch(
+    "/users/{user_id}",
+    summary="Update user (admin, partial)",
+)
+async def admin_update_user(
+    request: Request,
+    user_id: uuid.UUID,
+    payload: UserUpdate,
+    current_user: SuperAdminUser,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    user = await UserService(db).update_user(user_id, payload)
+    await log_audit(
+        db, current_user, "user.updated",
+        resource_type="user", resource_id=str(user_id),
+        metadata={"changes": payload.model_dump(exclude_unset=True, exclude={"password"})},
+        request=request,
+    )
+    enriched = await _enrich_user(db, user)
+    return enriched.model_dump()
+
+
+@router.delete(
+    "/users/{user_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Delete user (admin)",
+)
+async def admin_delete_user(
+    request: Request,
+    user_id: uuid.UUID,
+    current_user: SuperAdminUser,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await UserService(db).delete_user(user_id)
+    await log_audit(
+        db, current_user, "user.deleted",
+        resource_type="user", resource_id=str(user_id),
+        request=request,
+    )
 
 
 # ── App Admins ────────────────────────────────────────────────────────────────
@@ -140,13 +259,15 @@ async def get_ai_config(
     ai_svc = AIService(db)
     config = await ai_svc.get_active_config()
     if config is None:
-        # Return defaults from env
+        # Return defaults from env — must set id explicitly because
+        # SQLAlchemy insert-defaults don't fire on unsaved instances.
         from app.models.ai import AIConfig  # noqa: PLC0415
 
         dummy = AIConfig(
+            id=uuid.uuid4(),
             provider=settings.AI_PROVIDER,
-            model_name=settings.OLLAMA_MODEL,
-            base_url=settings.OLLAMA_URL,
+            model_name="gpt-4o",
+            base_url=None,
             is_active=False,
         )
         return AIConfigResponse.model_validate(dummy)
@@ -182,17 +303,11 @@ async def test_ai_connection(
     import httpx  # noqa: PLC0415
 
     provider = payload.provider or settings.AI_PROVIDER
-    base_url = payload.base_url or settings.OLLAMA_URL
-    model = payload.model_name or settings.OLLAMA_MODEL
+    base_url = payload.base_url
+    model = payload.model_name or "gpt-4o"
 
     try:
-        if provider == "ollama":
-            url = f"{base_url.rstrip('/')}/api/tags"
-            async with httpx.AsyncClient(timeout=10) as client:
-                resp = await client.get(url)
-                resp.raise_for_status()
-            return {"status": "ok", "provider": provider, "message": "Ollama is reachable"}
-        elif provider in ("openai", "grok"):
+        if provider in ("openai", "grok"):
             from app.core.security import decrypt_field  # noqa: PLC0415
             api_key = payload.api_key
             if api_key:

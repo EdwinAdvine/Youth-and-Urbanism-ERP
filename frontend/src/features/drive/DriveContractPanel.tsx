@@ -322,7 +322,7 @@ export default function DriveContractPanel() {
           <li>Upload a PDF contract and open its Contract Intelligence view</li>
           <li>Click "Analyse Contract" to extract parties, dates, value, and obligations via AI</li>
           <li>Receive alerts 30/14/7 days before expiry or renewal</li>
-          <li>All analysis runs locally on Ollama — no data leaves your server</li>
+          <li>All analysis is AI-powered using your configured provider</li>
         </ul>
       </div>
     </div>

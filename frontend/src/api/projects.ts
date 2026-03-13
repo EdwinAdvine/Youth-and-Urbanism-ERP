@@ -143,7 +143,7 @@ export function useProjects() {
   return useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ total: number; projects: Project[] }>('/projects/')
+      const { data } = await apiClient.get<{ total: number; projects: Project[] }>('/projects')
       return data.projects
     },
     ...LIST_PRESET,
@@ -166,7 +166,7 @@ export function useCreateProject() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (payload: CreateProjectPayload) => {
-      const { data } = await apiClient.post<Project>('/projects/', payload)
+      const { data } = await apiClient.post<Project>('/projects', payload)
       return data
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),

@@ -8,8 +8,8 @@
  * Endpoint: GET /api/v1/admin/db-health
  * Poll interval: 15 seconds (auto-refreshed via useQuery refetchInterval)
  */
-import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
+import apiClient from "./client";
 
 export interface ReplicaStatus {
   name: string;
@@ -54,7 +54,7 @@ export interface DbHealthResponse {
 }
 
 async function fetchDbHealth(): Promise<DbHealthResponse> {
-  const { data } = await axios.get<DbHealthResponse>("/api/v1/admin/db-health");
+  const { data } = await apiClient.get<DbHealthResponse>("/admin/db-health");
   return data;
 }
 

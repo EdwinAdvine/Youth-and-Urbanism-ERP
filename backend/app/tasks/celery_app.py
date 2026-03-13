@@ -2647,7 +2647,7 @@ def drive_contract_renewal_alerts(self) -> None:
 
 @celery_app.task(name="tasks.analyse_contract", bind=True)
 def analyse_contract(self, file_id: str) -> None:
-    """Analyse a contract document and extract key terms using Ollama AI."""
+    """Analyse a contract document and extract key terms using AI."""
     import asyncio
     import json as json_mod
 
@@ -2675,7 +2675,7 @@ def analyse_contract(self, file_id: str) -> None:
                 except Exception:
                     return
 
-            # Use Ollama to extract contract fields
+            # Use AI to extract contract fields
             prompt = f"""Extract the following from this contract document and return valid JSON only:
 {{
   "parties": [{{"name": "string", "role": "string"}}],

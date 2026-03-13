@@ -4,10 +4,10 @@
  *         comment threads, file presence, sharing analytics, snapshots,
  *         eDiscovery, analytics.
  */
-import axios from "axios";
+import apiClient from "./client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-const BASE = "/api/v1/drive";
+const BASE = "/drive";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -155,7 +155,7 @@ export interface FilePresenceUser {
 export function useThreadedComments(fileId: string) {
   return useQuery({
     queryKey: ["drive", "comments", "threaded", fileId],
-    queryFn: () => axios.get(`${BASE}/files/${fileId}/comments/threaded`).then(r => r.data as { threads: CommentThread[]; total: number }),
+    queryFn: () => apiClient.get(`${BASE}/files/${fileId}/comments/threaded`).then(r => r.data as { threads: CommentThread[]; total: number }),
     enabled: !!fileId,
   });
 }
@@ -164,7 +164,7 @@ export function useCreateComment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (vars: { fileId: string; content: string; parentId?: string }) =>
-      axios.post(`${BASE}/files/${vars.fileId}/comments`, { content: vars.content, parent_id: vars.parentId }).then(r => r.data),
+      apiClient.post(`${BASE}/files/${vars.fileId}/comments`, { content: vars.content, parent_id: vars.parentId }).then(r => r.data),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["drive", "comments", "threaded", vars.fileId] });
     },
@@ -175,7 +175,7 @@ export function useResolveComment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (vars: { commentId: string; fileId: string }) =>
-      axios.put(`${BASE}/comments/${vars.commentId}/resolve`).then(r => r.data),
+      apiClient.put(`${BASE}/comments/${vars.commentId}/resolve`).then(r => r.data),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["drive", "comments", "threaded", vars.fileId] });
     },
@@ -189,7 +189,7 @@ export function useResolveComment() {
 export function useFilePresence(fileId: string) {
   return useQuery({
     queryKey: ["drive", "presence", fileId],
-    queryFn: () => axios.get(`${BASE}/files/${fileId}/presence`).then(r => r.data as { file_id: string; users: FilePresenceUser[] }),
+    queryFn: () => apiClient.get(`${BASE}/files/${fileId}/presence`).then(r => r.data as { file_id: string; users: FilePresenceUser[] }),
     enabled: !!fileId,
     refetchInterval: 10000, // Refresh every 10s as fallback
   });
@@ -202,7 +202,7 @@ export function useFilePresence(fileId: string) {
 export function useFileRequests() {
   return useQuery({
     queryKey: ["drive", "file-requests"],
-    queryFn: () => axios.get(`${BASE}/file-requests`).then(r => r.data as { requests: FileRequest[] }),
+    queryFn: () => apiClient.get(`${BASE}/file-requests`).then(r => r.data as { requests: FileRequest[] }),
   });
 }
 
@@ -218,7 +218,7 @@ export function useCreateFileRequest() {
       max_files?: number;
       folder_id?: string;
       branding_json?: Record<string, unknown>;
-    }) => axios.post(`${BASE}/file-requests`, data).then(r => r.data),
+    }) => apiClient.post(`${BASE}/file-requests`, data).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "file-requests"] }),
   });
 }
@@ -227,7 +227,7 @@ export function useDeactivateFileRequest() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (requestId: string) =>
-      axios.delete(`${BASE}/file-requests/${requestId}`).then(r => r.data),
+      apiClient.delete(`${BASE}/file-requests/${requestId}`).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "file-requests"] }),
   });
 }
@@ -235,7 +235,7 @@ export function useDeactivateFileRequest() {
 export function useFileRequestSubmissions(requestId: string) {
   return useQuery({
     queryKey: ["drive", "file-requests", requestId, "submissions"],
-    queryFn: () => axios.get(`${BASE}/file-requests/${requestId}/submissions`).then(r => r.data as { submissions: FileRequestSubmission[] }),
+    queryFn: () => apiClient.get(`${BASE}/file-requests/${requestId}/submissions`).then(r => r.data as { submissions: FileRequestSubmission[] }),
     enabled: !!requestId,
   });
 }
@@ -247,7 +247,7 @@ export function useFileRequestSubmissions(requestId: string) {
 export function useSharingAnalytics(days = 30) {
   return useQuery({
     queryKey: ["drive", "sharing-analytics", days],
-    queryFn: () => axios.get(`${BASE}/sharing-analytics`, { params: { days } }).then(r => r.data as SharingAnalytics),
+    queryFn: () => apiClient.get(`${BASE}/sharing-analytics`, { params: { days } }).then(r => r.data as SharingAnalytics),
   });
 }
 
@@ -258,7 +258,7 @@ export function useSharingAnalytics(days = 30) {
 export function useDriveWebhooks() {
   return useQuery({
     queryKey: ["drive", "webhooks"],
-    queryFn: () => axios.get(`${BASE}/webhooks`).then(r => r.data as { webhooks: DriveWebhook[] }),
+    queryFn: () => apiClient.get(`${BASE}/webhooks`).then(r => r.data as { webhooks: DriveWebhook[] }),
   });
 }
 
@@ -266,7 +266,7 @@ export function useCreateWebhook() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { url: string; events: string[]; secret?: string }) =>
-      axios.post(`${BASE}/webhooks`, data).then(r => r.data),
+      apiClient.post(`${BASE}/webhooks`, data).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "webhooks"] }),
   });
 }
@@ -275,7 +275,7 @@ export function useDeleteWebhook() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (webhookId: string) =>
-      axios.delete(`${BASE}/webhooks/${webhookId}`).then(r => r.data),
+      apiClient.delete(`${BASE}/webhooks/${webhookId}`).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "webhooks"] }),
   });
 }
@@ -283,7 +283,7 @@ export function useDeleteWebhook() {
 export function useWebhookDeliveries(webhookId: string) {
   return useQuery({
     queryKey: ["drive", "webhooks", webhookId, "deliveries"],
-    queryFn: () => axios.get(`${BASE}/webhooks/${webhookId}/deliveries`).then(r => r.data as { deliveries: WebhookDelivery[] }),
+    queryFn: () => apiClient.get(`${BASE}/webhooks/${webhookId}/deliveries`).then(r => r.data as { deliveries: WebhookDelivery[] }),
     enabled: !!webhookId,
   });
 }
@@ -295,7 +295,7 @@ export function useWebhookDeliveries(webhookId: string) {
 export function useDriveApiKeys() {
   return useQuery({
     queryKey: ["drive", "api-keys"],
-    queryFn: () => axios.get(`${BASE}/api-keys`).then(r => r.data as { keys: DriveApiKey[] }),
+    queryFn: () => apiClient.get(`${BASE}/api-keys`).then(r => r.data as { keys: DriveApiKey[] }),
   });
 }
 
@@ -303,7 +303,7 @@ export function useCreateApiKey() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { name: string; scopes?: string[]; expires_in_days?: number }) =>
-      axios.post(`${BASE}/api-keys`, data).then(r => r.data as DriveApiKey & { key: string }),
+      apiClient.post(`${BASE}/api-keys`, data).then(r => r.data as DriveApiKey & { key: string }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "api-keys"] }),
   });
 }
@@ -312,7 +312,7 @@ export function useRevokeApiKey() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (keyId: string) =>
-      axios.delete(`${BASE}/api-keys/${keyId}`).then(r => r.data),
+      apiClient.delete(`${BASE}/api-keys/${keyId}`).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "api-keys"] }),
   });
 }
@@ -324,7 +324,7 @@ export function useRevokeApiKey() {
 export function useDocumentTemplates(category?: string) {
   return useQuery({
     queryKey: ["drive", "templates", category],
-    queryFn: () => axios.get(`${BASE}/templates`, { params: { category } }).then(r => r.data as { templates: DocumentTemplate[] }),
+    queryFn: () => apiClient.get(`${BASE}/templates`, { params: { category } }).then(r => r.data as { templates: DocumentTemplate[] }),
   });
 }
 
@@ -339,7 +339,7 @@ export function useCreateTemplate() {
       category?: string;
       is_public?: boolean;
       variables_json?: unknown[];
-    }) => axios.post(`${BASE}/templates`, data).then(r => r.data),
+    }) => apiClient.post(`${BASE}/templates`, data).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "templates"] }),
   });
 }
@@ -348,7 +348,7 @@ export function useUseTemplate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (vars: { templateId: string; folderId?: string; fileName?: string }) =>
-      axios.post(`${BASE}/templates/${vars.templateId}/use`, null, {
+      apiClient.post(`${BASE}/templates/${vars.templateId}/use`, null, {
         params: { folder_id: vars.folderId, file_name: vars.fileName },
       }).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "files"] }),
@@ -359,7 +359,7 @@ export function useDeleteTemplate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (templateId: string) =>
-      axios.delete(`${BASE}/templates/${templateId}`).then(r => r.data),
+      apiClient.delete(`${BASE}/templates/${templateId}`).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "templates"] }),
   });
 }
@@ -371,7 +371,7 @@ export function useDeleteTemplate() {
 export function useVaultStatus() {
   return useQuery({
     queryKey: ["drive", "vault"],
-    queryFn: () => axios.get(`${BASE}/vault`).then(r => r.data as VaultStatus),
+    queryFn: () => apiClient.get(`${BASE}/vault`).then(r => r.data as VaultStatus),
   });
 }
 
@@ -379,7 +379,7 @@ export function useUnlockVault() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (password: string) =>
-      axios.post(`${BASE}/vault/unlock`, { password }).then(r => r.data),
+      apiClient.post(`${BASE}/vault/unlock`, { password }).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "vault"] }),
   });
 }
@@ -387,7 +387,7 @@ export function useUnlockVault() {
 export function useLockVault() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => axios.post(`${BASE}/vault/lock`).then(r => r.data),
+    mutationFn: () => apiClient.post(`${BASE}/vault/lock`).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "vault"] }),
   });
 }
@@ -399,7 +399,7 @@ export function useLockVault() {
 export function useDriveSnapshots() {
   return useQuery({
     queryKey: ["drive", "snapshots"],
-    queryFn: () => axios.get(`${BASE}/snapshots`).then(r => r.data as { snapshots: DriveSnapshot[] }),
+    queryFn: () => apiClient.get(`${BASE}/snapshots`).then(r => r.data as { snapshots: DriveSnapshot[] }),
   });
 }
 
@@ -407,7 +407,7 @@ export function useRestoreSnapshot() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (snapshotId: string) =>
-      axios.post(`${BASE}/snapshots/${snapshotId}/restore`).then(r => r.data),
+      apiClient.post(`${BASE}/snapshots/${snapshotId}/restore`).then(r => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["drive", "folders"] });
       qc.invalidateQueries({ queryKey: ["drive", "files"] });
@@ -422,7 +422,7 @@ export function useRestoreSnapshot() {
 export function useDlpRules() {
   return useQuery({
     queryKey: ["drive", "dlp-rules"],
-    queryFn: () => axios.get(`${BASE}/admin/dlp-rules`).then(r => r.data as { rules: DlpRule[] }),
+    queryFn: () => apiClient.get(`${BASE}/admin/dlp-rules`).then(r => r.data as { rules: DlpRule[] }),
   });
 }
 
@@ -435,7 +435,7 @@ export function useCreateDlpRule() {
       patterns: Array<{ type: string; value: string; label: string }>;
       action?: string;
       notify_admin?: boolean;
-    }) => axios.post(`${BASE}/admin/dlp-rules`, data).then(r => r.data),
+    }) => apiClient.post(`${BASE}/admin/dlp-rules`, data).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "dlp-rules"] }),
   });
 }
@@ -444,7 +444,7 @@ export function useDeleteDlpRule() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (ruleId: string) =>
-      axios.delete(`${BASE}/admin/dlp-rules/${ruleId}`).then(r => r.data),
+      apiClient.delete(`${BASE}/admin/dlp-rules/${ruleId}`).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "dlp-rules"] }),
   });
 }
@@ -452,7 +452,7 @@ export function useDeleteDlpRule() {
 export function useDlpViolations(days = 30) {
   return useQuery({
     queryKey: ["drive", "dlp-violations", days],
-    queryFn: () => axios.get(`${BASE}/admin/dlp-violations`, { params: { days } }).then(r => r.data as { violations: DlpViolation[] }),
+    queryFn: () => apiClient.get(`${BASE}/admin/dlp-violations`, { params: { days } }).then(r => r.data as { violations: DlpViolation[] }),
   });
 }
 
@@ -483,7 +483,7 @@ export function useEDiscoverySearch(params: {
 }, enabled = false) {
   return useQuery({
     queryKey: ["drive", "ediscovery", params],
-    queryFn: () => axios.get(`${BASE}/admin/ediscovery/search`, { params }).then(r => r.data as { total: number; files: EDiscoveryFile[] }),
+    queryFn: () => apiClient.get(`${BASE}/admin/ediscovery/search`, { params }).then(r => r.data as { total: number; files: EDiscoveryFile[] }),
     enabled,
   });
 }
@@ -492,7 +492,7 @@ export function useToggleLegalHold() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (vars: { fileId: string; hold: boolean }) =>
-      axios.post(`${BASE}/admin/ediscovery/hold/${vars.fileId}`, null, { params: { hold: vars.hold } }).then(r => r.data),
+      apiClient.post(`${BASE}/admin/ediscovery/hold/${vars.fileId}`, null, { params: { hold: vars.hold } }).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "ediscovery"] }),
   });
 }
@@ -504,28 +504,28 @@ export function useToggleLegalHold() {
 export function useStorageTrends(days = 30) {
   return useQuery({
     queryKey: ["drive", "analytics", "storage-trends", days],
-    queryFn: () => axios.get(`${BASE}/analytics/storage-trends`, { params: { days } }).then(r => r.data as { trends: StorageTrend[]; period_days: number }),
+    queryFn: () => apiClient.get(`${BASE}/analytics/storage-trends`, { params: { days } }).then(r => r.data as { trends: StorageTrend[]; period_days: number }),
   });
 }
 
 export function useUserActivityAnalytics(days = 30) {
   return useQuery({
     queryKey: ["drive", "analytics", "user-activity", days],
-    queryFn: () => axios.get(`${BASE}/analytics/user-activity`, { params: { days } }).then(r => r.data as { activity: Record<string, number>; period_days: number }),
+    queryFn: () => apiClient.get(`${BASE}/analytics/user-activity`, { params: { days } }).then(r => r.data as { activity: Record<string, number>; period_days: number }),
   });
 }
 
 export function useFileLifecycleAnalytics() {
   return useQuery({
     queryKey: ["drive", "analytics", "file-lifecycle"],
-    queryFn: () => axios.get(`${BASE}/analytics/file-lifecycle`).then(r => r.data as FileLifecycle),
+    queryFn: () => apiClient.get(`${BASE}/analytics/file-lifecycle`).then(r => r.data as FileLifecycle),
   });
 }
 
 export function useRansomwareStatus() {
   return useQuery({
     queryKey: ["drive", "ransomware-status"],
-    queryFn: () => axios.get(`${BASE}/admin/ransomware-status`).then(r => r.data),
+    queryFn: () => apiClient.get(`${BASE}/admin/ransomware-status`).then(r => r.data),
     refetchInterval: 60000,
   });
 }
@@ -548,7 +548,7 @@ export function useDriveChanges(cursor = 0, enabled = false) {
   return useQuery({
     queryKey: ["drive", "changes", cursor],
     queryFn: () =>
-      axios.get(`${BASE}/changes`, { params: { cursor } }).then(r => r.data as { changes: DriveChange[]; next_cursor: number; has_more: boolean }),
+      apiClient.get(`${BASE}/changes`, { params: { cursor } }).then(r => r.data as { changes: DriveChange[]; next_cursor: number; has_more: boolean }),
     enabled,
   })
 }
@@ -573,7 +573,7 @@ export function useFileAutoLinks(fileId: string) {
   return useQuery({
     queryKey: ["drive", "auto-links", fileId],
     queryFn: () =>
-      axios.get(`${BASE}/files/${fileId}/auto-links`).then(r => r.data as { links: DriveAutoLink[] }),
+      apiClient.get(`${BASE}/files/${fileId}/auto-links`).then(r => r.data as { links: DriveAutoLink[] }),
     enabled: !!fileId,
   })
 }
@@ -582,7 +582,7 @@ export function useSuggestAutoLinks() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (fileId: string) =>
-      axios.post(`${BASE}/files/${fileId}/suggest-links`).then(r => r.data),
+      apiClient.post(`${BASE}/files/${fileId}/suggest-links`).then(r => r.data),
     onSuccess: (_d, fileId) =>
       qc.invalidateQueries({ queryKey: ["drive", "auto-links", fileId] }),
   })
@@ -592,7 +592,7 @@ export function useAutoLinkAction() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (vars: { fileId: string; linkId: string; action: "confirm" | "dismiss" }) =>
-      axios.post(`${BASE}/files/${vars.fileId}/auto-links/${vars.linkId}/action`, { action: vars.action }).then(r => r.data),
+      apiClient.post(`${BASE}/files/${vars.fileId}/auto-links/${vars.linkId}/action`, { action: vars.action }).then(r => r.data),
     onSuccess: (_d, vars) =>
       qc.invalidateQueries({ queryKey: ["drive", "auto-links", vars.fileId] }),
   })
@@ -635,7 +635,7 @@ export function useContractMetadata(fileId: string) {
   return useQuery({
     queryKey: ["drive", "contract", fileId],
     queryFn: () =>
-      axios.get(`${BASE}/files/${fileId}/contract`).then(r => r.data as ContractMetadata),
+      apiClient.get(`${BASE}/files/${fileId}/contract`).then(r => r.data as ContractMetadata),
     enabled: !!fileId,
     retry: false,
   })
@@ -645,7 +645,7 @@ export function useAnalyseContract() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (fileId: string) =>
-      axios.post(`${BASE}/files/${fileId}/contract/analyse`).then(r => r.data),
+      apiClient.post(`${BASE}/files/${fileId}/contract/analyse`).then(r => r.data),
     onSuccess: (_d, fileId) => {
       qc.invalidateQueries({ queryKey: ["drive", "contract", fileId] })
       qc.invalidateQueries({ queryKey: ["drive", "contracts"] })
@@ -657,7 +657,7 @@ export function useUpcomingContracts(daysAhead = 90) {
   return useQuery({
     queryKey: ["drive", "contracts", daysAhead],
     queryFn: () =>
-      axios.get(`${BASE}/contracts`, { params: { days_ahead: daysAhead } }).then(r => r.data as { contracts: UpcomingContract[]; total: number }),
+      apiClient.get(`${BASE}/contracts`, { params: { days_ahead: daysAhead } }).then(r => r.data as { contracts: UpcomingContract[]; total: number }),
   })
 }
 
@@ -679,7 +679,7 @@ export function useEntityTimeline(module: string, entityId: string) {
   return useQuery({
     queryKey: ["drive", "timeline", module, entityId],
     queryFn: () =>
-      axios.get(`${BASE}/timeline/${module}/${entityId}`).then(r => r.data as { entries: TimelineEntry[]; total: number }),
+      apiClient.get(`${BASE}/timeline/${module}/${entityId}`).then(r => r.data as { entries: TimelineEntry[]; total: number }),
     enabled: !!(module && entityId),
   })
 }
@@ -692,7 +692,7 @@ export function useContextualFiles(module: string, entityId: string) {
   return useQuery({
     queryKey: ["drive", "contextual", module, entityId],
     queryFn: () =>
-      axios.get(`${BASE}/files/contextual`, { params: { module, entity_id: entityId } }).then(r => r.data as { files: Array<{ file_id: string; file_name: string; relevance_score: number; link_type: string }> }),
+      apiClient.get(`${BASE}/files/contextual`, { params: { module, entity_id: entityId } }).then(r => r.data as { files: Array<{ file_id: string; file_name: string; relevance_score: number; link_type: string }> }),
     enabled: !!(module && entityId),
   })
 }
@@ -714,7 +714,7 @@ export function useCalendarAttachments(eventId: string) {
   return useQuery({
     queryKey: ["drive", "calendar-attachments", eventId],
     queryFn: () =>
-      axios.get(`${BASE}/calendar/${eventId}/attachments`).then(r => r.data as { attachments: CalendarAttachment[] }),
+      apiClient.get(`${BASE}/calendar/${eventId}/attachments`).then(r => r.data as { attachments: CalendarAttachment[] }),
     enabled: !!eventId,
   })
 }
@@ -723,7 +723,7 @@ export function useAttachFileToCalendarEvent() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (vars: { eventId: string; fileId: string }) =>
-      axios.post(`${BASE}/calendar/${vars.eventId}/attachments`, { file_id: vars.fileId }).then(r => r.data),
+      apiClient.post(`${BASE}/calendar/${vars.eventId}/attachments`, { file_id: vars.fileId }).then(r => r.data),
     onSuccess: (_d, vars) =>
       qc.invalidateQueries({ queryKey: ["drive", "calendar-attachments", vars.eventId] }),
   })
@@ -733,7 +733,7 @@ export function useRemoveCalendarAttachment() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (vars: { eventId: string; fileId: string }) =>
-      axios.delete(`${BASE}/calendar/${vars.eventId}/attachments/${vars.fileId}`).then(r => r.data),
+      apiClient.delete(`${BASE}/calendar/${vars.eventId}/attachments/${vars.fileId}`).then(r => r.data),
     onSuccess: (_d, vars) =>
       qc.invalidateQueries({ queryKey: ["drive", "calendar-attachments", vars.eventId] }),
   })
@@ -747,7 +747,7 @@ export function useSmartExpiry(fileId: string) {
   return useQuery({
     queryKey: ["drive", "smart-expiry", fileId],
     queryFn: () =>
-      axios.get(`${BASE}/files/${fileId}/smart-expiry`).then(r => r.data as { recommended_hours: number; reason: string; sensitivity_level?: string }),
+      apiClient.get(`${BASE}/files/${fileId}/smart-expiry`).then(r => r.data as { recommended_hours: number; reason: string; sensitivity_level?: string }),
     enabled: !!fileId,
   })
 }
@@ -760,7 +760,7 @@ export function useFileTier(fileId: string) {
   return useQuery({
     queryKey: ["drive", "file-tier", fileId],
     queryFn: () =>
-      axios.get(`${BASE}/files/${fileId}/tier`).then(r => r.data as { file_id: string; tier: string; moved_at?: string; access_count_30d: number }),
+      apiClient.get(`${BASE}/files/${fileId}/tier`).then(r => r.data as { file_id: string; tier: string; moved_at?: string; access_count_30d: number }),
     enabled: !!fileId,
   })
 }
@@ -769,7 +769,7 @@ export function useSetFileTier() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (vars: { fileId: string; tier: string }) =>
-      axios.post(`${BASE}/files/${vars.fileId}/tier`, { tier: vars.tier }).then(r => r.data),
+      apiClient.post(`${BASE}/files/${vars.fileId}/tier`, { tier: vars.tier }).then(r => r.data),
     onSuccess: (_d, vars) =>
       qc.invalidateQueries({ queryKey: ["drive", "file-tier", vars.fileId] }),
   })
@@ -792,7 +792,7 @@ export function useAdminUsersStorage(limit = 50) {
   return useQuery({
     queryKey: ["drive", "admin", "users-storage", limit],
     queryFn: () =>
-      axios.get(`${BASE}/admin/drive/users-storage`, { params: { limit } }).then(r => r.data as { users: UserStorageRow[]; total: number }),
+      apiClient.get(`${BASE}/admin/drive/users-storage`, { params: { limit } }).then(r => r.data as { users: UserStorageRow[]; total: number }),
   })
 }
 
@@ -815,7 +815,7 @@ export function useAnomalyAlerts(unresolvedOnly = false, days = 30) {
   return useQuery({
     queryKey: ["drive", "admin", "anomaly-alerts", unresolvedOnly, days],
     queryFn: () =>
-      axios.get(`${BASE}/admin/drive/anomaly-alerts`, { params: { days, unresolved_only: unresolvedOnly } }).then(r => r.data as { alerts: AnomalyAlert[]; total: number }),
+      apiClient.get(`${BASE}/admin/drive/anomaly-alerts`, { params: { days, unresolved_only: unresolvedOnly } }).then(r => r.data as { alerts: AnomalyAlert[]; total: number }),
   })
 }
 
@@ -823,7 +823,7 @@ export function useResolveAnomalyAlert() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (alertId: string) =>
-      axios.post(`${BASE}/admin/drive/anomaly-alerts/${alertId}/resolve`).then(r => r.data),
+      apiClient.post(`${BASE}/admin/drive/anomaly-alerts/${alertId}/resolve`).then(r => r.data),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["drive", "admin", "anomaly-alerts"] }),
   })
@@ -848,7 +848,7 @@ export function useBackupRules() {
   return useQuery({
     queryKey: ["drive", "backup-rules"],
     queryFn: () =>
-      axios.get(`${BASE}/backup-rules`).then(r => r.data as { rules: AutoBackupRule[] }),
+      apiClient.get(`${BASE}/backup-rules`).then(r => r.data as { rules: AutoBackupRule[] }),
   })
 }
 
@@ -856,7 +856,7 @@ export function useCreateBackupRule() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: { folder_id: string; schedule_cron: string; destination?: string; retention_count?: number }) =>
-      axios.post(`${BASE}/backup-rules`, data).then(r => r.data),
+      apiClient.post(`${BASE}/backup-rules`, data).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "backup-rules"] }),
   })
 }
@@ -865,7 +865,7 @@ export function useDeleteBackupRule() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (ruleId: string) =>
-      axios.delete(`${BASE}/backup-rules/${ruleId}`).then(r => r.data),
+      apiClient.delete(`${BASE}/backup-rules/${ruleId}`).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "backup-rules"] }),
   })
 }
@@ -889,7 +889,7 @@ export function useGuestUsers() {
   return useQuery({
     queryKey: ["drive", "admin", "guests"],
     queryFn: () =>
-      axios.get(`${BASE}/sharing/guests`).then(r => r.data as { guests: DriveGuestUser[]; total: number }),
+      apiClient.get(`${BASE}/sharing/guests`).then(r => r.data as { guests: DriveGuestUser[]; total: number }),
   })
 }
 
@@ -897,7 +897,7 @@ export function useRevokeGuestAccess() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (guestId: string) =>
-      axios.delete(`${BASE}/sharing/guests/${guestId}`).then(r => r.data),
+      apiClient.delete(`${BASE}/sharing/guests/${guestId}`).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "admin", "guests"] }),
   })
 }
@@ -918,7 +918,7 @@ export function useContentTypes() {
   return useQuery({
     queryKey: ["drive", "admin", "content-types"],
     queryFn: () =>
-      axios.get(`${BASE}/admin/drive/content-types`).then(r => r.data as { content_types: DriveContentType[] }),
+      apiClient.get(`${BASE}/admin/drive/content-types`).then(r => r.data as { content_types: DriveContentType[] }),
   })
 }
 
@@ -926,7 +926,7 @@ export function useCreateContentType() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: { name: string; description?: string; required_fields?: Array<{ name: string; type: string; required?: boolean }> }) =>
-      axios.post(`${BASE}/admin/drive/content-types`, data).then(r => r.data),
+      apiClient.post(`${BASE}/admin/drive/content-types`, data).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["drive", "admin", "content-types"] }),
   })
 }
@@ -938,7 +938,7 @@ export function useCreateContentType() {
 export function useRouteFile() {
   return useMutation({
     mutationFn: (fileId: string) =>
-      axios.post(`${BASE}/files/${fileId}/route`).then(r => r.data as { file_id: string; detected_module?: string; confidence: number; action_taken: string; message: string }),
+      apiClient.post(`${BASE}/files/${fileId}/route`).then(r => r.data as { file_id: string; detected_module?: string; confidence: number; action_taken: string; message: string }),
   })
 }
 
@@ -957,7 +957,7 @@ export function useFileDuplicates(fileId: string) {
   return useQuery({
     queryKey: ["drive", "duplicates", fileId],
     queryFn: () =>
-      axios.get(`${BASE}/files/${fileId}/duplicates`).then(r => r.data as { file_id: string; duplicates: DuplicateFile[] }),
+      apiClient.get(`${BASE}/files/${fileId}/duplicates`).then(r => r.data as { file_id: string; duplicates: DuplicateFile[] }),
     enabled: !!fileId,
   })
 }
@@ -974,7 +974,7 @@ export function useEnsureModuleFolder() {
         : vars.module === "manufacturing"
           ? `${BASE}/modules/manufacturing/work-orders/${vars.entityId}/folder`
           : `${BASE}/modules/supply-chain/pos/${vars.entityId}/folder`
-      return axios.post(path).then(r => r.data)
+      return apiClient.post(path).then(r => r.data)
     },
   })
 }

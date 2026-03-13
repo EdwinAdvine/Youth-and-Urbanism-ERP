@@ -19,7 +19,7 @@ Integrations:
     - deps.py      — uses SECRET_KEY / ALGORITHM to decode JWTs
     - events.py    — uses REDIS_URL for the pub/sub event bus
     - celery_app.py — uses CELERY_BROKER_URL / CELERY_RESULT_BACKEND
-    - ai.py        — uses OLLAMA_URL, AI_PROVIDER, and vendor API keys
+    - ai.py        — uses AI_PROVIDER and vendor API keys
     - minio.py     — uses MINIO_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY
     - smtp/imap    — uses SMTP_* and IMAP_* for mail send/receive
 """
@@ -27,8 +27,6 @@ Integrations:
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Literal
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -86,28 +84,29 @@ class Settings(BaseSettings):
     SECRET_KEY: str  # REQUIRED — no default; set via .env or environment variable
     ALGORITHM: str = "HS256"                      # JWT signing algorithm (used by python-jose)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60         # short-lived access token lifetime (1 hour)
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7            # refresh token lifetime — user re-authenticates after this window
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30           # refresh token lifetime — user re-authenticates after this window
 
-    # ── AI / Ollama ───────────────────────────────────────────────────────────
-    OLLAMA_URL: str = "http://ollama:11434"       # local Ollama container — primary AI provider
-    OLLAMA_MODEL: str = "llama3.2"                # default model for chat, summarization, and AI tools
-    AI_PROVIDER: Literal["ollama", "openai", "grok", "anthropic"] = "ollama"  # Super Admin can switch at runtime
-
-    OPENAI_API_KEY: str | None = None             # fallback provider — set via Super Admin > AI Config
-    GROK_API_KEY: str | None = None               # fallback provider — set via Super Admin > AI Config
-    ANTHROPIC_API_KEY: str | None = None           # fallback provider — set via Super Admin > AI Config
+    # ── AI ──────────────────────────────────────────────────────────────────────
+    # Any OpenAI-compatible provider works (OpenRouter, Together, Groq, Mistral,
+    # vLLM, etc.). Set AI_BASE_URL to the provider's /v1 endpoint.
+    # For Anthropic, set AI_PROVIDER="anthropic" — it uses the native SDK.
+    AI_PROVIDER: str = "openai"                    # provider name — free-form string
+    AI_API_KEY: str | None = None                  # unified API key for the active provider
+    AI_BASE_URL: str | None = None                 # custom base URL (e.g. https://openrouter.ai/api/v1)
+    AI_MODEL: str = "gpt-4o"                       # default model name
 
     # ── MinIO / Object Storage ────────────────────────────────────────────────
     # S3-compatible store for Drive files, email attachments, and report exports.
     # Bucket "urban-vibes-dynamics-files" is auto-created on first upload.
     MINIO_URL: str = "http://minio:9000"          # internal API endpoint (Docker service name)
+    MINIO_EXTERNAL_URL: str = "http://localhost:9010"  # browser-reachable endpoint for presigned URLs
     MINIO_ACCESS_KEY: str = "minioadmin"           # root access key — override in production
     MINIO_SECRET_KEY: str = "minioadmin123"        # root secret key — override in production
 
     # ── First Super-Admin seed ────────────────────────────────────────────────
     # Credentials used to bootstrap the first Super Admin on initial DB seed.
     # Only applied when the users table is empty (see auth service).
-    FIRST_SUPERADMIN_EMAIL: str = "super-admin@youthandurbanism.org"
+    FIRST_SUPERADMIN_EMAIL: str = "edwin@youthandurbanism.org"
     FIRST_SUPERADMIN_PASSWORD: str = "super-admin@2026!"
 
     # ── ONLYOFFICE ────────────────────────────────────────────────────────────

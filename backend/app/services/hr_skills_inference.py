@@ -5,11 +5,39 @@ import json
 import logging
 from typing import Any
 
-import httpx
-
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+async def _ai_chat(messages: list[dict], model: str | None = None) -> str:
+    """Call the configured AI provider."""
+    from openai import AsyncOpenAI
+
+    provider = settings.AI_PROVIDER
+    if provider == "anthropic":
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+        system_parts = [m["content"] for m in messages if m["role"] == "system"]
+        non_system = [m for m in messages if m["role"] != "system"]
+        kwargs: dict[str, Any] = {
+            "model": model or settings.AI_MODEL,
+            "max_tokens": 4096,
+            "messages": non_system,
+        }
+        if system_parts:
+            kwargs["system"] = "\n\n".join(system_parts)
+        resp = await client.messages.create(**kwargs)
+        return resp.content[0].text
+    else:
+        client_oai = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+        resp = await client_oai.chat.completions.create(
+            model=model or settings.AI_MODEL,
+            messages=messages,
+            temperature=0.2,
+        )
+        return resp.choices[0].message.content or ""
 
 
 SKILLS_INFERENCE_PROMPT = """You are an expert HR AI that infers employee skills from their work activity.
@@ -103,7 +131,7 @@ _KEYWORD_SKILL_MAP: dict[str, dict[str, str]] = {
 
 
 async def infer_skills_from_activity(activity_data: dict[str, Any]) -> dict[str, Any]:
-    """Infer employee skills from cross-module activity using Ollama.
+    """Infer employee skills from cross-module activity using the configured AI provider.
 
     Args:
         activity_data: Keys: employee_id, name,
@@ -171,20 +199,7 @@ async def infer_skills_from_activity(activity_data: dict[str, Any]) -> dict[str,
     )
 
     try:
-        async with httpx.AsyncClient(timeout=90.0) as client:
-            response = await client.post(
-                f"{settings.OLLAMA_URL}/api/generate",
-                json={
-                    "model": settings.OLLAMA_MODEL,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {"temperature": 0.2},
-                },
-            )
-            response.raise_for_status()
-            data = response.json()
-            raw_text = data.get("response", "")
-
+        raw_text = await _ai_chat([{"role": "user", "content": prompt}])
         result = _parse_skills_response(raw_text)
 
         # Merge in direct training skills (high confidence, no AI needed)
@@ -196,16 +211,13 @@ async def infer_skills_from_activity(activity_data: dict[str, Any]) -> dict[str,
 
         return result
 
-    except httpx.HTTPError as e:
-        logger.error("Ollama HTTP error during skills inference: %s", e)
-        return _fallback_inference(activity_data)
     except Exception as e:
-        logger.error("Unexpected error during skills inference: %s", e)
+        logger.error("AI error during skills inference: %s", e)
         return _fallback_inference(activity_data)
 
 
 def _parse_skills_response(raw_text: str) -> dict[str, Any]:
-    """Extract and parse JSON from Ollama skills inference response."""
+    """Extract and parse JSON from AI skills inference response."""
     try:
         return json.loads(raw_text.strip())
     except json.JSONDecodeError:
@@ -219,7 +231,7 @@ def _parse_skills_response(raw_text: str) -> dict[str, Any]:
         except json.JSONDecodeError:
             pass
 
-    logger.warning("Could not parse JSON from Ollama skills inference response")
+    logger.warning("Could not parse JSON from AI skills inference response")
     return {
         "inferred_skills": [],
         "skill_gaps": [],
@@ -263,7 +275,7 @@ def _extract_from_training(training_completed: list[dict[str, Any]]) -> list[dic
 
 
 def _fallback_inference(activity_data: dict[str, Any]) -> dict[str, Any]:
-    """Simple keyword-matching fallback when Ollama is unavailable."""
+    """Simple keyword-matching fallback when AI is unavailable."""
     skills: list[dict[str, Any]] = []
     seen_skills: set[str] = set()
 

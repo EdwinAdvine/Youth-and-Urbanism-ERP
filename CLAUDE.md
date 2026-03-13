@@ -25,7 +25,7 @@ docker compose logs -f backend frontend
 
 ```bash
 # Infrastructure only
-docker compose up -d postgres redis minio ollama
+docker compose up -d postgres redis minio
 
 # Backend (terminal 1)
 cd backend && source venv/bin/activate
@@ -83,7 +83,7 @@ docker compose exec backend alembic upgrade head
 - **Backend:** Python 3.12 + FastAPI + SQLAlchemy 2.0 async (asyncpg) + Alembic
 - **Database:** PostgreSQL 16 (pgvector) + Redis 7
 - **Background jobs:** Celery + Redis (broker on db 1, results on db 2)
-- **AI:** Ollama (primary, local) with OpenAI/Anthropic/Grok fallback
+- **AI:** OpenAI / Anthropic / Grok (configurable by Super Admin)
 - **File storage:** MinIO (S3-compatible)
 - **Integrations:** Built-in (SMTP/IMAP + PostgreSQL mail storage), ONLYOFFICE (docs engine, kept forever), Jitsi (video engine, kept forever)
 - **Analytics:** Built-in (direct PostgreSQL queries, replaces Superset)
@@ -183,5 +183,4 @@ Super Admin parity dashboard: `GET /api/v1/admin/parity` (frontend at `/admin/pa
 | PostgreSQL | 5433 |
 | Redis | 6380 |
 | MinIO API / Console | 9010 / 9011 |
-| Ollama | 11435 |
 | ONLYOFFICE | 8083 |

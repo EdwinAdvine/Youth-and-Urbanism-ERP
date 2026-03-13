@@ -11,6 +11,14 @@ import {
 import type { SSOProvider } from '../../api/sso'
 import { Card, Button, Input, Select, Badge, Modal, Spinner } from '../../components/ui'
 
+// Microsoft Quick Setup — only 3 fields needed
+const msQuickSchema = z.object({
+  client_id: z.string().min(1, 'Client ID is required'),
+  client_secret: z.string().min(1, 'Client Secret is required'),
+  tenant_id: z.string().min(1, 'Tenant ID is required'),
+})
+type MSQuickForm = z.infer<typeof msQuickSchema>
+
 const providerSchema = z.object({
   name: z.string().min(2, 'Name is required'),
   provider_type: z.enum(['google', 'microsoft', 'github', 'custom_oidc']),
@@ -101,6 +109,32 @@ export default function SSOConfigPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editProvider, setEditProvider] = useState<SSOProvider | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<SSOProvider | null>(null)
+  const [msQuickOpen, setMSQuickOpen] = useState(false)
+  const [msCreatedId, setMSCreatedId] = useState<string | null>(null)
+
+  const msQuickForm = useForm<MSQuickForm>({ resolver: zodResolver(msQuickSchema) })
+
+  const handleMSQuickSubmit = async (data: MSQuickForm) => {
+    const result = await createMutation.mutateAsync({
+      name: 'Microsoft',
+      provider_type: 'microsoft',
+      client_id: data.client_id,
+      client_secret: data.client_secret,
+      authorization_url: `https://login.microsoftonline.com/${data.tenant_id}/oauth2/v2.0/authorize`,
+      token_url: `https://login.microsoftonline.com/${data.tenant_id}/oauth2/v2.0/token`,
+      userinfo_url: 'https://graph.microsoft.com/oidc/userinfo',
+      redirect_uri: `http://localhost:8010/api/v1/sso/placeholder/callback`,
+      scopes: 'openid email profile',
+      is_active: true,
+    })
+    await updateMutation.mutateAsync({
+      id: result.id,
+      redirect_uri: `http://localhost:8010/api/v1/sso/${result.id}/callback`,
+    })
+    setMSCreatedId(result.id)
+    setMSQuickOpen(false)
+    msQuickForm.reset()
+  }
 
   const form = useForm<ProviderForm>({
     resolver: zodResolver(providerSchema),
@@ -184,13 +218,60 @@ export default function SSOConfigPage() {
             Configure Single Sign-On providers for OAuth2/OIDC authentication
           </p>
         </div>
-        <Button onClick={openCreate} className="w-full sm:w-auto">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Provider
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => setMSQuickOpen(true)} className="w-full sm:w-auto">
+            <svg className="w-4 h-4" viewBox="0 0 23 23">
+              <path fill="#f35325" d="M1 1h10v10H1z" />
+              <path fill="#81bc06" d="M12 1h10v10H12z" />
+              <path fill="#05a6f0" d="M1 12h10v10H1z" />
+              <path fill="#ffba08" d="M12 12h10v10H12z" />
+            </svg>
+            Microsoft Quick Setup
+          </Button>
+          <Button onClick={openCreate} className="w-full sm:w-auto">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Provider
+          </Button>
+        </div>
       </div>
+
+      {/* Redirect URI banner shown after Microsoft Quick Setup */}
+      {msCreatedId && (
+        <Card>
+          <div className="p-5 flex gap-4">
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center">
+              <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">One last step — add this Redirect URI in Azure</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Azure Portal → App registrations → Your app → Authentication → Add a platform → Web
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                <code className="flex-1 text-xs bg-gray-100 dark:bg-gray-900 rounded-lg px-3 py-2 font-mono text-gray-800 dark:text-gray-200 break-all">
+                  http://localhost:8010/api/v1/sso/{msCreatedId}/callback
+                </code>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(`http://localhost:8010/api/v1/sso/${msCreatedId}/callback`)}
+                  className="flex-shrink-0 text-xs text-primary font-medium hover:underline"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+            <button type="button" onClick={() => setMSCreatedId(null)} className="flex-shrink-0 text-gray-400 hover:text-gray-600">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </Card>
+      )}
 
       {/* Providers List */}
       {!providers?.length ? (
@@ -335,6 +416,52 @@ export default function SSOConfigPage() {
             </Button>
             <Button type="submit" loading={createMutation.isPending || updateMutation.isPending}>
               {editProvider ? 'Save Changes' : 'Create Provider'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Microsoft Quick Setup Modal */}
+      <Modal
+        open={msQuickOpen}
+        onClose={() => { setMSQuickOpen(false); msQuickForm.reset() }}
+        title="Microsoft Quick Setup"
+        size="md"
+      >
+        <form onSubmit={msQuickForm.handleSubmit(handleMSQuickSubmit)} className="space-y-4">
+          <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950 rounded-xl">
+            <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              Paste your Azure App Registration credentials. All Microsoft OAuth URLs are filled in automatically. After saving, you'll see the Redirect URI to paste back into Azure.
+            </p>
+          </div>
+          <Input
+            label="Application (Client) ID"
+            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            error={msQuickForm.formState.errors.client_id?.message}
+            {...msQuickForm.register('client_id')}
+          />
+          <Input
+            label="Client Secret Value"
+            type="password"
+            placeholder="Paste the Value (not the Secret ID)"
+            error={msQuickForm.formState.errors.client_secret?.message}
+            {...msQuickForm.register('client_secret')}
+          />
+          <Input
+            label="Directory (Tenant) ID"
+            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            error={msQuickForm.formState.errors.tenant_id?.message}
+            {...msQuickForm.register('tenant_id')}
+          />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" type="button" onClick={() => { setMSQuickOpen(false); msQuickForm.reset() }}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={createMutation.isPending || updateMutation.isPending}>
+              Save &amp; Enable Microsoft Login
             </Button>
           </div>
         </form>

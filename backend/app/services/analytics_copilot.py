@@ -1,4 +1,4 @@
-"""Analytics Copilot — NL-to-SQL powered by Ollama/LLM.
+"""Analytics Copilot — NL-to-SQL powered by the configured AI provider.
 
 Accepts natural language questions about ERP data, generates validated SQL,
 executes read-only queries, and returns both data and a natural language summary.
@@ -127,67 +127,38 @@ async def _build_schema_context(db: AsyncSession, module: str | None = None) -> 
 
 
 # ── LLM integration ──────────────────────────────────────────────────────────
-async def _call_ollama(prompt: str, system: str = "") -> str:
-    """Call Ollama API for text generation."""
-    import httpx
-
-    url = f"{settings.OLLAMA_URL}/api/generate"
-    payload = {
-        "model": settings.OLLAMA_MODEL,
-        "prompt": prompt,
-        "system": system,
-        "stream": False,
-        "options": {"temperature": 0.1, "num_predict": 1024},
-    }
-
-    try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(url, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            return data.get("response", "")
-    except Exception as e:
-        logger.error("Ollama call failed: %s", e)
-        raise
-
-
-async def _call_openai(prompt: str, system: str = "") -> str:
-    """Fallback: call OpenAI API."""
-    import httpx
-
-    if not settings.OPENAI_API_KEY:
-        raise ValueError("OpenAI API key not configured")
-
-    url = "https://api.openai.com/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {settings.OPENAI_API_KEY}"}
-    payload = {
-        "model": "gpt-4o",
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": prompt},
-        ],
-        "temperature": 0.1,
-        "max_tokens": 1024,
-    }
-
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        resp = await client.post(url, json=payload, headers=headers)
-        resp.raise_for_status()
-        data = resp.json()
-        return data["choices"][0]["message"]["content"]
-
-
 async def _generate_text(prompt: str, system: str = "") -> str:
-    """Generate text using configured AI provider with fallback."""
-    try:
-        return await _call_ollama(prompt, system)
-    except Exception:
-        logger.warning("Ollama failed, trying OpenAI fallback")
-        try:
-            return await _call_openai(prompt, system)
-        except Exception:
-            logger.error("All AI providers failed")
-            raise
+    """Generate text using the configured AI provider."""
+    from openai import AsyncOpenAI
+
+    provider = settings.AI_PROVIDER
+    if provider == "anthropic":
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+        messages = [{"role": "user", "content": prompt}]
+        kwargs: dict[str, Any] = {
+            "model": settings.AI_MODEL,
+            "max_tokens": 4096,
+            "messages": messages,
+        }
+        if system:
+            kwargs["system"] = system
+        resp = await client.messages.create(**kwargs)
+        return resp.content[0].text
+    else:
+        client_oai = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+        messages_list = []
+        if system:
+            messages_list.append({"role": "system", "content": system})
+        messages_list.append({"role": "user", "content": prompt})
+        resp = await client_oai.chat.completions.create(
+            model=settings.AI_MODEL,
+            messages=messages_list,
+            temperature=0.1,
+            max_tokens=1024,
+        )
+        return resp.choices[0].message.content or ""
 
 
 # ── Main Copilot functions ───────────────────────────────────────────────────

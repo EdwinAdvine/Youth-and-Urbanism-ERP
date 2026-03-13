@@ -56,7 +56,7 @@ function CashFlowForecast() {
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">🤖</span>
                 <span className="font-semibold text-[#51459d]">AI Analysis</span>
-                <span className="text-xs text-gray-400">Powered by Ollama</span>
+                <span className="text-xs text-gray-400">Powered by AI</span>
               </div>
               <p className="text-sm text-gray-700 leading-relaxed">{data.ai_narrative}</p>
             </div>

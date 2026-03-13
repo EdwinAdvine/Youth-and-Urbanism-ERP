@@ -155,7 +155,7 @@ The control centre for Super Admins and App Admins. Manage user accounts, assign
 ### AI & Urban Bad AI
 **Multi-agent AI assistant across all modules.**
 
-Urban Vibes Dynamics includes a built-in AI assistant powered by Ollama (local, no data leaves your server). The basic AI chat answers questions and helps with tasks in context. **Urban Bad AI** is the advanced multi-agent mode — it has four specialised agents (Orchestrator, Researcher, Verifier, Executor) that can plan multi-step tasks, run them with your approval, and interact with any module's data. Toggle the AI sidebar with `Cmd/Ctrl + Shift + A`.
+Urban Vibes Dynamics includes a built-in AI assistant with configurable providers (OpenAI, Anthropic, Grok). The basic AI chat answers questions and helps with tasks in context. **Urban Bad AI** is the advanced multi-agent mode — it has four specialised agents (Orchestrator, Researcher, Verifier, Executor) that can plan multi-step tasks, run them with your approval, and interact with any module's data. Toggle the AI sidebar with `Cmd/Ctrl + Shift + A`.
 
 ---
 

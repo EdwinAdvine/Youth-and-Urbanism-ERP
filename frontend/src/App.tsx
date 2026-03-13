@@ -61,6 +61,7 @@ const SecurityDashboard   = lazy(() => import('./features/admin/SecurityDashboar
 const ParityDashboard     = lazy(() => import('./features/admin/ParityDashboard'))
 const SecurityPage        = lazy(() => import('./features/settings/SecurityPage'))
 const ChangelogPage       = lazy(() => import('./features/settings/ChangelogPage'))
+const GDPRCompliancePage  = lazy(() => import('./features/settings/CompliancePage'))
 
 const FormBuilder      = lazy(() => import('./features/forms/FormBuilder'))
 const FormResponses    = lazy(() => import('./features/forms/FormResponses'))
@@ -481,6 +482,7 @@ const ProfilePage         = lazy(() => import('./features/profile/ProfilePage'))
 const NotificationsPage   = lazy(() => import('./features/notifications/NotificationsPage'))
 
 // Projects enhancements
+const ProjectLayout        = lazy(() => import('./features/projects/ProjectLayout'))
 const GanttPage            = lazy(() => import('./features/projects/GanttPage'))
 const MilestonesPage       = lazy(() => import('./features/projects/MilestonesPage'))
 const BurndownPage         = lazy(() => import('./features/projects/BurndownPage'))
@@ -790,21 +792,24 @@ export default function App() {
             <Route path="crm/custom-objects/:id/form-builder" element={<S><CustomObjectFormBuilder /></S>} />
             <Route path="crm/audit-log" element={<S><CRMAuditLogPage /></S>} />
             <Route path="projects" element={<S><ProjectsPage /></S>} />
-            <Route path="projects/:id" element={<S><ProjectBoard /></S>} />
-            <Route path="projects/:id/time-report" element={<S><TimeLogReport /></S>} />
-            <Route path="projects/:id/gantt" element={<S><GanttPage /></S>} />
-            <Route path="projects/:id/milestones" element={<S><MilestonesPage /></S>} />
-            <Route path="projects/:id/burndown" element={<S><BurndownPage /></S>} />
-            <Route path="projects/:id/dashboard" element={<S><ProjectDashboard /></S>} />
             <Route path="projects/workload" element={<S><WorkloadPage /></S>} />
             <Route path="projects/templates" element={<S><TemplatesPage /></S>} />
-            <Route path="projects/:id/integrations" element={<S><ProjectIntegrations /></S>} />
-            <Route path="projects/:id/list" element={<S><ProjectListView /></S>} />
-            <Route path="projects/:id/calendar" element={<S><ProjectCalendarView /></S>} />
-            <Route path="projects/:id/backlog" element={<S><ProjectBacklogView /></S>} />
-            <Route path="projects/:id/automations" element={<S><ProjectAutomations /></S>} />
-            <Route path="projects/:id/recurring" element={<S><ProjectRecurring /></S>} />
-            <Route path="projects/:id/custom-fields" element={<S><CustomFieldsManager /></S>} />
+            {/* Project detail — all sub-views share the ProjectLayout tab bar */}
+            <Route path="projects/:id" element={<S><ProjectLayout /></S>}>
+              <Route index element={<S><ProjectBoard /></S>} />
+              <Route path="list" element={<S><ProjectListView /></S>} />
+              <Route path="backlog" element={<S><ProjectBacklogView /></S>} />
+              <Route path="calendar" element={<S><ProjectCalendarView /></S>} />
+              <Route path="gantt" element={<S><GanttPage /></S>} />
+              <Route path="milestones" element={<S><MilestonesPage /></S>} />
+              <Route path="burndown" element={<S><BurndownPage /></S>} />
+              <Route path="dashboard" element={<S><ProjectDashboard /></S>} />
+              <Route path="time-report" element={<S><TimeLogReport /></S>} />
+              <Route path="integrations" element={<S><ProjectIntegrations /></S>} />
+              <Route path="automations" element={<S><ProjectAutomations /></S>} />
+              <Route path="recurring" element={<S><ProjectRecurring /></S>} />
+              <Route path="custom-fields" element={<S><CustomFieldsManager /></S>} />
+            </Route>
             {/* Inventory */}
             <Route path="inventory" element={<S><InventoryDashboard /></S>} />
             <Route path="inventory/items" element={<S><ItemsPage /></S>} />
@@ -1026,6 +1031,7 @@ export default function App() {
             <Route path="settings/*" element={<S><SettingsPage /></S>} />
             <Route path="settings/security" element={<S><SecurityPage /></S>} />
             <Route path="settings/changelog" element={<S><ChangelogPage /></S>} />
+            <Route path="settings/compliance" element={<S><GDPRCompliancePage /></S>} />
             <Route path="profile" element={<S><ProfilePage /></S>} />
             <Route path="notifications" element={<S><NotificationsPage /></S>} />
 

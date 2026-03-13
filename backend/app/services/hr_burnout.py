@@ -1,15 +1,43 @@
-"""HR Burnout Detection — identifies burnout risk patterns via Ollama."""
+"""HR Burnout Detection — identifies burnout risk patterns via AI."""
 from __future__ import annotations
 
 import json
 import logging
 from typing import Any
 
-import httpx
-
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+async def _ai_chat(messages: list[dict], model: str | None = None) -> str:
+    """Call the configured AI provider."""
+    from openai import AsyncOpenAI
+
+    provider = settings.AI_PROVIDER
+    if provider == "anthropic":
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+        system_parts = [m["content"] for m in messages if m["role"] == "system"]
+        non_system = [m for m in messages if m["role"] != "system"]
+        kwargs: dict[str, Any] = {
+            "model": model or settings.AI_MODEL,
+            "max_tokens": 4096,
+            "messages": non_system,
+        }
+        if system_parts:
+            kwargs["system"] = "\n\n".join(system_parts)
+        resp = await client.messages.create(**kwargs)
+        return resp.content[0].text
+    else:
+        client_oai = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+        resp = await client_oai.chat.completions.create(
+            model=model or settings.AI_MODEL,
+            messages=messages,
+            temperature=0.1,
+        )
+        return resp.choices[0].message.content or ""
 
 
 BURNOUT_PROMPT = """You are an expert occupational health AI specializing in employee burnout detection.
@@ -47,7 +75,7 @@ Only return the JSON object, no other text."""
 
 
 async def calculate_burnout_risk(employee_data: dict[str, Any]) -> dict[str, Any]:
-    """Assess employee burnout risk using Ollama.
+    """Assess employee burnout risk using the configured AI provider.
 
     Args:
         employee_data: Keys: employee_id, name, overtime_hours_30d, overtime_hours_60d,
@@ -73,33 +101,17 @@ async def calculate_burnout_risk(employee_data: dict[str, Any]) -> dict[str, Any
     )
 
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                f"{settings.OLLAMA_URL}/api/generate",
-                json={
-                    "model": settings.OLLAMA_MODEL,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {"temperature": 0.1},
-                },
-            )
-            response.raise_for_status()
-            data = response.json()
-            raw_text = data.get("response", "")
-
+        raw_text = await _ai_chat([{"role": "user", "content": prompt}])
         result = _parse_burnout_response(raw_text)
         return result
 
-    except httpx.HTTPError as e:
-        logger.error("Ollama HTTP error during burnout risk calculation: %s", e)
-        return _fallback_burnout(employee_data)
     except Exception as e:
-        logger.error("Unexpected error during burnout risk calculation: %s", e)
+        logger.error("AI error during burnout risk calculation: %s", e)
         return _fallback_burnout(employee_data)
 
 
 def _parse_burnout_response(raw_text: str) -> dict[str, Any]:
-    """Extract and parse JSON from Ollama response."""
+    """Extract and parse JSON from AI response."""
     try:
         return json.loads(raw_text.strip())
     except json.JSONDecodeError:
@@ -122,7 +134,7 @@ def _parse_burnout_response(raw_text: str) -> dict[str, Any]:
         except (json.JSONDecodeError, ValueError):
             pass
 
-    logger.warning("Could not parse JSON from Ollama burnout response")
+    logger.warning("Could not parse JSON from AI burnout response")
     return _default_burnout_result()
 
 
@@ -138,7 +150,7 @@ def _score_to_burnout_level(score: int) -> str:
 
 
 def _fallback_burnout(employee_data: dict[str, Any]) -> dict[str, Any]:
-    """Heuristic burnout scoring fallback when Ollama is unavailable."""
+    """Heuristic burnout scoring fallback when AI is unavailable."""
     overtime_30d = float(employee_data.get("overtime_hours_30d") or 0)
     overtime_60d = float(employee_data.get("overtime_hours_60d") or 0)
     leave_90d = int(employee_data.get("leave_days_taken_90d") or 0)

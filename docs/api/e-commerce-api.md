@@ -501,7 +501,7 @@ E-Commerce Extended API — cart, checkout, coupons, shipping, reviews, wishlist
 | `GET` | `/analytics/rfm-segments` | `rfm_segments` | Recency / Frequency / Monetary segmentation across all customers. |
 | `GET` | `/analytics/demand-forecast` | `demand_forecast` | Simple linear trend forecast from last 90 days of daily revenue. |
 | `GET` | `/analytics/cohorts` | `cohort_retention` | Monthly signup cohorts and their repeat purchase rates. |
-| `GET` | `/analytics/ai-insights` | `ai_insights` | Generate 3 actionable insights using Ollama over store metrics. |
+| `GET` | `/analytics/ai-insights` | `ai_insights` | Generate 3 actionable insights using AI over store metrics. |
 | `GET` | `/orders/{order_id}/work-orders` | `get_order_work_orders` | — |
 | `GET` | `/products/pos-sync` | `products_for_pos` | Returns e-commerce products in a format suitable for POS import. |
 
@@ -920,7 +920,7 @@ Monthly signup cohorts and their repeat purchase rates.
 
 **Function:** `ai_insights` (line 1803)
 
-Generate 3 actionable insights using Ollama over store metrics.
+Generate 3 actionable insights using AI over store metrics.
 
 **Auth:** `current_user`
 

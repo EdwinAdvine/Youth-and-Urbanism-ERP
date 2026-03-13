@@ -1,9 +1,11 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Select, Modal, toast } from '@/components/ui'
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { Card, Button, Input, Select, Modal, Spinner, toast } from '@/components/ui'
 import {
   useCreateSurvey,
+  useUpdateSurvey,
   useLaunchSurvey,
+  useSurvey,
   type Survey,
   type SurveyQuestion,
 } from '@/api/hr_engagement'
@@ -204,9 +206,13 @@ function QuestionCard({ question, index, onEdit, onDelete }: QuestionCardProps) 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SurveyBuilderPage() {
+  const { id: surveyId } = useParams<{ id: string }>()
+  const isEditMode = Boolean(surveyId)
   const navigate = useNavigate()
   const createSurvey = useCreateSurvey()
+  const updateSurvey = useUpdateSurvey()
   const launchSurvey = useLaunchSurvey()
+  const { data: existingSurvey, isLoading: surveyLoading } = useSurvey(surveyId ?? '')
 
   // Survey meta
   const [title, setTitle]           = useState('')
@@ -222,6 +228,37 @@ export default function SurveyBuilderPage() {
   const [questions, setQuestions]   = useState<DraftQuestion[]>([])
   const [editorOpen, setEditorOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<DraftQuestion | null>(null)
+  const [initialized, setInitialized] = useState(false)
+
+  // Populate form when editing an existing survey
+  useEffect(() => {
+    if (existingSurvey && !initialized) {
+      setTitle(existingSurvey.title ?? '')
+      setSurveyType(existingSurvey.survey_type ?? 'engagement')
+      setDesc(existingSurvey.description ?? '')
+      setAnon(existingSurvey.is_anonymous ?? false)
+      const audience = existingSurvey.target_audience as { all?: boolean; department_ids?: string[] } | null
+      if (audience?.all) {
+        setAllEmp(true)
+        setDeptIds('')
+      } else if (audience?.department_ids) {
+        setAllEmp(false)
+        setDeptIds(audience.department_ids.join(', '))
+      }
+      setOpensAt(existingSurvey.opens_at ?? '')
+      setClosesAt(existingSurvey.closes_at ?? '')
+      setQuestions(
+        (existingSurvey.questions ?? []).map((q: SurveyQuestion) => ({
+          localId: q.id,
+          type: q.type,
+          text: q.text,
+          required: q.required,
+          options: q.options ?? [],
+        }))
+      )
+      setInitialized(true)
+    }
+  }, [existingSurvey, initialized])
 
   function openAdd()  { setEditTarget(null); setEditorOpen(true) }
   function openEdit(q: DraftQuestion) { setEditTarget(q); setEditorOpen(true) }
@@ -259,9 +296,14 @@ export default function SurveyBuilderPage() {
   async function handleSaveDraft() {
     if (!title.trim()) { toast('error', 'Survey title is required'); return }
     try {
-      await createSurvey.mutateAsync(buildPayload())
-      toast('success', 'Survey saved as draft')
-      navigate('/hr/engagement/surveys')
+      if (isEditMode && surveyId) {
+        await updateSurvey.mutateAsync({ id: surveyId, ...buildPayload() })
+        toast('success', 'Survey updated')
+      } else {
+        await createSurvey.mutateAsync(buildPayload())
+        toast('success', 'Survey saved as draft')
+      }
+      navigate('/hr/engagement')
     } catch {
       toast('error', 'Failed to save survey')
     }
@@ -271,16 +313,29 @@ export default function SurveyBuilderPage() {
     if (!title.trim())          { toast('error', 'Survey title is required'); return }
     if (questions.length === 0) { toast('error', 'Add at least one question'); return }
     try {
-      const survey = await createSurvey.mutateAsync(buildPayload())
-      await launchSurvey.mutateAsync(survey.id)
+      if (isEditMode && surveyId) {
+        await updateSurvey.mutateAsync({ id: surveyId, ...buildPayload() })
+        await launchSurvey.mutateAsync(surveyId)
+      } else {
+        const survey = await createSurvey.mutateAsync(buildPayload())
+        await launchSurvey.mutateAsync(survey.id)
+      }
       toast('success', 'Survey launched successfully')
-      navigate('/hr/engagement/surveys')
+      navigate('/hr/engagement')
     } catch {
       toast('error', 'Failed to launch survey')
     }
   }
 
-  const isBusy = createSurvey.isPending || launchSurvey.isPending
+  const isBusy = createSurvey.isPending || updateSurvey.isPending || launchSurvey.isPending
+
+  if (isEditMode && surveyLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Spinner size="lg" />
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
@@ -296,8 +351,12 @@ export default function SurveyBuilderPage() {
             </svg>
             Back
           </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Survey Builder</h1>
-          <p className="text-sm text-gray-500">Create and configure a new employee survey</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {isEditMode ? 'Edit Survey' : 'Survey Builder'}
+          </h1>
+          <p className="text-sm text-gray-500">
+            {isEditMode ? 'Update your survey configuration and questions' : 'Create and configure a new employee survey'}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={handleSaveDraft} loading={isBusy}>

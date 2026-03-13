@@ -335,7 +335,7 @@ Manufacturing Intelligence & AI — bottlenecks, quality risk, scheduling sugges
 | `GET` | `/ai/quality-risk` | `quality_risk_analysis` | Predict quality risk by analyzing: |
 | `GET` | `/ai/schedule-suggestions` | `schedule_suggestions` | Rule-based scheduling recommendations. |
 | `GET` | `/ai/executive-dashboard` | `executive_dashboard` | Executive manufacturing KPI dashboard linking to CRM deals and Projects. |
-| `GET` | `/ai/executive-summary` | `executive_summary` | Generate NL executive summary of manufacturing KPIs using Ollama. |
+| `GET` | `/ai/executive-summary` | `executive_summary` | Generate NL executive summary of manufacturing KPIs using AI. |
 
 ### `GET /ai/bottlenecks`
 
@@ -387,7 +387,7 @@ Executive manufacturing KPI dashboard linking to CRM deals and Projects.
 
 **Function:** `executive_summary` (line 392)
 
-Generate NL executive summary of manufacturing KPIs using Ollama.
+Generate NL executive summary of manufacturing KPIs using AI.
 
 **Auth:** `user`
 

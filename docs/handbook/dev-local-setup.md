@@ -11,12 +11,12 @@ excerpt: "Set up a local Urban Vibes Dynamics development environment outside Do
 
 # Local Development Setup
 
-For active development, run the backend and frontend outside Docker with hot-reload, while keeping infrastructure (PostgreSQL, Redis, MinIO, Ollama) in Docker.
+For active development, run the backend and frontend outside Docker with hot-reload, while keeping infrastructure (PostgreSQL, Redis, MinIO) in Docker.
 
 ## Step 1: Start Infrastructure
 
 ```bash
-docker compose up -d postgres redis minio ollama
+docker compose up -d postgres redis minio
 ```
 
 ## Step 2: Backend Setup

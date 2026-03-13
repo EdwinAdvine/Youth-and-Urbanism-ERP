@@ -21,7 +21,7 @@ async def classify_message(
     message_id: uuid.UUID,
     user_id: uuid.UUID,
 ) -> dict[str, Any]:
-    """Classify a single message using Ollama (or active AI provider).
+    """Classify a single message using the configured AI provider.
 
     Reads the message from the database, asks the AI to classify it into one
     of the standard categories, generates a priority score, a 1-2 sentence

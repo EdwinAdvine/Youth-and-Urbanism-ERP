@@ -526,7 +526,7 @@ async def create_from_template(
 
         # Copy actual template content (not empty bytes)
         try:
-            template_bytes = minio_client.get_download_url(template.file_path)
+            template_bytes = minio_client.get_download_url(template.file_path, internal=True)
             import httpx  # noqa: PLC0415
             resp = httpx.get(template_bytes, timeout=30)
             file_data = resp.content if resp.status_code == 200 else b""
@@ -589,7 +589,8 @@ async def export_document(
     try:
         from app.integrations import minio_client  # noqa: PLC0415
 
-        download_url = minio_client.get_download_url(file.minio_key)
+        # Use internal URL so ONLYOFFICE (inside Docker) can fetch the file
+        download_url = minio_client.get_download_url(file.minio_key, internal=True)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -1536,6 +1537,32 @@ async def update_security_settings(
     await db.commit()
 
     return {"file_id": str(doc_id), "updated": True}
+
+
+@router.get("/docs/{doc_id}/audit-log", summary="List audit events for a document")
+async def list_audit_events(
+    doc_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> dict[str, Any]:
+    result = await db.execute(
+        select(DocumentAuditLog)
+        .where(DocumentAuditLog.file_id == doc_id)
+        .order_by(DocumentAuditLog.created_at.desc())
+    )
+    logs = result.scalars().all()
+    return {
+        "logs": [
+            {
+                "id": str(log.id),
+                "file_id": str(log.file_id),
+                "user_id": str(log.user_id),
+                "action": log.action,
+                "created_at": log.created_at.isoformat() if log.created_at else None,
+            }
+            for log in logs
+        ]
+    }
 
 
 @router.post("/docs/{doc_id}/audit-log", status_code=status.HTTP_201_CREATED, summary="Record a document audit event")

@@ -412,7 +412,7 @@ async def usage_stats(
 
     # tokens_by_model: single aggregate (model not tracked per message)
     tokens_by_model = (
-        [{"model": "ollama/llama3.2", "tokens": total_tokens, "requests": total_requests}]
+        [{"model": "default", "tokens": total_tokens, "requests": total_requests}]
         if total_requests > 0 else []
     )
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams } from 'react-router-dom'
 import {
   useCustomObject,
   useCustomObjectRecords,
@@ -10,12 +11,6 @@ import {
   type CustomObjectField,
 } from '@/api/crm_custom_objects'
 import { Button, Card, Spinner, Modal, Input, Select, Table, toast } from '@/components/ui'
-
-function getDefinitionId(): string {
-  const parts = window.location.pathname.split('/')
-  const idx = parts.indexOf('custom-objects')
-  return idx !== -1 && parts[idx + 1] ? parts[idx + 1] : ''
-}
 
 function DynamicFieldInput({
   field,
@@ -118,7 +113,7 @@ function DynamicFieldInput({
 }
 
 export default function CustomObjectRecordsPage() {
-  const definitionId = getDefinitionId()
+  const { id: definitionId = '' } = useParams<{ id: string }>()
   const { data: definition, isLoading: defLoading } = useCustomObject(definitionId)
   const { data: recordsData, isLoading: recsLoading } = useCustomObjectRecords(definitionId)
   const createRecord = useCreateRecord()

@@ -15,7 +15,7 @@ The Admin module is the platform backbone — it manages users, roles, permissio
 - **App Admin assignment** — assign users as admins of specific modules
 - **RBAC** — three-tier: Super Admin → App Admin → User
 - **SSO** — OAuth2/OIDC with Google, Microsoft, custom providers
-- **AI configuration** — set AI provider (Ollama/OpenAI/Anthropic), API keys
+- **AI configuration** — set AI provider (OpenAI/Anthropic/Grok), API keys
 - **System settings** — company name, logo, timezone, language, defaults
 - **Audit log** — immutable log of all system changes
 - **License management** — track license, user limits, feature flags

@@ -16,10 +16,11 @@
  */
 import axios from 'axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '../store/auth';
 
 const api = axios.create({ baseURL: '/api/v1/support' });
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = useAuthStore.getState().token;
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });

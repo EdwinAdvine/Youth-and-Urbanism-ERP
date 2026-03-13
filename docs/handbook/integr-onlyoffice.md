@@ -117,4 +117,4 @@ The AI copilot is available inside the ONLYOFFICE editor:
    - **Expand** — add more detail to a selected paragraph.
    - **Ask a question** — type a free-form question about the document content.
 
-The copilot uses Urban ERP's AI layer (Ollama locally, or the configured fallback provider). No document content is sent to external APIs when using Ollama.
+The copilot uses Urban ERP's AI layer (configured provider: OpenAI, Anthropic, or Grok). Document content is sent to the configured AI provider for processing.

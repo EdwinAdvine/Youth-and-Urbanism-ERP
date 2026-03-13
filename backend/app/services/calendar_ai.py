@@ -1,8 +1,7 @@
 """AI-powered calendar services.
 
 Provides NLP event parsing, optimal scheduling suggestions, and smart
-rescheduling — all backed by the local Ollama instance with no external
-API dependencies.
+rescheduling — backed by the configured external AI provider.
 """
 from __future__ import annotations
 
@@ -12,7 +11,6 @@ import uuid
 from datetime import datetime, timedelta, time, timezone
 from typing import Any
 
-import httpx
 from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,33 +25,53 @@ WORK_DAY_START = time(8, 0)
 WORK_DAY_END = time(17, 0)
 MORNING_END = time(12, 0)
 
-# Ollama HTTP timeout (seconds)
-OLLAMA_TIMEOUT = 120
+# AI request timeout (seconds)
+AI_TIMEOUT = 120
 
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-async def _ollama_generate(prompt: str, system: str | None = None) -> str:
-    """Send a single-shot prompt to Ollama's /api/generate endpoint.
+async def _ai_chat(messages: list[dict], model: str | None = None) -> str:
+    """Call the configured AI provider."""
+    from openai import AsyncOpenAI
 
-    Returns the raw response text.  Raises on HTTP or JSON errors.
+    provider = settings.AI_PROVIDER
+    if provider == "anthropic":
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+        system_parts = [m["content"] for m in messages if m["role"] == "system"]
+        non_system = [m for m in messages if m["role"] != "system"]
+        kwargs: dict[str, Any] = {
+            "model": model or settings.AI_MODEL,
+            "max_tokens": 4096,
+            "messages": non_system,
+        }
+        if system_parts:
+            kwargs["system"] = "\n\n".join(system_parts)
+        resp = await client.messages.create(**kwargs)
+        return resp.content[0].text
+    else:
+        client_oai = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+        resp = await client_oai.chat.completions.create(
+            model=model or settings.AI_MODEL,
+            messages=messages,
+        )
+        return resp.choices[0].message.content or ""
+
+
+async def _ai_generate(prompt: str, system: str | None = None) -> str:
+    """Send a single-shot prompt to the configured AI provider.
+
+    Returns the raw response text. Raises on errors.
     """
-    url = f"{settings.OLLAMA_URL.rstrip('/')}/api/generate"
-    payload: dict[str, Any] = {
-        "model": settings.OLLAMA_MODEL,
-        "prompt": prompt,
-        "stream": False,
-    }
+    messages: list[dict] = []
     if system:
-        payload["system"] = system
-
-    async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT) as client:
-        resp = await client.post(url, json=payload)
-        resp.raise_for_status()
-        data = resp.json()
-        return data.get("response", "")
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
+    return await _ai_chat(messages)
 
 
 async def _lookup_users_by_name(
@@ -234,7 +252,7 @@ async def parse_natural_language_event(
 
     prompt = f'Parse this into a calendar event:\n"{text}"'
 
-    raw = await _ollama_generate(prompt, system=system_prompt)
+    raw = await _ai_generate(prompt, system=system_prompt)
 
     # Strip markdown fences if present
     cleaned = raw.strip()
@@ -249,7 +267,7 @@ async def parse_natural_language_event(
     try:
         parsed = json.loads(cleaned)
     except json.JSONDecodeError:
-        logger.warning("Ollama returned non-JSON for NLP event parsing: %s", raw[:300])
+        logger.warning("AI returned non-JSON for NLP event parsing: %s", raw[:300])
         # Return a best-effort fallback
         return {
             "title": text,

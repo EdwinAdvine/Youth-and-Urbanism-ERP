@@ -1,7 +1,7 @@
 """HR AI Resume Screening Service.
 
-Uses Ollama (local) to extract skills from resumes and compute a match score
-against a job requisition's required skills. Runs as a Celery async task.
+Uses the configured AI provider to extract skills from resumes and compute a
+match score against a job requisition's required skills.
 """
 from __future__ import annotations
 
@@ -9,11 +9,39 @@ import json
 import logging
 from typing import Any
 
-import httpx
-
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+async def _ai_chat(messages: list[dict], model: str | None = None) -> str:
+    """Call the configured AI provider."""
+    from openai import AsyncOpenAI
+
+    provider = settings.AI_PROVIDER
+    if provider == "anthropic":
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(api_key=settings.AI_API_KEY)
+        system_parts = [m["content"] for m in messages if m["role"] == "system"]
+        non_system = [m for m in messages if m["role"] != "system"]
+        kwargs: dict[str, Any] = {
+            "model": model or settings.AI_MODEL,
+            "max_tokens": 4096,
+            "messages": non_system,
+        }
+        if system_parts:
+            kwargs["system"] = "\n\n".join(system_parts)
+        resp = await client.messages.create(**kwargs)
+        return resp.content[0].text
+    else:
+        client_oai = AsyncOpenAI(api_key=settings.AI_API_KEY, base_url=settings.AI_BASE_URL)
+        resp = await client_oai.chat.completions.create(
+            model=model or settings.AI_MODEL,
+            messages=messages,
+            temperature=0.1,
+        )
+        return resp.choices[0].message.content or ""
 
 
 SCREENING_PROMPT = """You are an expert HR recruiter AI. Analyze the following resume text and job requirements.
@@ -46,7 +74,7 @@ async def screen_resume(
     required_skills: list[str],
     job_description: str = "",
 ) -> dict[str, Any]:
-    """Screen a resume against job requirements using Ollama.
+    """Screen a resume against job requirements using the configured AI provider.
 
     Returns a dict with match_score, extracted_skills, summary, etc.
     """
@@ -58,34 +86,17 @@ async def screen_resume(
     )
 
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                f"{settings.OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": settings.OLLAMA_MODEL,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {"temperature": 0.1},
-                },
-            )
-            response.raise_for_status()
-            data = response.json()
-            raw_text = data.get("response", "")
-
-        # Parse the JSON response
+        raw_text = await _ai_chat([{"role": "user", "content": prompt}])
         result = _parse_json_response(raw_text)
         return result
 
-    except httpx.HTTPError as e:
-        logger.error("Ollama HTTP error during resume screening: %s", e)
-        return _fallback_screening(resume_text, required_skills)
     except Exception as e:
-        logger.error("Unexpected error during resume screening: %s", e)
+        logger.error("AI error during resume screening: %s", e)
         return _fallback_screening(resume_text, required_skills)
 
 
 def _parse_json_response(raw_text: str) -> dict[str, Any]:
-    """Extract and parse JSON from Ollama response."""
+    """Extract and parse JSON from AI response."""
     # Try direct parse first
     try:
         return json.loads(raw_text.strip())
@@ -102,7 +113,7 @@ def _parse_json_response(raw_text: str) -> dict[str, Any]:
             pass
 
     # Return a safe default
-    logger.warning("Could not parse JSON from Ollama screening response")
+    logger.warning("Could not parse JSON from AI screening response")
     return {
         "match_score": 0,
         "extracted_skills": [],
@@ -149,19 +160,8 @@ async def extract_skills_from_text(text: str) -> list[str]:
     prompt = SKILLS_EXTRACTION_PROMPT.format(text=text[:3000])
 
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                f"{settings.OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": settings.OLLAMA_MODEL,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {"temperature": 0.1},
-                },
-            )
-            response.raise_for_status()
-            data = response.json()
-            raw_text = data.get("response", "[]").strip()
+        raw_text = await _ai_chat([{"role": "user", "content": prompt}])
+        raw_text = raw_text.strip()
 
         start = raw_text.find("[")
         end = raw_text.rfind("]") + 1
