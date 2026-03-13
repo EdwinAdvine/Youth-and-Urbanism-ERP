@@ -389,6 +389,7 @@ async def search_files(
     content_type: str | None = Query(None, description="Filter by content type"),
     folder_id: uuid.UUID | None = Query(None, description="Filter by folder"),
     tag: str | None = Query(None, description="Filter by tag"),
+    source_module: str | None = Query(None, description="Filter by source module"),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
 ) -> dict[str, Any]:
@@ -405,6 +406,8 @@ async def search_files(
         query = query.join(FileTag, FileTag.file_id == DriveFile.id).where(
             FileTag.tag_name.ilike(like_pattern(tag))
         )
+    if source_module:
+        query = query.where(DriveFile.source_module == source_module)
 
     query = query.order_by(DriveFile.updated_at.desc()).offset((page - 1) * limit).limit(limit)
     result = await db.execute(query)
@@ -419,6 +422,9 @@ async def search_files(
                 "content_type": f.content_type,
                 "size": f.size,
                 "folder_path": f.folder_path,
+                "source_module": f.source_module,
+                "source_entity_type": f.source_entity_type,
+                "source_entity_id": f.source_entity_id,
                 "created_at": f.created_at.isoformat() if f.created_at else None,
                 "updated_at": f.updated_at.isoformat() if f.updated_at else None,
             }
@@ -1500,13 +1506,21 @@ async def contextual_search(
     items = []
     for f in files:
         fid = str(f.id)
-        score = 100 if fid in boosted_ids else 50
+        # Boost: confirmed auto-link -> 100, same source_module -> 80, else 50
+        if fid in boosted_ids:
+            score = 100
+        elif module and f.source_module == module:
+            score = 80
+        else:
+            score = 50
         items.append({
             "id": fid,
             "name": f.name,
             "content_type": f.content_type,
             "size": f.size,
             "folder_path": f.folder_path,
+            "source_module": f.source_module,
+            "source_entity_type": f.source_entity_type,
             "relevance_score": score,
             "context_boosted": fid in boosted_ids,
             "updated_at": f.updated_at.isoformat() if f.updated_at else None,

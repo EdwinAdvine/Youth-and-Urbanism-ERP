@@ -183,6 +183,7 @@ from app.api.v1 import notes_analytics as notes_analytics_mod
 from app.api.v1 import notes_sync as notes_sync_mod
 from app.api.v1 import notes_share as notes_share_mod
 from app.api.v1 import notes_email_inbound as notes_email_inbound_mod
+from app.api.v1 import analytics_dashboards as analytics_dashboards_mod
 
 api_router = APIRouter()
 
@@ -199,6 +200,7 @@ api_router.include_router(notes_router.router, prefix="/notes", tags=["Notes"])
 api_router.include_router(calendar_router.router, prefix="/calendar", tags=["Calendar"])
 api_router.include_router(mail.router, prefix="/mail", tags=["Mail"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
+api_router.include_router(analytics_dashboards_mod.router, tags=["Analytics Dashboards"])
 api_router.include_router(forms.router, prefix="/forms", tags=["Forms"])
 api_router.include_router(projects.router, prefix="/projects", tags=["Projects"])
 api_router.include_router(finance.router, prefix="/finance", tags=["Finance"], dependencies=[Depends(require_app_access("finance"))])

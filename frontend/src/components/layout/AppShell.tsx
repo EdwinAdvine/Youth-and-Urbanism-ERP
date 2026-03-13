@@ -166,10 +166,10 @@ export default function AppShell() {
         {/* Logo */}
         <button
           onClick={() => navigate('/')}
-          className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-[8px] flex items-center justify-center text-white font-bold text-xs transition-colors mb-3 shrink-0"
+          className="w-10 h-10 hover:opacity-80 rounded-[8px] flex items-center justify-center transition-opacity mb-3 shrink-0 overflow-hidden"
           title="Home"
         >
-          Y&U
+          <img src="/logo.webp" alt="Y&U Logo" className="w-full h-full object-contain" />
         </button>
 
         {/* Module icons */}

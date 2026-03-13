@@ -14,7 +14,6 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decrypt_field,
-    hash_password,
     store_refresh_token,
 )
 from app.models.sso import SSOProvider, SSOUserMapping
@@ -161,17 +160,15 @@ class SSOService:
             user = user_result.scalar_one_or_none()
 
             if not user:
-                # Create new user
-                user = User(
-                    email=external_email,
-                    full_name=full_name,
-                    hashed_password=hash_password(secrets.token_urlsafe(32)),
-                    is_superadmin=False,
-                    is_active=True,
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Your Microsoft account is not registered in this organisation. Please ask your administrator to create your account first.",
                 )
-                self.db.add(user)
-                await self.db.flush()
-                await self.db.refresh(user)
+            if not user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Your account is inactive. Please contact your administrator.",
+                )
 
             # Create SSO mapping
             sso_mapping = SSOUserMapping(

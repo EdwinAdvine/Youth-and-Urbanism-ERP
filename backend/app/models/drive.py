@@ -127,6 +127,17 @@ class DriveFile(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     # ── Legal hold ────────────────────────────────────────────────────────────
     is_on_hold: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
+    # ── Source module tracking (Drive as universal gateway) ──────────────────
+    source_module: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, index=True,
+    )  # finance, notes, mail, pos, hr, support, manufacturing, supplychain, calendar, projects
+    source_entity_type: Mapped[str | None] = mapped_column(
+        String(100), nullable=True,
+    )  # invoice, note, receipt, attachment, ticket, work_order, etc.
+    source_entity_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True,
+    )  # UUID of the originating entity
+
     # Relationships
     owner = relationship("User", foreign_keys=[owner_id])
     folder = relationship("DriveFolder", back_populates="files", foreign_keys=[folder_id])
@@ -137,6 +148,7 @@ class DriveFile(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __table_args__ = (
         Index("ix_drive_files_name_trgm", "name", postgresql_using="gin",
               postgresql_ops={"name": "gin_trgm_ops"}),
+        Index("ix_drive_files_source", "source_module", "source_entity_type", "source_entity_id"),
     )
 
     def __repr__(self) -> str:

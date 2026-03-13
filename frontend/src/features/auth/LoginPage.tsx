@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -43,6 +43,17 @@ export default function LoginPage() {
   const [isRegistering, setIsRegistering] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
   const [mfaToken, setMfaToken] = useState<string | null>(null)
+  const [searchParams] = useSearchParams()
+
+  // Show error message when redirected back from a failed SSO attempt
+  useEffect(() => {
+    const error = searchParams.get('error')
+    if (error === 'sso_not_registered') {
+      setLoginError('Your Microsoft account is not registered in this organisation. Please ask your administrator to create your account first.')
+    } else if (error === 'sso_failed') {
+      setLoginError('Microsoft sign-in failed. Please try again or use email & password.')
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loginForm = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) })
   const registerForm = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) })
@@ -117,8 +128,8 @@ export default function LoginPage() {
       <div className="relative w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white dark:bg-gray-800 rounded-2xl shadow-lg mb-4">
-            <span className="text-primary font-black text-2xl">Y</span>
+          <div className="inline-flex items-center justify-center mb-4">
+            <img src="/logo.webp" alt="Youth & Urbanism" className="h-16 object-contain drop-shadow-lg" />
           </div>
           <h1 className="text-2xl font-bold text-white">Urban Vibes Dynamics</h1>
           <p className="text-white/60 text-sm mt-1">Enterprise Resource Planning</p>

@@ -355,12 +355,3 @@ function OptionRow({
     </div>
   )
 }
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-z0-9_]/g, '')
-    .replace(/__+/g, '_')
-    .replace(/^_|_$/g, '')
-}

@@ -234,6 +234,37 @@ function FileGridItem({ item, cfg, isSelected, onSelect, onContextMenu, onOpen }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+const MODULE_ICONS: Record<string, string> = {
+  finance: '💰', notes: '📝', mail: '✉️', pos: '🛒', hr: '👥',
+  support: '🎧', manufacturing: '⚙️', supplychain: '🚚', calendar: '📅',
+  projects: '📋', crm: '🤝', ecommerce: '🛍️', inventory: '📦',
+}
+
+function ModuleFilesSidebar({ onSelectModule }: { onSelectModule: (mod: string) => void }) {
+  const { data } = useModuleFileSummary()
+  const modules = data?.modules || {}
+  const entries = Object.entries(modules).filter(([, count]) => count > 0).sort((a, b) => b[1] - a[1])
+
+  if (entries.length === 0) return null
+
+  return (
+    <div className="mt-3 px-1">
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1 px-2">Module Files</p>
+      {entries.map(([mod, count]) => (
+        <button
+          key={mod}
+          onClick={() => onSelectModule(mod)}
+          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[6px] text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors mb-0.5"
+        >
+          <span className="text-sm">{MODULE_ICONS[mod] || '📄'}</span>
+          <span className="flex-1 text-left truncate">{mod.charAt(0).toUpperCase() + mod.slice(1)}</span>
+          <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-full px-1.5 py-0.5 leading-none">{count}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export default function DrivePage() {
   const isMobile = useIsMobile()
   const [activeSection, setActiveSection] = useState<string>('my-files')

@@ -4,6 +4,8 @@ import { useDriveFile, useDownloadFile, formatFileSize, getFileType } from '../.
 import { useLockFile, useUnlockFile } from '../../api/drive_ext'
 import { useThreadedComments, useCreateComment, useResolveComment, useFilePresence } from '../../api/drive_phase2'
 import AIInsightsPanel from './AIInsightsPanel'
+import ModuleBadge from './ModuleBadge'
+import RequestAccessDialog from './RequestAccessDialog'
 
 interface Props {
   fileId: string
@@ -270,6 +272,12 @@ export default function FilePreviewPanel({ fileId, onClose }: Props) {
           <span className="text-gray-500">Location</span>
           <span className="text-gray-700 dark:text-gray-300 truncate max-w-[180px]">{file.folder_path || '/'}</span>
         </div>
+        {file.source_module && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500">Source</span>
+            <ModuleBadge module={file.source_module} size="md" />
+          </div>
+        )}
       </div>
       </>
       )}

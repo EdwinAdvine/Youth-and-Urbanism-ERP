@@ -226,6 +226,7 @@ from app.models.hr_phase3 import (
     HRWorkflow, HRWorkflowExecution, WorkflowApproval,
     AnalyticsDashboard as HRAnalyticsDashboard, WorkforcePlanningScenario,
 )
+from app.models.drive_access_request import FileAccessRequest
 from app.models.doc_comment import DocComment, DocVersion
 from app.models.chat import (
     Channel, ChannelMember, ChatMessage, MessageReadReceipt,
@@ -448,6 +449,8 @@ __all__ = [
     "SkillOntology", "FlightRiskScore", "BurnoutIndicator",
     "HRWorkflow", "HRWorkflowExecution", "WorkflowApproval",
     "HRAnalyticsDashboard", "WorkforcePlanningScenario",
+    # Drive Access Requests
+    "FileAccessRequest",
     # Doc Comments
     "DocComment", "DocVersion",
     # Chat & Channels (Y&U Teams)

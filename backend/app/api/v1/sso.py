@@ -2,6 +2,7 @@
 import uuid
 from datetime import datetime
 from typing import Any
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
@@ -9,6 +10,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import SuperAdminUser
 from app.core.security import encrypt_field
@@ -154,18 +156,37 @@ async def authorize(
     return RedirectResponse(url=auth_url)
 
 
-@router.get("/{provider_id}/callback", summary="SSO callback — exchange code for JWT tokens")
+@router.get("/{provider_id}/callback", summary="SSO callback — exchange code for JWT tokens then redirect to frontend")
 async def callback(
     provider_id: uuid.UUID,
     code: str = Query(...),
     state: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
-) -> dict[str, Any]:
-    sso = SSOService(db)
-    provider = await sso.get_provider(provider_id)
-    if not provider.is_active:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="SSO provider is not active")
+) -> RedirectResponse:
+    frontend_base = settings.APP_URL.rstrip("/")
+    error_url = f"{frontend_base}/login?error=sso_failed"
 
-    userinfo = await sso.exchange_code(provider, code)
-    result = await sso.get_or_create_user(provider, userinfo)
-    return result
+    sso = SSOService(db)
+    try:
+        provider = await sso.get_provider(provider_id)
+    except HTTPException:
+        return RedirectResponse(url=error_url)
+
+    if not provider.is_active:
+        return RedirectResponse(url=error_url)
+
+    try:
+        userinfo = await sso.exchange_code(provider, code)
+        result = await sso.get_or_create_user(provider, userinfo)
+    except HTTPException as exc:
+        if exc.status_code == status.HTTP_403_FORBIDDEN:
+            return RedirectResponse(url=f"{frontend_base}/login?error=sso_not_registered")
+        return RedirectResponse(url=error_url)
+
+    params = urlencode({
+        "access_token": result["access_token"],
+        "refresh_token": result["refresh_token"],
+        "name": result["user"]["full_name"] or "",
+        "email": result["user"]["email"],
+    })
+    return RedirectResponse(url=f"{frontend_base}/auth/sso-callback?{params}")

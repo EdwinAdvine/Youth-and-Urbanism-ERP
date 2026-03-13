@@ -213,7 +213,7 @@ async def _snapshot_form(db: Any, form: Form) -> dict:
                 "page_number": f.page_number,
                 "description": f.description,
                 "placeholder": f.placeholder,
-                "metadata": f.metadata,
+                "metadata": f.field_metadata,
                 "validation_rules": f.validation_rules,
                 "field_options": [
                     {"label": o.label, "value": o.value, "order": o.order,
@@ -398,7 +398,7 @@ async def duplicate_form(
             page_number=field.page_number,
             description=field.description,
             placeholder=field.placeholder,
-            metadata=dict(field.metadata) if field.metadata else None,
+            field_metadata=dict(field.field_metadata) if field.field_metadata else None,
             validation_rules=dict(field.validation_rules) if field.validation_rules else None,
         )
         db.add(new_field)

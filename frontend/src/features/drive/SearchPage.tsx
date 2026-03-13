@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Card, Button, Input, Spinner, Badge, Select } from '../../components/ui'
 import { useFileSearch, type FileSearchParams, useSemanticSearch, type SemanticSearchResult } from '../../api/drive_ext'
 import { formatFileSize, getFileType } from '../../api/drive'
+import ModuleBadge from './ModuleBadge'
 
 type SearchMode = 'basic' | 'semantic'
 
@@ -10,6 +11,7 @@ export default function DriveSearchPage() {
   const [fileType, setFileType] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [sourceModule, setSourceModule] = useState('')
   const [searchMode, setSearchMode] = useState<SearchMode>('semantic')
   const [submitted, setSubmitted] = useState<FileSearchParams | null>(null)
 
@@ -92,7 +94,7 @@ export default function DriveSearchPage() {
             />
             <Button onClick={handleSearch} className="shrink-0" loading={isLoading}>Search</Button>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <Select
               label="File Type"
               value={fileType}
@@ -104,6 +106,25 @@ export default function DriveSearchPage() {
                 { value: 'docx', label: 'Documents' },
                 { value: 'xlsx', label: 'Spreadsheets' },
                 { value: 'video', label: 'Videos' },
+              ]}
+            />
+            <Select
+              label="Source Module"
+              value={sourceModule}
+              onChange={(e) => setSourceModule(e.target.value)}
+              options={[
+                { value: '', label: 'All modules' },
+                { value: 'finance', label: 'Finance' },
+                { value: 'notes', label: 'Notes' },
+                { value: 'mail', label: 'Mail' },
+                { value: 'pos', label: 'POS' },
+                { value: 'hr', label: 'HR' },
+                { value: 'support', label: 'Support' },
+                { value: 'projects', label: 'Projects' },
+                { value: 'calendar', label: 'Calendar' },
+                { value: 'manufacturing', label: 'Manufacturing' },
+                { value: 'supplychain', label: 'Supply Chain' },
+                { value: 'crm', label: 'CRM' },
               ]}
             />
             <Input label="From" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
@@ -158,7 +179,7 @@ export default function DriveSearchPage() {
   )
 }
 
-function BasicResultRow({ file }: { file: { id: string; name: string; content_type: string; size: number; folder_path: string; updated_at: string } }) {
+function BasicResultRow({ file }: { file: { id: string; name: string; content_type: string; size: number; folder_path: string; source_module?: string; updated_at: string } }) {
   const type = getFileType(file.content_type, file.name)
   return (
     <div className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
@@ -168,7 +189,10 @@ function BasicResultRow({ file }: { file: { id: string; name: string; content_ty
         </svg>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{file.name}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{file.name}</p>
+          <ModuleBadge module={file.source_module} />
+        </div>
         <p className="text-xs text-gray-400">{file.folder_path || '/'}</p>
       </div>
       <Badge variant="default">{type.toUpperCase()}</Badge>

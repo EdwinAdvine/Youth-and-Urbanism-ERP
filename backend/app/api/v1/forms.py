@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
@@ -90,13 +90,13 @@ class FieldOut(BaseModel):
     page_number: int
     description: str | None
     placeholder: str | None
-    metadata: dict | None
+    metadata: dict | None = Field(None, validation_alias="field_metadata")
     validation_rules: dict | None
     field_options: list[FieldOptionOut] = []
     created_at: Any
     updated_at: Any
 
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 
 class FormOut(BaseModel):
@@ -312,7 +312,7 @@ async def bulk_update_fields(
             page_number=field_data.page_number,
             description=field_data.description,
             placeholder=field_data.placeholder,
-            metadata=field_data.metadata,
+            field_metadata=field_data.metadata,
             validation_rules=field_data.validation_rules,
         )
         db.add(field)

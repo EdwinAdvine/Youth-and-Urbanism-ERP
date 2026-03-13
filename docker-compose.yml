@@ -227,7 +227,7 @@ services:
 
 
   stalwart:
-    image: stalwartlabs/mail-server:latest
+    image: stalwartlabs/mail-server:v0.10.7
     container_name: urban-vibes-dynamics-stalwart
     restart: unless-stopped
     ports:

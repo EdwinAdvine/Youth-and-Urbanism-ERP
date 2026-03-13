@@ -1,95 +1,28 @@
-"""add_forms_projects_models
+"""Create project base tables (full schema) — catch-up migration for existing deployments.
 
-Revision ID: df71e245a992
-Revises: 13f96502759d
-Create Date: 2026-03-10 15:59:34.069676
+This migration ensures all base project tables exist with the full current schema.
+It is safe to run on databases where these tables already exist (uses IF NOT EXISTS).
+Also creates project_milestones_v2 which was missing from all previous migrations.
+Merges heads: z6u7v8w9x0y1 and 842a2ead8709.
 
+Revision ID: proj1a2b3c4d5e
+Revises: z6u7v8w9x0y1, 842a2ead8709
+Create Date: 2026-03-13 00:00:00.000000
 """
 from typing import Sequence, Union
-
 from alembic import op
 import sqlalchemy as sa
 
-
-# revision identifiers, used by Alembic.
-revision: str = 'df71e245a992'
-down_revision: Union[str, None] = '13f96502759d'
+revision = "proj1a2b3c4d5e"
+down_revision: Union[str, tuple] = ("z6u7v8w9x0y1", "842a2ead8709")
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # ── Base Forms tables ────────────────────────────────────────────────────
-    op.execute("""
-        CREATE TABLE IF NOT EXISTS forms (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            title VARCHAR(500) NOT NULL,
-            description TEXT,
-            owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            is_published BOOLEAN NOT NULL DEFAULT false,
-            is_template BOOLEAN NOT NULL DEFAULT false,
-            settings JSONB,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        )
-    """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_forms_owner_id ON forms (owner_id)")
+    # ── Core project tables (full current schema) ────────────────────────────
+    # All statements use IF NOT EXISTS — safe for both fresh and existing DBs.
 
-    op.execute("""
-        CREATE TABLE IF NOT EXISTS form_fields (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
-            label VARCHAR(500) NOT NULL,
-            field_type VARCHAR(50) NOT NULL DEFAULT 'text',
-            options JSONB,
-            is_required BOOLEAN NOT NULL DEFAULT false,
-            "order" INTEGER NOT NULL DEFAULT 0,
-            validation_rules JSONB,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        )
-    """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_form_fields_form_id ON form_fields (form_id)")
-
-    op.execute("""
-        CREATE TABLE IF NOT EXISTS form_responses (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
-            respondent_id UUID REFERENCES users(id) ON DELETE SET NULL,
-            answers JSONB NOT NULL,
-            submitted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        )
-    """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_form_responses_form_id ON form_responses (form_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_form_responses_respondent_id ON form_responses (respondent_id)")
-
-    op.execute("""
-        CREATE TABLE IF NOT EXISTS form_templates (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            name VARCHAR(255) NOT NULL,
-            schema JSONB NOT NULL DEFAULT '{}',
-            category VARCHAR(100),
-            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        )
-    """)
-
-    op.execute("""
-        CREATE TABLE IF NOT EXISTS form_collaborators (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
-            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            role VARCHAR(20) NOT NULL DEFAULT 'viewer',
-            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        )
-    """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_form_collaborators_form_id ON form_collaborators (form_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_form_collaborators_user_id ON form_collaborators (user_id)")
-
-    # ── Base Project tables ──────────────────────────────────────────────────
     op.execute("""
         CREATE TABLE IF NOT EXISTS projects (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -108,6 +41,7 @@ def upgrade() -> None:
     """)
     op.execute("CREATE INDEX IF NOT EXISTS ix_projects_owner_id ON projects (owner_id)")
 
+    # project_tasks includes full Sprint-era columns
     op.execute("""
         CREATE TABLE IF NOT EXISTS project_tasks (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -120,6 +54,11 @@ def upgrade() -> None:
             due_date TIMESTAMPTZ,
             "order" INTEGER NOT NULL DEFAULT 0,
             tags TEXT[],
+            parent_id UUID REFERENCES project_tasks(id) ON DELETE CASCADE,
+            start_date TIMESTAMPTZ,
+            estimated_hours FLOAT,
+            sprint_id UUID,
+            recurring_config_id UUID,
             version INTEGER NOT NULL DEFAULT 1,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -127,6 +66,8 @@ def upgrade() -> None:
     """)
     op.execute("CREATE INDEX IF NOT EXISTS ix_project_tasks_project_id ON project_tasks (project_id)")
     op.execute("CREATE INDEX IF NOT EXISTS ix_project_tasks_assignee_id ON project_tasks (assignee_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_project_tasks_parent_id ON project_tasks (parent_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_project_tasks_sprint_id ON project_tasks (sprint_id)")
 
     op.execute("""
         CREATE TABLE IF NOT EXISTS project_milestones (
@@ -140,6 +81,21 @@ def upgrade() -> None:
         )
     """)
     op.execute("CREATE INDEX IF NOT EXISTS ix_project_milestones_project_id ON project_milestones (project_id)")
+
+    # project_milestones_v2 — enhanced milestone (was missing from ALL prior migrations)
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS project_milestones_v2 (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            name VARCHAR(500) NOT NULL,
+            due_date TIMESTAMPTZ,
+            status VARCHAR(20) NOT NULL DEFAULT 'open',
+            completed_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_project_milestones_v2_project_id ON project_milestones_v2 (project_id)")
 
     op.execute("""
         CREATE TABLE IF NOT EXISTS project_time_logs (
@@ -195,19 +151,54 @@ def upgrade() -> None:
     """)
     op.execute("CREATE INDEX IF NOT EXISTS ix_project_templates_owner_id ON project_templates (owner_id)")
 
+    # ── Add sprint/recurring FKs if the referenced tables now exist ──────────
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'project_sprints')
+               AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'project_tasks' AND column_name = 'sprint_id')
+               AND NOT EXISTS (
+                   SELECT 1 FROM information_schema.table_constraints tc
+                   JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+                   WHERE tc.constraint_type = 'FOREIGN KEY'
+                     AND tc.table_name = 'project_tasks'
+                     AND kcu.column_name = 'sprint_id'
+               )
+            THEN
+                ALTER TABLE project_tasks
+                    ADD CONSTRAINT fk_project_tasks_sprint_id
+                    FOREIGN KEY (sprint_id) REFERENCES project_sprints(id) ON DELETE SET NULL;
+            END IF;
+        END $$;
+    """)
+
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'project_recurring_configs')
+               AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'project_tasks' AND column_name = 'recurring_config_id')
+               AND NOT EXISTS (
+                   SELECT 1 FROM information_schema.table_constraints tc
+                   JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+                   WHERE tc.constraint_type = 'FOREIGN KEY'
+                     AND tc.table_name = 'project_tasks'
+                     AND kcu.column_name = 'recurring_config_id'
+               )
+            THEN
+                ALTER TABLE project_tasks
+                    ADD CONSTRAINT fk_project_tasks_recurring_config_id
+                    FOREIGN KEY (recurring_config_id) REFERENCES project_recurring_configs(id) ON DELETE SET NULL;
+            END IF;
+        END $$;
+    """)
+
 
 def downgrade() -> None:
-    # Drop project tables
     op.execute("DROP TABLE IF EXISTS project_templates")
     op.execute("DROP TABLE IF EXISTS project_task_attachments")
     op.execute("DROP TABLE IF EXISTS project_task_dependencies")
     op.execute("DROP TABLE IF EXISTS project_time_logs")
+    op.execute("DROP TABLE IF EXISTS project_milestones_v2")
     op.execute("DROP TABLE IF EXISTS project_milestones")
     op.execute("DROP TABLE IF EXISTS project_tasks")
     op.execute("DROP TABLE IF EXISTS projects")
-    # Drop forms tables (reverse dependency order)
-    op.execute("DROP TABLE IF EXISTS form_collaborators")
-    op.execute("DROP TABLE IF EXISTS form_templates")
-    op.execute("DROP TABLE IF EXISTS form_responses")
-    op.execute("DROP TABLE IF EXISTS form_fields")
-    op.execute("DROP TABLE IF EXISTS forms")
