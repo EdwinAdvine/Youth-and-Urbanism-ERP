@@ -163,7 +163,7 @@ services:
         condition: service_healthy
     env_file:
       - .env
-    command: celery -A app.tasks.celery_app beat -l info
+    command: celery -A app.tasks.celery_app beat -l info --pidfile=/tmp/celerybeat.pid
     healthcheck:
       test: ["CMD", "test", "-f", "/tmp/celerybeat.pid"]
       interval: 30s
@@ -212,7 +212,7 @@ services:
     volumes:
       - stalwart_data:/opt/stalwart-mail
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/healthz"]
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8080 && echo -e \"GET / HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3 && head -1 <&3 | grep -q \"200 OK\"'"]
       interval: 30s
       timeout: 10s
       retries: 3
